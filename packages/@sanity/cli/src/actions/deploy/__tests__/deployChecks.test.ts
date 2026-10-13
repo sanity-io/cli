@@ -11,6 +11,7 @@ import {
   checkAppId,
   checkAppTarget,
   checkAutoUpdates,
+  checkExternalUrl,
   checkStudioTarget,
   type DeployCheck,
   describeAppTarget,
@@ -560,5 +561,64 @@ describe('checkAppId', () => {
     checkAppId(reporter, {cliConfig: {deployment: {appId: 'new'}} as CliConfig})
 
     expect(reporter.results).toHaveLength(0)
+  })
+})
+
+describe('checkExternalUrl', () => {
+  test('a first deploy registers the origin of --url', () => {
+    const reporter = createCollectingReporter<DeployCheck>()
+
+    expect(checkExternalUrl(reporter, {appId: undefined, url: 'https://studio.example.com/'})).toBe(
+      'https://studio.example.com',
+    )
+    expect(reporter.results).toEqual([
+      {message: 'Registers at https://studio.example.com', status: 'pass'},
+    ])
+  })
+
+  test('a first deploy without --url fails as a usage error', () => {
+    const reporter = createCollectingReporter<DeployCheck>()
+
+    expect(checkExternalUrl(reporter, {appId: undefined, url: undefined})).toBeUndefined()
+    expect(reporter.results).toEqual([
+      expect.objectContaining({
+        exitCode: exitCodes.USAGE_ERROR,
+        solution: expect.stringContaining('--url'),
+        status: 'fail',
+      }),
+    ])
+  })
+
+  test.each([
+    ['a path', 'https://example.com/studio'],
+    ['a query or hash', 'https://example.com/?v=1#top'],
+  ])('a URL with %s fails as a usage error', (_, url) => {
+    const reporter = createCollectingReporter<DeployCheck>()
+
+    expect(checkExternalUrl(reporter, {appId: undefined, url})).toBeUndefined()
+    expect(reporter.results).toEqual([
+      {
+        exitCode: exitCodes.USAGE_ERROR,
+        message: '--url must be an origin with no path, query or hash',
+        solution:
+          'Pass the origin your host serves the build from, for example --url https://studio.example.com',
+        status: 'fail',
+      },
+    ])
+  })
+
+  test('a URL that is not http(s) fails as a usage error', () => {
+    const reporter = createCollectingReporter<DeployCheck>()
+
+    expect(
+      checkExternalUrl(reporter, {appId: undefined, url: 'ftp://studio.example.com'}),
+    ).toBeUndefined()
+    expect(reporter.results).toEqual([
+      expect.objectContaining({
+        exitCode: exitCodes.USAGE_ERROR,
+        message: 'URL must use http or https protocol',
+        status: 'fail',
+      }),
+    ])
   })
 })

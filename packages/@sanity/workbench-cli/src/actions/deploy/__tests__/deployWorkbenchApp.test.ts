@@ -1,3 +1,6 @@
+import {mkdtemp, rm, writeFile} from 'node:fs/promises'
+import {tmpdir} from 'node:os'
+import {join} from 'node:path'
 import {Readable} from 'node:stream'
 
 import {getGlobalCliClient} from '@sanity/cli-core'
@@ -46,15 +49,20 @@ function appendedFields(): Array<[string, unknown]> {
   return appendSpy.mock.calls.map((call: unknown[]) => [call[0], call[1]] as [string, unknown])
 }
 let appendSpy: ReturnType<typeof vi.spyOn>
+const mfManifest = {id: 'drop-desk', metaData: {remoteEntry: {name: 'remoteEntry-abc.js'}}}
+let sourceDir: string
 
-beforeEach(() => {
+beforeEach(async () => {
   vi.mocked(getGlobalCliClient).mockResolvedValue(mockClient as never)
   appendSpy = vi.spyOn(FormData.prototype, 'append')
+  sourceDir = await mkdtemp(join(tmpdir(), 'deploy-'))
+  await writeFile(join(sourceDir, 'mf-manifest.json'), JSON.stringify(mfManifest))
 })
 
-afterEach(() => {
+afterEach(async () => {
   vi.clearAllMocks()
   vi.restoreAllMocks()
+  await rm(sourceDir, {force: true, recursive: true})
 })
 
 describe('createCoreApp', () => {
@@ -179,6 +187,22 @@ describe('createStudio', () => {
 
     expect(mockClient.request.mock.calls[0][0].body).not.toHaveProperty('visibility')
   })
+
+  test('registers the external origin it is served from', async () => {
+    mockClient.request.mockResolvedValueOnce({id: 'studio_new'})
+
+    await createStudio({
+      externalUrl: 'https://studio.example.com',
+      organizationId: 'org-1',
+      projectId: 'proj-1',
+      slug: 'my-studio',
+      title: 'My Studio',
+    })
+
+    expect(mockClient.request.mock.calls[0][0].body).toMatchObject({
+      externalUrl: 'https://studio.example.com',
+    })
+  })
 })
 
 describe('deployWorkbenchApp', () => {
@@ -190,7 +214,7 @@ describe('deployWorkbenchApp', () => {
       applicationId: 'app_1',
       isApp: true,
       isAutoUpdating: false,
-      sourceDir: '/tmp/build/app',
+      sourceDir,
       title: 'Drop Desk',
       version: '1.0.0',
     })
@@ -221,7 +245,11 @@ describe('deployWorkbenchApp', () => {
         version: '1.0.0',
       },
     ])
-    expect(fields.map(([name]) => name)).toContain('tarball')
+    expect(JSON.parse(String(fields.find(([name]) => name === 'mfManifest')?.[1]))).toEqual(
+      mfManifest,
+    )
+    // The server requires every field part to precede the tarball.
+    expect(fields.at(-1)?.[0]).toBe('tarball')
   })
 
   test('sends a tile interface carrying its size + order as metadata', async () => {
@@ -249,7 +277,7 @@ describe('deployWorkbenchApp', () => {
       applicationId: 'app_1',
       isApp: true,
       isAutoUpdating: false,
-      sourceDir: '/tmp/build/app',
+      sourceDir,
       title: 'Drop Desk',
       version: '1.0.0',
     })
@@ -297,7 +325,7 @@ describe('deployWorkbenchApp', () => {
       applicationId: 'app_1',
       isApp: true,
       isAutoUpdating: false,
-      sourceDir: '/tmp/build/app',
+      sourceDir,
       title: 'Drop Desk',
       version: '1.0.0',
     })
@@ -339,7 +367,7 @@ describe('deployWorkbenchApp', () => {
       applicationId: 'studio_1',
       isApp: false,
       isAutoUpdating: false,
-      sourceDir: '/tmp/build/studio',
+      sourceDir,
       title: 'My Studio',
       version: '3.0.0',
       workspaces,
@@ -357,7 +385,7 @@ describe('deployWorkbenchApp', () => {
       applicationId: 'studio_1',
       isApp: false,
       isAutoUpdating: false,
-      sourceDir: '/tmp/build/studio',
+      sourceDir,
       title: 'My Studio',
       version: '3.0.0',
       workspaces,
@@ -375,7 +403,7 @@ describe('deployWorkbenchApp', () => {
       icon,
       isApp: true,
       isAutoUpdating: false,
-      sourceDir: '/tmp/build/app',
+      sourceDir,
       title: 'Drop Desk',
       version: '1.0.0',
     })
@@ -395,7 +423,7 @@ describe('deployWorkbenchApp', () => {
       applicationId: 'app_1',
       isApp: true,
       isAutoUpdating: false,
-      sourceDir: '/tmp/build/app',
+      sourceDir,
       title: 'Drop Desk',
       version: '1.0.0',
     })
@@ -415,7 +443,7 @@ describe('deployWorkbenchApp', () => {
       applicationId: 'app_1',
       isApp: true,
       isAutoUpdating: false,
-      sourceDir: '/tmp/build/app',
+      sourceDir,
       title: 'Drop Desk',
       version: '1.0.0',
       visibility: 'unlisted',
@@ -437,7 +465,7 @@ describe('deployWorkbenchApp', () => {
       isApp: true,
       isAutoUpdating: false,
       slug: 'media',
-      sourceDir: '/tmp/build/app',
+      sourceDir,
       title: 'Drop Desk',
       version: '1.0.0',
     })
@@ -457,7 +485,7 @@ describe('deployWorkbenchApp', () => {
       applicationId: 'app_1',
       isApp: true,
       isAutoUpdating: false,
-      sourceDir: '/tmp/build/app',
+      sourceDir,
       title: 'Drop Desk',
       version: '1.0.0',
     })
@@ -479,7 +507,7 @@ describe('deployWorkbenchApp', () => {
         isApp: true,
         isAutoUpdating: false,
         slug: 'media',
-        sourceDir: '/tmp/build/app',
+        sourceDir,
         title: 'Drop Desk',
         version: '1.0.0',
       }),
@@ -500,7 +528,7 @@ describe('deployWorkbenchApp', () => {
         isApp: true,
         isAutoUpdating: false,
         slug: 'media',
-        sourceDir: '/tmp/build/app',
+        sourceDir,
         title: 'Drop Desk',
         version: '1.0.0',
       }),
@@ -523,7 +551,7 @@ describe('deployWorkbenchApp', () => {
         isApp: true,
         isAutoUpdating: false,
         onDeployed,
-        sourceDir: '/tmp/build/app',
+        sourceDir,
         title: 'Drop Desk',
         version: '1.0.0',
       }),
@@ -543,12 +571,35 @@ describe('deployWorkbenchApp', () => {
         isApp: true,
         isAutoUpdating: false,
         onDeployed,
-        sourceDir: '/tmp/build/app',
+        sourceDir,
         title: 'Drop Desk',
         version: '1.0.0',
       }),
     ).rejects.toThrow('deploy failed')
 
     expect(onDeployed).not.toHaveBeenCalled()
+  })
+
+  test('sends the manifest and no tarball for an externally hosted build', async () => {
+    mockClient.request.mockResolvedValueOnce({id: 'dep_1'}).mockResolvedValueOnce(undefined)
+
+    await deployWorkbenchApp({
+      app: {...app, entry: undefined},
+      applicationId: 'studio_1',
+      isApp: false,
+      isAutoUpdating: false,
+      isExternal: true,
+      sourceDir,
+      title: 'My Studio',
+      version: '3.0.0',
+      workspaces,
+    })
+
+    const fields = appendedFields()
+    expect(JSON.parse(String(fields.find(([name]) => name === 'mfManifest')?.[1]))).toEqual(
+      mfManifest,
+    )
+    expect(fields.map(([name]) => name)).toContain('interfaces')
+    expect(fields.map(([name]) => name)).not.toContain('tarball')
   })
 })

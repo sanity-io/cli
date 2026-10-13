@@ -11,6 +11,17 @@ import {DeployCommand} from '../../../src/commands/deploy.js'
 import {USER_APPLICATIONS_API_VERSION} from '../../../src/services/userApplications.js'
 
 const mockGetLocalPackageVersion = vi.hoisted(() => vi.fn())
+const mockCreateStudio = vi.hoisted(() => vi.fn())
+const mockDeployWorkbenchApp = vi.hoisted(() => vi.fn())
+const mockCheckBuiltOutput = vi.hoisted(() => vi.fn())
+
+vi.mock(import('@sanity/workbench-cli/deploy'), async (importOriginal) => ({
+  ...(await importOriginal()),
+  checkBuiltOutput: mockCheckBuiltOutput,
+  createStudio: mockCreateStudio,
+  deployWorkbenchApp: mockDeployWorkbenchApp,
+  listApplications: vi.fn(async () => []),
+}))
 
 vi.mock('../../../src/actions/build/buildStudio.js', () => ({
   buildStudio: vi.fn(),
@@ -842,16 +853,16 @@ describe('#deploy studio (external)', () => {
       )
       expect(mockBuildStudio).not.toHaveBeenCalled()
       expect(mockCheckDir).not.toHaveBeenCalled()
+      expect(mockCheckBuiltOutput).not.toHaveBeenCalled()
     })
   })
 
   describe('defineApplication', () => {
-    test('should reject --external for a defineApplication studio', async () => {
+    test('registers a defineApplication studio at the --url origin', async () => {
       const cwd = await testFixture('basic-studio')
       process.cwd = () => cwd
 
-      // Brand the config as a studio so the deploy command routes it through
-      // deployStudio (the only path that accepts --external).
+      // Brand the config as a studio so the deploy command routes it through deployStudio.
       const app = defineApplication({
         organizationId: 'org-1',
         slug: 'test-studio',
@@ -859,22 +870,33 @@ describe('#deploy studio (external)', () => {
       }) as unknown as NonNullable<CliConfig['app']> & {applicationType?: string}
       app.applicationType = 'studio'
 
-      const {error} = await testCommand(DeployCommand, ['--external'], {
-        config: {root: cwd},
-        mocks: {
-          cliConfig: {
-            api: {projectId: 'test-project-id'},
-            app,
-            studioHost: 'https://studio.example.com',
-          } as CliConfig,
+      mockCreateStudio.mockResolvedValue({
+        application: {
+          id: 'studio_new',
+          organizationId: 'org-1',
+          slug: 'test-studio',
+          title: 'Test Studio',
+          type: 'studio',
         },
       })
 
-      expect(error).toBeInstanceOf(Error)
-      expect(error?.message).toContain(
-        'Deploying a federated application to an external host is not yet supported',
+      const {error} = await testCommand(
+        DeployCommand,
+        ['--external', '--url', 'https://studio.example.com'],
+        {
+          config: {root: cwd},
+          mocks: {cliConfig: {api: {projectId: 'test-project-id'}, app} as CliConfig},
+        },
       )
-      expect(error?.oclif?.exit).toBe(exitCodes.USAGE_ERROR)
+
+      if (error) throw error
+      expect(mockCreateStudio).toHaveBeenCalledWith(
+        expect.objectContaining({externalUrl: 'https://studio.example.com'}),
+      )
+      expect(mockDeployWorkbenchApp).toHaveBeenCalledWith(
+        expect.objectContaining({isExternal: true}),
+      )
+      expect(mockCheckBuiltOutput).toHaveBeenCalled()
     })
   })
 })
