@@ -2,6 +2,7 @@ import {type ChunkMetadata, type Plugin} from 'vite'
 
 import {type AutoUpdatesBuildConfig} from '../autoUpdates.js'
 import {createVendorImportMapFromBundle} from '../createVendorImportMapFromBundle.js'
+import {decorateIndexWithAuthHashScript} from '../decorateIndexWithAuthHashScript.js'
 import {decorateIndexWithBridgeScript} from '../decorateIndexWithBridgeScript.js'
 import {decorateIndexWithStagingScript} from '../decorateIndexWithStagingScript.js'
 import {renderDocument} from '../renderDocument.js'
@@ -118,9 +119,13 @@ export function sanityBuildEntries(options: {
         studioRootPath: cwd,
       })
 
+      const source = decorateIndexWithStagingScript(
+        bridge ? decorateIndexWithBridgeScript(html) : html,
+      )
+
       this.emitFile({
         fileName: 'index.html',
-        source: decorateIndexWithStagingScript(bridge ? decorateIndexWithBridgeScript(html) : html),
+        source: isApp ? source : decorateIndexWithAuthHashScript(source),
         type: 'asset',
       })
     },

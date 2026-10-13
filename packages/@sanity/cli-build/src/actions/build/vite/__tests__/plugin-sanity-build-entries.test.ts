@@ -21,8 +21,8 @@ function makeBundle() {
   }
 }
 
-async function emitIndexHtml(bridge?: boolean): Promise<string> {
-  const plugin = sanityBuildEntries({basePath: '/', bridge, cwd: '/project'})
+async function emitIndexHtml(bridge?: boolean, isApp?: boolean): Promise<string> {
+  const plugin = sanityBuildEntries({basePath: '/', bridge, cwd: '/project', isApp})
 
   let emitted: {fileName: string; source: string} | undefined
   const context = {
@@ -49,5 +49,15 @@ describe('sanityBuildEntries index.html', () => {
     expect(html).not.toContain('bridge.js')
     // The document itself is still emitted.
     expect(html).toContain('id="root"')
+  })
+
+  test('injects the auth hash script first in head for studios', async () => {
+    const html = await emitIndexHtml()
+    expect(html).toMatch(/^<html><head>\n<script>[^<]*__SANITY_AUTH_HASH_PARAMS__/)
+  })
+
+  test('omits the auth hash script for apps', async () => {
+    const html = await emitIndexHtml(undefined, true)
+    expect(html).not.toContain('__SANITY_AUTH_HASH_PARAMS__')
   })
 })
