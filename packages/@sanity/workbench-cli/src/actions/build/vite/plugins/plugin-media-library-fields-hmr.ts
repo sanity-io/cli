@@ -10,6 +10,16 @@
 // Vite client full-reloads after a short timeout so the first ESM evaluation
 // is discarded. This plugin injects that ping + reload-unless-ACK fallback
 // next to the Vite client's own `hot updated` log line.
+//
+// Timing contract: Vite applies an update in one synchronous task — accept
+// callbacks first (the `installation_config` payload dispatch), then the
+// `hot updated` log where this snippet arms the reload timer and (once)
+// binds the ACK listener. The host must not ACK synchronously from its
+// event listener: the Media Library host coalesces the payload event and
+// this ping behind a debounce and ACKs only after applying (see huey's
+// `subscribeFederatedFieldsHmr` / `ackFederatedFieldsHmr`), so the ACK
+// always finds the timer armed. A host that ACKed synchronously would just
+// take the fallback full reload — safe, merely slower.
 
 import {type Plugin} from 'vite'
 
