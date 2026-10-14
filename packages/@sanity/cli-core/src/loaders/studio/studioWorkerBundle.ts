@@ -191,13 +191,16 @@ export function importMetaPathsPlugin(): Plugin {
     transform: {
       filter: {code: /import\.meta\s*\.\s*(?:dirname|filename|url)\b/},
       handler(code, id) {
-        const filename = id.split('?')[0]
-        if (!isAbsolute(filename)) return null
+        const path = id.split('?')[0]
+        if (!isAbsolute(path)) return null
 
+        // Vite IDs use forward slashes, Node.js gives `import.meta.filename` native ones
+        const url = pathToFileURL(path)
+        const filename = fileURLToPath(url)
         const values: Record<string, string> = {
           dirname: dirname(filename),
           filename,
-          url: pathToFileURL(filename).href,
+          url: url.href,
         }
         const replacements: {end: number; start: number; value: string}[] = []
         walk(this.parse(code), (node) => {
