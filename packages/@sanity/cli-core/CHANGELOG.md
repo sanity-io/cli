@@ -1,5 +1,15 @@
 # Changelog
 
+## 3.9.1
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-core-v3.9.0...cli-core-v3.9.1)
+
+_2026-10-14_
+
+### Bug Fixes
+
+- **cli-core:** skip dependency source maps in the studio worker ([#1967](https://github.com/sanity-io/cli/pull/1967)) ([a31f941](https://github.com/sanity-io/cli/commit/a31f94133517fa18216712ce4d39f2324d1a6092))
+
 ## 3.9.0
 
 [Compare changes](https://github.com/sanity-io/cli/compare/cli-core-v3.8.2...cli-core-v3.9.0)
