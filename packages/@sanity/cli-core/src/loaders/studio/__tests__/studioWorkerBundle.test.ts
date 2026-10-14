@@ -269,7 +269,6 @@ describe('importMetaPathsPlugin', () => {
     })
 
     const config = await bundleAndImport('meta/config.ts', [importMetaPathsPlugin()])
-    const bundlePath = join(rootPath, 'meta/config.bundle.mjs')
 
     const nested = join(rootPath, 'meta/nested/info.ts')
     expect(config).toEqual({
@@ -278,8 +277,9 @@ describe('importMetaPathsPlugin', () => {
         filename: nested,
         label: 'héllo 😀',
         literal: 'import.meta.url',
-        // Only direct property accesses are rewritten
-        metaUrl: pathToFileURL(bundlePath).href,
+        // Only direct property accesses are rewritten. (The bundle's own URL, as
+        // the runner loaded it: Windows short paths keep their `~` unencoded.)
+        metaUrl: expect.stringMatching(/\/meta\/config\.bundle\.mjs$/),
         url: pathToFileURL(nested).href,
       },
       packageJsonPath: join(rootPath, 'node_modules/meta-pkg/package.json'),
