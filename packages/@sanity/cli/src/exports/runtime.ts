@@ -17,6 +17,7 @@ export type {
   PanelComponent,
   PanelViewComponents,
   PanelViewProps,
+  ServiceBus,
   ServiceCallback,
   ServiceContext,
   ServiceInfo,

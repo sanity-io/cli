@@ -1,6 +1,9 @@
 import {SERVICE_CONTRACT_VERSION, type ServiceType} from '../../../contract.js'
 import {type GeneratedArtifact} from '../artifact.js'
 
+/** The worker bus client the generated `worker.js` imports; see the extension-artifacts plugin's alias. */
+export const WORKER_BUS_ENTRY = '@sanity/workbench-cli/_internal_worker_bus'
+
 /** Subdirectory under the federation runtime dir where service artifacts live. */
 const SERVICES_DIR_NAME = 'services'
 
@@ -54,7 +57,8 @@ export function serviceArtifacts(services: readonly ServiceArtifact[]): Generate
  * Source for one service's **worker** bundle — the Web Worker entry. Imports
  * the user's `unstable_defineService` result and runs its callback with the
  * service's own declaration (mirroring how a view component receives its
- * `view`), then wires the returned disposer to the host's terminate message.
+ * `view`) and a message bus client (`workerBus.ts`), then wires the returned
+ * disposer to the host's terminate message.
  * Crashes — and the worker's `console.*`, which is patched to forward to the
  * host — are surfaced through the host logger (the host owns logging; a worker's
  * own console isn't visible in the page DevTools anyway).
@@ -67,6 +71,7 @@ function serviceWorkerArtifactSource(input: {
 // This file is auto-generated on 'sanity build' / 'sanity dev'
 // Modifications to this file are automatically discarded
 import service from ${JSON.stringify(input.importPath)}
+import { createWorkerBus } from ${JSON.stringify(WORKER_BUS_ENTRY)}
 
 const SERVICE = { type: ${JSON.stringify(input.service.type)}, name: ${JSON.stringify(input.service.name)} }
 
@@ -88,17 +93,24 @@ for (const __level of ['log', 'info', 'warn', 'error', 'debug']) {
   }
 }
 
+const { bus, close: closeBus, receive: receiveBus } = createWorkerBus()
+
 let dispose
 try {
-  const result = service.run({ service: SERVICE })
+  const result = service.run({ bus, service: SERVICE })
   if (typeof result === 'function') dispose = result
 } catch (error) {
   self.postMessage({ kind: 'workbench.worker.error', payload: { message: String(error) } })
 }
 
 self.addEventListener('message', (event) => {
-  if (event.data && event.data.kind === 'workbench.worker.terminate') {
+  if (!event.data) return
+  if (event.data.kind === 'workbench.worker.terminate') {
+    // Close the bus first: the host has disconnected, so the disposer's bus calls must fail at once.
+    closeBus()
     try { dispose && dispose() } finally { self.close() }
+  } else {
+    receiveBus(event.data)
   }
 })
 

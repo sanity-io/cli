@@ -124,6 +124,21 @@ describe('sanityExtensionArtifacts', () => {
     expect(tile).toContain('import.meta.hot.accept')
   })
 
+  it('aliases the worker bus client the generated worker imports', () => {
+    const plugin = sanityExtensionArtifacts({artifacts: []})
+    const config = typeof plugin.config === 'function' ? plugin.config : plugin.config?.handler
+    expect(config?.call({} as never, {}, {} as never)).toEqual({
+      optimizeDeps: {exclude: ['@sanity/workbench-cli/_internal_worker_bus']},
+      resolve: {
+        alias: {
+          '@sanity/workbench-cli/_internal_worker_bus': expect.stringMatching(
+            /[/\\]_exports[/\\]_internal_worker_bus\.js$/,
+          ),
+        },
+      },
+    })
+  })
+
   it('writes nothing when no views are declared', () => {
     const root = makeRoot()
     runConfigResolved(sanityExtensionArtifacts({artifacts: workbenchArtifacts({views: []})}), root)
@@ -146,10 +161,10 @@ describe('sanityExtensionArtifacts', () => {
     expect(fs.readdirSync(dir).toSorted()).toEqual(['index.js', 'worker.js'])
 
     const worker = fs.readFileSync(path.join(dir, 'worker.js'), 'utf8')
-    // The worker imports the user's src, runs it with its `service`
-    // declaration, and listens for the host's terminate message.
+    // The worker imports the user's src, runs it with its `service` declaration
+    // and `bus`, and listens for the host's terminate message.
     expect(worker).toContain('import service from "../../../../src/service.ts"')
-    expect(worker).toContain('service.run({ service: SERVICE })')
+    expect(worker).toContain('service.run({ bus, service: SERVICE })')
     expect(worker).toContain('workbench.worker.terminate')
 
     const loader = fs.readFileSync(path.join(dir, 'index.js'), 'utf8')
