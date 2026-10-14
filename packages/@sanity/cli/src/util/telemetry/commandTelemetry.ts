@@ -42,29 +42,68 @@ export function defineCommandTelemetry<const Flags extends Interfaces.FlagInput>
   }
 }
 
-export function redactTelemetryArguments(
-  arguments_: string[],
-  commandTelemetry?: CommandTelemetry,
-): string[] {
-  let forwarding = false
+interface TelemetryFlag {
+  canonical: string
+  option: boolean
+  redact: boolean
+}
 
-  return arguments_.map((argument) => {
-    if (argument === '--') {
-      forwarding = true
-      return argument
+export function collectTelemetryFlags(
+  argv: string[],
+  flags: Interfaces.FlagInput,
+  telemetry?: CommandTelemetry,
+): string[] {
+  const definitions = new Map<string, TelemetryFlag>()
+  for (const [name, flag] of Object.entries(flags)) {
+    const canonical = `--${name}`
+    const definition = {
+      canonical,
+      option: flag.type === 'option',
+      redact: telemetry?.redactedFlags.some((entry) => entry.canonical === canonical) ?? false,
+    }
+    definitions.set(canonical, definition)
+    for (const alias of flag.aliases ?? []) {
+      definitions.set(`${alias.length === 1 ? '-' : '--'}${alias}`, definition)
+    }
+    for (const char of [flag.char, ...(flag.charAliases ?? [])]) {
+      if (char) definitions.set(`-${char}`, definition)
+    }
+    if (flag.type === 'boolean' && flag.allowNo) {
+      definitions.set(`--no-${name}`, {...definition, canonical: `--no-${name}`})
+    }
+  }
+
+  const result: string[] = []
+  for (let index = 0; index < argv.length; index++) {
+    const argument = argv[index]
+    if (argument === '--') break
+    if (!argument.startsWith('-') || argument === '-') continue
+
+    if (argument.startsWith('--')) {
+      const separator = argument.indexOf('=')
+      const name = separator === -1 ? argument : argument.slice(0, separator)
+      const flag = definitions.get(name)
+      // An unknown option may consume the next token, including a known flag's spelling.
+      // Stop rather than interpreting private input as telemetry.
+      if (!flag) break
+      result.push(flag.redact || !flag.option ? flag.canonical : argument)
+      if (flag.option && separator === -1) index++
+      continue
     }
 
-    if (forwarding) return argument
+    for (let offset = 1; offset < argument.length; offset++) {
+      const flag = definitions.get(`-${argument[offset]}`)
+      if (!flag) return result
+      if (!flag.option) {
+        result.push(flag.canonical)
+        continue
+      }
+      const value = argument.slice(offset + 1)
+      result.push(flag.redact || !value ? flag.canonical : `-${argument[offset]}${value}`)
+      if (!value) index++
+      break
+    }
+  }
 
-    const isShortOption = argument.startsWith('-') && !argument.startsWith('--')
-    const redactedFlag = commandTelemetry?.redactedFlags.find(({flags}) =>
-      flags.some((syntax) =>
-        syntax.startsWith('--')
-          ? argument === syntax || argument.startsWith(`${syntax}=`)
-          : isShortOption && argument.startsWith(syntax),
-      ),
-    )
-
-    return redactedFlag?.canonical ?? argument
-  })
+  return result
 }
