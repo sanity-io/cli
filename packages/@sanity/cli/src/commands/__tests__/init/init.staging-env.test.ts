@@ -17,6 +17,10 @@ const mocks = vi.hoisted(() => ({
   select: vi.fn(),
 }))
 
+vi.mock('../../../prompts/init/promptForInitType.js', () => ({
+  promptForInitType: vi.fn().mockResolvedValue('studio'),
+}))
+
 vi.mock('@sanity/cli-core', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@sanity/cli-core')>()
 

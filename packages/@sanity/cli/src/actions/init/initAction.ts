@@ -12,6 +12,7 @@ import {type Framework, frameworks} from '@vercel/frameworks'
 import deburr from 'lodash-es/deburr.js'
 
 import {promptForConfigFiles} from '../../prompts/init/nextjs.js'
+import {promptForInitType} from '../../prompts/init/promptForInitType.js'
 import {getCliUser} from '../../services/user.js'
 import {CLIInitStepCompleted, type InitStepResult} from '../../telemetry/init.telemetry.js'
 import {detectFrameworkRecord} from '../../util/detectFramework.js'
@@ -96,7 +97,7 @@ export async function initAction(options: InitOptions, context: InitContext): Pr
     )
   }
 
-  const isAppTemplate = options.template ? determineAppTemplate(options.template) : false
+  let isAppTemplate = options.template ? determineAppTemplate(options.template) : false
 
   if (options.unattended) {
     checkFlagsInUnattendedMode(options, {isAppTemplate, isNextJs})
@@ -126,6 +127,16 @@ export async function initAction(options: InitOptions, context: InitContext): Pr
   const envFilename = typeof options.env === 'string' ? options.env : envFilenameDefault
 
   const {user} = await ensureAuthenticated(options, output, trace)
+
+  if (!options.unattended && !options.template && !options.bare && !options.env) {
+    const initType = await promptForInitType()
+
+    if (initType === 'app') {
+      options = {...options, template: 'app-quickstart'}
+      isAppTemplate = true
+    }
+  }
+
   if (!isAppTemplate) {
     output.log(`${logSymbols.success} Fetching existing projects`)
     output.log('')
@@ -235,8 +246,12 @@ export async function initAction(options: InitOptions, context: InitContext): Pr
     spinner(label).start().succeed()
   }
 
-  let initNext = flagOrDefault(options.nextjsAddConfigFiles, false)
-  if (isNextJs && shouldPrompt(options.unattended, options.nextjsAddConfigFiles)) {
+  let initNext = !isAppTemplate && flagOrDefault(options.nextjsAddConfigFiles, false)
+  if (
+    !isAppTemplate &&
+    isNextJs &&
+    shouldPrompt(options.unattended, options.nextjsAddConfigFiles)
+  ) {
     initNext = await promptForConfigFiles()
   }
 
@@ -263,7 +278,7 @@ export async function initAction(options: InitOptions, context: InitContext): Pr
     workDir,
   })
 
-  if (isNextJs) {
+  if (isNextJs && !isAppTemplate) {
     await checkNextJsReactCompatibility({
       detectedFramework,
       output,
