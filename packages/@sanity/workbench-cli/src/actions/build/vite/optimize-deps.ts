@@ -2,6 +2,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 
 import {type WorkbenchExposes} from '../../../resolveWorkbenchApp.js'
+import {hasIslandRuntime, ISLAND_RUNTIME_MODULE} from '../configs/islandRuntime.js'
 
 /**
  * React APIs only the generated render-contract modules import — the SPA
@@ -75,8 +76,15 @@ export function workbenchOptimizeDeps(options: {
     return path.relative(cwd, resolved).split(path.sep).join('/')
   })
 
+  // The generated `./island-runtime` expose imports this entry, but the file is
+  // codegen (never in `entries`), so the startup scan misses it. Only when the
+  // installed `sanity` ships the entry — an unresolvable `include` name crashes
+  // the dev server, and the expose is skipped in that case anyway.
+  const islandRuntimeDeps =
+    exposes?.config !== undefined && hasIslandRuntime(cwd) ? [ISLAND_RUNTIME_MODULE] : []
+
   return {
     entries: [...new Set(entries)],
-    include: [...RENDER_CONTRACT_DEPS],
+    include: [...RENDER_CONTRACT_DEPS, ...islandRuntimeDeps],
   }
 }

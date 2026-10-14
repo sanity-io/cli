@@ -1,5 +1,7 @@
 import {INSTALLATION_CONFIG_TYPE, MEDIA_LIBRARY_CONFIG_CONTRACT_VERSION} from '../../../contract.js'
 import {type GeneratedArtifact} from '../artifact.js'
+import {MEDIA_LIBRARY_FIELDS_HMR_EVENT} from '../vite/plugins/plugin-media-library-fields-hmr.js'
+import {ISLAND_RUNTIME_MODULE} from './islandRuntime.js'
 
 const CONFIGS_DIR_NAME = 'configs'
 
@@ -11,8 +13,27 @@ export interface ConfigArtifact {
   fields: {name: string; public?: boolean; src: string; title: string}[]
 }
 
-/** Expand the config into one federation module aggregating all fields, so the host imports one live config value. */
-export function configArtifacts(config: ConfigArtifact | undefined): GeneratedArtifact[] {
+/** Build-time capabilities that gate optional config artifacts. */
+export interface ConfigArtifactOptions {
+  /**
+   * Whether the app's installed `sanity` ships the island-mount runtime
+   * ({@link ISLAND_RUNTIME_MODULE}). Gates the `./island-runtime` expose —
+   * emitting it against an older `sanity` would fail the build on an
+   * unresolvable import.
+   */
+  islandRuntime?: boolean
+}
+
+/**
+ * Expand the config into its federation modules: one aggregating all fields
+ * (so the host imports one live config value), plus — when the installed
+ * `sanity` ships it — the island-mount runtime the host uses to render custom
+ * field inputs in isolated React roots.
+ */
+export function configArtifacts(
+  config: ConfigArtifact | undefined,
+  options: ConfigArtifactOptions = {},
+): GeneratedArtifact[] {
   if (!config) return []
   return [
     {
@@ -20,6 +41,15 @@ export function configArtifacts(config: ConfigArtifact | undefined): GeneratedAr
       path: `${CONFIGS_DIR_NAME}/${INSTALLATION_CONFIG_TYPE}.js`,
       source: ({resolveImport}) => mediaLibraryConfigSource({config, resolveImport}),
     },
+    ...(options.islandRuntime
+      ? [
+          {
+            expose: './island-runtime',
+            path: `${CONFIGS_DIR_NAME}/island_runtime.js`,
+            source: () => islandRuntimeSource(),
+          },
+        ]
+      : []),
   ]
 }
 
@@ -57,9 +87,29 @@ ${entries}
 }
 
 if (import.meta.hot) {
-  // A config is data, not a rendered island with a live root to remount —
-  // self-accept so a field edit swaps the module in place; the host re-reads it.
-  import.meta.hot.accept()
+  // The Media Library host loads this module once through Module Federation
+  // and never re-reads it, so a bare self-accept would leave field edits
+  // invisible until a manual refresh. Forward the fresh namespace to the host
+  // on this window (Workbench federation, or the host's Dashboard iframe) —
+  // the host ACKs an in-page apply; without an ACK the dev client falls back
+  // to a full reload (see the media-library-fields-hmr plugin).
+  import.meta.hot.accept((mod) => {
+    const detail = mod ?? null
+    window.dispatchEvent(new CustomEvent('${MEDIA_LIBRARY_FIELDS_HMR_EVENT}', {detail}))
+  })
 }
+`
+}
+
+/**
+ * One line on purpose: the runtime implementation lives in the `sanity`
+ * package and is bundled into the remote from the app's own install, so the
+ * runtime always matches the `sanity` version field modules compile against.
+ */
+function islandRuntimeSource(): string {
+  return `\
+// This file is auto-generated on 'sanity build' / 'sanity dev'
+// Modifications to this file are automatically discarded
+export * from ${JSON.stringify(ISLAND_RUNTIME_MODULE)}
 `
 }

@@ -37,7 +37,7 @@ describe('workbenchVitePlugins', () => {
       cwd,
       entries: {relativeConfigLocation: '../../sanity.config.ts', relativeEntry: null},
     })
-    expect(result).toEqual({name: 'sanity/federation'})
+    expect(result).toEqual([{name: 'sanity/federation'}])
   })
 
   test('builds a studio remote from its sanity.config path', async () => {
@@ -113,5 +113,32 @@ describe('workbenchVitePlugins', () => {
       isApp: true,
     })
     expect(mockFederation).toHaveBeenCalledWith(expect.objectContaining({exposes: {config}}))
+  })
+
+  test('prepends the ui5 stub and fields-HMR plugins for a config app', async () => {
+    const config = {
+      appType: 'media-library' as const,
+      fields: [{name: 'description', src: './src/description.ts', title: 'Description'}],
+    }
+    const result = await workbenchVitePlugins({
+      cwd,
+      entries: {relativeConfigLocation: null, relativeEntry: null},
+      exposes: {config},
+      isApp: true,
+    })
+    expect(result).toEqual([
+      expect.objectContaining({name: 'sanity/stub-ui5-stylesheet'}),
+      expect.objectContaining({name: 'sanity/media-library-fields-hmr'}),
+      {name: 'sanity/federation'},
+    ])
+  })
+
+  test('adds no config-app plugins when the app exposes no config', async () => {
+    const result = await workbenchVitePlugins({
+      cwd,
+      entries: {relativeConfigLocation: null, relativeEntry: '../../src/App'},
+      isApp: true,
+    })
+    expect(result).toEqual([{name: 'sanity/federation'}])
   })
 })

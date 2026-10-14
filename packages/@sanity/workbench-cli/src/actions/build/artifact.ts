@@ -1,5 +1,5 @@
 import {type WorkbenchExposes} from '../../resolveWorkbenchApp.js'
-import {configArtifacts} from './configs/artifact.js'
+import {type ConfigArtifactOptions, configArtifacts} from './configs/artifact.js'
 import {serviceArtifacts} from './services/artifact.js'
 import {viewArtifacts} from './views/artifact.js'
 
@@ -63,10 +63,13 @@ export function artifactExposes(
  * writes — the single place that composes the per-type expanders, so the expose
  * mapping and the file writing read from one expansion.
  */
-export function workbenchArtifacts(exposes: WorkbenchExposes): GeneratedArtifact[] {
+export function workbenchArtifacts(
+  exposes: WorkbenchExposes,
+  configOptions: ConfigArtifactOptions = {},
+): GeneratedArtifact[] {
   return [
     ...viewArtifacts(exposes.views ?? []),
     ...serviceArtifacts(exposes.webWorkers ?? []),
-    ...configArtifacts(exposes.config),
+    ...configArtifacts(exposes.config, configOptions),
   ]
 }
