@@ -3,8 +3,6 @@ import {readFile} from 'node:fs/promises'
 import {type Plugin} from 'vite'
 
 const DEPENDENCY_SCRIPT_RE = /[\\/]node_modules[\\/].+\.[cm]?js$/
-// Mirrors the `//# sourceMappingURL=` form Vite itself strips (via `convert-source-map`)
-const SOURCEMAP_COMMENT_RE = /^[ \t]*\/\/[#@][ \t]+sourceMappingURL=[^\s'"`]+[ \t]*$/gm
 
 /**
  * Loads plain JavaScript files from `node_modules` without their source maps.
@@ -16,11 +14,11 @@ const SOURCEMAP_COMMENT_RE = /^[ \t]*\/\/[#@][ \t]+sourceMappingURL=[^\s'"`]+[ \
  * For a studio that imports `sanity` this means thousands of modules and tens of
  * megabytes of source maps, which roughly doubles the worker's peak memory.
  *
- * Returning `map: {mappings: ''}` from `load` tells Vite there is no source map
- * to preserve, so none of that work happens for dependencies. User code (the
- * studio config, schema files, plugins outside `node_modules`) keeps full source
- * maps. Stack frames inside dependencies still name the file, through a
- * `sourceURL` comment, but their line numbers refer to the transformed code.
+ * Returning `map: {mappings: ''}` from `load` skips Vite's source map handling.
+ * Keep the source intact: sourceMappingURL text can also appear inside strings.
+ * User code (the studio config, schema files, plugins outside `node_modules`)
+ * keeps full source maps. A `sourceURL` comment keeps dependency file names in
+ * stack traces.
  *
  * @internal
  */
@@ -42,7 +40,7 @@ export function skipDependencySourcemapsPlugin(): Plugin {
       }
 
       return {
-        code: `${code.replaceAll(SOURCEMAP_COMMENT_RE, '')}\n//# sourceURL=${id.replaceAll(/\s/g, encodeURIComponent)}\n`,
+        code: `${code}\n//# sourceURL=${id.replaceAll(/\s/g, encodeURIComponent)}\n`,
         map: {mappings: ''},
       }
     },
