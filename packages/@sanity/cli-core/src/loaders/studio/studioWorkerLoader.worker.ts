@@ -15,7 +15,11 @@ import {doImport} from '../../util/doImport.js'
 import {getStudioEnvironmentVariables} from '../../util/environment/getStudioEnvironmentVariables.js'
 import {setupBrowserStubs} from '../../util/environment/setupBrowserStubs.js'
 import {isRecord} from '../../util/isRecord.js'
-import {httpsImportsPlugin, sanityExternalsPlugin} from './studioWorkerBundle.js'
+import {
+  httpsImportsPlugin,
+  importMetaPathsPlugin,
+  sanityExternalsPlugin,
+} from './studioWorkerBundle.js'
 import {createOneShotWorkerLifecycle} from './studioWorkerLifecycle.js'
 import {type StudioWorkerHooksData} from './studioWorkerLoader.hooks.js'
 
@@ -142,7 +146,11 @@ async function bundleStudioConfig(studioRootPath: string, configPath: string): P
         write: false,
       },
       mode,
-      plugins: [sanityExternalsPlugin(studioRootPath), httpsImportsPlugin()],
+      plugins: [
+        sanityExternalsPlugin(studioRootPath),
+        httpsImportsPlugin(),
+        importMetaPathsPlugin(),
+      ],
     } satisfies InlineConfig),
   )
 

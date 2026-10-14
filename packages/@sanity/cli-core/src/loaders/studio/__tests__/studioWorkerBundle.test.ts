@@ -3,9 +3,15 @@ import {tmpdir} from 'node:os'
 import {dirname, join} from 'node:path'
 import {pathToFileURL} from 'node:url'
 
+import {build, type Plugin} from 'vite'
 import {afterAll, beforeAll, describe, expect, test, vi} from 'vitest'
 
-import {getPackageName, httpsImportsPlugin, sanityExternalsPlugin} from '../studioWorkerBundle.js'
+import {
+  getPackageName,
+  httpsImportsPlugin,
+  importMetaPathsPlugin,
+  sanityExternalsPlugin,
+} from '../studioWorkerBundle.js'
 
 let rootPath: string
 
@@ -29,6 +35,15 @@ beforeAll(async () => {
       name: 'dep',
     }),
     'node_modules/dep/style.css': 'body {}',
+    'node_modules/esm-interop/index.js': [
+      "Object.defineProperty(exports, '__esModule', {value: true})",
+      "exports.default = {div: 'styled.div'}",
+      "exports.css = 'css'",
+    ].join('\n'),
+    'node_modules/esm-interop/package.json': JSON.stringify({
+      main: 'index.js',
+      name: 'esm-interop',
+    }),
     'node_modules/other/index.js': 'export {}',
     'node_modules/other/node_modules/dep/index.js': 'export {}',
     'node_modules/other/node_modules/dep/package.json': JSON.stringify({
@@ -36,11 +51,11 @@ beforeAll(async () => {
       name: 'dep',
     }),
     'node_modules/other/package.json': JSON.stringify({main: 'index.js', name: 'other'}),
-    'node_modules/react/index.js': 'module.exports = {}',
+    'node_modules/react/index.js': "exports.version = '19'",
     'node_modules/react/package.json': JSON.stringify({main: 'index.js', name: 'react'}),
     'node_modules/sanity/index.js': 'export {}',
     'node_modules/sanity/package.json': JSON.stringify({
-      dependencies: {dep: '1.0.0'},
+      dependencies: {dep: '1.0.0', 'esm-interop': '1.0.0'},
       exports: {'.': './index.js', './package.json': './package.json'},
       name: 'sanity',
       peerDependencies: {react: '*'},
@@ -67,10 +82,39 @@ function resolveExternal(
   return resolveId(id, importer, {kind})
 }
 
+/**
+ * Bundles a config like the studio worker does, and runs the bundle next to it
+ */
+async function bundleAndImport(configPath: string, plugins: Plugin[]): Promise<unknown> {
+  const result = await build({
+    build: {
+      rolldownOptions: {output: {codeSplitting: false}},
+      ssr: join(rootPath, configPath),
+      target: 'esnext',
+      write: false,
+    },
+    configFile: false,
+    logLevel: 'error',
+    plugins,
+    root: rootPath,
+    ssr: {noExternal: true},
+  })
+  const [output] = Array.isArray(result) ? result : [result]
+  const chunk = 'output' in output ? output.output[0] : undefined
+  if (chunk?.type !== 'chunk') throw new Error('Expected a chunk')
+
+  const bundlePath = join(rootPath, configPath.replace(/\.ts$/, '.bundle.mjs'))
+  await writeFile(bundlePath, chunk.code)
+  const {default: config} = await import(pathToFileURL(bundlePath).href)
+  return config
+}
+
+const emptyProgram = () => ({body: [], type: 'Program'})
+
 const fileUrl = (path: string) => pathToFileURL(join(rootPath, path)).href
 
 describe('sanityExternalsPlugin', () => {
-  test('externalizes `sanity`, its dependencies and peers as file URLs', () => {
+  test('externalizes `sanity` and its ES module dependencies as file URLs', () => {
     expect(resolveExternal('sanity')).toEqual({
       external: true,
       id: fileUrl('node_modules/sanity/index.js'),
@@ -79,10 +123,28 @@ describe('sanityExternalsPlugin', () => {
       external: true,
       id: fileUrl('node_modules/dep/index.mjs'),
     })
-    expect(resolveExternal('react')).toEqual({
-      external: true,
-      id: fileUrl('node_modules/react/index.js'),
-    })
+  })
+
+  test('imports CommonJS dependencies and peers through a wrapper module', () => {
+    const plugin = sanityExternalsPlugin(rootPath)
+    const load = plugin.load as (id: string) => string | null
+    const resolveId = plugin.resolveId as (
+      id: string,
+      importer: string | undefined,
+      options: {kind: string},
+    ) => unknown
+
+    const wrapperId = resolveExternal('react')
+    expect(wrapperId).toBe(`\0sanity-commonjs-external:${fileUrl('node_modules/react/index.js')}`)
+    expect(load(wrapperId as string)).toContain(
+      `import module from ${JSON.stringify(fileUrl('node_modules/react/index.js'))}`,
+    )
+    expect(
+      resolveId(fileUrl('node_modules/react/index.js'), wrapperId as string, {
+        kind: 'import-statement',
+      }),
+    ).toEqual({external: true, id: fileUrl('node_modules/react/index.js')})
+    expect(load(join(rootPath, 'sanity.config.ts'))).toBeNull()
   })
 
   test('externalizes `require()` calls as paths, with the `require` condition', () => {
@@ -148,6 +210,97 @@ describe('httpsImportsPlugin', () => {
       'Failed to fetch module from https://esm.sh/missing: 404 Not Found',
     )
     fetchSpy.mockRestore()
+  })
+})
+
+describe('bundling with sanityExternalsPlugin', () => {
+  test('gives default imports of CommonJS externals the bundler default export', async () => {
+    await writeFiles({
+      'interop/config.ts': [
+        "import styled, {css} from 'esm-interop'",
+        "import React, {version} from 'react'",
+        "import {named} from 'dep'",
+        'export default {css, div: styled.div, named, react: React.version, version}',
+      ].join('\n'),
+      'node_modules/dep/index.mjs': "export const named = 'named'",
+    })
+
+    const config = await bundleAndImport('interop/config.ts', [sanityExternalsPlugin(rootPath)])
+    expect(config).toEqual({
+      css: 'css',
+      div: 'styled.div',
+      named: 'named',
+      react: '19',
+      version: '19',
+    })
+  })
+})
+
+describe('importMetaPathsPlugin', () => {
+  test('gives every bundled file its own `import.meta` URL, path and directory', async () => {
+    await writeFiles({
+      'meta/config.ts': [
+        "import {info} from './nested/info'",
+        "import {packageJsonPath} from 'meta-pkg'",
+        'export default {info, packageJsonPath, url: import.meta.url}',
+      ].join('\n'),
+      'meta/nested/info.ts': [
+        "const label: string = 'héllo 😀'",
+        'const meta = import.meta',
+        'export const info = {',
+        '  dirname: import.meta.dirname,',
+        '  filename: import.meta . filename,',
+        '  label,',
+        "  literal: 'import.meta.url',",
+        '  metaUrl: meta.url,',
+        '  url: import.meta.url,',
+        '}',
+      ].join('\n'),
+      'node_modules/meta-pkg/index.js': [
+        "import {createRequire} from 'node:module'",
+        'const require = createRequire(import.meta.url)',
+        "export const packageJsonPath = require.resolve('./package.json')",
+      ].join('\n'),
+      'node_modules/meta-pkg/package.json': JSON.stringify({
+        main: 'index.js',
+        name: 'meta-pkg',
+        type: 'module',
+      }),
+    })
+
+    const config = await bundleAndImport('meta/config.ts', [importMetaPathsPlugin()])
+    const bundlePath = join(rootPath, 'meta/config.bundle.mjs')
+
+    const nested = join(rootPath, 'meta/nested/info.ts')
+    expect(config).toEqual({
+      info: {
+        dirname: dirname(nested),
+        filename: nested,
+        label: 'héllo 😀',
+        literal: 'import.meta.url',
+        // Only direct property accesses are rewritten
+        metaUrl: pathToFileURL(bundlePath).href,
+        url: pathToFileURL(nested).href,
+      },
+      packageJsonPath: join(rootPath, 'node_modules/meta-pkg/package.json'),
+      url: fileUrl('meta/config.ts'),
+    })
+  })
+
+  test('leaves virtual modules alone', () => {
+    const transform = importMetaPathsPlugin().transform as {
+      handler: (this: unknown, code: string, id: string) => unknown
+    }
+    expect(transform.handler.call({}, 'export default import.meta.url', '\0virtual')).toBeNull()
+  })
+
+  test('leaves files without `import.meta` paths alone', () => {
+    const transform = importMetaPathsPlugin().transform as {
+      handler: (this: unknown, code: string, id: string) => unknown
+    }
+    expect(
+      transform.handler.call({parse: emptyProgram}, 'export {}', join(rootPath, 'a.ts')),
+    ).toBeNull()
   })
 })
 

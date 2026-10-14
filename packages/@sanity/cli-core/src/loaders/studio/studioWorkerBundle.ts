@@ -1,4 +1,4 @@
-import {isAbsolute, join} from 'node:path'
+import {dirname, isAbsolute, join} from 'node:path'
 import {fileURLToPath, pathToFileURL} from 'node:url'
 
 import {moduleResolve} from 'import-meta-resolve'
@@ -18,6 +18,9 @@ const REQUIRE_CONDITIONS = new Set(['node', 'require'])
  * (react, styled-components…) that `sanity` itself uses out of the bundle, so
  * that the studio config, its plugins and the CLI share one instance of each.
  * Everything else, including other copies of the same packages, is bundled.
+ * A plugin's own nested copy of `sanity` is left out as well: Node.js loads it
+ * as its own instance, as it is in any other setup, and it shares the packages
+ * it resolves to the same files as the studio's `sanity` does.
  *
  * External imports are resolved the way Node.js resolves them (the same way
  * `resolveLocalPackage()` resolves `sanity` for the CLI) and emitted as file
@@ -25,6 +28,12 @@ const REQUIRE_CONDITIONS = new Set(['node', 'require'])
  * they load the exact same files no matter where the importing plugin is
  * installed. Imports that don't resolve to JavaScript (CSS, for instance) are
  * bundled.
+ *
+ * Imports of CommonJS externals go through a small wrapper module that gives
+ * them the default export bundlers (and Vite, before) give them. Node.js makes
+ * `module.exports` the default export, so a default import of
+ * `styled-components` would otherwise get its whole `exports` object instead
+ * of `exports.default`, which transpiled ES modules export.
  *
  * @internal
  */
@@ -44,10 +53,26 @@ export function sanityExternalsPlugin(rootPath: string): Plugin {
     debug('Failed to read the `sanity` package manifest, bundling every dependency: %o', err)
   }
 
+  const commonJsCache = new Map<string, boolean>()
+
   return {
     enforce: 'pre',
+    load(id) {
+      if (!id.startsWith(COMMONJS_EXTERNAL_PREFIX)) return null
+
+      const url = JSON.stringify(id.slice(COMMONJS_EXTERNAL_PREFIX.length))
+      return [
+        `import module from ${url}`,
+        `export * from ${url}`,
+        'export default module && module.__esModule ? module.default : module',
+      ].join('\n')
+    },
     name: 'sanity:studio-worker-externals',
     resolveId(id, importer, {kind}) {
+      if (importer?.startsWith(COMMONJS_EXTERNAL_PREFIX)) {
+        return {external: true, id}
+      }
+
       const packageName = getPackageName(id)
       if (!sanityUrl || !packageName || (packageName !== 'sanity' && !packages.has(packageName))) {
         return null
@@ -71,8 +96,59 @@ export function sanityExternalsPlugin(rootPath: string): Plugin {
         return null
       }
 
-      return {external: true, id: conditions ? fileURLToPath(resolved) : resolved.href}
+      if (conditions) {
+        return {external: true, id: fileURLToPath(resolved)}
+      }
+      if (isCommonJsFile(resolved, commonJsCache)) {
+        return `${COMMONJS_EXTERNAL_PREFIX}${resolved.href}`
+      }
+      return {external: true, id: resolved.href}
     },
+  }
+}
+
+const COMMONJS_EXTERNAL_PREFIX = '\0sanity-commonjs-external:'
+
+/**
+ * Whether Node.js loads the given `.js`, `.cjs` or `.mjs` file as CommonJS,
+ * going by its extension or the `type` of the nearest `package.json`.
+ */
+function isCommonJsFile(url: URL, cache: Map<string, boolean>): boolean {
+  if (url.pathname.endsWith('.cjs')) return true
+  if (url.pathname.endsWith('.mjs')) return false
+
+  let dir = dirname(fileURLToPath(url))
+  const visited: string[] = []
+  let commonJs = true
+  for (;;) {
+    const cached = cache.get(dir)
+    if (cached !== undefined) {
+      commonJs = cached
+      break
+    }
+
+    visited.push(dir)
+    const manifest = readPackageJson(join(dir, 'package.json'))
+    if (manifest) {
+      commonJs = manifest.type !== 'module'
+      break
+    }
+
+    const parent = dirname(dir)
+    if (parent === dir) break
+    dir = parent
+  }
+
+  for (const path of visited) cache.set(path, commonJs)
+  return commonJs
+}
+
+function readPackageJson(path: string): Record<string, unknown> | undefined {
+  try {
+    const manifest = readJsonFileSync(path)
+    return isRecord(manifest) ? manifest : undefined
+  } catch {
+    return undefined
   }
 }
 
@@ -94,6 +170,81 @@ export function httpsImportsPlugin(fetchModule = fetchHttpModule): Plugin {
       if (importer && isHttpsUrl(importer)) return new URL(id, importer).href
       return null
     },
+  }
+}
+
+const IMPORT_META_PROPERTIES = new Set(['dirname', 'filename', 'url'])
+
+/**
+ * Replaces `import.meta.url`, `import.meta.filename` and `import.meta.dirname`
+ * in every bundled file with that file's own URL, path and directory. The
+ * bundle runs as the studio config, so these would otherwise all point at the
+ * config, breaking `new URL('./file', import.meta.url)` and
+ * `createRequire(import.meta.url)` in files that live elsewhere.
+ *
+ * @internal
+ */
+export function importMetaPathsPlugin(): Plugin {
+  return {
+    enforce: 'post',
+    name: 'sanity:studio-worker-import-meta-paths',
+    transform: {
+      filter: {code: /import\.meta\s*\.\s*(?:dirname|filename|url)\b/},
+      handler(code, id) {
+        const filename = id.split('?')[0]
+        if (!isAbsolute(filename)) return null
+
+        const values: Record<string, string> = {
+          dirname: dirname(filename),
+          filename,
+          url: pathToFileURL(filename).href,
+        }
+        const replacements: {end: number; start: number; value: string}[] = []
+        walk(this.parse(code), (node) => {
+          if (
+            node.type === 'MemberExpression' &&
+            !node.computed &&
+            isRecord(node.object) &&
+            node.object.type === 'MetaProperty' &&
+            isRecord(node.object.meta) &&
+            node.object.meta.name === 'import' &&
+            isRecord(node.property) &&
+            typeof node.property.name === 'string' &&
+            IMPORT_META_PROPERTIES.has(node.property.name) &&
+            typeof node.start === 'number' &&
+            typeof node.end === 'number'
+          ) {
+            replacements.push({
+              end: node.end,
+              start: node.start,
+              value: JSON.stringify(values[node.property.name]),
+            })
+          }
+        })
+        if (replacements.length === 0) return null
+
+        let result = ''
+        let offset = 0
+        for (const {end, start, value} of replacements.toSorted((a, b) => a.start - b.start)) {
+          result += `${code.slice(offset, start)}${value}`
+          offset = end
+        }
+        return {code: result + code.slice(offset), map: null}
+      },
+    },
+  }
+}
+
+function walk(node: unknown, visit: (node: Record<string, unknown>) => void): void {
+  if (Array.isArray(node)) {
+    for (const child of node) walk(child, visit)
+    return
+  }
+  if (!isRecord(node)) return
+
+  if (typeof node.type === 'string') visit(node)
+  for (const key in node) {
+    if (key !== 'parent') walk(node[key], visit)
   }
 }
 
