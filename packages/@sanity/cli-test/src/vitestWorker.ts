@@ -46,7 +46,7 @@ function esbuildOptions(filePath: string, outputFile: string): BuildOptions {
  * @returns The output file path
  */
 async function bundleWorkerFile(filePath: string): Promise<string> {
-  const outputFile = filePath.replace(/\.ts$/, '.js')
+  const outputFile = filePath.replace(/\.tsx?$/, '.js')
 
   await build(esbuildOptions(filePath, outputFile))
 
@@ -80,7 +80,7 @@ async function setupBundling(filePaths: string[]) {
  */
 async function setupWatchMode(files: string[]) {
   for (const filePath of files) {
-    const outputFile = filePath.replace(/\.ts$/, '.js')
+    const outputFile = filePath.replace(/\.tsx?$/, '.js')
 
     const ctx = await context(esbuildOptions(filePath, outputFile))
 
