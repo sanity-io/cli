@@ -64,6 +64,25 @@ describe('configArtifacts', () => {
     expect(source).not.toContain('window.parent')
   })
 
+  test('arms a reload-unless-ACK fallback on the public vite:afterUpdate event', () => {
+    const [artifact] = configArtifacts(
+      config([
+        {name: 'description', src: './src/description.ts', title: 'Description'},
+        {name: 'geo', src: './fields/geo.tsx', title: 'Geo'},
+      ]),
+    )
+    const source = artifact.source({resolveImport})
+    expect(source).toContain("import.meta.hot.on('vite:afterUpdate'")
+    // Field updates are recognized by the declared srcs (normalized of their
+    // leading './'), not by a directory convention — fields can live anywhere.
+    expect(source).toContain('["src/description.ts","fields/geo.tsx"]')
+    expect(source).not.toContain('"./src/description.ts"')
+    // Reload unless the host ACKs the in-page apply within the window.
+    expect(source).toContain('window.location.reload()')
+    expect(source).toContain('500')
+    expect(source).toContain("window.addEventListener('sanity:media-library-fields-hmr-ack'")
+  })
+
   test('returns nothing when the app has no config', () => {
     expect(configArtifacts(undefined)).toEqual([])
     expect(configArtifacts(undefined, {islandRuntime: true})).toEqual([])

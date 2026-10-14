@@ -115,7 +115,7 @@ describe('workbenchVitePlugins', () => {
     expect(mockFederation).toHaveBeenCalledWith(expect.objectContaining({exposes: {config}}))
   })
 
-  test('prepends the ui5 stub and fields-HMR plugins for a config app', async () => {
+  test('prepends the sui reset strip plugin for a config app', async () => {
     const config = {
       appType: 'media-library' as const,
       fields: [{name: 'description', src: './src/description.ts', title: 'Description'}],
@@ -127,8 +127,7 @@ describe('workbenchVitePlugins', () => {
       isApp: true,
     })
     expect(result).toEqual([
-      expect.objectContaining({name: 'sanity/stub-ui5-stylesheet'}),
-      expect.objectContaining({name: 'sanity/media-library-fields-hmr'}),
+      expect.objectContaining({name: 'sanity/strip-sui-global-reset'}),
       {name: 'sanity/federation'},
     ])
   })

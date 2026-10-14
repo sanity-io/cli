@@ -2,6 +2,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 
 import {type WorkbenchExposes} from '../../../resolveWorkbenchApp.js'
+import {isMediaLibraryConfigApp} from '../configs/configApp.js'
 import {hasIslandRuntime, ISLAND_RUNTIME_MODULE} from '../configs/islandRuntime.js'
 
 /**
@@ -81,7 +82,7 @@ export function workbenchOptimizeDeps(options: {
   // installed `sanity` ships the entry — an unresolvable `include` name crashes
   // the dev server, and the expose is skipped in that case anyway.
   const islandRuntimeDeps =
-    exposes?.config !== undefined && hasIslandRuntime(cwd) ? [ISLAND_RUNTIME_MODULE] : []
+    isMediaLibraryConfigApp(exposes) && hasIslandRuntime(cwd) ? [ISLAND_RUNTIME_MODULE] : []
 
   return {
     entries: [...new Set(entries)],

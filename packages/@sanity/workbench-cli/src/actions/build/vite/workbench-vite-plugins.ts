@@ -11,10 +11,10 @@ import {readPackageJson} from '@sanity/cli-core'
 import {type PluginOption} from 'vite'
 
 import {type WorkbenchExposes} from '../../../resolveWorkbenchApp.js'
+import {isMediaLibraryConfigApp} from '../configs/configApp.js'
 import {federation} from './plugin.js'
-import {mediaLibraryFieldsHmrPlugin} from './plugins/plugin-media-library-fields-hmr.js'
 import {sanityAppId} from './plugins/plugin-sanity-app-id.js'
-import {stubUi5Stylesheet} from './plugins/plugin-stub-ui5-stylesheet.js'
+import {stripSuiGlobalReset} from './plugins/plugin-strip-sui-global-reset.js'
 
 interface WorkbenchViteOptions {
   /** Project root — read for the federation remote name, and the plugin workDir. */
@@ -76,11 +76,12 @@ export async function workbenchVitePlugins(options: WorkbenchViteOptions): Promi
     workDir: cwd,
   })
 
-  // Media Library config apps bundle the `sanity` barrel into their remote (via
-  // field modules and the island runtime), so stub its one host-page-hostile
-  // stylesheet and wire field-module HMR through to the Media Library host.
-  const configAppPlugins: PluginOption[] =
-    exposes?.config === undefined ? [] : [stubUi5Stylesheet(cwd), mediaLibraryFieldsHmrPlugin()]
+  // Media Library config apps run their modules inside the host's page, so
+  // the `sanity` barrel's document-wide CSS reset must not travel with the
+  // bundle (see the plugin for the full why).
+  const configAppPlugins: PluginOption[] = isMediaLibraryConfigApp(exposes)
+    ? [stripSuiGlobalReset()]
+    : []
 
   return [
     ...configAppPlugins,
