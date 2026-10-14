@@ -1,9 +1,16 @@
+import {cp, rm} from 'node:fs/promises'
+
 import {getCliConfig} from '@sanity/cli-core'
 import {testFixture} from '@sanity/cli-test'
-import {beforeAll, describe, expect, test} from 'vitest'
+import {beforeAll, describe, expect, test, vi} from 'vitest'
 
 import {extractGraphQLAPIs} from '../../../../src/actions/graphql/extractGraphQLAPIs.js'
 import {getGraphQLAPIs} from '../../../../src/actions/graphql/getGraphQLAPIs.js'
+
+const schemaCallbacksFixture = new URL(
+  '../../../__fixtures__/native-dependencies/schema-callbacks/',
+  import.meta.url,
+)
 
 describe('graphql APIs integration', {timeout: 60_000}, () => {
   let cwd: string
@@ -48,6 +55,27 @@ describe('graphql APIs integration', {timeout: 60_000}, () => {
   })
 
   describe('extractGraphQLAPIs', () => {
+    test.each([undefined, '1'])(
+      'preserves nested plugin schema callbacks and CommonJS UI imports with native dependencies %s',
+      async (value) => {
+        const studio = await testFixture('basic-studio')
+        vi.stubEnv('SANITY_CLI_GRAPHQL_NATIVE_DEPENDENCIES', value)
+        try {
+          await cp(schemaCallbacksFixture, studio, {recursive: true})
+          const apis = await extractGraphQLAPIs(studio, {})
+          expect(apis).toHaveLength(1)
+          expect(apis[0].schemaErrors).toBeUndefined()
+          expect(apis[0].extractionError).toBeUndefined()
+          expect(apis[0].extracted?.types.map((type) => type.name)).toEqual(
+            expect.arrayContaining(['ChildDocument', 'ParentDocument', 'RootDocument']),
+          )
+        } finally {
+          vi.unstubAllEnvs()
+          await rm(studio, {force: true, recursive: true})
+        }
+      },
+    )
+
     test('resolves and extracts both APIs from multi-workspace config with workspace-specific types and interfaces', async () => {
       const apis = await extractGraphQLAPIs(cwd, {})
 

@@ -1,7 +1,10 @@
 {
   "extends": "@repo/tsconfig/base.json",
   "include": ["./src", "./test"],
-  "exclude": ["./test/__fixtures__/cli-configs/**/*"],
+  "exclude": [
+    "./test/__fixtures__/cli-configs/**/*",
+    "./test/__fixtures__/native-dependencies/**/*"
+  ],
   "compilerOptions": {
     "rootDir": ".",
     "jsx": "react-jsx",

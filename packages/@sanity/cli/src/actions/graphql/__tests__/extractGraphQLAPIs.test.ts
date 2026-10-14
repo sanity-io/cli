@@ -41,6 +41,7 @@ vi.mock('../SchemaError.js', () => ({
 
 describe('extractGraphQLAPIs', () => {
   beforeEach(() => {
+    vi.stubEnv('SANITY_CLI_GRAPHQL_NATIVE_DEPENDENCIES', undefined)
     configMocks.getCliConfig.mockResolvedValue({
       api: {projectId: 'test-project'},
       graphql: [],
@@ -50,6 +51,7 @@ describe('extractGraphQLAPIs', () => {
     mockIsMainThread.mockReturnValue(true)
   })
   afterEach(() => {
+    vi.unstubAllEnvs()
     vi.clearAllMocks()
   })
 
@@ -74,6 +76,7 @@ describe('extractGraphQLAPIs', () => {
       }),
       expect.objectContaining({
         name: 'extractGraphQLAPIs',
+        nativeDependencies: false,
         studioRootPath: '/test/workdir',
         workerData: expect.objectContaining({
           configPath: '/path/to/sanity.config.ts',
@@ -84,6 +87,24 @@ describe('extractGraphQLAPIs', () => {
       }),
     )
   })
+
+  test.each([
+    {enabled: false, value: undefined},
+    {enabled: false, value: ''},
+    {enabled: false, value: '0'},
+    {enabled: false, value: 'true'},
+    {enabled: true, value: '1'},
+  ])(
+    'sets native dependencies to $enabled for environment value $value',
+    async ({enabled, value}) => {
+      vi.stubEnv('SANITY_CLI_GRAPHQL_NATIVE_DEPENDENCIES', value)
+      await extractGraphQLAPIs('/test/workdir', {})
+      expect(taskMocks.studioWorkerTask).toHaveBeenCalledWith(
+        expect.any(URL),
+        expect.objectContaining({nativeDependencies: enabled}),
+      )
+    },
+  )
 
   test('passes undefined options when not specified', async () => {
     taskMocks.studioWorkerTask.mockResolvedValue({apis: []})

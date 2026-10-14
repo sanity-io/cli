@@ -49,6 +49,7 @@ describe('studioWorkerTask', () => {
         env: {
           CUSTOM_ENV: 'value',
           STUDIO_WORKER_APPLICATION_ID: 'studio-app',
+          STUDIO_WORKER_NATIVE_DEPENDENCIES: '0',
           STUDIO_WORKER_ONE_SHOT: '1',
           STUDIO_WORKER_STUDIO_ROOT_PATH: '/studio',
           STUDIO_WORKER_TASK_FILE: TASK_PATH,
@@ -59,6 +60,17 @@ describe('studioWorkerTask', () => {
         workerData: {input: true},
       },
     )
+  })
+
+  test('opts in to native dependencies without leaking the option to Worker', async () => {
+    mockPromisifyWorker.mockResolvedValue({})
+    await studioWorkerTask(TASK_URL, {
+      name: 'example',
+      nativeDependencies: true,
+      studioRootPath: '/studio',
+    })
+    expect(mockPromisifyWorker.mock.calls[0][1].env.STUDIO_WORKER_NATIVE_DEPENDENCIES).toBe('1')
+    expect(mockPromisifyWorker.mock.calls[0][1]).not.toHaveProperty('nativeDependencies')
   })
 
   test('returns ordinary task messages', async () => {
@@ -126,6 +138,7 @@ describe('createStudioWorker', () => {
         env: {
           CUSTOM_ENV: 'value',
           STUDIO_WORKER_APPLICATION_ID: 'studio-app',
+          STUDIO_WORKER_NATIVE_DEPENDENCIES: '0',
           STUDIO_WORKER_STUDIO_ROOT_PATH: '/studio',
           STUDIO_WORKER_TASK_FILE: TASK_PATH,
         },

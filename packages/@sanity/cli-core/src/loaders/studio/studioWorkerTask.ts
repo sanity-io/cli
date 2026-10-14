@@ -20,6 +20,9 @@ interface StudioWorkerTaskOptions extends RequireProps<WorkerOptions, 'name'> {
 
   applicationId?: string
 
+  /** Load published Sanity dependencies through Node unless custom Vite configuration is present. */
+  nativeDependencies?: boolean
+
   /** Optional timeout in milliseconds. If the worker does not respond within this time, the promise is rejected. */
   timeout?: number
 }
@@ -62,7 +65,7 @@ export function studioWorkerTask<T = unknown>(
     throw new Error('Studio worker tasks must include `.worker.(js|ts)` in path')
   }
 
-  const {applicationId, studioRootPath, timeout, ...workerOptions} = options
+  const {applicationId, nativeDependencies, studioRootPath, timeout, ...workerOptions} = options
   const workerPromise = promisifyWorker<StudioWorkerErrorMessage | T>(
     new URL('studioWorkerLoader.worker.js', import.meta.url),
     {
@@ -70,6 +73,7 @@ export function studioWorkerTask<T = unknown>(
       env: {
         ...(isRecord(workerOptions.env) ? workerOptions.env : process.env),
         ...(applicationId ? {STUDIO_WORKER_APPLICATION_ID: applicationId} : {}),
+        STUDIO_WORKER_NATIVE_DEPENDENCIES: nativeDependencies ? '1' : '0',
         // Tasks spawned here are one-shot: the loader closes its Vite
         // (rolldown) server before any message reaches the main thread, so
         // teardown can never race rolldown's native threads (SIGABRT on
@@ -130,13 +134,14 @@ export function createStudioWorker(filePath: URL, options: StudioWorkerTaskOptio
     throw new Error('Studio worker tasks must include `.worker.(js|ts)` in path')
   }
 
-  const {applicationId, ...workerOptions} = options
+  const {applicationId, nativeDependencies, ...workerOptions} = options
 
   return new Worker(new URL('studioWorkerLoader.worker.js', import.meta.url), {
     ...workerOptions,
     env: {
       ...(isRecord(workerOptions.env) ? workerOptions.env : process.env),
       ...(applicationId ? {STUDIO_WORKER_APPLICATION_ID: applicationId} : {}),
+      STUDIO_WORKER_NATIVE_DEPENDENCIES: nativeDependencies ? '1' : '0',
       STUDIO_WORKER_STUDIO_ROOT_PATH: options.studioRootPath,
       STUDIO_WORKER_TASK_FILE: normalizedFilePath,
     },

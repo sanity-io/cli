@@ -37,6 +37,7 @@ export async function extractGraphQLAPIs(
     new URL('extractGraphQLAPIs.worker.js', import.meta.url),
     {
       name: 'extractGraphQLAPIs',
+      nativeDependencies: process.env.SANITY_CLI_GRAPHQL_NATIVE_DEPENDENCIES === '1',
       studioRootPath: workDir,
       workerData: {
         cliConfig: extractGraphQLConfig(cliConfig),
@@ -115,7 +116,7 @@ export async function extractGraphQLAPIsWorker(
   // Resolve which GraphQL APIs to deploy from workspace + CLI config
   const resolvedApis = resolveGraphQLApis({cliConfig, workspaces})
 
-  // Get createSchema from sanity (0ms — already cached by ViteNodeRunner)
+  // Reuse the Sanity instance already loaded for the Studio configuration.
   const {createSchema} = await deps.resolveLocalPackage<typeof import('sanity')>('sanity', workDir)
 
   // Build default schema to identify built-in types that should be filtered out

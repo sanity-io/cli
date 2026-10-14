@@ -40,6 +40,10 @@
       "source": "./src/_exports/_internal/extract.ts",
       "default": "./dist/_exports/_internal/extract.js"
     },
+    "./_internal/schema-validation": {
+      "source": "./src/_exports/_internal/schema-validation.ts",
+      "default": "./dist/_exports/_internal/schema-validation.js"
+    },
     "./_internal/manifest": {
       "source": "./src/_exports/_internal/manifest.ts",
       "default": "./dist/_exports/_internal/manifest.js"

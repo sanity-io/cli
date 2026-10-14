@@ -1,6 +1,7 @@
 import {isMainThread, parentPort, workerData} from 'node:worker_threads'
 
-import {getStudioWorkspaces, resolveLocalPackage} from '@sanity/cli-core'
+import {getStudioWorkspaces} from '@sanity/cli-core/config'
+import {resolveLocalPackage} from '@sanity/cli-core/package-manager'
 
 import {extractGraphQLAPIsWorker, type ExtractWorkerData} from './extractGraphQLAPIs.js'
 

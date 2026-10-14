@@ -17,6 +17,7 @@ import {isNotFoundError} from '../../errors/NotFoundError.js'
 import {getStudioEnvironmentVariables} from '../../util/environment/getStudioEnvironmentVariables.js'
 import {setupBrowserStubs} from '../../util/environment/setupBrowserStubs.js'
 import {isRecord} from '../../util/isRecord.js'
+import {createNativeStudioDependencies} from './nativeStudioDependencies.js'
 import {skipDependencySourcemapsPlugin} from './skipDependencySourcemapsPlugin.js'
 import {StudioModuleEvaluator} from './studioModuleEvaluator.js'
 import {createOneShotWorkerLifecycle} from './studioWorkerLifecycle.js'
@@ -80,6 +81,15 @@ function isHttpsUrl(id: string): boolean {
   return id.startsWith('https://')
 }
 
+// User Vite hooks may transform dependency code; keep those dependencies in Vite.
+const nativeDependencies =
+  process.env.STUDIO_WORKER_NATIVE_DEPENDENCIES === '1' &&
+  cliConfig &&
+  !cliConfig.vite &&
+  !applicationId
+    ? createNativeStudioDependencies(rootPath)
+    : undefined
+
 const defaultViteConfig: InlineConfig = {
   build: {target: 'node'},
   configFile: false,
@@ -104,7 +114,7 @@ const defaultViteConfig: InlineConfig = {
     noDiscovery: true,
   },
   // Dependency source maps are the largest contributor to the worker's peak memory
-  plugins: [skipDependencySourcemapsPlugin()],
+  plugins: [skipDependencySourcemapsPlugin(), nativeDependencies?.plugin],
   resolve: {
     // Resolve the studio's tsconfig `paths` natively (Vite 8+), replacing the
     // custom alias mapping and the need for a user-added `vite-tsconfig-paths`.
@@ -116,10 +126,7 @@ const defaultViteConfig: InlineConfig = {
     watch: null,
   },
   ssr: {
-    /**
-     * We don't want to externalize any dependencies, we want everything to run thru vite.
-     * Especially for CJS compatibility, etc.
-     */
+    // Dependencies outside the explicit native set still need Vite's transforms.
     noExternal: true,
   },
 }
@@ -215,9 +222,12 @@ try {
         importer ?? undefined,
       )
       if (resolved?.id && !resolved.id.startsWith('\0')) {
-        id = pathToFileURL(resolved.id).href
+        id = resolved.id.startsWith('file:') ? resolved.id : pathToFileURL(resolved.id).href
       }
     }
+
+    const external = nativeDependencies?.externalize(id)
+    if (external) return {externalize: external, type: 'module'}
 
     return defaultFetchModule(id, importer, options)
   }
