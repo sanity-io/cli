@@ -72,14 +72,16 @@ describe('federation media-library config exposes', () => {
     expect(mockModuleFederation).toHaveBeenCalledWith(
       expect.objectContaining({
         exposes: expect.objectContaining({
-          './configs/installation_config': path.join(
+          // path.resolve, matching the artifact writer: on Windows it adds the
+          // drive prefix that path.join('/project', ...) would not.
+          './configs/installation_config': path.resolve(
             workDir,
             '.sanity',
             'federation',
             'configs',
             'installation_config.js',
           ),
-          './island-runtime': path.join(
+          './island-runtime': path.resolve(
             workDir,
             '.sanity',
             'federation',
