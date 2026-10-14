@@ -1,0 +1,139 @@
+import {createRequire} from 'node:module'
+import {dirname} from 'node:path'
+import {fileURLToPath, pathToFileURL} from 'node:url'
+
+import {
+  ESModulesEvaluator,
+  type EvaluatedModuleNode,
+  type ModuleEvaluator,
+  type ModuleRunnerContext,
+  ssrModuleExportsKey,
+} from 'vite/module-runner'
+
+function isPrimitive(value: unknown): boolean {
+  return !value || (typeof value !== 'object' && typeof value !== 'function')
+}
+
+function defineExport(exports: Record<string, unknown>, key: string, getter: () => unknown) {
+  Object.defineProperty(exports, key, {
+    configurable: true,
+    enumerable: true,
+    get: getter,
+  })
+}
+
+function exportAll(exports: Record<string, unknown>, sourceModule: unknown) {
+  if (exports === sourceModule) return
+  if (isPrimitive(sourceModule) || Array.isArray(sourceModule) || sourceModule instanceof Promise) {
+    return
+  }
+
+  for (const key in sourceModule as Record<string, unknown>) {
+    if (key !== 'default' && !(key in exports)) {
+      try {
+        defineExport(exports, key, () => (sourceModule as Record<string, unknown>)[key])
+      } catch {
+        // ignore non-configurable exports
+      }
+    }
+  }
+}
+
+/**
+ * Module evaluator that can execute raw CommonJS modules in addition to
+ * Vite's SSR-transformed ESM. Matches vite-node's CJS execution behavior,
+ * which ModuleRunner's default ESModulesEvaluator does not support.
+ */
+export class StudioModuleEvaluator implements ModuleEvaluator {
+  private readonly esmEvaluator = new ESModulesEvaluator()
+  readonly startOffset = this.esmEvaluator.startOffset
+
+  runExternalModule(filepath: string): Promise<unknown> {
+    return this.esmEvaluator.runExternalModule(filepath)
+  }
+
+  runInlinedModule(
+    context: ModuleRunnerContext,
+    code: string,
+    module: Readonly<EvaluatedModuleNode>,
+  ): Promise<void> {
+    return this.runCommonJsModule(context, code, module)
+  }
+
+  private async runCommonJsModule(
+    context: ModuleRunnerContext,
+    code: string,
+    module: Readonly<EvaluatedModuleNode>,
+  ): Promise<void> {
+    const modulePath = module.file || module.id
+    const href = pathToFileURL(modulePath).href
+    const __filename = fileURLToPath(href)
+    const __dirname = dirname(__filename)
+
+    const exports = context[ssrModuleExportsKey]
+    const moduleNotDefined = Symbol('not defined')
+    let moduleExports: unknown = moduleNotDefined
+
+    const cjsExports = new Proxy(exports, {
+      get: (target, property, receiver) => {
+        if (Reflect.has(target, property)) return Reflect.get(target, property, receiver)
+        return Reflect.get(Object.prototype, property, receiver)
+      },
+      getPrototypeOf: () => Object.prototype,
+      set: (_, property, value) => {
+        // Keep the module default when CommonJS aliases it back to `module.exports`.
+        if (property === 'default' && cjsExports !== value) {
+          exportAll(exports, value)
+          exports.default = value
+          return true
+        }
+        if (!Reflect.has(exports, 'default')) {
+          exports.default = {}
+        }
+        if (moduleExports !== moduleNotDefined && isPrimitive(moduleExports)) {
+          defineExport(exports, String(property), () => {})
+          return true
+        }
+        if (!isPrimitive(exports.default)) {
+          ;(exports.default as Record<string, unknown>)[String(property)] = value
+        }
+        if (property !== 'default') {
+          defineExport(exports, String(property), () => value)
+        }
+        return true
+      },
+    })
+
+    const moduleProxy = {
+      get exports() {
+        return cjsExports
+      },
+      set exports(value: unknown) {
+        exportAll(exports, value)
+        exports.default = value
+        moduleExports = value
+      },
+    }
+
+    const cjsContext: Record<string, unknown> = {
+      ...context,
+      __dirname,
+      __filename,
+      exports: cjsExports,
+      module: moduleProxy,
+      require: createRequire(href),
+    }
+
+    let normalizedCode = code
+    if (normalizedCode[0] === '#') {
+      normalizedCode = normalizedCode.replace(/^#!.*/, (line) => ' '.repeat(line.length))
+    }
+
+    const AsyncFunction = async function () {}.constructor as new (
+      ...args: string[]
+    ) => (...args: unknown[]) => Promise<unknown>
+    const parameterNames = Object.keys(cjsContext)
+    const runner = new AsyncFunction(...parameterNames, `"use strict";{\n${normalizedCode}\n}`)
+    await runner(...parameterNames.map((name) => cjsContext[name]))
+  }
+}

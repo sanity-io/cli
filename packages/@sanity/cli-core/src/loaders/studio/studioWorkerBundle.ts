@@ -1,4 +1,4 @@
-import {dirname, isAbsolute, join} from 'node:path'
+import {dirname, extname, isAbsolute, join} from 'node:path'
 import {fileURLToPath, pathToFileURL} from 'node:url'
 
 import {moduleResolve} from 'import-meta-resolve'
@@ -12,6 +12,7 @@ import {readJsonFileSync} from '../../util/readJsonFileSync.js'
 const debug = subdebug('studio:worker')
 
 const REQUIRE_CONDITIONS = new Set(['node', 'require'])
+const JAVASCRIPT_EXTENSIONS = new Set(['', '.cjs', '.js', '.mjs'])
 
 /**
  * Leaves `sanity` and the copies of its dependencies and peer dependencies
@@ -90,7 +91,7 @@ export function sanityExternalsPlugin(rootPath: string): Plugin {
       const resolved = resolve(importer && isAbsolute(importer) ? pathToFileURL(importer) : rootUrl)
       if (
         !resolved ||
-        !/\.[cm]?js$/.test(resolved.pathname) ||
+        !JAVASCRIPT_EXTENSIONS.has(extname(resolved.pathname)) ||
         (packageName !== 'sanity' && resolve(sanityUrl)?.href !== resolved.href)
       ) {
         return null
@@ -110,7 +111,7 @@ export function sanityExternalsPlugin(rootPath: string): Plugin {
 const COMMONJS_EXTERNAL_PREFIX = '\0sanity-commonjs-external:'
 
 /**
- * Whether Node.js loads the given `.js`, `.cjs` or `.mjs` file as CommonJS,
+ * Whether Node.js loads the given JavaScript file as CommonJS,
  * going by its extension or the `type` of the nearest `package.json`.
  */
 function isCommonJsFile(url: URL, cache: Map<string, boolean>): boolean {
@@ -173,11 +174,9 @@ export function httpsImportsPlugin(fetchModule = fetchHttpModule): Plugin {
   }
 }
 
-const IMPORT_META_PROPERTIES = new Set(['dirname', 'filename', 'url'])
-
 /**
- * Replaces `import.meta.url`, `import.meta.filename` and `import.meta.dirname`
- * in every bundled file with that file's own URL, path and directory. The
+ * Gives each bundled file its own `import.meta` object with the original URL,
+ * path and directory, including computed accesses and aliases. The
  * bundle runs as the studio config, so these would otherwise all point at the
  * config, breaking `new URL('./file', import.meta.url)` and
  * `createRequire(import.meta.url)` in files that live elsewhere.
@@ -189,7 +188,7 @@ export function importMetaPathsPlugin(): Plugin {
     enforce: 'post',
     name: 'sanity:studio-worker-import-meta-paths',
     transform: {
-      filter: {code: /import\.meta\s*\.\s*(?:dirname|filename|url)\b/},
+      filter: {code: /import\s*\.\s*meta/},
       handler(code, id) {
         const path = id.split('?')[0]
         if (!isAbsolute(path)) return null
@@ -202,25 +201,30 @@ export function importMetaPathsPlugin(): Plugin {
           filename,
           url: url.href,
         }
+        let metaName = '__sanity_import_meta__'
+        while (code.includes(metaName)) metaName += '_'
         const replacements: {end: number; start: number; value: string}[] = []
-        walk(this.parse(code), (node) => {
+        walk(this.parse(code), (node, parent) => {
+          // Leave Vite's compile-time env and HMR expressions visible to its transforms.
           if (
-            node.type === 'MemberExpression' &&
-            !node.computed &&
-            isRecord(node.object) &&
-            node.object.type === 'MetaProperty' &&
-            isRecord(node.object.meta) &&
-            node.object.meta.name === 'import' &&
-            isRecord(node.property) &&
-            typeof node.property.name === 'string' &&
-            IMPORT_META_PROPERTIES.has(node.property.name) &&
+            parent?.type === 'MemberExpression' &&
+            !parent.computed &&
+            isRecord(parent.property) &&
+            (parent.property.name === 'env' || parent.property.name === 'hot')
+          ) {
+            return
+          }
+          if (
+            node.type === 'MetaProperty' &&
+            isRecord(node.meta) &&
+            node.meta.name === 'import' &&
             typeof node.start === 'number' &&
             typeof node.end === 'number'
           ) {
             replacements.push({
               end: node.end,
               start: node.start,
-              value: JSON.stringify(values[node.property.name]),
+              value: metaName,
             })
           }
         })
@@ -232,22 +236,32 @@ export function importMetaPathsPlugin(): Plugin {
           result += `${code.slice(offset, start)}${value}`
           offset = end
         }
-        return {code: result + code.slice(offset), map: null}
+        const declaration = `const ${metaName} = {__proto__: null, ...import.meta, env: import.meta.env, ...${JSON.stringify(values)}};\n`
+        const transformed = result + code.slice(offset)
+        const shebangEnd = transformed.startsWith('#!') ? transformed.indexOf('\n') + 1 : 0
+        return {
+          code: transformed.slice(0, shebangEnd) + declaration + transformed.slice(shebangEnd),
+          map: null,
+        }
       },
     },
   }
 }
 
-function walk(node: unknown, visit: (node: Record<string, unknown>) => void): void {
+function walk(
+  node: unknown,
+  visit: (node: Record<string, unknown>, parent?: Record<string, unknown>) => void,
+  parent?: Record<string, unknown>,
+): void {
   if (Array.isArray(node)) {
-    for (const child of node) walk(child, visit)
+    for (const child of node) walk(child, visit, parent)
     return
   }
   if (!isRecord(node)) return
 
-  if (typeof node.type === 'string') visit(node)
+  if (typeof node.type === 'string') visit(node, parent)
   for (const key in node) {
-    if (key !== 'parent') walk(node[key], visit)
+    if (key !== 'parent') walk(node[key], visit, node)
   }
 }
 

@@ -1,7 +1,9 @@
-import {mkdir, mkdtemp, rm, writeFile} from 'node:fs/promises'
+import {execFile} from 'node:child_process'
+import {mkdir, mkdtemp, realpath, rm, writeFile} from 'node:fs/promises'
 import {tmpdir} from 'node:os'
 import {dirname, join} from 'node:path'
 import {pathToFileURL} from 'node:url'
+import {promisify} from 'node:util'
 
 import {build, type Plugin} from 'vite'
 import {afterAll, beforeAll, describe, expect, test, vi} from 'vitest'
@@ -23,7 +25,7 @@ async function writeFiles(files: Record<string, string>) {
 }
 
 beforeAll(async () => {
-  rootPath = await mkdtemp(join(tmpdir(), 'studio-worker-bundle-'))
+  rootPath = await realpath(await mkdtemp(join(tmpdir(), 'studio-worker-bundle-')))
   await writeFiles({
     'node_modules/dep/index.cjs': 'module.exports = {}',
     'node_modules/dep/index.mjs': 'export {}',
@@ -44,6 +46,17 @@ beforeAll(async () => {
       main: 'index.js',
       name: 'esm-interop',
     }),
+    'node_modules/extensionless-cjs/index': 'module.exports = {}',
+    'node_modules/extensionless-cjs/package.json': JSON.stringify({
+      exports: './index',
+      name: 'extensionless-cjs',
+    }),
+    'node_modules/extensionless-esm/index': 'export default {}',
+    'node_modules/extensionless-esm/package.json': JSON.stringify({
+      exports: './index',
+      name: 'extensionless-esm',
+      type: 'module',
+    }),
     'node_modules/other/index.js': 'export {}',
     'node_modules/other/node_modules/dep/index.js': 'export {}',
     'node_modules/other/node_modules/dep/package.json': JSON.stringify({
@@ -53,9 +66,17 @@ beforeAll(async () => {
     'node_modules/other/package.json': JSON.stringify({main: 'index.js', name: 'other'}),
     'node_modules/react/index.js': "exports.version = '19'",
     'node_modules/react/package.json': JSON.stringify({main: 'index.js', name: 'react'}),
-    'node_modules/sanity/index.js': 'export {}',
+    'node_modules/sanity/index.js': [
+      "export {default as esmShared} from 'extensionless-esm'",
+      "export {default as cjsShared} from 'extensionless-cjs'",
+    ].join('\n'),
     'node_modules/sanity/package.json': JSON.stringify({
-      dependencies: {dep: '1.0.0', 'esm-interop': '1.0.0'},
+      dependencies: {
+        dep: '1.0.0',
+        'esm-interop': '1.0.0',
+        'extensionless-cjs': '1.0.0',
+        'extensionless-esm': '1.0.0',
+      },
       exports: {'.': './index.js', './package.json': './package.json'},
       name: 'sanity',
       peerDependencies: {react: '*'},
@@ -85,7 +106,7 @@ function resolveExternal(
 /**
  * Bundles a config like the studio worker does, and runs the bundle next to it
  */
-async function bundleAndImport(configPath: string, plugins: Plugin[]): Promise<unknown> {
+async function bundleConfig(configPath: string, plugins: Plugin[]): Promise<string> {
   const result = await build({
     build: {
       rolldownOptions: {output: {codeSplitting: false}},
@@ -105,6 +126,11 @@ async function bundleAndImport(configPath: string, plugins: Plugin[]): Promise<u
 
   const bundlePath = join(rootPath, configPath.replace(/\.ts$/, '.bundle.mjs'))
   await writeFile(bundlePath, chunk.code)
+  return bundlePath
+}
+
+async function bundleAndImport(configPath: string, plugins: Plugin[]): Promise<unknown> {
+  const bundlePath = await bundleConfig(configPath, plugins)
   const {default: config} = await import(pathToFileURL(bundlePath).href)
   return config
 }
@@ -214,6 +240,39 @@ describe('httpsImportsPlugin', () => {
 })
 
 describe('bundling with sanityExternalsPlugin', () => {
+  test('shares extensionless ESM and CommonJS dependency instances with native Sanity', async () => {
+    await writeFiles({
+      'extensionless/config.ts': [
+        "import {esmShared, cjsShared} from 'sanity'",
+        "import esm from 'extensionless-esm'",
+        "import cjs from 'extensionless-cjs'",
+        'export default {esm: esm === esmShared, cjs: cjs === cjsShared}',
+      ].join('\n'),
+    })
+    const bundlePath = await bundleConfig('extensionless/config.ts', [
+      sanityExternalsPlugin(rootPath),
+    ])
+    const {stdout} = await promisify(execFile)(process.execPath, [
+      '--input-type=module',
+      '--eval',
+      'const {default: config} = await import(process.argv[1]); process.stdout.write(JSON.stringify(config))',
+      pathToFileURL(bundlePath).href,
+    ])
+    expect(JSON.parse(stdout)).toEqual({cjs: true, esm: true})
+  })
+
+  test('runs bundled CommonJS plugins that require an external dependency', async () => {
+    await writeFiles({
+      'node_modules/cjs-plugin/index.cjs': "module.exports = require('react').version",
+      'node_modules/cjs-plugin/package.json': JSON.stringify({
+        main: 'index.cjs',
+        name: 'cjs-plugin',
+      }),
+      'require/config.ts': "import plugin from 'cjs-plugin'; export default plugin",
+    })
+    expect(await bundleAndImport('require/config.ts', [sanityExternalsPlugin(rootPath)])).toBe('19')
+  })
+
   test('gives default imports of CommonJS externals the bundler default export', async () => {
     await writeFiles({
       'interop/config.ts': [
@@ -246,11 +305,17 @@ describe('importMetaPathsPlugin', () => {
       ].join('\n'),
       'meta/nested/info.ts': [
         "const label: string = 'héllo 😀'",
+        'const __sanity_import_meta__ = 123',
+        'const Object = null',
         'const meta = import.meta',
         'export const info = {',
+        "  computedUrl: import.meta['url'],",
         '  dirname: import.meta.dirname,',
+        '  sameMeta: meta === import.meta,',
         '  filename: import.meta . filename,',
         '  label,',
+        '  collision: __sanity_import_meta__,',
+        '  shadow: Object,',
         "  literal: 'import.meta.url',",
         '  metaUrl: meta.url,',
         '  url: import.meta.url,',
@@ -273,17 +338,34 @@ describe('importMetaPathsPlugin', () => {
     const nested = join(rootPath, 'meta/nested/info.ts')
     expect(config).toEqual({
       info: {
+        collision: 123,
+        computedUrl: pathToFileURL(nested).href,
         dirname: dirname(nested),
         filename: nested,
         label: 'héllo 😀',
         literal: 'import.meta.url',
-        // Only direct property accesses are rewritten. (The bundle's own URL, as
-        // the runner loaded it: Windows short paths keep their `~` unencoded.)
-        metaUrl: expect.stringMatching(/\/meta\/config\.bundle\.mjs$/),
+        metaUrl: pathToFileURL(nested).href,
+        sameMeta: true,
+        shadow: null,
         url: pathToFileURL(nested).href,
       },
       packageJsonPath: join(rootPath, 'node_modules/meta-pkg/package.json'),
       url: fileUrl('meta/config.ts'),
+    })
+  })
+
+  test('preserves Vite environment values through direct and aliased import.meta', async () => {
+    await writeFiles({
+      '.env': 'VITE_WORKER_META=loaded',
+      'env/config.ts': [
+        'const meta = import.meta',
+        'export default {direct: import.meta.env.VITE_WORKER_META, alias: meta.env.VITE_WORKER_META, mode: meta.env.MODE}',
+      ].join('\n'),
+    })
+    expect(await bundleAndImport('env/config.ts', [importMetaPathsPlugin()])).toEqual({
+      alias: 'loaded',
+      direct: 'loaded',
+      mode: 'production',
     })
   })
 

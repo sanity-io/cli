@@ -31,3 +31,15 @@ To run the CLI in development mode, you can run `pnpm run watch` in the `package
 This will watch for changes in the `src` folder and rebuild the CLI on every change running it from the `dist` folder.
 
 To test the specific commands you can navigate to `fixtures` and run `npx sanity <command>`. Since everything is watching for changes no need to rebuild when trying new commands.
+
+## Experimental Studio performance mode
+
+Set `SANITY_CLI_STUDIO_WORKER_BUNDLE=true` to try experimental performance improvements for commands that read Studio configuration:
+
+```sh
+SANITY_CLI_STUDIO_WORKER_BUNDLE=true npx sanity graphql deploy --dry-run
+```
+
+This mode can reduce loading time and memory use, but some Studios use more memory. Test it with your Studio before enabling it in CI. Config errors can have different messages and stack traces, and imports that are constructed at runtime may behave differently.
+
+Leave the variable unset, or set it to `false`, to keep the current behavior. The setting applies to all commands in that CLI process that read Studio configuration, including schema and manifest extraction and validation.
