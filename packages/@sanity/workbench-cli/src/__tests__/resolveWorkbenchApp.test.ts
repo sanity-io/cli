@@ -1,8 +1,9 @@
 import {type CliConfig} from '@sanity/cli-core'
 import {describe, expect, test} from 'vitest'
 
+import {definePanelView, defineWindowView} from '../contract.js'
 import {defineApplication, unstable_defineMediaLibrary} from '../defineApp.js'
-import {resolveWorkbenchApp} from '../resolveWorkbenchApp.js'
+import {resolveAppEntry, resolveWorkbenchApp} from '../resolveWorkbenchApp.js'
 
 const asConfig = (app: unknown) => ({app}) as CliConfig
 
@@ -105,5 +106,25 @@ describe('resolveWorkbenchApp', () => {
       entry: './src/App.tsx',
       views: [{name: 'feed', src: './src/Feed.tsx', surface: 'panel', title: 'feed'}],
     })
+  })
+})
+
+const app = (input: Partial<Parameters<typeof defineApplication>[0]>) =>
+  defineApplication({organizationId: 'org', slug: 'my-app', title: 'My App', ...input})
+const panel = definePanelView({name: 'feed', src: './src/Feed.tsx', title: 'Feed'})
+const windowView = defineWindowView({name: 'main', src: './src/Main.tsx', title: 'Main'})
+
+describe('resolveAppEntry', () => {
+  test.each([
+    [
+      'entry ahead of window views',
+      app({entry: './src/App.tsx', views: [windowView]}),
+      './src/App.tsx',
+    ],
+    ['a window view without entry', app({views: [panel, windowView]}), './src/Main.tsx'],
+    ['nothing for a dock-only app', app({views: [panel]}), undefined],
+    ['a plain app entry', {entry: './src/Plain.tsx'}, './src/Plain.tsx'],
+  ])('resolves %s', (_label, input, expected) => {
+    expect(resolveAppEntry(input as CliConfig['app'])).toBe(expected)
   })
 })

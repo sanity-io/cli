@@ -135,4 +135,34 @@ describe('#build app', {timeout: (platform() === 'win32' ? 120 : 60) * 1000}, ()
     const files = await readdir(join(cwd, 'dist'))
     expect(files).toContain('index.html')
   })
+
+  // Skipped on Windows for the same in-process federation reason as `build.studio.test.ts`.
+  test.skipIf(platform() === 'win32')(
+    'should expose a window view without `entry` as the federated App',
+    async () => {
+      const cwd = await testFixture('basic-app')
+      process.chdir(cwd)
+
+      await writeFile(
+        join(cwd, 'sanity.cli.ts'),
+        `import {defineApplication, defineCliConfig, defineWindowView} from 'sanity/cli'\n` +
+          `export default defineCliConfig({\n` +
+          `  app: defineApplication({\n` +
+          `    organizationId: 'org-id',\n` +
+          `    slug: 'basic-app',\n` +
+          `    title: 'Basic App',\n` +
+          `    views: [defineWindowView({name: 'main', src: './src/App.tsx', title: 'Main'})],\n` +
+          `  }),\n` +
+          `  deployment: {autoUpdates: false},\n` +
+          `})\n`,
+      )
+      vi.stubEnv('MFE_VITE_NO_TEST_ENV_CHECK', 'true')
+
+      const {error} = await testCommand(BuildCommand, ['--yes'], {config: {root: cwd}})
+
+      if (error) throw error
+      const manifest = JSON.parse(await readFile(join(cwd, 'dist', 'mf-manifest.json'), 'utf8'))
+      expect(manifest.exposes.map((expose: {name: string}) => expose.name)).toContain('App')
+    },
+  )
 })

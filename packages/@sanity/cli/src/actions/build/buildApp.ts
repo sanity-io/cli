@@ -2,7 +2,12 @@ import {
   compareDependencyVersions,
   buildApp as internalBuildApp,
 } from '@sanity/cli-build/_internal/build'
-import {buildAppId, resolveWorkbenchApp, resolveWorkbenchConfig} from '@sanity/workbench-cli/build'
+import {
+  buildAppId,
+  resolveAppEntry,
+  resolveWorkbenchApp,
+  resolveWorkbenchConfig,
+} from '@sanity/workbench-cli/build'
 
 import {getAppId} from '../../util/appId.js'
 import {warnAboutMissingAppId} from '../../util/warnAboutMissingAppId.js'
@@ -47,7 +52,7 @@ export async function buildApp(options: BuildOptions): Promise<void> {
     },
     compareDependencyVersions: (packages) => compareDependencyVersions(packages, workDir, {appId}),
     determineBasePath: () => determineBasePath(cliConfig, 'app', output),
-    entry: app?.entry,
+    entry: resolveAppEntry(app),
     exposes,
     isWorkbenchApp: isWorkbench,
     minify: flags.minify,
