@@ -39,6 +39,7 @@ export type {
 export {unstable_defineService} from '../defineService.js'
 export type {
   DefinedService,
+  ServiceBus,
   ServiceCallback,
   ServiceContext,
   ServiceInfo,

@@ -25,15 +25,17 @@ describe('serviceArtifacts', () => {
     expect(artifacts.map((artifact) => artifact.expose)).toEqual([undefined, './services/unread'])
   })
 
-  // Pin the whole worker bundle: the console bridge, the `service.run` call, and
-  // the dispose-before-close terminate sequence are all load-bearing and none is
-  // caught by a fragment check. The `src` is threaded through `resolveImport`.
+  // Pin the whole worker bundle: the console bridge, the `service.run` call with
+  // the bus, and the terminate sequence (close the bus, then dispose, then close
+  // the worker) are all load-bearing and none is caught by a fragment check. The
+  // `src` is threaded through `resolveImport`.
   test('emits the worker bundle that runs the user service and forwards crashes', () => {
     const [worker] = serviceArtifacts([service({name: 'unread', src: './src/unread.ts'})])
     expect(worker.source({resolveImport})).toMatchInlineSnapshot(`
       "// This file is auto-generated on 'sanity build' / 'sanity dev'
       // Modifications to this file are automatically discarded
       import service from "../../src/unread.ts"
+      import { createWorkerBus } from "@sanity/workbench-cli/_internal_worker_bus"
 
       const SERVICE = { type: "worker", name: "unread" }
 
@@ -55,17 +57,24 @@ describe('serviceArtifacts', () => {
         }
       }
 
+      const { bus, close: closeBus, receive: receiveBus } = createWorkerBus()
+
       let dispose
       try {
-        const result = service.run({ service: SERVICE })
+        const result = service.run({ bus, service: SERVICE })
         if (typeof result === 'function') dispose = result
       } catch (error) {
         self.postMessage({ kind: 'workbench.worker.error', payload: { message: String(error) } })
       }
 
       self.addEventListener('message', (event) => {
-        if (event.data && event.data.kind === 'workbench.worker.terminate') {
+        if (!event.data) return
+        if (event.data.kind === 'workbench.worker.terminate') {
+          // Close the bus first: the host has disconnected, so the disposer's bus calls must fail at once.
+          closeBus()
           try { dispose && dispose() } finally { self.close() }
+        } else {
+          receiveBus(event.data)
         }
       })
 

@@ -47,6 +47,10 @@
       "source": "./src/_exports/_internal_render.ts",
       "default": "./dist/_exports/_internal_render.js"
     },
+    "./_internal_worker_bus": {
+      "source": "./src/_exports/_internal_worker_bus.ts",
+      "default": "./dist/_exports/_internal_worker_bus.js"
+    },
     "./undeploy": {
       "source": "./src/_exports/undeploy.ts",
       "default": "./dist/_exports/undeploy.js"
@@ -72,6 +76,7 @@
     "@module-federation/runtime": "2.9.2",
     "@module-federation/vite": "1.23.4",
     "@sanity/cli-core": "workspace:^",
+    "@sanity/sdk": "catalog:",
     "@sanity/types": "catalog:",
     "@vitejs/plugin-react": "catalog:",
     "form-data": "catalog:",

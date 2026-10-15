@@ -1,4 +1,5 @@
-import {describe, expect, test} from 'vitest'
+import {type NavigationLocation} from '@sanity/sdk/dashboard'
+import {describe, expect, expectTypeOf, test} from 'vitest'
 
 import {SERVICE_CONTRACT_VERSION, ServiceDeclarationSchema} from '../contract.js'
 import {unstable_defineService} from '../defineService.js'
@@ -12,6 +13,26 @@ describe('unstable_defineService', () => {
     expect(service.version).toBe(SERVICE_CONTRACT_VERSION)
     // The callback passes through by reference — the helper is pure identity.
     expect(service.run).toBe(run)
+  })
+
+  // Type-level only: the callback body never runs.
+  test('types the bus for reading state and rejects event-topic subscriptions', () => {
+    unstable_defineService('worker', ({bus}) => {
+      const controller = new AbortController()
+      expectTypeOf(
+        bus.query('navigation.location'),
+      ).resolves.toEqualTypeOf<NavigationLocation | null>()
+      bus.subscribe(
+        'navigation.location',
+        (value) => expectTypeOf(value).toEqualTypeOf<NavigationLocation | null>(),
+        {signal: controller.signal},
+      )
+      // @ts-expect-error a service cannot respond to event topics
+      bus.subscribe('navigation.location.update', () => {})
+      // @ts-expect-error a state subscription needs a handler
+      bus.subscribe('navigation.location')
+      return () => controller.abort()
+    })
   })
 })
 
