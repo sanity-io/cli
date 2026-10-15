@@ -118,7 +118,12 @@ if (import.meta.hot) {
     }
     try {
       next._adoptListeners(listeners)
-      for (const listener of listeners) {
+      // Notify a snapshot: a listener may unsubscribe and re-subscribe on the
+      // fresh namespace, which (post-adoption) mutates this very set — and a
+      // Set iterator revisits re-added entries, so iterating live would loop
+      // forever. Entries added mid-loop subscribed to the already-current
+      // namespace and need no notification for this update.
+      for (const listener of [...listeners]) {
         listener(next)
       }
     } catch {

@@ -176,6 +176,35 @@ describe('mediaLibraryConfigArtifacts', () => {
     expect(hotV2.invalidate).toHaveBeenCalledOnce()
   })
 
+  test('a listener that re-subscribes on the fresh namespace is notified once, not looped', () => {
+    const hotV1 = fakeHot()
+    const moduleV1 = buildModule(hotV1)
+    const seen: unknown[] = []
+    let unsubscribe: () => void
+    const listener = (next: unknown) => {
+      seen.push(next)
+      // Natural consumer move: drop the old handle and re-register on the
+      // incoming namespace. Post-adoption this mutates the set being
+      // notified — iterating it live (instead of a snapshot) would revisit
+      // the re-added entry forever and freeze the page.
+      unsubscribe()
+      unsubscribe = (next as InstantiatedConfigModule).subscribe(listener)
+    }
+    unsubscribe = moduleV1.subscribe(listener)
+
+    const hotV2 = fakeHot()
+    const moduleV2 = buildModule(hotV2)
+    hotV1.acceptCallback?.(moduleV2)
+    expect(seen).toEqual([moduleV2])
+    expect(hotV1.invalidate).not.toHaveBeenCalled()
+
+    // The re-registered handle keeps receiving later updates.
+    const hotV3 = fakeHot()
+    const moduleV3 = buildModule(hotV3)
+    hotV2.acceptCallback?.(moduleV3)
+    expect(seen).toEqual([moduleV2, moduleV3])
+  })
+
   test('unsubscribe stops notifications', () => {
     const hotV1 = fakeHot()
     const moduleV1 = buildModule(hotV1)
