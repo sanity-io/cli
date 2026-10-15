@@ -18,6 +18,7 @@ const mocks = vi.hoisted(() => ({
   importDatasetRun: vi.fn(),
   input: vi.fn(),
   listDatasets: vi.fn(),
+  search: vi.fn(),
   select: vi.fn(),
   tryGitInit: vi.fn(),
   usersGetById: vi.fn(),
@@ -34,6 +35,7 @@ vi.mock('@sanity/cli-core/ux', async () => {
     ...actual,
     confirm: mocks.confirm,
     input: mocks.input,
+    search: mocks.search,
     select: mocks.select,
   }
 })
@@ -297,7 +299,7 @@ describe('#init: create new project', () => {
       {name: 'Create new organization', value: '-new-'},
     ])
 
-    mocks.select.mockResolvedValueOnce('-new-')
+    mocks.search.mockResolvedValueOnce('-new-')
 
     mocks.input.mockResolvedValueOnce('Brand New Organization')
 
@@ -387,7 +389,7 @@ describe('#init: create new project', () => {
       uri: '/projects/project-123',
     }).reply(200, {id: 'test', metadata: {cliInitializedAt: ''}})
 
-    mocks.select.mockResolvedValueOnce('project-123')
+    mocks.search.mockResolvedValueOnce('project-123')
     mocks.select.mockResolvedValueOnce('production')
 
     const spinnerSpy = vi.spyOn(cliUX, 'spinner')
@@ -439,7 +441,7 @@ describe('#init: create new project', () => {
       uri: '/projects/project-123',
     }).reply(200, {id: 'test', metadata: {cliInitializedAt: ''}})
 
-    mocks.select.mockResolvedValueOnce('project-123')
+    mocks.search.mockResolvedValueOnce('project-123')
     mocks.select.mockResolvedValueOnce('production')
 
     const spinnerSpy = vi.spyOn(cliUX, 'spinner')
@@ -484,7 +486,7 @@ describe('#init: create new project', () => {
       uri: '/projects/project-123',
     }).reply(200, {id: 'test', metadata: {cliInitializedAt: ''}})
 
-    mocks.select.mockResolvedValueOnce('project-123')
+    mocks.search.mockResolvedValueOnce('project-123')
     mocks.select.mockResolvedValueOnce('production')
 
     const spinnerSpy = vi.spyOn(cliUX, 'spinner')
