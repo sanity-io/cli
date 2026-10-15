@@ -1,11 +1,9 @@
+import {getLocalPackageVersion} from '@sanity/cli-core/package-manager'
 import {type ChunkMetadata, type Plugin} from 'vite'
 
 import {type AutoUpdatesBuildConfig} from '../autoUpdates.js'
 import {createVendorImportMapFromBundle} from '../createVendorImportMapFromBundle.js'
-import {
-  decorateIndexWithAuthHashScript,
-  sanityReadsAuthHashStash,
-} from '../decorateIndexWithAuthHashScript.js'
+import {decorateIndexWithAuthHashScript} from '../decorateIndexWithAuthHashScript.js'
 import {decorateIndexWithBridgeScript} from '../decorateIndexWithBridgeScript.js'
 import {decorateIndexWithStagingScript} from '../decorateIndexWithStagingScript.js'
 import {renderDocument} from '../renderDocument.js'
@@ -126,11 +124,11 @@ export function sanityBuildEntries(options: {
         bridge ? decorateIndexWithBridgeScript(html) : html,
       )
 
-      const injectAuthHashScript = !isApp && (await sanityReadsAuthHashStash(cwd))
-
       this.emitFile({
         fileName: 'index.html',
-        source: injectAuthHashScript ? decorateIndexWithAuthHashScript(source) : source,
+        source: isApp
+          ? source
+          : decorateIndexWithAuthHashScript(source, await getLocalPackageVersion('sanity', cwd)),
         type: 'asset',
       })
     },
