@@ -30,16 +30,14 @@ export async function getStudioWorkspaces(configPath: string): Promise<Workspace
     configPath = await findStudioConfigPath(configPath)
   }
   debug('Finding studio config path %s', configPath)
-  let config = await doImport(configPath)
+  const mod = await doImport(configPath)
+  // Named exports like `projectId` can make the module itself look like a config
+  const config = 'default' in mod && isStudioConfig(mod.default) ? mod.default : mod
 
   debug('Imported config %o', config)
   if (!isStudioConfig(config)) {
-    if (!('default' in config) || !isStudioConfig(config.default)) {
-      debug('Invalid studio config format in "%s"', configPath)
-      throw new TypeError(`Invalid studio config format in "${configPath}"`)
-    }
-
-    config = config.default
+    debug('Invalid studio config format in "%s"', configPath)
+    throw new TypeError(`Invalid studio config format in "${configPath}"`)
   }
 
   const workDir = dirname(configPath)
