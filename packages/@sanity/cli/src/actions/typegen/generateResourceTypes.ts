@@ -22,11 +22,18 @@ export type ResolvedResource =
 /**
  * Locates the schema for every resource before anything is generated.
  *
- * A resource with a `schema` path uses that file, which must exist and parse. One without
- * fetches the schema bound to its dataset. Doing this first means a missing binding or a
- * missing or malformed file fails the run before any output is written.
+ * A resource with a `schema` path uses that file, which must exist and parse unless
+ * `checkSchemaFiles` is `false`. One without fetches the schema bound to its dataset. Doing this
+ * first means a missing binding or a missing or malformed file fails the run before any output is
+ * written.
  */
 export async function resolveResourceSchemas(options: {
+  /**
+   * Whether a local schema file must exist and parse now. Watch mode passes `false`, because it
+   * generates once the file appears, as it does without resources.
+   * @defaultValue true
+   */
+  checkSchemaFiles?: boolean
   /** Called once a resource's schema is located. */
   onResolved?: (resolved: ResolvedResource) => void
   /** Called before a resource's schema is located. */
@@ -34,7 +41,7 @@ export async function resolveResourceSchemas(options: {
   resources: TypeGenResource[]
   workDir: string
 }): Promise<ResolvedResource[]> {
-  const {onResolved, onResolving, resources, workDir} = options
+  const {checkSchemaFiles = true, onResolved, onResolving, resources, workDir} = options
   const resolved: ResolvedResource[] = []
 
   for (const resource of resources) {
@@ -53,7 +60,9 @@ export async function resolveResourceSchemas(options: {
       const schemaPath = isAbsolute(resource.schema)
         ? resource.schema
         : join(workDir, resource.schema)
-      await assertExtractedSchemaFile(schemaPath, {key, schema: resource.schema})
+      if (checkSchemaFiles) {
+        await assertExtractedSchemaFile(schemaPath, {key, schema: resource.schema})
+      }
       // Codegen reads the file again, so the generated output names it as its source, as it
       // does without resources.
       entry = {key, resource, schemaPath: resource.schema}
