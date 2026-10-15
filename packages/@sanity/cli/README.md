@@ -140,6 +140,7 @@ Code for sanity cli
 - [`sanity users list`](#sanity-users-list)
 - [`sanity versions`](#sanity-versions)
 - [`sanity workflows abort INSTANCEID`](#sanity-workflows-abort-instanceid)
+- [`sanity workflows blueprint generate`](#sanity-workflows-blueprint-generate)
 - [`sanity workflows definition delete NAME`](#sanity-workflows-definition-delete-name)
 - [`sanity workflows definition diff NAME`](#sanity-workflows-definition-diff-name)
 - [`sanity workflows definition list`](#sanity-workflows-definition-list)
@@ -2027,7 +2028,7 @@ FLAGS
       --source-maps        Enable source maps for built bundles (increases size of bundle)
       --title=<value>      Title for a newly created application or studio. For apps, use --create to select creation
                            when the organization already has apps
-      --url=<value>        Studio URL for deployment. For external studios, the full URL. For hosted studios, the
+      --url=<value>        Studio URL for deployment. For external deploys, the full URL. For hosted studios, the
                            hostname (e.g. "my-studio" or "my-studio.sanity.studio")
       --verbose            Enable verbose logging
 
@@ -2050,6 +2051,10 @@ EXAMPLES
   Register an externally hosted studio (studioHost contains full URL)
 
     $ sanity deploy --external
+
+  Register an externally hosted studio, served from the provided origin
+
+    $ sanity deploy --external --url https://apps.example.com
 
   Create and deploy an App SDK app without prompts. Save application.id as deployment.appId, then omit --create on
   later deploys
@@ -4269,6 +4274,8 @@ DESCRIPTION
   Note:
   - The `sanity schema extract` command is a prerequisite for extracting your Sanity Studio schema into a `schema.json`
   file, which is then used by the `sanity typegen generate` command to generate type definitions.
+  - To generate types for several datasets, list them in `typegen.resources` in `sanity.cli.ts` (beta). Each resource
+  uses its own `schema` file, or the schema bound to its dataset when `schema` is omitted.
 
 EXAMPLES
   Generate TypeScript type definitions from a Sanity Studio schema extracted using the `sanity schema extract`
@@ -4435,6 +4442,30 @@ EXAMPLES
   $ sanity workflows abort wf-instance.abc123 --reason 'superseded by relaunch'
 ```
 
+## `sanity workflows blueprint generate`
+
+Experimental: generate the Sanity Blueprints runtime the definitions require, next to sanity.workflow.ts. Writes the workflow resources, one function per derived need, the effect-handler registry, and a handler stub per declared effect. Covers every deployment in the config, because the emitted resources module declares them all. These flags and this output may change before the Blueprints backend accepts the sanity.workflow resource.
+
+```
+USAGE
+  $ sanity workflows blueprint generate [--check]
+
+FLAGS
+  --check  Experimental: verify the tree on disk still matches the definitions; write nothing and exit non-zero on any
+           difference. The CI drift gate.
+
+DESCRIPTION
+  Experimental: generate the Sanity Blueprints runtime the definitions require, next to sanity.workflow.ts. Writes the
+  workflow resources, one function per derived need, the effect-handler registry, and a handler stub per declared
+  effect. Covers every deployment in the config, because the emitted resources module declares them all. These flags and
+  this output may change before the Blueprints backend accepts the sanity.workflow resource.
+
+EXAMPLES
+  $ sanity workflows blueprint generate
+
+  $ sanity workflows blueprint generate --check
+```
+
 ## `sanity workflows definition delete NAME`
 
 Delete a deployed workflow definition (every version, or one via --version). Refuses while non-terminal instances exist unless --cascade aborts them first — instances are aborted in place, never deleted.
@@ -4542,7 +4573,7 @@ DESCRIPTION
 
 ## `sanity workflows deploy`
 
-Validate, diff, and deploy workflow definitions to the resource bound by the selected deployment.
+Validate workflow definitions, check any generated runtime beside the config against them, then diff and deploy to the resource bound by the selected deployment. A generated runtime that no longer matches the definitions fails the deploy before anything is written; regenerate it with `sanity-workflows blueprint generate`.
 
 ```
 USAGE
@@ -4551,11 +4582,13 @@ USAGE
 
 FLAGS
   --all-tags            Deploy every deployment in the config, not just a selection.
-  --check               Validate definitions only; do not contact the dataset.
+  --check               Validate definitions and check any generated runtime against them; do not contact the dataset.
   --deployment=<value>  Deployment name — the unique identity of one deployment in the config.
-  --dry-run             Validate + diff against the deployed version; do not write.
+  --dry-run             Validate definitions, check any generated runtime against them, and diff against the deployed
+                        version; do not write.
   --only=<value>        Limit deploy/check/diff to a single workflow definition by name (deployments are selected with
-                        --deployment). Every targeted deployment must contain it.
+                        --deployment). Every targeted deployment must contain it. The generated-runtime check still
+                        covers the whole config, because the generated tree declares every deployment in it.
   --[no-]share-defs     Share the definition documents newly created by this deploy with Sanity — the full document,
                         verbatim (structure, names, filters, effect configuration, seeded values), plus its deployment
                         coordinates (project and dataset, or resource id); never content documents, instances, or your
@@ -4565,7 +4598,9 @@ FLAGS
                         an environment group).
 
 DESCRIPTION
-  Validate, diff, and deploy workflow definitions to the resource bound by the selected deployment.
+  Validate workflow definitions, check any generated runtime beside the config against them, then diff and deploy to the
+  resource bound by the selected deployment. A generated runtime that no longer matches the definitions fails the deploy
+  before anything is written; regenerate it with `sanity-workflows blueprint generate`.
 
 EXAMPLES
   $ sanity workflows deploy --deployment review-prod
