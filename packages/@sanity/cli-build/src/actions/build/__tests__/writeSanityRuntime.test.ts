@@ -1,10 +1,12 @@
 import path from 'node:path'
 
 import * as configMocks from '@sanity/cli-test/mocks/cli-core/config'
-import {getLocalPackageVersion as mockGetLocalPackageVersion} from '@sanity/cli-test/mocks/cli-core/package-manager'
+import {
+  getLocalPackageDir as mockGetLocalPackageDir,
+  readPackageJson as mockReadPackageJson,
+} from '@sanity/cli-test/mocks/cli-core/package-manager'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
-import {MIN_SANITY_VERSION_READING_AUTH_HASH_STASH} from '../decorateIndexWithAuthHashScript.js'
 import {getPossibleDocumentComponentLocations} from '../getPossibleDocumentComponentLocations.js'
 import {resolveEntries, writeSanityRuntime} from '../writeSanityRuntime.js'
 
@@ -75,6 +77,12 @@ describe('writeSanityRuntime', () => {
   beforeEach(() => {
     mockWatch.mockReturnValue(fakeWatcher)
     mockRenderDocument.mockResolvedValue('<html><head></head><body></body></html>')
+    mockGetLocalPackageDir.mockReturnValue('/project/node_modules/sanity')
+    mockReadPackageJson.mockResolvedValue({
+      name: 'sanity',
+      sanityCliCapabilities: {authHashStash: 1},
+      version: '6.20.0',
+    })
   })
 
   afterEach(() => {
@@ -108,25 +116,36 @@ describe('writeSanityRuntime', () => {
   })
 
   test('injects the auth hash script first in head for studios', async () => {
-    mockGetLocalPackageVersion.mockResolvedValue(MIN_SANITY_VERSION_READING_AUTH_HASH_STASH)
     await writeSanityRuntime({cwd, isApp: false, reactStrictMode: false, watch: false})
 
+    expect(mockGetLocalPackageDir).toHaveBeenCalledWith('sanity', cwd)
     const indexHtml = mockWriteFile.mock.calls.find(([file]) => file.endsWith('index.html'))?.[1]
     expect(indexHtml).toMatch(/<head>\n<script>[^<]*__SANITY_AUTH_HASH_PARAMS__/)
   })
 
-  test("omits the auth hash script for sanity versions that don't read the stash", async () => {
-    mockGetLocalPackageVersion.mockResolvedValue('6.18.0')
+  test("omits the auth hash script when sanity doesn't read the stash", async () => {
+    mockReadPackageJson.mockResolvedValue({name: 'sanity', version: '6.19.0'})
     await writeSanityRuntime({cwd, isApp: false, reactStrictMode: false, watch: false})
 
-    expect(mockGetLocalPackageVersion).toHaveBeenCalledWith('sanity', cwd)
     const indexHtml = mockWriteFile.mock.calls.find(([file]) => file.endsWith('index.html'))?.[1]
     expect(indexHtml).not.toContain('__SANITY_AUTH_HASH_PARAMS__')
+  })
+
+  test('reads the sanity manifest once when the document is re-rendered', async () => {
+    await writeSanityRuntime({cwd, isApp: false, reactStrictMode: false, watch: true})
+    const onChange = fakeWatcher.on.mock.calls[0][1]
+    await onChange()
+
+    const indexHtmls = mockWriteFile.mock.calls.filter(([file]) => file.endsWith('index.html'))
+    expect(indexHtmls).toHaveLength(2)
+    expect(indexHtmls[1][1]).toContain('__SANITY_AUTH_HASH_PARAMS__')
+    expect(mockReadPackageJson).toHaveBeenCalledTimes(1)
   })
 
   test('omits the auth hash script for apps', async () => {
     await writeSanityRuntime({cwd, isApp: true, reactStrictMode: false, watch: false})
 
+    expect(mockReadPackageJson).not.toHaveBeenCalled()
     const indexHtml = mockWriteFile.mock.calls.find(([file]) => file.endsWith('index.html'))?.[1]
     expect(indexHtml).not.toContain('__SANITY_AUTH_HASH_PARAMS__')
   })
