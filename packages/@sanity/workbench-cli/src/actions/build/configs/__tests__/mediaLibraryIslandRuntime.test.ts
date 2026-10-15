@@ -4,7 +4,10 @@ import path from 'node:path'
 
 import {afterEach, describe, expect, test} from 'vitest'
 
-import {hasIslandRuntime, ISLAND_RUNTIME_MODULE} from '../islandRuntime.js'
+import {
+  hasMediaLibraryIslandRuntime,
+  MEDIA_LIBRARY_ISLAND_RUNTIME_MODULE,
+} from '../mediaLibraryIslandRuntime.js'
 
 const createdDirs: string[] = []
 
@@ -49,23 +52,23 @@ afterEach(() => {
   }
 })
 
-describe('hasIslandRuntime', () => {
+describe('hasMediaLibraryIslandRuntime', () => {
   test('resolves the entry from the app root, not the CLI install', () => {
-    expect(hasIslandRuntime(appWithSanity({islandRuntimeEntry: true}))).toBe(true)
+    expect(hasMediaLibraryIslandRuntime(appWithSanity({islandRuntimeEntry: true}))).toBe(true)
   })
 
   test('is false when the installed sanity predates the entry', () => {
-    expect(hasIslandRuntime(appWithSanity({islandRuntimeEntry: false}))).toBe(false)
+    expect(hasMediaLibraryIslandRuntime(appWithSanity({islandRuntimeEntry: false}))).toBe(false)
   })
 
   test('is false when sanity is not installed at all', () => {
     const appRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'island-runtime-probe-'))
     createdDirs.push(appRoot)
     fs.writeFileSync(path.join(appRoot, 'package.json'), JSON.stringify({name: 'app'}))
-    expect(hasIslandRuntime(appRoot)).toBe(false)
+    expect(hasMediaLibraryIslandRuntime(appRoot)).toBe(false)
   })
 
   test('module id matches what the generated expose imports', () => {
-    expect(ISLAND_RUNTIME_MODULE).toBe('sanity/media-library-island-runtime')
+    expect(MEDIA_LIBRARY_ISLAND_RUNTIME_MODULE).toBe('sanity/media-library-island-runtime')
   })
 })

@@ -16,9 +16,9 @@ vi.mock('../plugins/plugin-module-federation.js', () => ({
   sanityModuleFederation: mockModuleFederation,
 }))
 
-vi.mock('../../configs/islandRuntime.js', () => ({
-  hasIslandRuntime: mockHasIslandRuntime,
-  ISLAND_RUNTIME_MODULE: 'sanity/media-library-island-runtime',
+vi.mock('../../configs/mediaLibraryIslandRuntime.js', () => ({
+  hasMediaLibraryIslandRuntime: mockHasIslandRuntime,
+  MEDIA_LIBRARY_ISLAND_RUNTIME_MODULE: 'sanity/media-library-island-runtime',
 }))
 
 const workDir = '/project'
@@ -65,7 +65,7 @@ describe('federation media-library config exposes', () => {
     },
   }
 
-  test('exposes ./island-runtime next to the config when the installed sanity ships it', () => {
+  test('exposes ./media-library-island-runtime next to the config when the installed sanity ships it', () => {
     mockHasIslandRuntime.mockReturnValue(true)
     federation({exposes: configExposes, isApp: true, name: 'ml-config', workDir})
     expect(mockHasIslandRuntime).toHaveBeenCalledWith(workDir)
@@ -81,19 +81,19 @@ describe('federation media-library config exposes', () => {
             'configs',
             'installation_config.js',
           ),
-          './island-runtime': path.resolve(
+          './media-library-island-runtime': path.resolve(
             workDir,
             '.sanity',
             'federation',
             'configs',
-            'island_runtime.js',
+            'media_library_island_runtime.js',
           ),
         }),
       }),
     )
   })
 
-  test('skips ./island-runtime (with a warning) on older sanity versions', () => {
+  test('skips ./media-library-island-runtime (with a warning) on older sanity versions', () => {
     mockHasIslandRuntime.mockReturnValue(false)
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined)
     try {
@@ -101,7 +101,7 @@ describe('federation media-library config exposes', () => {
       const [[federationOptions]] = mockModuleFederation.mock.calls as unknown as [
         [{exposes: Record<string, string>}],
       ]
-      expect(federationOptions.exposes).not.toHaveProperty('./island-runtime')
+      expect(federationOptions.exposes).not.toHaveProperty('./media-library-island-runtime')
       expect(federationOptions.exposes).toHaveProperty('./configs/installation_config')
       expect(warn).toHaveBeenCalledWith(expect.stringContaining('media-library-island-runtime'))
     } finally {

@@ -7,7 +7,10 @@ import {type PluginOption} from 'vite'
 import {type WorkbenchExposes} from '../../../resolveWorkbenchApp.js'
 import {artifactExposes, workbenchArtifacts} from '../artifact.js'
 import {isMediaLibraryConfigApp} from '../configs/configApp.js'
-import {hasIslandRuntime, ISLAND_RUNTIME_MODULE} from '../configs/islandRuntime.js'
+import {
+  hasMediaLibraryIslandRuntime,
+  MEDIA_LIBRARY_ISLAND_RUNTIME_MODULE,
+} from '../configs/mediaLibraryIslandRuntime.js'
 import {FEDERATION_FILE_NAME, RUNTIME_DIR} from './constants.js'
 import {sanityFederationHost} from './plugins/plugin-federation-host.js'
 import {type FederationOptions, sanityModuleFederation} from './plugins/plugin-module-federation.js'
@@ -98,11 +101,11 @@ export const federation = (options: FederationPluginOptions): PluginOption => {
   // degraded rendering for custom inputs) when that version predates the entry,
   // since an unresolvable import would fail the whole build.
   const isConfigApp = isMediaLibraryConfigApp(exposes)
-  const islandRuntime = isConfigApp && hasIslandRuntime(workDir)
+  const islandRuntime = isConfigApp && hasMediaLibraryIslandRuntime(workDir)
   if (isConfigApp && !islandRuntime) {
     // eslint-disable-next-line no-console -- build-time warning for the app developer
     console.warn(
-      `The installed sanity version does not ship ${ISLAND_RUNTIME_MODULE}; ` +
+      `The installed sanity version does not ship ${MEDIA_LIBRARY_ISLAND_RUNTIME_MODULE}; ` +
         'custom field inputs will not render in the Media Library until sanity is upgraded.',
     )
   }

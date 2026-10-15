@@ -3,7 +3,10 @@ import path from 'node:path'
 
 import {type WorkbenchExposes} from '../../../resolveWorkbenchApp.js'
 import {isMediaLibraryConfigApp} from '../configs/configApp.js'
-import {hasIslandRuntime, ISLAND_RUNTIME_MODULE} from '../configs/islandRuntime.js'
+import {
+  hasMediaLibraryIslandRuntime,
+  MEDIA_LIBRARY_ISLAND_RUNTIME_MODULE,
+} from '../configs/mediaLibraryIslandRuntime.js'
 
 /**
  * React APIs only the generated render-contract modules import — the SPA
@@ -82,7 +85,9 @@ export function workbenchOptimizeDeps(options: {
   // installed `sanity` ships the entry — an unresolvable `include` name crashes
   // the dev server, and the expose is skipped in that case anyway.
   const islandRuntimeDeps =
-    isMediaLibraryConfigApp(exposes) && hasIslandRuntime(cwd) ? [ISLAND_RUNTIME_MODULE] : []
+    isMediaLibraryConfigApp(exposes) && hasMediaLibraryIslandRuntime(cwd)
+      ? [MEDIA_LIBRARY_ISLAND_RUNTIME_MODULE]
+      : []
 
   return {
     entries: [...new Set(entries)],

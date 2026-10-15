@@ -1,5 +1,8 @@
 import {type WorkbenchExposes} from '../../resolveWorkbenchApp.js'
-import {type ConfigArtifactOptions, configArtifacts} from './configs/artifact.js'
+import {
+  type MediaLibraryConfigArtifactOptions,
+  mediaLibraryConfigArtifacts,
+} from './configs/artifact.js'
 import {serviceArtifacts} from './services/artifact.js'
 import {viewArtifacts} from './views/artifact.js'
 
@@ -65,11 +68,11 @@ export function artifactExposes(
  */
 export function workbenchArtifacts(
   exposes: WorkbenchExposes,
-  configOptions: ConfigArtifactOptions = {},
+  configOptions: MediaLibraryConfigArtifactOptions = {},
 ): GeneratedArtifact[] {
   return [
     ...viewArtifacts(exposes.views ?? []),
     ...serviceArtifacts(exposes.webWorkers ?? []),
-    ...configArtifacts(exposes.config, configOptions),
+    ...mediaLibraryConfigArtifacts(exposes.config, configOptions),
   ]
 }
