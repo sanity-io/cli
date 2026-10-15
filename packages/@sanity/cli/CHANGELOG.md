@@ -1,5 +1,22 @@
 # Change Log
 
+## 8.17.0
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-v8.16.0...cli-v8.17.0)
+
+_2026-10-15_
+
+### Features
+
+- **deploy:** `--external` for federated studios ([#1965](https://github.com/sanity-io/cli/pull/1965)) ([62b3bee](https://github.com/sanity-io/cli/commit/62b3beeea3d81635dcb759421489b5cf0b84fa76))
+- **workbench-cli:** give worker services a message bus ([#1970](https://github.com/sanity-io/cli/pull/1970)) ([6b2e917](https://github.com/sanity-io/cli/commit/6b2e917f4573df1a97c1f35df8cd4e2dc637c785))
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/workbench-cli bumped to 2.9.0
+
 ## 8.16.0
 
 [Compare changes](https://github.com/sanity-io/cli/compare/cli-v8.15.0...cli-v8.16.0)
