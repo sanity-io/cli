@@ -17,6 +17,7 @@ import {isNotFoundError} from '../../errors/NotFoundError.js'
 import {getStudioEnvironmentVariables} from '../../util/environment/getStudioEnvironmentVariables.js'
 import {setupBrowserStubs} from '../../util/environment/setupBrowserStubs.js'
 import {isRecord} from '../../util/isRecord.js'
+import {skipDependencySourcemapsPlugin} from './skipDependencySourcemapsPlugin.js'
 import {StudioModuleEvaluator} from './studioModuleEvaluator.js'
 import {createOneShotWorkerLifecycle} from './studioWorkerLifecycle.js'
 
@@ -102,6 +103,8 @@ const defaultViteConfig: InlineConfig = {
     include: undefined,
     noDiscovery: true,
   },
+  // Dependency source maps are the largest contributor to the worker's peak memory
+  plugins: [skipDependencySourcemapsPlugin()],
   resolve: {
     // Resolve the studio's tsconfig `paths` natively (Vite 8+), replacing the
     // custom alias mapping and the need for a user-added `vite-tsconfig-paths`.

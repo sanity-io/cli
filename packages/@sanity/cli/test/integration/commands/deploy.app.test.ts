@@ -655,6 +655,28 @@ describe('#deploy app', () => {
     expect(mockDeployWorkbenchApp).not.toHaveBeenCalled()
   })
 
+  test('rejects --external, since only studios can be hosted externally', async () => {
+    const cwd = await testFixture('basic-app')
+    process.cwd = () => cwd
+
+    const app = defineApplication({
+      entry: './src/App.tsx',
+      organizationId,
+      slug: 'drop-desk-host',
+      title: 'Workbench App',
+    })
+
+    const {error} = await testCommand(
+      DeployCommand,
+      ['--external', '--url', 'https://apps.example.com'],
+      {config: {root: cwd}, mocks: {cliConfig: {app}}},
+    )
+
+    expect(error?.message).toContain('Deploying an app to an external host is not supported')
+    expect(mockCreateCoreApp).not.toHaveBeenCalled()
+    expect(mockDeployWorkbenchApp).not.toHaveBeenCalled()
+  })
+
   test('a dry run surfaces the configured slug and creates nothing', async () => {
     const cwd = await testFixture('basic-app')
     process.cwd = () => cwd

@@ -24,6 +24,7 @@ import {
   type StudioDeployTargetResolution,
 } from './resolveDeployTarget.js'
 import {type DeployFlags} from './types.js'
+import {normalizeUrl, validateUrl} from './urlUtils.js'
 
 /**
  * Where a deploy resolves to, computed once from the deploy-target verdict. The
@@ -118,6 +119,56 @@ export function checkAppId(
       status: 'warn',
     })
   }
+}
+
+/**
+ * The origin a federated studio deployed with --external is registered
+ * at. Only a first deploy registers one; a redeploy keeps the URL it has.
+ */
+export function checkExternalUrl(
+  reporter: DeployCheckReporter,
+  {appId, url}: {appId: string | undefined; url: string | undefined},
+): string | undefined {
+  if (appId) return undefined
+
+  if (!url) {
+    reporter.report({
+      exitCode: exitCodes.USAGE_ERROR,
+      message: 'A first external deploy needs the URL your host serves the build from',
+      solution: 'Pass it with --url, for example --url https://studio.example.com',
+      status: 'fail',
+    })
+    return undefined
+  }
+
+  const normalized = normalizeUrl(url)
+  const validation = validateUrl(normalized)
+  if (validation !== true) {
+    reporter.report({
+      exitCode: exitCodes.USAGE_ERROR,
+      message: validation,
+      solution:
+        'Pass --url with an http or https URL, for example --url https://studio.example.com',
+      status: 'fail',
+    })
+    return undefined
+  }
+
+  // The Dashboard loads the remote from the origin root, so a path would never be fetched.
+  const {hash, origin, pathname, search} = new URL(normalized)
+  if (pathname !== '/' || search || hash) {
+    reporter.report({
+      exitCode: exitCodes.USAGE_ERROR,
+      message: '--url must be an origin with no path, query or hash',
+      solution:
+        'Pass the origin your host serves the build from, for example --url https://studio.example.com',
+      status: 'fail',
+    })
+    return undefined
+  }
+
+  reporter.report({message: `Registers at ${origin}`, status: 'pass'})
+  return origin
 }
 
 export async function checkBuild(
@@ -447,7 +498,7 @@ export async function checkStudioTarget(
   const resolve = options.isWorkbenchApp
     ? resolveWorkbenchStudio(options)
     : resolveStudioDeployTarget(options)
-  // Workbench studios always deploy to Sanity hosting, never an external URL.
+  // A workbench studio's target is its slug, even when its build is hosted externally.
   const isExternal = options.isWorkbenchApp ? false : options.isExternal
 
   return runStep(reporter, {
