@@ -7,7 +7,7 @@ import {gte, parse} from 'semver'
  *
  * @internal
  */
-export const MIN_SANITY_VERSION_READING_AUTH_HASH_STASH = '6.19.0'
+export const MIN_SANITY_VERSION_READING_AUTH_HASH_STASH = '6.20.0'
 
 /**
  * Removes the `sid`, `token` and `claim` params from the URL hash and stores their raw values

@@ -71,7 +71,10 @@ describe('sanityBuildEntries index.html', () => {
   })
 
   test('omits the auth hash script for apps', async () => {
+    mockGetLocalPackageVersion.mockClear()
+    mockGetLocalPackageVersion.mockResolvedValue(MIN_SANITY_VERSION_READING_AUTH_HASH_STASH)
     const html = await emitIndexHtml(undefined, true)
+    expect(mockGetLocalPackageVersion).not.toHaveBeenCalled()
     expect(html).not.toContain('__SANITY_AUTH_HASH_PARAMS__')
   })
 })

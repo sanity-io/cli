@@ -125,8 +125,10 @@ describe('writeSanityRuntime', () => {
   })
 
   test('omits the auth hash script for apps', async () => {
+    mockGetLocalPackageVersion.mockResolvedValue(MIN_SANITY_VERSION_READING_AUTH_HASH_STASH)
     await writeSanityRuntime({cwd, isApp: true, reactStrictMode: false, watch: false})
 
+    expect(mockGetLocalPackageVersion).not.toHaveBeenCalled()
     const indexHtml = mockWriteFile.mock.calls.find(([file]) => file.endsWith('index.html'))?.[1]
     expect(indexHtml).not.toContain('__SANITY_AUTH_HASH_PARAMS__')
   })
