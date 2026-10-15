@@ -1,5 +1,19 @@
 # @sanity/workbench-cli
 
+## 2.10.0
+
+[Compare changes](https://github.com/sanity-io/cli/compare/workbench-cli-v2.9.0...workbench-cli-v2.10.0)
+
+_2026-10-15_
+
+### Features
+
+- **build:** native island build wiring for Media Library config apps ([#1971](https://github.com/sanity-io/cli/pull/1971)) ([5e96cb7](https://github.com/sanity-io/cli/commit/5e96cb752e07eef8a2ba653c2e8dd71a6a6ac1f9))
+
+### Bug Fixes
+
+- **workbench-cli:** load window views without an entry ([#1982](https://github.com/sanity-io/cli/pull/1982)) ([c7876b8](https://github.com/sanity-io/cli/commit/c7876b88527317e296d27c2ca3d2c53c43fffe8b))
+
 ## 2.9.0
 
 [Compare changes](https://github.com/sanity-io/cli/compare/workbench-cli-v2.8.4...workbench-cli-v2.9.0)
