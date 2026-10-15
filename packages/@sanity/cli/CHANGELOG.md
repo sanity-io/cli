@@ -1,5 +1,21 @@
 # Change Log
 
+## 8.17.1
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-v8.17.0...cli-v8.17.1)
+
+_2026-10-15_
+
+### Bug Fixes
+
+- **workbench-cli:** load window views without an entry ([#1982](https://github.com/sanity-io/cli/pull/1982)) ([c7876b8](https://github.com/sanity-io/cli/commit/c7876b88527317e296d27c2ca3d2c53c43fffe8b))
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/workbench-cli bumped to 2.10.0
+
 ## 8.17.0
 
 [Compare changes](https://github.com/sanity-io/cli/compare/cli-v8.16.0...cli-v8.17.0)
