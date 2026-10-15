@@ -1,4 +1,4 @@
-import {stat} from 'node:fs/promises'
+import {readFile, stat} from 'node:fs/promises'
 import {join} from 'node:path'
 
 /**
@@ -32,8 +32,9 @@ export async function checkBuiltOutput(sourceDir: string): Promise<void> {
   }
 
   const manifestPath = join(sourceDir, 'mf-manifest.json')
+  let manifest: string
   try {
-    await stat(manifestPath)
+    manifest = await readFile(manifestPath, 'utf8')
   } catch (err) {
     if (err.code === 'ENOENT') {
       throw buildNotFound(
@@ -42,5 +43,15 @@ export async function checkBuiltOutput(sourceDir: string): Promise<void> {
       )
     }
     throw err
+  }
+
+  // Every deploy sends this file to the API, so a corrupt one must fail here
+  // rather than after the application is created.
+  try {
+    JSON.parse(manifest)
+  } catch {
+    throw new Error(
+      `"${manifestPath}" is not valid JSON. Run "sanity build" again to regenerate it.`,
+    )
   }
 }

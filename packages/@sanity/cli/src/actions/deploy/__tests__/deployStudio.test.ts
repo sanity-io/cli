@@ -1,6 +1,7 @@
 import {SchemaExtractionError} from '@sanity/cli-build/_internal/extract'
 import {type CliConfig, exitCodes, type Output} from '@sanity/cli-core'
 import {
+  checkBuiltOutput,
   createStudio,
   deployWorkbenchApp,
   getApplication,
@@ -231,5 +232,95 @@ describe('deployStudio (federated studio)', () => {
       expect.stringContaining('Workspace base paths must share the same first segment'),
       {exit: exitCodes.RUNTIME_ERROR},
     )
+  })
+})
+
+describe('deployStudio --external (federated studio)', () => {
+  const externalFlags = {external: true, json: false, url: 'https://studio.example.com/'}
+
+  test('registers the studio at the --url origin and ships a manifest-only deployment', async () => {
+    const options = deployOptions({flags: externalFlags})
+
+    await deployStudio(options)
+
+    expect(mockCreateStudio).toHaveBeenCalledWith(
+      expect.objectContaining({externalUrl: 'https://studio.example.com', slug: 'my-studio'}),
+    )
+    expect(mockDeployWorkbenchApp).toHaveBeenCalledWith(
+      expect.objectContaining({applicationId: 'studio-1', isExternal: true}),
+    )
+    // Brett needs a schema descriptor per workspace, so the schema still deploys.
+    expect(vi.mocked(deployStudioSchemasAndManifests).mock.calls[0][0]).toEqual(
+      expect.objectContaining({applicationId: 'studio-1', isExternal: false}),
+    )
+    expect(mockBuildStudio).toHaveBeenCalled()
+    expect(vi.mocked(checkBuiltOutput)).toHaveBeenCalledWith('/root/dist')
+  })
+
+  test('prints what the host must serve, and that the fresh build needs copying', async () => {
+    const options = deployOptions({flags: externalFlags})
+
+    await deployStudio(options)
+
+    const logged = vi
+      .mocked(options.output.log)
+      .mock.calls.map(([line]) => line)
+      .join('\n')
+    expect(logged).toContain('/mf-manifest.json')
+    expect(logged).toContain('Access-Control-Allow-Origin')
+    expect(logged).toContain('https://org-1.sanity.run')
+    expect(logged).toContain('cookies')
+    expect(logged).toContain('copy it to your host')
+  })
+
+  test('a first deploy without --url fails before anything is created', async () => {
+    const options = deployOptions({flags: {...externalFlags, url: undefined}})
+    const error = vi.mocked(options.output.error).mockImplementation(() => {
+      throw new Error('exit')
+    })
+
+    await expect(deployStudio(options)).rejects.toThrow('exit')
+
+    expect(error.mock.calls[0][0]).toContain('URL')
+    expect(mockCreateStudio).not.toHaveBeenCalled()
+    expect(mockDeployWorkbenchApp).not.toHaveBeenCalled()
+  })
+
+  test('a first deploy with --no-build fails before anything is created', async () => {
+    const options = deployOptions({flags: {...externalFlags, build: false}})
+    const error = vi.mocked(options.output.error).mockImplementation(() => {
+      throw new Error('exit')
+    })
+
+    await expect(deployStudio(options)).rejects.toThrow('exit')
+
+    expect(error.mock.calls[0][0]).toContain('A first deploy cannot skip the build (--no-build)')
+    expect(mockCreateStudio).not.toHaveBeenCalled()
+    expect(mockDeployWorkbenchApp).not.toHaveBeenCalled()
+  })
+
+  test('a redeploy of an external studio ships its manifest without --external', async () => {
+    mockGetApplication.mockResolvedValue({
+      externalUrl: 'https://studio.example.com',
+      id: 'studio-9',
+      organizationId: 'org-1',
+      slug: 'my-studio',
+      title: 'My Studio',
+      type: 'studio',
+    })
+    const options = deployOptions({
+      cliConfig: {deployment: {appId: 'studio-9'}},
+      flags: {build: false, json: false},
+    })
+
+    await deployStudio(options)
+
+    expect(mockCreateStudio).not.toHaveBeenCalled()
+    expect(mockBuildStudio).not.toHaveBeenCalled()
+    expect(mockDeployWorkbenchApp).toHaveBeenCalledWith(
+      expect.objectContaining({applicationId: 'studio-9', isExternal: true}),
+    )
+    const logged = vi.mocked(options.output.log).mock.calls.map(([line]) => line)
+    expect(logged.join('\n')).not.toContain('copy it to your host')
   })
 })
