@@ -27,6 +27,7 @@ function fakeHot(): FakeHot {
 }
 
 interface InstantiatedConfigModule {
+  _adoptListeners: (shared: Set<(next: unknown) => void>) => void
   config: unknown
   subscribe: (listener: (next: unknown) => void) => () => void
   type: string
@@ -46,7 +47,7 @@ function instantiate(source: string, hot: FakeHot): InstantiatedConfigModule {
     .replaceAll('import.meta.hot', '__hot__')
   const factory = new Function(
     '__hot__',
-    `${transformed}\nreturn {config, subscribe, type, version}`,
+    `${transformed}\nreturn {_adoptListeners, config, subscribe, type, version}`,
   )
   return factory(hot) as InstantiatedConfigModule
 }
@@ -152,6 +153,29 @@ describe('mediaLibraryConfigArtifacts', () => {
     expect(listener).toHaveBeenLastCalledWith(moduleV3)
   })
 
+  test('an unsubscribe handle from before an update still works after it', () => {
+    const hotV1 = fakeHot()
+    const moduleV1 = buildModule(hotV1)
+    const listener = vi.fn()
+    // The host keeps this handle from the first Module Federation evaluation.
+    const unsubscribe = moduleV1.subscribe(listener)
+
+    const hotV2 = fakeHot()
+    const moduleV2 = buildModule(hotV2)
+    hotV1.acceptCallback?.(moduleV2)
+    expect(listener).toHaveBeenCalledTimes(1)
+
+    // The live set travels across updates, so the old handle must still
+    // remove the listener — a copied set would orphan it here.
+    unsubscribe()
+
+    const hotV3 = fakeHot()
+    hotV2.acceptCallback?.(buildModule(hotV3))
+    expect(listener).toHaveBeenCalledTimes(1)
+    // With the listener gone the second update has no in-page consumer.
+    expect(hotV2.invalidate).toHaveBeenCalledOnce()
+  })
+
   test('unsubscribe stops notifications', () => {
     const hotV1 = fakeHot()
     const moduleV1 = buildModule(hotV1)
@@ -185,8 +209,8 @@ describe('mediaLibraryConfigArtifacts', () => {
     hotV1.acceptCallback?.(undefined)
     expect(hotV1.invalidate).toHaveBeenCalledOnce()
 
-    // A namespace without the handle (version skew) cannot carry listeners on.
-    hotV1.acceptCallback?.({config: {fields: []}})
+    // A namespace without the hot-chain handle cannot carry listeners on.
+    hotV1.acceptCallback?.({config: {fields: []}, subscribe: vi.fn()})
     expect(hotV1.invalidate).toHaveBeenCalledTimes(2)
   })
 

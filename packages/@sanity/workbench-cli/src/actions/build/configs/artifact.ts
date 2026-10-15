@@ -92,26 +92,33 @@ ${entries}
 // its own page through Module Federation, which keeps returning the first
 // evaluation — the host cannot re-import its way to fresh code. So the host
 // registers a listener here instead: on every hot update the outgoing module
-// forwards its listeners to the incoming module, then replays them with the
-// fresh namespace, and the host re-applies the field config in place (the
-// same pattern view remotes use). When nobody is listening — or a listener
-// fails to apply — invalidate() escalates to Vite's native full reload, so
-// the page can never keep rendering from stale config.
-const listeners = new Set()
+// hands its live listener set to the incoming module, then replays the
+// listeners with the fresh namespace, and the host re-applies the field
+// config in place (the same pattern view remotes use). When nobody is
+// listening — or a listener fails to apply — invalidate() escalates to
+// Vite's native full reload, so the page can never keep rendering from
+// stale config.
+let listeners = new Set()
 export function subscribe(listener) {
   listeners.add(listener)
   return () => listeners.delete(listener)
 }
+// Internal to the hot chain: the set object travels across updates so the
+// unsubscribe closures handed out by any module generation keep deleting
+// from the one live set (a copy would orphan them after the first update).
+export function _adoptListeners(shared) {
+  listeners = shared
+}
 
 if (import.meta.hot) {
   import.meta.hot.accept((next) => {
-    if (!next || typeof next.subscribe !== 'function' || listeners.size === 0) {
+    if (!next || typeof next._adoptListeners !== 'function' || listeners.size === 0) {
       import.meta.hot.invalidate()
       return
     }
     try {
+      next._adoptListeners(listeners)
       for (const listener of listeners) {
-        next.subscribe(listener)
         listener(next)
       }
     } catch {
