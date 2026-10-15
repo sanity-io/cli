@@ -1,4 +1,5 @@
 import {exitCodes} from '@sanity/cli-core/ExitCodes'
+import {Separator} from '@sanity/cli-core/ux'
 import {createTestClient, mockApi, testCommand} from '@sanity/cli-test'
 import {cleanAll, pendingMocks} from 'nock'
 import {afterEach, describe, expect, test, vi} from 'vitest'
@@ -16,6 +17,7 @@ const mocks = vi.hoisted(() => ({
   input: vi.fn(),
   listDatasets: vi.fn(),
   listProjects: vi.fn(),
+  search: vi.fn(),
   select: vi.fn(),
 }))
 
@@ -70,6 +72,7 @@ vi.mock('@sanity/cli-core/ux', async () => {
     ...actual,
     confirm: mocks.confirm,
     input: mocks.input,
+    search: mocks.search,
     select: mocks.select,
   }
 })
@@ -165,7 +168,7 @@ describe('#init: get project details', () => {
 
     mocks.listProjects.mockResolvedValueOnce([])
 
-    mocks.select.mockResolvedValueOnce('org-123') // organization
+    mocks.search.mockResolvedValueOnce('org-123') // organization
     mocks.select.mockResolvedValueOnce('__skip__') // promptForAppTemplateSetup — skip project config
 
     const {error} = await testCommand(
@@ -184,11 +187,13 @@ describe('#init: get project details', () => {
       },
     )
 
-    expect(mocks.select).toHaveBeenCalledWith(
-      expect.objectContaining({
-        message: 'Select organization:',
-      }),
-    )
+    const [{default: defaultOrg, source}] = mocks.search.mock.calls[0]
+    expect(defaultOrg).toBe('org-123')
+    expect(await source(undefined)).toEqual([
+      {name: 'Create new organization', value: '-new-'},
+      new Separator(),
+      {name: 'Test Organization [org-123]', value: 'org-123'},
+    ])
 
     if (error) throw error
   })
@@ -336,7 +341,7 @@ describe('#init: get project details', () => {
     })
 
     mocks.input.mockResolvedValueOnce('My First Project')
-    mocks.select.mockResolvedValueOnce('org-123')
+    mocks.search.mockResolvedValueOnce('org-123')
 
     mockApi({
       apiVersion: CREATE_PROJECT_API_VERSION,
@@ -403,7 +408,7 @@ describe('#init: get project details', () => {
       },
     ])
 
-    mocks.select.mockResolvedValueOnce('project-1')
+    mocks.search.mockResolvedValueOnce('project-1')
 
     mocks.listDatasets.mockResolvedValueOnce([
       {
@@ -425,11 +430,14 @@ describe('#init: get project details', () => {
       },
     })
 
-    expect(mocks.select).toHaveBeenCalledWith(
-      expect.objectContaining({
-        message: 'Create a new project or select an existing one',
-      }),
-    )
+    const [{message, source}] = mocks.search.mock.calls[0]
+    expect(message).toBe('Create a new project or select an existing one')
+    expect(await source(undefined)).toEqual([
+      {name: 'Create new project', value: 'new'},
+      new Separator(),
+      {name: 'Project Two (project-2)', value: 'project-2'},
+      {name: 'Project One (project-1)', value: 'project-1'},
+    ])
 
     expect(stdout).toContain('Below are your project details')
     expect(stdout).toContain('Project ID: project-1')
@@ -467,9 +475,9 @@ describe('#init: get project details', () => {
       ],
     })
 
-    mocks.select.mockResolvedValueOnce('new')
+    mocks.search.mockResolvedValueOnce('new')
     mocks.input.mockResolvedValueOnce('New Project')
-    mocks.select.mockResolvedValueOnce('org-123')
+    mocks.search.mockResolvedValueOnce('org-123')
 
     mockApi({
       apiVersion: CREATE_PROJECT_API_VERSION,
@@ -500,7 +508,7 @@ describe('#init: get project details', () => {
       },
     })
 
-    expect(mocks.select).toHaveBeenCalledWith(
+    expect(mocks.search).toHaveBeenCalledWith(
       expect.objectContaining({
         message: 'Create a new project or select an existing one',
       }),
@@ -512,7 +520,7 @@ describe('#init: get project details', () => {
       }),
     )
 
-    expect(mocks.select).toHaveBeenCalledWith(
+    expect(mocks.search).toHaveBeenCalledWith(
       expect.objectContaining({
         message: 'Select organization:',
       }),
@@ -538,7 +546,7 @@ describe('#init: get project details', () => {
       uri: '/organizations',
     }).reply(200, [{id: 'org-of-project-1', name: 'Test Organization', slug: 'test-org'}])
 
-    mocks.select.mockResolvedValueOnce('project-1')
+    mocks.search.mockResolvedValueOnce('project-1')
     mocks.listDatasets.mockResolvedValueOnce([{aclMode: 'public', name: 'production'}])
     mockApi({
       apiVersion: PROJECT_FEATURES_API_VERSION,
@@ -585,9 +593,9 @@ describe('#init: get project details', () => {
       uri: '/organizations/org-123/grants',
     }).reply(200, {'sanity.organization.projects': [{grants: [{name: 'attach'}]}]})
 
-    mocks.select.mockResolvedValueOnce('new')
+    mocks.search.mockResolvedValueOnce('new')
     mocks.input.mockResolvedValueOnce('New Project')
-    mocks.select.mockResolvedValueOnce('org-123')
+    mocks.search.mockResolvedValueOnce('org-123')
 
     mockApi({
       apiVersion: CREATE_PROJECT_API_VERSION,
@@ -1038,7 +1046,7 @@ describe('#init: promptForAppTemplateSetup', () => {
 
     mocks.listProjects.mockResolvedValueOnce([])
 
-    mocks.select.mockResolvedValueOnce('org-123') // organization
+    mocks.search.mockResolvedValueOnce('org-123') // organization
     mocks.select.mockResolvedValueOnce('__skip__') // promptForAppTemplateSetup — skip
 
     const {error} = await testCommand(
@@ -1083,7 +1091,7 @@ describe('#init: promptForAppTemplateSetup', () => {
       uri: '/features',
     }).reply(200, ['privateDataset'])
 
-    mocks.select.mockResolvedValueOnce('org-123') // organization
+    mocks.search.mockResolvedValueOnce('org-123') // organization
     mocks.select.mockResolvedValueOnce('existing-pid') // inline project choice
     mocks.select.mockResolvedValueOnce('production') // dataset choice
 
@@ -1133,7 +1141,7 @@ describe('#init: promptForAppTemplateSetup', () => {
       uri: '/features',
     }).reply(200, ['privateDataset'])
 
-    mocks.select.mockResolvedValueOnce('org-123') // organization
+    mocks.search.mockResolvedValueOnce('org-123') // organization
     mocks.select.mockResolvedValueOnce('__new__') // promptForAppTemplateSetup — create new
     mocks.select.mockResolvedValueOnce('production') // dataset choice
     mocks.input.mockResolvedValueOnce('New App Project') // project name
@@ -1199,6 +1207,7 @@ describe('#init: promptForAppTemplateSetup', () => {
 
     // No interactive prompts — all driven by flags
     expect(mocks.select).not.toHaveBeenCalled()
+    expect(mocks.search).not.toHaveBeenCalled()
     expect(mocks.listProjects).toHaveBeenCalled()
   })
 
@@ -1224,7 +1233,7 @@ describe('#init: promptForAppTemplateSetup', () => {
       uri: '/features',
     }).reply(200, [])
 
-    mocks.select.mockResolvedValueOnce('org-123') // organization
+    mocks.search.mockResolvedValueOnce('org-123') // organization
     mocks.select.mockResolvedValueOnce('__new__') // create new project
     mocks.input.mockResolvedValueOnce('New App Project') // project name
 
@@ -1275,6 +1284,8 @@ describe('#init: promptForAppTemplateSetup', () => {
     if (error) throw error
 
     expect(mocks.select).not.toHaveBeenCalled()
+
+    expect(mocks.search).not.toHaveBeenCalled()
     expect(mocks.listProjects).not.toHaveBeenCalled()
     expect(mocks.listDatasets).not.toHaveBeenCalled()
   })
@@ -1318,7 +1329,7 @@ describe('#init: promptForAppTemplateSetup', () => {
     if (error) throw error
 
     // Neither the org prompt nor the "Configure a project for this app?" prompt should fire
-    expect(mocks.select).not.toHaveBeenCalledWith(
+    expect(mocks.search).not.toHaveBeenCalledWith(
       expect.objectContaining({message: 'Select organization:'}),
     )
     expect(mocks.select).not.toHaveBeenCalledWith(
@@ -1356,6 +1367,8 @@ describe('#init: promptForAppTemplateSetup', () => {
     if (error) throw error
 
     expect(mocks.select).not.toHaveBeenCalled()
+
+    expect(mocks.search).not.toHaveBeenCalled()
     expect(mocks.createDataset).not.toHaveBeenCalled()
   })
 
