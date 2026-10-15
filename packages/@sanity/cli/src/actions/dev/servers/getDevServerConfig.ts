@@ -3,7 +3,7 @@ import path from 'node:path'
 import {type CliConfig, getSanityEnvVar, type Output} from '@sanity/cli-core'
 import {logSymbols, spinner} from '@sanity/cli-core/ux'
 import {isWorkbenchApp} from '@sanity/workbench-cli'
-import {resolveWorkbenchConfig} from '@sanity/workbench-cli/build'
+import {resolveAppEntry, resolveWorkbenchConfig} from '@sanity/workbench-cli/build'
 
 import {type DevServerOptions} from '../../../server/devServer.js'
 import {determineIsApp} from '../../../util/determineIsApp.js'
@@ -64,7 +64,7 @@ export function getDevServerConfig({
     bundledDev,
     // The app's navigable entry. A branded app that omits `entry` has no app
     // view: the runtime/federation skip the `./App` render path entirely.
-    entry: app?.entry,
+    entry: resolveAppEntry(app),
     exposes: isWorkbenchApp(app)
       ? {views: app.views, webWorkers: app.webWorkers}
       : workbenchConfig

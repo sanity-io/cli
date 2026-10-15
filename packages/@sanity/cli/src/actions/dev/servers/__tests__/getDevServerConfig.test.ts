@@ -36,6 +36,20 @@ describe('getDevServerConfig', () => {
     expect(plain.workbenchAppId).toBeUndefined()
   })
 
+  test("serves a window view's src as the app entry when `entry` is omitted", () => {
+    const config = getDevServerConfig({
+      cliConfig: {
+        app: workbenchApp({
+          views: [{name: 'main', src: './src/window.tsx', surface: 'window', title: 'Main'}],
+        }),
+      } as CliConfig,
+      flags: FLAGS,
+      output: createMockOutput(),
+      workDir: '/tmp',
+    })
+    expect(config.entry).toBe('./src/window.tsx')
+  })
+
   test('should warn when both SANITY_STUDIO_BASEPATH env var and config basePath are set', () => {
     vi.stubEnv('SANITY_STUDIO_BASEPATH', '/env-base')
     const output = createMockOutput()

@@ -7,7 +7,7 @@
 
 import {type AppVisibility, type CliConfig} from '@sanity/cli-core'
 
-import {type WorkbenchConfigValue} from './contract.js'
+import {defineWindowView, type WorkbenchConfigValue} from './contract.js'
 import {type DefineAppInput, isWorkbenchApp} from './defineApp.js'
 import {formatWorkbenchAppErrors, validateWorkbenchApp} from './validateWorkbenchApp.js'
 
@@ -50,6 +50,24 @@ export interface ResolvedWorkbenchApp {
   readonly isSingleton?: boolean
   /** Dashboard visibility declared by the app; `undefined` when unset. */
   readonly visibility?: AppVisibility
+}
+
+/**
+ * The module behind the app's `./App` expose. `entry` is shorthand for a window view.
+ * @internal
+ */
+export function resolveAppEntry(app: CliConfig['app']): string | undefined {
+  if (!isWorkbenchApp(app)) return app?.entry
+
+  const views =
+    app.entry === undefined
+      ? (app.views ?? [])
+      : [
+          defineWindowView({name: app.name ?? app.slug, src: app.entry, title: app.title}),
+          ...(app.views ?? []),
+        ]
+
+  return views.find((view) => view.surface === 'window')?.src
 }
 
 /**
