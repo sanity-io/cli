@@ -11,8 +11,10 @@ import {readPackageJson} from '@sanity/cli-core'
 import {type PluginOption} from 'vite'
 
 import {type WorkbenchExposes} from '../../../resolveWorkbenchApp.js'
+import {isMediaLibraryConfigApp} from '../configs/configApp.js'
 import {federation} from './plugin.js'
 import {sanityAppId} from './plugins/plugin-sanity-app-id.js'
+import {stripSuiGlobalReset} from './plugins/plugin-strip-sui-global-reset.js'
 
 interface WorkbenchViteOptions {
   /** Project root — read for the federation remote name, and the plugin workDir. */
@@ -74,5 +76,16 @@ export async function workbenchVitePlugins(options: WorkbenchViteOptions): Promi
     workDir: cwd,
   })
 
-  return appId === undefined ? federationPlugin : [federationPlugin, sanityAppId(appId)]
+  // Media Library config apps run their modules inside the host's page, so
+  // the `sanity` barrel's document-wide CSS reset must not travel with the
+  // bundle (see the plugin for the full why).
+  const configAppPlugins: PluginOption[] = isMediaLibraryConfigApp(exposes)
+    ? [stripSuiGlobalReset()]
+    : []
+
+  return [
+    ...configAppPlugins,
+    federationPlugin,
+    ...(appId === undefined ? [] : [sanityAppId(appId)]),
+  ]
 }
