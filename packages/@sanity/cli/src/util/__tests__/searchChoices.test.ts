@@ -24,11 +24,25 @@ describe('searchChoices', () => {
 
   test('matches every word anywhere in the name', () => {
     expect(source('shop globex')).toEqual([globex, separator, create])
-    expect(source('acme shop')).toEqual([new Separator('No matches for "acme shop"'), create])
+    expect(source('acme shop')).toEqual([
+      new Separator('No matches for "acme shop"'),
+      {...create, disabled: '(clear search to select)'},
+    ])
   })
 
-  test('shows the search term and keeps pinned choices when nothing matches', () => {
-    expect(source(' nope ')).toEqual([new Separator('No matches for "nope"'), create])
+  test('shows the search term and disables pinned choices when nothing matches', () => {
+    expect(source(' nope ')).toEqual([
+      new Separator('No matches for "nope"'),
+      {...create, disabled: '(clear search to select)'},
+    ])
+  })
+
+  test('disables pinned choices when only disabled choices match', () => {
+    expect(source('locked')).toEqual([
+      locked,
+      separator,
+      {...create, disabled: '(clear search to select)'},
+    ])
   })
 
   test('filters all choices when there is no separator', () => {
