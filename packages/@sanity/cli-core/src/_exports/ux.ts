@@ -18,10 +18,12 @@ export {
   number,
   password,
   rawlist,
+  roleChecklist,
   search,
   select,
   Separator,
 } from '../ux/prompts.js'
+export {type ChecklistItem} from '../ux/roleChecklist.js'
 export {
   spinner,
   type Spinner,
