@@ -1,5 +1,21 @@
 # Change Log
 
+## 8.18.0
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-v8.17.1...cli-v8.18.0)
+
+_2026-10-16_
+
+### Features
+
+- **workbench-cli:** let worker services respond to event topics ([#1986](https://github.com/sanity-io/cli/pull/1986)) ([0940360](https://github.com/sanity-io/cli/commit/0940360e17dcafe2137c24d99e4ecb6c883ad3c2))
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/workbench-cli bumped to 2.11.0
+
 ## 8.17.1
 
 [Compare changes](https://github.com/sanity-io/cli/compare/cli-v8.17.0...cli-v8.17.1)
