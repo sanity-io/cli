@@ -1,5 +1,15 @@
 # @sanity/workbench-cli
 
+## 2.11.0
+
+[Compare changes](https://github.com/sanity-io/cli/compare/workbench-cli-v2.10.0...workbench-cli-v2.11.0)
+
+_2026-10-16_
+
+### Features
+
+- **workbench-cli:** let worker services respond to event topics ([#1986](https://github.com/sanity-io/cli/pull/1986)) ([0940360](https://github.com/sanity-io/cli/commit/0940360e17dcafe2137c24d99e4ecb6c883ad3c2))
+
 ## 2.10.0
 
 [Compare changes](https://github.com/sanity-io/cli/compare/workbench-cli-v2.9.0...workbench-cli-v2.10.0)
