@@ -197,7 +197,7 @@ describe('#tokens:create', () => {
       [
         'CI',
         '--organization=org-1',
-        '--grant=context',
+        '--grant=context=editor',
         '--grant=context=editor',
         '--grant=project:p1=editor',
         '--grant=project:p1=editor,deploy-studio',
@@ -213,7 +213,7 @@ describe('#tokens:create', () => {
         {
           resourceId: 'org-1',
           resourceType: 'organization',
-          roleNames: ['knowledge-base-viewer-robot', 'knowledge-base-editor-robot'],
+          roleNames: ['knowledge-base-editor-robot'],
         },
         {
           resourceId: 'p1',

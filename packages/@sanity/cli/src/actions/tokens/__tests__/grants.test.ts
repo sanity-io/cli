@@ -1,6 +1,6 @@
 import {describe, expect, test} from 'vitest'
 
-import {parseGrant} from '../grants.js'
+import {findGrantConflict, parseGrant} from '../grants.js'
 
 describe('parseGrant', () => {
   test.each([
@@ -12,6 +12,20 @@ describe('parseGrant', () => {
     'project:p1=editor,',
   ])('rejects malformed grant %s', (value) => {
     expect(parseGrant(value)).toEqual({error: expect.stringContaining('Invalid grant')})
+  })
+
+  test('rejects more than one role for an organization permission', () => {
+    expect(parseGrant('context=viewer,editor')).toEqual({
+      error: expect.stringContaining('takes one role'),
+    })
+  })
+
+  test('rejects the same permission with different roles across flags', () => {
+    const grants = [
+      {key: 'context', roles: ['viewer']},
+      {key: 'context', roles: ['editor']},
+    ]
+    expect(findGrantConflict(grants)).toContain('different roles')
   })
 
   test.each([

@@ -12,6 +12,7 @@ import {
 import {expiryInDays, parseExpiryDate} from '../../actions/tokens/expiry.js'
 import {
   DEFAULT_ROLE,
+  findGrantConflict,
   formatGrant,
   getProjectTokenMembership,
   type Grant,
@@ -28,6 +29,14 @@ import {createOrganizationToken, createToken} from '../../services/tokens.js'
 import {getOrganizationFlag, getProjectIdFlag} from '../../util/sharedFlags.js'
 
 const tokensCreateDebug = subdebug('tokens:create')
+
+type Access = {
+  expiresAt: string | undefined
+  grants: Grant[]
+
+  organizationId?: string
+  roleTitle?: string
+}
 
 // Mirrors the expiry presets offered by sanity.io/manage
 const EXPIRY_PRESET_DAYS = [30, 60, 90]
@@ -125,38 +134,15 @@ export class CreateTokenCommand extends SanityCommand<typeof CreateTokenCommand>
     const getExpiry = async () =>
       flags['expires-at'] === undefined ? this.promptForExpiry() : flagExpiresAt
     const flagGrants = (flags.grant ?? []).map((value) => this.parseGrantFlag(value))
-
-    let grants: Grant[]
-    let expiresAt: string | undefined
-    let organizationId: string | undefined
-    let roleTitle: string | undefined
-    if (this.isUnattended() || flagGrants.length > 0 || flags.role !== undefined) {
-      const flagAccess = await this.getFlagGrants(flagGrants)
-      grants = flagAccess.grants
-      roleTitle = flagAccess.roleTitle
-      expiresAt = await getExpiry()
-    } else {
-      const contextProjectId = flags['project-id'] ?? (await this.tryGetCliConfig()).api?.projectId
-      const projects = await listProjects({onlyExplicitMembership: false})
-      organizationId = await this.resolveOrganization(
-        projects.find((project) => project.id === contextProjectId)?.organizationId,
-      )
-      const organizationProjects = projects.filter(
-        (project) => project.organizationId === organizationId,
-      )
-      const requestedProjectId = flags['project-id']
-      if (requestedProjectId && !organizationProjects.some(({id}) => id === requestedProjectId)) {
-        this.error(
-          `Project ${requestedProjectId} isn't in organization ${organizationId}, or you don't have access to it.`,
-          {exit: exitCodes.USAGE_ERROR},
-        )
-      }
-      expiresAt = await getExpiry()
-      grants = await promptForGrants({
-        preselectedProjectId: requestedProjectId,
-        projects: organizationProjects,
-      })
+    const grantConflict = findGrantConflict(flagGrants)
+    if (grantConflict) {
+      this.error(grantConflict, {exit: exitCodes.USAGE_ERROR})
     }
+
+    const {expiresAt, grants, organizationId, roleTitle}: Access =
+      this.isUnattended() || flagGrants.length > 0 || flags.role !== undefined
+        ? {...(await this.getFlagGrants(flagGrants)), expiresAt: await getExpiry()}
+        : await this.promptForAccess(getExpiry)
 
     let token: RobotWithToken
     try {
@@ -276,6 +262,34 @@ export class CreateTokenCommand extends SanityCommand<typeof CreateTokenCommand>
     return parsed.grant
   }
 
+  private async promptForAccess(getExpiry: () => Promise<string | undefined>): Promise<Access> {
+    const requestedProjectId = this.flags['project-id']
+    const configProjectId = (await this.tryGetCliConfig()).api?.projectId
+    const projects = await listProjects({onlyExplicitMembership: false})
+    const organizationOf = (projectId: string | undefined) =>
+      projects.find((project) => project.id === projectId)?.organizationId ?? undefined
+    const organizationId = await this.resolveOrganization({
+      fallback: organizationOf(configProjectId),
+      preferred: organizationOf(requestedProjectId),
+    })
+    const organizationProjects = projects.filter(
+      (project) => project.organizationId === organizationId,
+    )
+    if (requestedProjectId && !organizationProjects.some(({id}) => id === requestedProjectId)) {
+      this.error(
+        `Project ${requestedProjectId} isn't in organization ${organizationId}, or you don't have access to it.`,
+        {exit: exitCodes.USAGE_ERROR},
+      )
+    }
+
+    const expiresAt = await getExpiry()
+    const grants = await promptForGrants({
+      preselectedProjectId: requestedProjectId,
+      projects: organizationProjects,
+    })
+    return {expiresAt, grants, organizationId}
+  }
+
   private async promptForExpiry(): Promise<string | undefined> {
     if (this.isUnattended()) {
       return undefined // Tokens never expire by default
@@ -333,11 +347,14 @@ export class CreateTokenCommand extends SanityCommand<typeof CreateTokenCommand>
     return label.trim()
   }
 
-  private async resolveOrganization(projectOrganizationId?: string | null): Promise<string> {
+  private async resolveOrganization(
+    projectOrganizations: {fallback?: string; preferred?: string} = {},
+  ): Promise<string> {
+    const {fallback, preferred} = projectOrganizations
     try {
       return await resolveOrganizationId({
         configuredOrganizationId:
-          (await this.tryGetCliConfig()).app?.organizationId ?? projectOrganizationId ?? undefined,
+          preferred ?? (await this.tryGetCliConfig()).app?.organizationId ?? fallback,
         flagOrganizationId: this.flags.organization,
         unattended: this.isUnattended(),
       })

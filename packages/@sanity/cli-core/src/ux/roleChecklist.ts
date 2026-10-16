@@ -96,11 +96,12 @@ function cycleRole(row: Row, offset: number): Row {
   return next ? {...row, role: next.value} : row
 }
 
-function findSubmitError(rows: Row[], isLoading: boolean): string | undefined {
-  if (isLoading) return 'Still loading roles. Press ⏎ again in a moment'
-
+function findSubmitError(rows: Row[], isLoading: (row: Row) => boolean): string | undefined {
   const selected = rows.filter((row) => row.checked)
   if (selected.length === 0) return 'Select at least one option'
+
+  const loading = selected.find((row) => isLoading(row))
+  if (loading) return `Still loading roles for ${loading.name}. Press ⏎ again in a moment`
 
   const unloaded = selected.find((row) => row.loadRoles)
   if (unloaded) return `Couldn't load roles for ${unloaded.name}. Press ←→ to retry, or uncheck it`
@@ -145,6 +146,7 @@ export const roleChecklist: (
     const [active, setActive] = useState(0)
     const [error, setError] = useState<string>()
     const pendingLoads = useRef(new Map<string, Promise<void>>())
+    const settled = useRef(false)
 
     const query = filter.toLowerCase()
     const visible = rows.filter((row) => formatLabel(row).toLowerCase().includes(query))
@@ -156,6 +158,7 @@ export const roleChecklist: (
     const fetchRoles = async (value: string, load: () => Promise<ChecklistRole[]>) => {
       try {
         const roles = await load()
+        if (settled.current) return
         updateRow(value, (row) => ({
           ...row,
           loadRoles: undefined,
@@ -163,7 +166,7 @@ export const roleChecklist: (
           roles,
         }))
       } catch (err) {
-        setError(getErrorMessage(err))
+        if (!settled.current) setError(getErrorMessage(err))
       } finally {
         pendingLoads.current.delete(value)
       }
@@ -185,11 +188,12 @@ export const roleChecklist: (
 
     useKeypress(async (key, rl) => {
       if (isEnterKey(key)) {
-        const submitError = findSubmitError(rows, pendingLoads.current.size > 0)
+        const submitError = findSubmitError(rows, (row) => pendingLoads.current.has(row.value))
         if (submitError) {
           setError(submitError)
           return
         }
+        settled.current = true
         setStatus('done')
         done(rows.filter((row) => row.checked).map(({role, value}) => ({role, value})))
         return

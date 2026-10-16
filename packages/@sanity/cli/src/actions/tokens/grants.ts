@@ -75,6 +75,8 @@ const findOrgPermission = (key: string) =>
 
 const isProjectGrant = (grant: Grant) => grant.key.startsWith(PROJECT_PREFIX)
 
+const orgGrants = (grants: Grant[]) => grants.filter((grant) => !isProjectGrant(grant))
+
 export function projectGrantKey(projectId: string): string {
   return `${PROJECT_PREFIX}${projectId}`
 }
@@ -107,11 +109,16 @@ export function parseGrant(value: string): {error: string} | {grant: Grant} {
       : {grant: {key, roles: []}}
   }
 
-  const roleKeys = permission.roles.map((role) => role.key)
-  const invalid = roles.find((role) => !roleKeys.includes(role))
-  if (invalid) {
+  if (roles.length > 1) {
     return {
-      error: `Invalid role "${invalid}" for "${key}". Use one of: ${roleKeys.join(', ')}`,
+      error: `Grant "${key}" takes one role. Pass it as --grant ${key}=<role>`,
+    }
+  }
+
+  const roleKeys = permission.roles.map((role) => role.key)
+  if (roles[0] && !roleKeys.includes(roles[0])) {
+    return {
+      error: `Invalid role "${roles[0]}" for "${key}". Use one of: ${roleKeys.join(', ')}`,
     }
   }
 
@@ -122,17 +129,24 @@ export function formatGrant({key, roles}: Grant): string {
   return roles.length > 0 ? `${key}=${roles.join(',')}` : key
 }
 
+export function findGrantConflict(grants: Grant[]): string | undefined {
+  const roleByPermission = new Map<string, string | undefined>()
+  for (const {key, roles} of orgGrants(grants)) {
+    if (roleByPermission.has(key) && roleByPermission.get(key) !== roles[0]) {
+      return `Grant "${key}" was given with different roles. Pass it once.`
+    }
+    roleByPermission.set(key, roles[0])
+  }
+  return undefined
+}
+
 function toOrganizationRoleNames(grants: Grant[]): string[] {
-  const roleNames = grants
-    .filter((grant) => !isProjectGrant(grant))
-    .flatMap(({key, roles}) => {
-      const permission = findOrgPermission(key)
-      if (!permission) return []
-      if ('roleName' in permission) return [permission.roleName]
-      return permission.roles
-        .filter((role) => roles.includes(role.key))
-        .map((role) => role.roleName)
-    })
+  const roleNames = orgGrants(grants).flatMap(({key, roles}) => {
+    const permission = findOrgPermission(key)
+    if (!permission) return []
+    if ('roleName' in permission) return [permission.roleName]
+    return permission.roles.filter((role) => roles.includes(role.key)).map((role) => role.roleName)
+  })
   return [...new Set(roleNames)]
 }
 
