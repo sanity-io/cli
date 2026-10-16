@@ -1,4 +1,4 @@
-import {basename, dirname, relative, resolve} from 'node:path'
+import {basename, dirname, join, relative} from 'node:path'
 import {styleText} from 'node:util'
 import {createGzip, type Gzip} from 'node:zlib'
 
@@ -526,25 +526,24 @@ function studioBuildSkipReason({
  * @param projectRootDir - The root directory of the studio
  */
 async function isBlueprintStudio(projectRootDir: string): Promise<boolean> {
-  //try {
-  const blueprintFile = findBlueprintFile(projectRootDir)
-  if (!blueprintFile) return false
+  try {
+    const blueprintFile = findBlueprintFile(projectRootDir)
+    if (!blueprintFile) return false
 
-  const localBlueprint = await readBlueprint({
-    path: blueprintFile,
-  })
+    const localBlueprint = await readBlueprint({
+      path: blueprintFile,
+    })
 
-  const blueprintReferencesStudio = localBlueprint.resources.some((r) => {
-    if (r.type === 'sanity.studio' && 'root' in r && typeof r.root === 'string') {
-      return resolve(dirname(blueprintFile), r.root) === projectRootDir
-    }
+    const blueprintReferencesStudio = localBlueprint.resources.some((r) => {
+      if (r.type === 'sanity.studio' && 'root' in r && typeof r.root === 'string') {
+        return relative(join(dirname(blueprintFile), r.root), projectRootDir) === ''
+      }
 
-    return false
-  })
+      return false
+    })
 
-  return blueprintReferencesStudio
-  // } catch (err) {
-
-  //   return false // fail open
-  // }
+    return blueprintReferencesStudio
+  } catch {
+    return false // fail open
+  }
 }
