@@ -1,10 +1,11 @@
 import {subdebug} from '@sanity/cli-core'
-import {select, Separator} from '@sanity/cli-core/ux'
+import {search, Separator} from '@sanity/cli-core/ux'
 
 import {promptForDatasetName} from '../../../prompts/promptForDatasetName.js'
 import {promptForDefaultConfig} from '../../../prompts/promptForDefaultConfig.js'
 import {listDatasets} from '../../../services/datasets.js'
 import {getProjectFeatures} from '../../../services/getProjectFeatures.js'
+import {searchChoices, searchTheme} from '../../../util/searchChoices.js'
 import {createDataset} from '../../dataset/create.js'
 import {type InitContext} from '../types.js'
 
@@ -93,11 +94,16 @@ export async function getOrCreateDataset(opts: {
   }
 
   debug(`User has ${datasets.length} dataset(s) already, showing list of choices`)
-  const datasetChoices = datasets.map((dataset) => ({value: dataset.name}))
+  const datasetChoices = datasets.map((dataset) => ({name: dataset.name, value: dataset.name}))
 
-  const selected = await select({
-    choices: [{name: 'Create new dataset', value: 'new'}, new Separator(), ...datasetChoices],
+  const selected = await search({
     message: 'Select dataset to use',
+    source: searchChoices([
+      {name: 'Create new dataset', value: 'new'},
+      new Separator(),
+      ...datasetChoices,
+    ]),
+    theme: searchTheme,
   })
 
   if (selected === 'new') {
