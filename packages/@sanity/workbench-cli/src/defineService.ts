@@ -1,6 +1,10 @@
 import {
+  type EventTopic,
   type MessageBus,
   type MessageBusAbortOptions,
+  type MessageBusMessage,
+  type PayloadOf,
+  type ReplyOf,
   type StateTopic,
   type ValueOf,
 } from '@sanity/sdk/dashboard'
@@ -17,14 +21,19 @@ export interface ServiceInfo {
 }
 
 /**
- * The message bus as a service sees it: `emit` and `query` as in the SDK, and
- * `subscribe` for state topics only. Only Dashboard can respond to its event
- * topics, so a service has no reason to subscribe to them. There is no
- * `disconnect`: Dashboard owns the connection and ends it when it stops the
- * worker.
+ * The message bus as a service sees it: the SDK's `MessageBus` without the
+ * `subscribe` forms that return observables, which would make the service's
+ * project install rxjs. There is no `disconnect`: Dashboard owns the connection
+ * and ends it when it stops the worker.
  * @public
  */
 export interface ServiceBus extends Omit<MessageBus, 'subscribe'> {
+  /** Runs a responder for each event until its signal aborts. */
+  subscribe<K extends EventTopic>(
+    type: K,
+    handler: (message: MessageBusMessage<PayloadOf<K>, ReplyOf<K>, K>) => void,
+    options?: MessageBusAbortOptions,
+  ): void
   /** Runs a handler for each state value until its signal aborts. */
   subscribe<K extends StateTopic>(
     type: K,
@@ -74,9 +83,30 @@ export interface DefinedService<TType extends ServiceType = ServiceType> {
  * The callback receives `bus`, its connection to the Dashboard message bus:
  * `bus.emit` sends an event (such as a dock-badge update), `bus.query` reads the
  * current value of a state topic, and `bus.subscribe` runs a handler on each
- * new value of a state topic until its `signal` aborts. A refused, unanswered
- * or timed-out request rejects with an `Error` named `MessageBusError` whose
- * `code` says why; it is not an instance of the SDK's `MessageBusError` class.
+ * new value of a state topic, or on each event of an event topic, until its
+ * `signal` aborts. A refused, unanswered or timed-out `emit` or `query` rejects
+ * with an `Error` named `MessageBusError` whose `code` says why; it is not an
+ * instance of the SDK's `MessageBusError` class.
+ *
+ * An event handler answers the sender with `message.reply(value)` or refuses
+ * with `message.reject(reason)`; one that throws refuses with code
+ * `HANDLER_THREW`. For example, a service that keeps a snapshot for its app's
+ * views, which listen with `useWorker` first and then post to it. A view's post
+ * arrives on `workers.post` as `{name, payload}`, and `workers.message` reaches
+ * only this app's views:
+ *
+ * ```ts
+ * export default unstable_defineService('worker', ({bus}) => {
+ *   const controller = new AbortController()
+ *   bus.subscribe('workers.post', (message) => message.reply(snapshot), {
+ *     signal: controller.signal,
+ *   })
+ *   // Views that are already listening post again.
+ *   bus.emit('workers.message', {type: 'welcome'})
+ *   return () => controller.abort()
+ * })
+ * ```
+ *
  * The callback can return a disposer, which runs when Dashboard stops the
  * worker. By then the bus is closed: subscriptions have ended, `emit` and
  * `query` reject with code `ABORTED`, and `subscribe` throws that error.

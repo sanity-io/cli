@@ -1,7 +1,12 @@
 // Runs inside the service's Web Worker, bundled by Vite from the generated
 // `worker.js`. Keep it free of Node and of runtime imports: `@sanity/sdk` is
 // only ever imported for types.
-import {type MessageBusEmitResult, type MessageBusErrorCode} from '@sanity/sdk/dashboard'
+import {
+  type MessageBusEmitResult,
+  type MessageBusErrorCode,
+  type MessageBusMessage,
+  type MessageBusMeta,
+} from '@sanity/sdk/dashboard'
 
 import {type ServiceBus} from '../../../defineService.js'
 
@@ -14,6 +19,10 @@ interface RequestOptions {
 
 type Outcome = {error: Error; ok: false} | {ok: true; value: unknown}
 
+type Answer =
+  | {error: {code: 'HANDLER_THREW' | 'REFUSED'; message: string}; ok: false}
+  | {ok: true; value: unknown}
+
 type HostMessage =
   | {
       error: {code: MessageBusErrorCode; message: string}
@@ -23,6 +32,15 @@ type HostMessage =
     }
   | {id: number; kind: 'workbench.bus.reply'; ok: true; value: unknown}
   | {id: number; kind: 'workbench.bus.value'; value: unknown}
+  | {
+      id: number
+      kind: 'workbench.bus.message'
+      messageId: number
+      meta: MessageBusMeta
+      payload: unknown
+      type: string
+    }
+  | {kind: 'workbench.bus.cancel'; messageId: number}
 
 // Mirrors the SDK's MessageBusError: importing the class would pull the SDK
 // runtime into the worker bundle.
@@ -56,7 +74,10 @@ export function createWorkerBus(): {
   receive: (data: unknown) => void
 } {
   const pending = new Map<number, (outcome: Outcome) => void>()
-  const subscriptions = new Map<number, (value: unknown) => void>()
+  // The worker can't tell a state topic from an event topic, so it stores every
+  // handler alike; the host's `value` or `message` decides how it is called.
+  const subscriptions = new Map<number, (value: unknown) => unknown>()
+  const inFlight = new Map<number, AbortController>()
   let nextId = 0
   let closed = false
 
@@ -107,6 +128,48 @@ export function createWorkerBus(): {
       }))
   }
 
+  // Matches the SDK's `invokeResponder`, so a responder behaves the same in a
+  // worker as on the page.
+  function respond(
+    handler: (message: MessageBusMessage<unknown, unknown, string>) => unknown,
+    {messageId, meta, payload, type}: Extract<HostMessage, {kind: 'workbench.bus.message'}>,
+  ) {
+    const controller = new AbortController()
+    inFlight.set(messageId, controller)
+    const answer = (result: Answer) => {
+      if (inFlight.get(messageId) !== controller) return false
+      inFlight.delete(messageId)
+      self.postMessage({...result, kind: 'workbench.bus.answer', messageId})
+      return true
+    }
+    const warnIfIgnored = (answered: boolean, action: string) => {
+      if (answered) return
+      // eslint-disable-next-line no-console -- the worker's console is bridged to the host logger
+      console.warn(
+        `Message bus ${action} ignored for "${type}": no waiting caller or already replied`,
+      )
+    }
+    const fail = () => answer({error: {code: 'HANDLER_THREW', message: 'HANDLER_THREW'}, ok: false})
+
+    try {
+      const result = handler({
+        meta,
+        payload,
+        reject: (reason) =>
+          warnIfIgnored(
+            answer({error: {code: 'REFUSED', message: reason ?? 'REFUSED'}, ok: false}),
+            'reject',
+          ),
+        reply: (value) => warnIfIgnored(answer({ok: true, value}), 'reply'),
+        signal: controller.signal,
+        type,
+      })
+      if (result instanceof Promise) result.catch(fail)
+    } catch {
+      fail()
+    }
+  }
+
   const bus = {
     emit: (topic: string, payload?: unknown, options?: RequestOptions) => {
       const awaitReply = request({kind: 'workbench.bus.emit', payload, topic}, options)
@@ -120,7 +183,7 @@ export function createWorkerBus(): {
     },
     query: (topic: string, options?: RequestOptions) =>
       request({kind: 'workbench.bus.query', topic}, options)(),
-    subscribe: (topic: string, handler: (value: unknown) => void, options?: RequestOptions) => {
+    subscribe: (topic: string, handler: (value: unknown) => unknown, options?: RequestOptions) => {
       if (closed) throw busError('ABORTED')
       const signal = options?.signal
       if (signal?.aborted) return
@@ -143,26 +206,45 @@ export function createWorkerBus(): {
     close: () => {
       closed = true
       subscriptions.clear()
+      const controllers = [...inFlight.values()]
+      inFlight.clear()
+      for (const controller of controllers) controller.abort()
       for (const settle of pending.values()) settle({error: busError('ABORTED'), ok: false})
     },
     receive: (data) => {
       const message = data as HostMessage
-      if (message.kind === 'workbench.bus.value') {
-        subscriptions.get(message.id)?.(message.value)
-      } else if (message.kind === 'workbench.bus.reply') {
-        const settle = pending.get(message.id)
-        if (message.ok) {
-          settle?.({ok: true, value: message.value})
+      switch (message.kind) {
+        case 'workbench.bus.cancel': {
+          const controller = inFlight.get(message.messageId)
+          // Forget it first so an abort listener's reply is ignored.
+          inFlight.delete(message.messageId)
+          controller?.abort()
           return
         }
-        // A refused subscription has no promise to reject, so tell the author through the host logger.
-        if (subscriptions.delete(message.id)) {
-          // eslint-disable-next-line no-console -- the worker's console is bridged to the host logger
-          console.error(
-            `Message bus subscription refused: ${message.error.code}: ${message.error.message}`,
-          )
+        case 'workbench.bus.message': {
+          const handler = subscriptions.get(message.id)
+          if (handler) respond(handler, message)
+          return
         }
-        settle?.({error: busError(message.error.code, message.error.message), ok: false})
+        case 'workbench.bus.reply': {
+          const settle = pending.get(message.id)
+          if (message.ok) {
+            settle?.({ok: true, value: message.value})
+            return
+          }
+          // A refused subscription has no promise to reject, so tell the author through the host logger.
+          if (subscriptions.delete(message.id)) {
+            // eslint-disable-next-line no-console -- the worker's console is bridged to the host logger
+            console.error(
+              `Message bus subscription refused: ${message.error.code}: ${message.error.message}`,
+            )
+          }
+          settle?.({error: busError(message.error.code, message.error.message), ok: false})
+          return
+        }
+        case 'workbench.bus.value': {
+          subscriptions.get(message.id)?.(message.value)
+        }
       }
     },
   }
