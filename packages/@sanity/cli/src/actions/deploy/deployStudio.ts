@@ -1,10 +1,11 @@
-import {basename, dirname, relative} from 'node:path'
+import {basename, dirname, relative, resolve} from 'node:path'
 import {styleText} from 'node:util'
 import {createGzip, type Gzip} from 'node:zlib'
 
+import {findBlueprintFile, readBlueprint, readStack} from '@sanity/blueprints/resolve'
 import {formatSchemaValidation, SchemaExtractionError} from '@sanity/cli-build/_internal/extract'
 import {readIconFromPath} from '@sanity/cli-build/_internal/manifest'
-import {exitCodes} from '@sanity/cli-core'
+import {exitCodes, getCliToken} from '@sanity/cli-core'
 import {spinner} from '@sanity/cli-core/ux'
 import {
   type BrettAccess,
@@ -89,6 +90,15 @@ async function runStudioDeployment(
           status: 'fail',
         },
   )
+
+  if (await isBlueprintStudio(options.projectRoot.directory)) {
+    reporter.report({
+      message:
+        'Using the `deploy` command for a studio that is referenced by a blueprint is not allowed',
+      solution: 'Deploy the studio using the `blueprints deploy` command',
+      status: 'fail',
+    })
+  }
 
   // Workbench studios deploy to Brett (which needs the org); plain studios
   // resolve/create on user-applications, unchanged.
@@ -509,4 +519,29 @@ function studioBuildSkipReason({
   if (isLegacyExternal) return 'Build skipped for externally hosted studios'
   if (!build) return 'Build skipped (--no-build) — validating existing output directory'
   return
+}
+
+/**
+ * Determine if the blueprint being deployed is referenced by a blueprint.
+ * @param projectRootDir - The root directory of the studio
+ */
+async function isBlueprintStudio(projectRootDir: string): Promise<boolean> {
+  const blueprintFile = findBlueprintFile(projectRootDir)
+  if (!blueprintFile) return false
+
+  const localBlueprint = await readBlueprint({
+    path: blueprintFile,
+  })
+
+  const blueprintReferencesStudio = localBlueprint.resources.some((r) => {
+    if (r.type === 'sanity.studio' && 'root' in r && typeof r.root === 'string') {
+      return resolve(dirname(blueprintFile), r.root) === projectRootDir
+    }
+
+    return false
+  })
+
+  await readStack({path: blueprintFile, token: (await getCliToken()) || ''})
+
+  return blueprintReferencesStudio
 }
