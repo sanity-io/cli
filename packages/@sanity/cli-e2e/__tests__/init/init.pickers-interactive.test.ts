@@ -1,3 +1,5 @@
+import {stripVTControlCharacters} from 'node:util'
+
 import {describe, expect, test} from 'vitest'
 
 import {KEYS} from '../../helpers/keys.js'
@@ -35,7 +37,7 @@ describe.skipIf(isRegistryMode)(
 
       await session.waitForExit(0)
 
-      const output = session.getOutput()
+      const output = stripVTControlCharacters(session.getOutput())
       expect(output).toContain(`Project ID: ${projectId}`)
       expect(output).toContain('Dataset: production')
       expect(output).not.toMatch(/Project name:/)
