@@ -4,6 +4,7 @@ import {
   conditionalDenyFlags,
   conditionalPolicy,
   deny,
+  readOnly,
 } from '@sanity/cli-core/commandPolicy'
 
 import {isRemoteAssetSource} from '../../../util/isRemoteAssetSource.js'
@@ -94,17 +95,19 @@ export const mcpPolicy: CommandPolicySet = {
   'context:build': conditionalDenyFlags('watch'),
   'context:create': allow,
   'context:delete': allow,
-  'context:get': allow,
+  'context:get': readOnly(allow),
   // --file reads the import payload from the local filesystem; text, URL and
   // dataset imports are remote-only.
   'context:imports:create': conditionalDenyFlags('file'),
   'context:imports:delete': allow,
-  'context:imports:download': allow,
-  'context:imports:get': allow,
-  'context:imports:list': allow,
+  // Hands out a signed URL for uploaded file bytes; MCP invocations cannot
+  // upload files, so the whole flow is meaningless there.
+  'context:imports:download': deny,
+  'context:imports:get': readOnly(allow),
+  'context:imports:list': readOnly(allow),
   // See context:build — --watch has no deadline and would hang the MCP tool call.
-  'context:jobs:get': conditionalDenyFlags('watch'),
-  'context:list': allow,
+  'context:jobs:get': readOnly(conditionalDenyFlags('watch')),
+  'context:list': readOnly(allow),
   'context:refresh': allow,
   'context:update': allow,
 
