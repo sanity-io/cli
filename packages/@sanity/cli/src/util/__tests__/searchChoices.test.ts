@@ -10,11 +10,11 @@ const separator = new Separator()
 const acme = {name: 'Acme Docs (abc123)', value: 'abc123'}
 const globex = {name: 'Globex Shop (def456)', value: 'def456'}
 const locked = {disabled: 'Insufficient permissions', name: 'Acme Locked [ghi789]', value: 'ghi789'}
-const source = searchChoices([create, separator, acme, globex, locked])
+const source = searchChoices([create, separator, acme, globex, separator, locked])
 
 describe('searchChoices', () => {
   test.each([undefined, '', '  '])('returns all choices for empty term %j', (term) => {
-    expect(source(term)).toEqual([create, separator, acme, globex, locked])
+    expect(source(term)).toEqual([create, separator, acme, globex, separator, locked])
   })
 
   test('matches any substring of the name case-insensitively, with pinned choices after matches', () => {
