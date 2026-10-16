@@ -7,9 +7,11 @@ import {
   isSpaceKey,
   isUpKey,
   makeTheme,
+  useEffect,
   useKeypress,
   usePagination,
   usePrefix,
+  useRef,
   useState,
 } from '@inquirer/core'
 
@@ -37,8 +39,12 @@ type RoleChecklistConfig = {
 
 type Row = ChecklistItem & {
   checked: boolean
-  loading?: boolean
   section: string
+}
+
+type PromptContext = {
+  input?: NodeJS.ReadableStream
+  output?: NodeJS.WritableStream
 }
 
 const ROW_PREFIX_WIDTH = 4
@@ -90,6 +96,21 @@ function cycleRole(row: Row, offset: number): Row {
   return next ? {...row, role: next.value} : row
 }
 
+function findSubmitError(rows: Row[], isLoading: boolean): string | undefined {
+  if (isLoading) return 'Still loading roles. Press ⏎ again in a moment'
+
+  const selected = rows.filter((row) => row.checked)
+  if (selected.length === 0) return 'Select at least one option'
+
+  const unloaded = selected.find((row) => row.loadRoles)
+  if (unloaded) return `Couldn't load roles for ${unloaded.name}. Press ←→ to retry, or uncheck it`
+
+  const roleless = selected.find((row) => row.roles?.length === 0)
+  if (roleless) return `${roleless.name} has no roles that tokens can use. Uncheck it to continue`
+
+  return undefined
+}
+
 function renderHelp(): string {
   return [
     ['↑↓', 'navigate'],
@@ -102,8 +123,11 @@ function renderHelp(): string {
     .join(styleText('dim', ' • '))
 }
 
-export const roleChecklist: (config: RoleChecklistConfig) => Promise<ChecklistAnswer[]> =
-  createPrompt<ChecklistAnswer[], RoleChecklistConfig>((config, done) => {
+export const roleChecklist: (
+  config: RoleChecklistConfig,
+  context?: PromptContext,
+) => Promise<ChecklistAnswer[]> = createPrompt<ChecklistAnswer[], RoleChecklistConfig>(
+  (config, done) => {
     const {message, pageSize = 15} = config
     const theme = makeTheme({})
     const [status, setStatus] = useState<'done' | 'idle'>('idle')
@@ -120,6 +144,7 @@ export const roleChecklist: (config: RoleChecklistConfig) => Promise<ChecklistAn
     const [filter, setFilter] = useState('')
     const [active, setActive] = useState(0)
     const [error, setError] = useState<string>()
+    const pendingLoads = useRef(new Map<string, Promise<void>>())
 
     const query = filter.toLowerCase()
     const visible = rows.filter((row) => formatLabel(row).toLowerCase().includes(query))
@@ -128,34 +153,45 @@ export const roleChecklist: (config: RoleChecklistConfig) => Promise<ChecklistAn
     const updateRow = (value: string, update: (row: Row) => Row) =>
       setRows((all) => all.map((row) => (row.value === value ? update(row) : row)))
 
-    const loadRoles = async (row: Row) => {
-      if (!row.loadRoles || row.loading) return
-
-      updateRow(row.value, (r) => ({...r, loading: true}))
+    const fetchRoles = async (value: string, load: () => Promise<ChecklistRole[]>) => {
       try {
-        const roles = await row.loadRoles()
-        updateRow(row.value, (r) => ({
-          ...r,
-          loading: false,
+        const roles = await load()
+        updateRow(value, (row) => ({
+          ...row,
           loadRoles: undefined,
-          role: roles.some(({value}) => value === r.role) ? r.role : (roles[0]?.value ?? r.role),
+          role: roles.some((role) => role.value === row.role) ? row.role : roles[0]?.value,
           roles,
         }))
       } catch (err) {
-        updateRow(row.value, (r) => ({...r, loading: false}))
         setError(getErrorMessage(err))
+      } finally {
+        pendingLoads.current.delete(value)
       }
     }
 
+    const loadRoles = (row: Row): Promise<void> => {
+      if (!row.loadRoles) return Promise.resolve()
+
+      const pending = pendingLoads.current.get(row.value) ?? fetchRoles(row.value, row.loadRoles)
+      pendingLoads.current.set(row.value, pending)
+      return pending
+    }
+
+    useEffect(() => {
+      for (const row of rows.filter(({checked}) => checked)) {
+        void loadRoles(row)
+      }
+    }, [])
+
     useKeypress(async (key, rl) => {
       if (isEnterKey(key)) {
-        const selected = rows.filter((row) => row.checked)
-        if (selected.length === 0) {
-          setError('Select at least one option')
+        const submitError = findSubmitError(rows, pendingLoads.current.size > 0)
+        if (submitError) {
+          setError(submitError)
           return
         }
         setStatus('done')
-        done(selected.map(({role, value}) => ({role, value})))
+        done(rows.filter((row) => row.checked).map(({role, value}) => ({role, value})))
         return
       }
 
@@ -214,4 +250,5 @@ export const roleChecklist: (config: RoleChecklistConfig) => Promise<ChecklistAn
 
     const body = [page, ' ', error ? theme.style.error(error) : '', renderHelp()]
     return [[...header, filter].join(' '), body.filter(Boolean).join('\n')]
-  })
+  },
+)

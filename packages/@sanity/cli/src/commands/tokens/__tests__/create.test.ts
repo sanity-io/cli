@@ -88,14 +88,18 @@ function mockRobotWithToken(options: {
 
 function mockRobotCreation(uri: string) {
   const request: {body?: unknown} = {}
+  const [, resourceType, resourceId] = uri.split('/').slice(1)
   mockApi({apiVersion: TOKENS_API_VERSION, method: 'post', uri}).reply(201, (_uri, body) => {
     request.body = body
-    return mockRobotWithToken({
-      id: 'robot-new',
-      label: 'CI',
-      roleNames: [],
-      token: 'sk_new',
-    })
+    return {
+      ...mockRobotWithToken({
+        id: 'robot-new',
+        label: 'CI',
+        roleNames: [],
+        token: 'sk_new',
+      }),
+      managedBy: {resourceId, resourceType},
+    }
   })
   return request
 }
@@ -119,7 +123,7 @@ describe('#tokens:create', () => {
       {displayName: 'Catalog', id: 'catalog', organizationId: 'org-1'},
       {displayName: 'Elsewhere', id: 'elsewhere', organizationId: 'org-2'},
     ] as Awaited<ReturnType<typeof listProjects>>)
-    mockedSelect.mockResolvedValueOnce('never')
+    mockedSelect.mockResolvedValueOnce('30')
     mockedRoleChecklist.mockResolvedValueOnce([
       {role: 'developer', value: 'context'},
       {value: 'blueprints'},
@@ -135,11 +139,15 @@ describe('#tokens:create', () => {
 
     expect(error).toBeUndefined()
     const {sections} = mockedRoleChecklist.mock.calls[0][0]
-    expect(sections[1].items.map(({checked, value}) => ({checked, value}))).toEqual([
-      {checked: true, value: `project:${testProjectId}`},
-      {checked: false, value: 'project:catalog'},
+    expect(sections[1].items.map(({value}) => value)).toEqual([
+      `project:${testProjectId}`,
+      'project:catalog',
     ])
+    expect(sections[1].items.some(({checked}) => checked)).toBe(false)
+    expect(mockedListProjects).toHaveBeenCalledWith({onlyExplicitMembership: false})
+    const {expiresAt} = request.body as {expiresAt: string}
     expect(request.body).toEqual({
+      expiresAt: expect.any(String),
       label: 'CI',
       memberships: [
         {
@@ -161,8 +169,24 @@ describe('#tokens:create', () => {
     })
     expect(stdout).toContain('Token: sk_new')
     expect(stdout).toContain(
-      `tokens create CI --grant context=developer --grant blueprints --grant project:${testProjectId}=editor --grant project:catalog=viewer`,
+      `tokens create CI --organization org-1 --expires-at ${expiresAt} --grant context=developer --grant blueprints --grant project:${testProjectId}=editor --grant project:catalog=viewer --yes`,
     )
+  })
+
+  test('rejects a --project-id outside the organization before prompting', async () => {
+    mockedListProjects.mockResolvedValueOnce([
+      {displayName: 'Website', id: testProjectId, organizationId: 'org-1'},
+    ] as Awaited<ReturnType<typeof listProjects>>)
+
+    const {error} = await testCommand(
+      CreateTokenCommand,
+      ['CI', '--project-id=elsewhere', '--organization=org-1'],
+      {mocks: defaultMocks},
+    )
+
+    expect(error?.message).toContain("Project elsewhere isn't in organization org-1")
+    expect(error?.oclif?.exit).toBe(exitCodes.USAGE_ERROR)
+    expect(mockedRoleChecklist).not.toHaveBeenCalled()
   })
 
   test('merges repeated --grant flags into one membership per resource', async () => {
@@ -195,6 +219,28 @@ describe('#tokens:create', () => {
           resourceId: 'p1',
           resourceType: 'project',
           roleNames: ['editor', 'deploy-studio'],
+        },
+      ],
+    })
+  })
+
+  test('uses the explicit project grant role instead of adding viewer for --project-id', async () => {
+    const request = mockRobotCreation('/access/project/p1/robots')
+
+    const {error} = await testCommand(
+      CreateTokenCommand,
+      ['CI', '--project-id=p1', '--grant=project:p1=restricted-reader', '--yes'],
+      {mocks: defaultMocks},
+    )
+
+    expect(error).toBeUndefined()
+    expect(request.body).toEqual({
+      label: 'CI',
+      memberships: [
+        {
+          resourceId: 'p1',
+          resourceType: 'project',
+          roleNames: ['restricted-reader'],
         },
       ],
     })

@@ -136,16 +136,25 @@ export class CreateTokenCommand extends SanityCommand<typeof CreateTokenCommand>
       roleTitle = flagAccess.roleTitle
       expiresAt = await getExpiry()
     } else {
-      const preselectedProjectId =
-        flags['project-id'] ?? (await this.tryGetCliConfig()).api?.projectId
-      const projects = await listProjects()
+      const contextProjectId = flags['project-id'] ?? (await this.tryGetCliConfig()).api?.projectId
+      const projects = await listProjects({onlyExplicitMembership: false})
       organizationId = await this.resolveOrganization(
-        projects.find((project) => project.id === preselectedProjectId)?.organizationId,
+        projects.find((project) => project.id === contextProjectId)?.organizationId,
       )
+      const organizationProjects = projects.filter(
+        (project) => project.organizationId === organizationId,
+      )
+      const requestedProjectId = flags['project-id']
+      if (requestedProjectId && !organizationProjects.some(({id}) => id === requestedProjectId)) {
+        this.error(
+          `Project ${requestedProjectId} isn't in organization ${organizationId}, or you don't have access to it.`,
+          {exit: exitCodes.USAGE_ERROR},
+        )
+      }
       expiresAt = await getExpiry()
       grants = await promptForGrants({
-        preselectedProjectId,
-        projects: projects.filter((project) => project.organizationId === organizationId),
+        preselectedProjectId: requestedProjectId,
+        projects: organizationProjects,
       })
     }
 
@@ -186,7 +195,7 @@ export class CreateTokenCommand extends SanityCommand<typeof CreateTokenCommand>
     if (!this.isUnattended()) {
       this.log('')
       this.log('To create the same token without prompts:')
-      this.log(`  ${formatCreateCommand(this.config.bin, {expiresAt, grants, label})}`)
+      this.log(`  ${formatCreateCommand(this.config.bin, {expiresAt, grants, label, token})}`)
     }
   }
 
@@ -226,10 +235,21 @@ export class CreateTokenCommand extends SanityCommand<typeof CreateTokenCommand>
     }
 
     const projectId = await this.resolveProjectId()
+    const projectKey = projectGrantKey(projectId)
+    if (grants.some((grant) => grant.key === projectKey)) {
+      if (role) {
+        this.error(
+          `Set the role for project ${projectId} with either --role or --grant ${projectKey}=<role>, not both.`,
+          {exit: exitCodes.USAGE_ERROR},
+        )
+      }
+      return {grants}
+    }
+
     const projectRole = role ? await validateRole(role, projectId, this.output) : DEFAULT_ROLE
 
     return {
-      grants: [...grants, {key: projectGrantKey(projectId), roles: [projectRole.name]}],
+      grants: [...grants, {key: projectKey, roles: [projectRole.name]}],
       roleTitle: grants.length === 0 ? projectRole.title : undefined,
     }
   }
@@ -363,12 +383,26 @@ function quoteShellArg(value: string): string {
 
 function formatCreateCommand(
   bin: string,
-  {expiresAt, grants, label}: {expiresAt: string | undefined; grants: Grant[]; label: string},
+  {
+    expiresAt,
+    grants,
+    label,
+    token,
+  }: {
+    expiresAt: string | undefined
+    grants: Grant[]
+    label: string
+    token: RobotWithToken
+  },
 ): string {
+  const organizationId =
+    token.managedBy?.resourceType === 'organization' ? token.managedBy.resourceId : undefined
   return [
     `${bin} tokens create`,
     quoteShellArg(label),
-    ...(expiresAt ? [`--expires-at ${expiresAt.slice(0, 10)}`] : []),
+    ...(organizationId ? [`--organization ${organizationId}`] : []),
+    ...(expiresAt ? [`--expires-at ${expiresAt}`] : []),
     ...grants.map((grant) => `--grant ${formatGrant(grant)}`),
+    '--yes',
   ].join(' ')
 }
