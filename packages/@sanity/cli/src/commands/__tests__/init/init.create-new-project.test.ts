@@ -295,8 +295,9 @@ describe('#init: create new project', () => {
     ])
 
     mocks.getOrganizationChoices.mockReturnValueOnce([
-      {name: 'Existing Organization [existing-org-123]', value: 'existing-org-123'},
       {name: 'Create new organization', value: '-new-'},
+      new cliUX.Separator(),
+      {name: 'Existing Organization [existing-org-123]', value: 'existing-org-123'},
     ])
 
     mocks.search.mockResolvedValueOnce('-new-')

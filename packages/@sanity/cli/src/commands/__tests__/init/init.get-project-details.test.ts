@@ -1329,9 +1329,7 @@ describe('#init: promptForAppTemplateSetup', () => {
     if (error) throw error
 
     // Neither the org prompt nor the "Configure a project for this app?" prompt should fire
-    expect(mocks.search).not.toHaveBeenCalledWith(
-      expect.objectContaining({message: 'Select organization:'}),
-    )
+    expect(mocks.search).not.toHaveBeenCalled()
     expect(mocks.select).not.toHaveBeenCalledWith(
       expect.objectContaining({message: 'Configure a project for this app?'}),
     )
