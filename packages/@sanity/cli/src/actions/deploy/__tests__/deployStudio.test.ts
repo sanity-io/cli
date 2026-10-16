@@ -1,4 +1,4 @@
-import {findBlueprintFile, readBlueprint, readStack} from '@sanity/blueprints/resolve'
+import {findBlueprintFile, readBlueprint} from '@sanity/blueprints/resolve'
 import {SchemaExtractionError} from '@sanity/cli-build/_internal/extract'
 import {type CliConfig, exitCodes, type Output} from '@sanity/cli-core'
 import {
@@ -19,7 +19,6 @@ import {type DeployAppOptions, type DeployFlags} from '../types.js'
 vi.mock(import('@sanity/blueprints/resolve'), async () => ({
   findBlueprintFile: vi.fn(),
   readBlueprint: vi.fn(),
-  readStack: vi.fn(),
 }))
 vi.mock(import('@sanity/workbench-cli/deploy'), async (importOriginal) => ({
   ...(await importOriginal()),
@@ -307,7 +306,6 @@ describe('deployStudio (blueprint-managed studio)', () => {
     await deployStudio(options)
 
     expect(mockReadBlueprint).not.toHaveBeenCalled()
-    expect(vi.mocked(readStack)).not.toHaveBeenCalled()
     expect(mockDeployWorkbenchApp).toHaveBeenCalled()
   })
 })
