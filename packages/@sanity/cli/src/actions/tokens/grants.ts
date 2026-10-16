@@ -80,8 +80,13 @@ export function projectGrantKey(projectId: string): string {
 }
 
 export function parseGrant(value: string): {error: string} | {grant: Grant} {
-  const [key = '', roleList] = value.split('=', 2)
-  const roles = roleList?.split(',').filter(Boolean) ?? []
+  const [key = '', roleList, ...extra] = value.split('=')
+  const roles = roleList?.split(',') ?? []
+  if (extra.length > 0 || roles.includes('')) {
+    return {
+      error: `Invalid grant "${value}". Use <permission>[=<role>] or project:<projectId>[=<role>[,<role>]]`,
+    }
+  }
   const grant = {key, roles: roles.length > 0 ? roles : [DEFAULT_ROLE.name]}
 
   if (key.startsWith(PROJECT_PREFIX) && key.length > PROJECT_PREFIX.length) {
