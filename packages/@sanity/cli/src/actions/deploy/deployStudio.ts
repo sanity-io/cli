@@ -2,10 +2,10 @@ import {basename, dirname, relative, resolve} from 'node:path'
 import {styleText} from 'node:util'
 import {createGzip, type Gzip} from 'node:zlib'
 
-import {findBlueprintFile, readBlueprint, readStack} from '@sanity/blueprints/resolve'
+import {findBlueprintFile, readBlueprint} from '@sanity/blueprints/resolve'
 import {formatSchemaValidation, SchemaExtractionError} from '@sanity/cli-build/_internal/extract'
 import {readIconFromPath} from '@sanity/cli-build/_internal/manifest'
-import {exitCodes, getCliToken} from '@sanity/cli-core'
+import {exitCodes} from '@sanity/cli-core'
 import {spinner} from '@sanity/cli-core/ux'
 import {
   type BrettAccess,
@@ -526,22 +526,24 @@ function studioBuildSkipReason({
  * @param projectRootDir - The root directory of the studio
  */
 async function isBlueprintStudio(projectRootDir: string): Promise<boolean> {
-  const blueprintFile = findBlueprintFile(projectRootDir)
-  if (!blueprintFile) return false
+  try {
+    const blueprintFile = findBlueprintFile(projectRootDir)
+    if (!blueprintFile) return false
 
-  const localBlueprint = await readBlueprint({
-    path: blueprintFile,
-  })
+    const localBlueprint = await readBlueprint({
+      path: blueprintFile,
+    })
 
-  const blueprintReferencesStudio = localBlueprint.resources.some((r) => {
-    if (r.type === 'sanity.studio' && 'root' in r && typeof r.root === 'string') {
-      return resolve(dirname(blueprintFile), r.root) === projectRootDir
-    }
+    const blueprintReferencesStudio = localBlueprint.resources.some((r) => {
+      if (r.type === 'sanity.studio' && 'root' in r && typeof r.root === 'string') {
+        return resolve(dirname(blueprintFile), r.root) === projectRootDir
+      }
 
-    return false
-  })
+      return false
+    })
 
-  await readStack({path: blueprintFile, token: (await getCliToken()) || ''})
-
-  return blueprintReferencesStudio
+    return blueprintReferencesStudio
+  } catch {
+    return false // fail open
+  }
 }
