@@ -1,4 +1,4 @@
-import {mkdirSync, mkdtempSync, rmSync} from 'node:fs'
+import {mkdirSync, mkdtempSync, rmSync, writeFileSync} from 'node:fs'
 import {tmpdir} from 'node:os'
 import path from 'node:path'
 
@@ -29,10 +29,16 @@ vi.mock(import('../generateResourceTypes.js'), () => ({
   generateResourceTypes: mockGenerateResourceTypes,
 }))
 
-// A real directory, because a watched path whose parent is missing is replaced by an ancestor.
+// A real directory, because the watcher checks that the paths it watches exist.
 const workDir = mkdtempSync(path.join(tmpdir(), 'watch-resource-types-'))
-mkdirSync(path.join(workDir, 'src'))
-mkdirSync(path.join(workDir, 'queries', 'staging'), {recursive: true})
+for (const directory of [
+  ['src', 'queries'],
+  ['src', 'shared'],
+  ['queries', 'staging'],
+]) {
+  mkdirSync(path.join(workDir, ...directory), {recursive: true})
+}
+writeFileSync(path.join(workDir, 'schema.staging.json'), '[]')
 
 const production = {
   dataset: 'production',
@@ -300,60 +306,127 @@ describe('watchResourceTypes', () => {
       ])
     })
 
-    test('watches the highest missing directory of a base whose parent is missing', async () => {
-      await startWithPaths('./apps/web/queries/*.ts', './queries/staging/*.ts')
+    test('an exclusion without glob characters also excludes the files inside it', async () => {
+      const onChange = vi.fn()
+      await startWithPaths(['./src/**/*.ts', '!./src/legacy'], './queries/staging/*.ts', {
+        onChange,
+      })
+
+      watcher.emit('change', inProject('src', 'legacy', 'old.ts'))
+      watcher.emit('change', inProject('src', 'new.ts'))
+
+      expect(onChange.mock.calls).toEqual([['change', 'src/new.ts']])
+    })
+
+    test('. names workDir and matches every file in it', async () => {
+      const onChange = vi.fn()
+      await startWithPaths('.', './queries/staging/*.ts', {onChange})
       expect(mockWatch.mock.calls[0][0]).toEqual([
-        inProject('apps'),
+        workDir,
         inProject('queries', 'staging'),
         inProject('schema.staging.json'),
+      ])
+
+      watcher.emit('change', inProject('queries.ts'))
+      watcher.emit('change', inProject('src', 'nested', 'queries.ts'))
+
+      expect(onChange.mock.calls).toEqual([
+        ['change', 'queries.ts'],
+        ['change', 'src/nested/queries.ts'],
       ])
     })
   })
 
-  describe('removed paths', () => {
-    test('watches a removed base directory again once removals settle', async () => {
-      await start()
+  describe('missing and removed paths', () => {
+    test('watches a base that is missing at startup once it exists, then generates', async () => {
+      await startWithPaths('./apps/web/queries/*.ts', './queries/staging/*.ts')
+      try {
+        expect(mockWatch.mock.calls[0][0]).toEqual([
+          inProject('queries', 'staging'),
+          inProject('schema.staging.json'),
+        ])
+        await vi.advanceTimersByTimeAsync(1000)
+        expect(watcher.add).not.toHaveBeenCalled()
 
-      watcher.emit('unlinkDir', inProject('queries', 'staging'))
-      await vi.advanceTimersByTimeAsync(249)
-      expect(watcher.add).not.toHaveBeenCalled()
+        mkdirSync(inProject('apps', 'web', 'queries'), {recursive: true})
+        await vi.advanceTimersByTimeAsync(1000)
+        expect(watcher.add).toHaveBeenCalledExactlyOnceWith(inProject('apps', 'web', 'queries'))
 
-      await vi.advanceTimersByTimeAsync(1)
-      expect(watcher.add).toHaveBeenCalledExactlyOnceWith(inProject('queries', 'staging'))
+        await vi.advanceTimersByTimeAsync(1000)
+        expect(generatedKeys()).toEqual(['abc123.production', 'abc123.staging'])
+      } finally {
+        rmSync(inProject('apps'), {force: true, recursive: true})
+      }
     })
 
-    test('watches every base inside a removed directory again', async () => {
-      await start()
-
-      watcher.emit('unlinkDir', inProject('queries', 'staging'))
-      watcher.emit('unlinkDir', inProject('queries'))
-      await vi.advanceTimersByTimeAsync(250)
-
-      expect(watcher.add).toHaveBeenCalledExactlyOnceWith(inProject('queries', 'staging'))
-    })
-
-    test('watches a base whose parent was removed through the highest missing directory', async () => {
+    test('watches a base removed with its parent again once it exists', async () => {
       await start()
       rmSync(inProject('queries'), {force: true, recursive: true})
       try {
         watcher.emit('unlinkDir', inProject('queries', 'staging'))
         watcher.emit('unlinkDir', inProject('queries'))
-        await vi.advanceTimersByTimeAsync(250)
-
-        expect(watcher.add).toHaveBeenCalledExactlyOnceWith(inProject('queries'))
+        await vi.advanceTimersByTimeAsync(1000)
+        expect(watcher.add).not.toHaveBeenCalled()
       } finally {
         mkdirSync(inProject('queries', 'staging'), {recursive: true})
       }
+
+      await vi.advanceTimersByTimeAsync(1000)
+      expect(watcher.add).toHaveBeenCalledExactlyOnceWith(inProject('queries', 'staging'))
+
+      await vi.advanceTimersByTimeAsync(1000)
+      expect(generatedKeys()).toEqual(['abc123.production', 'abc123.staging'])
     })
 
-    test('watches a removed schema file again and generates without it', async () => {
+    test('watches a base removed and created again between two checks', async () => {
+      await start()
+
+      // The directory exists again by the next check.
+      watcher.emit('unlinkDir', inProject('queries', 'staging'))
+      await vi.advanceTimersByTimeAsync(1000)
+
+      expect(watcher.add).toHaveBeenCalledExactlyOnceWith(inProject('queries', 'staging'))
+    })
+
+    test('watches a base again that was removed without an event', async () => {
+      // As when chokidar sets up a watch while its directory is being removed, and fails silently.
+      await start()
+      rmSync(inProject('queries'), {force: true, recursive: true})
+      try {
+        await vi.advanceTimersByTimeAsync(1000)
+      } finally {
+        mkdirSync(inProject('queries', 'staging'), {recursive: true})
+      }
+
+      await vi.advanceTimersByTimeAsync(1000)
+      expect(watcher.add).toHaveBeenCalledExactlyOnceWith(inProject('queries', 'staging'))
+    })
+
+    test('watches a removed schema file again', async () => {
       await start()
 
       watcher.emit('unlink', inProject('schema.staging.json'))
       await vi.advanceTimersByTimeAsync(1000)
 
       expect(watcher.add).toHaveBeenCalledExactlyOnceWith(inProject('schema.staging.json'))
-      expect(generatedKeys()).toEqual(['abc123.production', 'abc123.staging'])
+    })
+
+    test('watches a returned base once more on the next check, then stops adding it', async () => {
+      const onChange = vi.fn()
+      await start({onChange})
+
+      watcher.emit('unlinkDir', inProject('queries', 'staging'))
+      await vi.advanceTimersByTimeAsync(1000)
+      expect(onChange.mock.calls).toEqual([['add', 'queries/staging']])
+
+      // In case the first watch was set up while the directory was removed and created again.
+      await vi.advanceTimersByTimeAsync(1000)
+      await vi.advanceTimersByTimeAsync(1000)
+      expect(watcher.add).toHaveBeenCalledTimes(2)
+      expect(vi.mocked(watcher.add).mock.calls).toEqual([
+        [inProject('queries', 'staging')],
+        [inProject('queries', 'staging')],
+      ])
     })
 
     test('does not watch again for other removed files', async () => {
@@ -361,7 +434,7 @@ describe('watchResourceTypes', () => {
 
       watcher.emit('unlink', inProject('src', 'queries.ts'))
       watcher.emit('unlinkDir', inProject('src', 'components'))
-      await vi.advanceTimersByTimeAsync(250)
+      await vi.advanceTimersByTimeAsync(1000)
 
       expect(watcher.add).not.toHaveBeenCalled()
     })
@@ -443,12 +516,12 @@ describe('watchResourceTypes', () => {
       expect(mockGenerateResourceTypes).not.toHaveBeenCalled()
     })
 
-    test('does not watch removed paths again after stopping', async () => {
+    test('stops checking that watched paths exist', async () => {
       const started = await start()
 
       watcher.emit('unlinkDir', inProject('queries', 'staging'))
       await started.stop()
-      await vi.advanceTimersByTimeAsync(250)
+      await vi.advanceTimersByTimeAsync(1000)
 
       expect(watcher.add).not.toHaveBeenCalled()
     })

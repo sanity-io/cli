@@ -1,5 +1,5 @@
 import {existsSync} from 'node:fs'
-import {basename, dirname, relative, resolve, sep} from 'node:path'
+import {basename, relative, resolve, sep} from 'node:path'
 
 import {type TypeGenConfig, type TypegenProgressEvent} from '@sanity/codegen'
 import {watch} from 'chokidar'
@@ -16,12 +16,8 @@ const DEBOUNCE_MS = 1000
 /** Directories that are never watched. Codegen's query scan skips `node_modules` as well. */
 const IGNORED_DIRECTORIES = new Set(['.git', 'node_modules'])
 
-/**
- * Delay after the last removal before watching removed paths again. Removing a directory tree
- * emits events from the inside out, and a watch set up on a parent that is removed a moment later
- * fails without an error.
- */
-const REWATCH_DELAY_MS = 250
+/** How often to check that every watched base directory and schema file still exists. */
+const EXISTENCE_CHECK_MS = 1000
 
 /**
  * A running watcher started by {@link watchResourceTypes}.
@@ -122,17 +118,10 @@ export function watchResourceTypes(options: {
 
   const scheduleGeneration = debounce(() => void runGeneration(), DEBOUNCE_MS)
 
-  const removedRoots = new Set<string>()
-  const scheduleRewatch = debounce(() => {
-    if (isStopped) return
-    for (const root of removedRoots) {
-      watcher.add(getWatchablePath(root))
-    }
-    removedRoots.clear()
-  }, REWATCH_DELAY_MS)
+  const missingRoots = new Set(roots.filter((root) => !existsSync(root)))
 
   const watcher = watch(
-    roots.map((root) => getWatchablePath(root)),
+    roots.filter((root) => !missingRoots.has(root)),
     {
       ignored: (path) =>
         IGNORED_DIRECTORIES.has(basename(path)) || outputFiles.has(resolve(path).toLowerCase()),
@@ -140,16 +129,38 @@ export function watchResourceTypes(options: {
     },
   )
 
+  // chokidar stops watching a path once it is removed, as when switching git branches, and does
+  // not reliably notice it come back. A watch set up while its directory is removed and created
+  // again also fails without an error. So the watcher checks every root's existence itself. A root
+  // that is missing is watched again once it exists, and once more on the next check in case that
+  // watch failed. Every resource is then generated, which also picks up files written before the
+  // new watch was ready.
+  let addedOnLastCheck: string[] = []
+  const existenceCheck = setInterval(() => {
+    const added: string[] = []
+    for (const root of roots) {
+      if (!existsSync(root)) {
+        missingRoots.add(root)
+      } else if (missingRoots.delete(root)) {
+        watcher.add(root)
+        added.push(root)
+        onChange?.('add', toForwardSlashes(relative(workDir, root)))
+        scheduleGeneration()
+      } else if (addedOnLastCheck.includes(root)) {
+        watcher.add(root)
+      }
+    }
+    addedOnLastCheck = added
+  }, EXISTENCE_CHECK_MS)
+
   watcher.on('all', (event, filePath) => {
     const absolutePath = resolve(workDir, filePath)
 
-    // chokidar stops watching a path once it is removed, as when switching git branches, so watch
-    // every root at or inside the removed path again to pick it up when it comes back.
+    // A root removed and created again between two existence checks is watched again too.
     if (event === 'unlink' || event === 'unlinkDir') {
       for (const root of roots) {
         if (root === absolutePath || root.startsWith(absolutePath + sep)) {
-          removedRoots.add(root)
-          scheduleRewatch()
+          missingRoots.add(root)
         }
       }
     }
@@ -185,8 +196,8 @@ export function watchResourceTypes(options: {
     }),
     stop: async () => {
       isStopped = true
+      clearInterval(existenceCheck)
       scheduleGeneration.cancel()
-      scheduleRewatch.cancel()
       await watcher.close()
       await activeRun
     },
@@ -198,8 +209,8 @@ export function watchResourceTypes(options: {
  * scan reads them with globby:
  *
  * - A pattern starting with `!` excludes files from the patterns listed before it.
- * - A pattern without glob characters also matches everything inside it, in case it names a
- *   directory.
+ * - A pattern without glob characters names a file or a directory, and a directory includes or
+ *   excludes everything inside it. `.` names `workDir`.
  *
  * chokidar 4 and later do not expand globs, so `bases` holds each pattern's static base directory
  * to watch.
@@ -211,21 +222,13 @@ function createQueryMatcher(
   const includes: {excludes: string[]; patterns: string[]}[] = []
   for (const pattern of Array.isArray(path) ? path : [path]) {
     const isExclude = pattern.startsWith('!')
-    // Relative to `workDir` with forward slashes, with `.` and `..` segments resolved, to compare
-    // with event paths.
-    const normalized = toForwardSlashes(
-      relative(workDir, resolve(workDir, isExclude ? pattern.slice(1) : pattern)),
-    )
-    if (!normalized) continue
+    const body = isExclude ? pattern.slice(1) : pattern
+    if (!body) continue
+    const patterns = normalizePattern(body, workDir)
     if (isExclude) {
-      for (const include of includes) include.excludes.push(normalized)
+      for (const include of includes) include.excludes.push(...patterns)
     } else {
-      includes.push({
-        excludes: [],
-        patterns: picomatch.scan(normalized).isGlob
-          ? [normalized]
-          : [normalized, `${normalized}/**`],
-      })
+      includes.push({excludes: [], patterns})
     }
   }
 
@@ -239,13 +242,12 @@ function createQueryMatcher(
 }
 
 /**
- * chokidar picks up a path created after it starts watching only while the path's parent exists.
- * For a deeper missing path, this returns its highest missing ancestor, whose parent exists.
+ * Returns picomatch patterns relative to `workDir` with forward slashes, with `.` and `..`
+ * segments resolved, to compare with event paths. A pattern without glob characters also matches
+ * everything inside it.
  */
-function getWatchablePath(path: string): string {
-  let current = path
-  while (dirname(current) !== current && !existsSync(dirname(current))) {
-    current = dirname(current)
-  }
-  return current
+function normalizePattern(pattern: string, workDir: string): string[] {
+  const normalized = toForwardSlashes(relative(workDir, resolve(workDir, pattern)))
+  if (!normalized) return ['**']
+  return picomatch.scan(normalized).isGlob ? [normalized] : [normalized, `${normalized}/**`]
 }
