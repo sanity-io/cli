@@ -955,7 +955,7 @@ describe('#init: get project details', () => {
       uri: '/features',
     }).reply(200, ['privateDataset'])
 
-    mocks.select.mockResolvedValueOnce('production')
+    mocks.search.mockResolvedValueOnce('production')
 
     const {stdout} = await testCommand(InitCommand, ['--project=test-project-123', '--bare'], {
       mocks: {
@@ -964,11 +964,14 @@ describe('#init: get project details', () => {
       },
     })
 
-    expect(mocks.select).toHaveBeenCalledWith(
-      expect.objectContaining({
-        message: 'Select dataset to use',
-      }),
-    )
+    const [{message, source}] = mocks.search.mock.calls[0]
+    expect(message).toBe('Select dataset to use')
+    expect(await source(undefined)).toEqual([
+      {name: 'Create new dataset', value: 'new'},
+      new Separator(),
+      {name: 'production', value: 'production'},
+      {name: 'staging', value: 'staging'},
+    ])
 
     expect(stdout).toContain('Below are your project details')
     expect(stdout).toContain('Project ID: test-project-123')
@@ -997,7 +1000,7 @@ describe('#init: get project details', () => {
       uri: '/features',
     }).reply(200, ['privateDataset'])
 
-    mocks.select.mockResolvedValueOnce('new')
+    mocks.search.mockResolvedValueOnce('new')
     mocks.input.mockResolvedValueOnce('staging')
     mocks.createDataset.mockResolvedValueOnce(undefined)
 
@@ -1012,7 +1015,7 @@ describe('#init: get project details', () => {
       },
     )
 
-    expect(mocks.select).toHaveBeenCalledWith(
+    expect(mocks.search).toHaveBeenCalledWith(
       expect.objectContaining({
         message: 'Select dataset to use',
       }),
@@ -1093,7 +1096,7 @@ describe('#init: promptForAppTemplateSetup', () => {
 
     mocks.search.mockResolvedValueOnce('org-123') // organization
     mocks.select.mockResolvedValueOnce('existing-pid') // inline project choice
-    mocks.select.mockResolvedValueOnce('production') // dataset choice
+    mocks.search.mockResolvedValueOnce('production') // dataset choice
 
     const {error} = await testCommand(
       InitCommand,
@@ -1143,7 +1146,7 @@ describe('#init: promptForAppTemplateSetup', () => {
 
     mocks.search.mockResolvedValueOnce('org-123') // organization
     mocks.select.mockResolvedValueOnce('__new__') // promptForAppTemplateSetup — create new
-    mocks.select.mockResolvedValueOnce('production') // dataset choice
+    mocks.search.mockResolvedValueOnce('production') // dataset choice
     mocks.input.mockResolvedValueOnce('New App Project') // project name
 
     const {error} = await testCommand(
