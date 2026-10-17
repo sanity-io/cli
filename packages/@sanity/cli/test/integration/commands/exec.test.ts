@@ -123,6 +123,41 @@ describe('#exec', {timeout: 15 * 1000}, () => {
       expect(data.argv).toEqual([process.argv[0], scriptPath, '--dry-run', 'positional-argument'])
     })
 
+    test.skipIf(isWindowsNode24OrUp).for([
+      {
+        commandArgs: ['--', '--dataset', 'test', '--confirm-dataset', 'test'],
+        name: 'repeated flag values after --',
+        scriptArgs: ['--dataset', 'test', '--confirm-dataset', 'test'],
+      },
+      {
+        commandArgs: ['--', '--role', 'a', '--role', 'a', '--', 'b'],
+        name: 'repeated flags and a second -- after --',
+        scriptArgs: ['--role', 'a', '--role', 'a', '--', 'b'],
+      },
+      {
+        commandArgs: ['extra', 'extra', '--', 'extra'],
+        name: 'positional arguments before and after --',
+        scriptArgs: ['extra', 'extra', 'extra'],
+      },
+    ])('forwards $name to the script verbatim', async ({commandArgs, scriptArgs}, t) => {
+      const {error, stderr, stdout} = await testCommand(ExecCommand, [
+        '--mock-browser-env',
+        scriptPath,
+        ...commandArgs,
+      ])
+      t.onTestFailed(() => {
+        // eslint-disable-next-line no-console
+        console.log(stdout)
+        // eslint-disable-next-line no-console
+        console.warn(stderr)
+      })
+
+      if (error) throw error
+
+      const data = JSON.parse(stdout.trim())
+      expect(data.argv).toEqual([process.argv[0], scriptPath, ...scriptArgs])
+    })
+
     test.skipIf(isWindowsNode24OrUp)('resolves TypeScript path aliases', async (t) => {
       await mkdir(join(exampleDir, 'test-alias'))
       await writeFile(
