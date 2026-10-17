@@ -8,6 +8,7 @@ import {
   resolveLocalPackage,
   subdebug,
 } from '@sanity/cli-core'
+import {flattenErrorCauses, formatErrorCauses} from '@sanity/cli-core/errors'
 import {spinner} from '@sanity/cli-core/ux'
 import {type StudioManifest, type Workspace} from 'sanity'
 
@@ -35,7 +36,7 @@ export async function uploadSchemaToLexicon(
   options: UploadSchemaToLexiconOptions,
 ): Promise<StudioManifest | null> {
   const {projectId, verbose, workDir, workspaces} = options
-  const spin = spinner('Generating studio manifest').start()
+  const spin = spinner('Uploading workspace schemas').start()
 
   try {
     const schemaDescriptors = new Map<string, string>()
@@ -88,12 +89,18 @@ export async function uploadSchemaToLexicon(
       } catch (error) {
         debug('Error uploading schema to lexicon for workspace %o', error)
         const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+        // Name the resolved request URL and the underlying transport cause (e.g.
+        // ETIMEDOUT, EAI_AGAIN) — a bare "fetch failed" is undiagnosable.
+        const requestUrl = workspaceClient.getUrl('').replace(/\/$/, '')
+        const causeDetail = formatErrorCauses(flattenErrorCauses(error))
         throw new Error(
-          `Failed to upload schema for workspace "${workspace.name}": ${errorMessage}`,
+          `Failed to upload schema for workspace "${workspace.name}" (project "${workspace.projectId}", dataset "${workspace.dataset}") to ${requestUrl}: ${errorMessage}${causeDetail ? ` (caused by ${causeDetail})` : ''}`,
           {cause: error},
         )
       }
     }
+
+    spin.text = 'Generating studio manifest'
 
     // Lazy import to avoid pulling in @sanity/ui at module load time
     const {resolveIcon} = await doImport(iconResolverPath)
