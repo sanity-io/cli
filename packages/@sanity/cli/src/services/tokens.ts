@@ -22,13 +22,17 @@ function getClient(token?: string): Promise<SanityClient> {
   })
 }
 
-async function fetchAllPages<T>(client: SanityClient, url: string): Promise<T[]> {
+async function fetchAllPages<T>(
+  client: SanityClient,
+  url: string,
+  query: Record<string, string> = {},
+): Promise<T[]> {
   const items: T[] = []
   let cursor: string | null = null
 
   do {
     const response: PaginatedResponse<T> = await client.request<PaginatedResponse<T>>({
-      query: cursor === null ? {} : {nextCursor: cursor},
+      query: {...query, ...(cursor === null ? {} : {nextCursor: cursor})},
       url,
     })
     items.push(...response.data)
@@ -147,6 +151,18 @@ export async function deleteToken(options: DeleteTokenOptions): Promise<void> {
   })
 }
 
+/** Delete a token from its managing organization. @internal */
+export async function deleteOrganizationToken(options: {
+  organizationId: string
+  tokenId: string
+}): Promise<void> {
+  const client = await getClient()
+  return client.request({
+    method: 'DELETE',
+    url: `/access/organization/${options.organizationId}/robots/${options.tokenId}`,
+  })
+}
+
 /**
  * Rotate a robot token, replacing its secret while preserving the robot,
  * its roles, and the token's expiry. The request authenticates as the robot
@@ -179,6 +195,21 @@ export async function getTokens(projectId: string): Promise<Robot[]> {
   const robots = await fetchAllPages<Robot>(client, `/access/project/${projectId}/robots`)
 
   return robots.filter((robot) => robot.managedBy?.resourceType !== 'organization')
+}
+
+/** List tokens managed by an organization, including those with only project grants. @internal */
+export async function getOrganizationTokens(organizationId: string): Promise<Robot[]> {
+  const client = await getClient()
+  const robots = await fetchAllPages<Robot>(
+    client,
+    `/access/organization/${organizationId}/robots`,
+    {includeChildren: 'true'},
+  )
+
+  return robots.filter(
+    ({managedBy}) =>
+      managedBy?.resourceType === 'organization' && managedBy.resourceId === organizationId,
+  )
 }
 
 /**
