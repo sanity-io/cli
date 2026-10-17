@@ -1,7 +1,8 @@
 import {type SanityOrgUser, subdebug} from '@sanity/cli-core'
-import {select} from '@sanity/cli-core/ux'
+import {search} from '@sanity/cli-core/ux'
 
 import {type ProjectOrganization} from '../../../services/organizations.js'
+import {searchChoices, searchTheme} from '../../../util/searchChoices.js'
 import {findOrganizationByUserName} from '../../organizations/findOrganizationByUserName.js'
 import {getOrganizationChoices} from '../../organizations/getOrganizationChoices.js'
 import {getOrganizationsWithAttachGrantInfo} from '../../organizations/getOrganizationsWithAttachGrantInfo.js'
@@ -46,10 +47,11 @@ export async function promptUserForOrganization({
         : findOrganizationByUserName(organizations, user)
   }
 
-  const chosenOrg = await select({
-    choices: organizationChoices,
+  const chosenOrg = await search({
     default: defaultOrganizationId || undefined,
     message: 'Select organization:',
+    source: searchChoices(organizationChoices),
+    theme: searchTheme,
   })
 
   if (chosenOrg === '-new-') {
