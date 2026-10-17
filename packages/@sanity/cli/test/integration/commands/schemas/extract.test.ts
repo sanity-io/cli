@@ -1,7 +1,8 @@
 import {existsSync} from 'node:fs'
-import {readFile, writeFile} from 'node:fs/promises'
+import {readFile, rename, rm, symlink, writeFile} from 'node:fs/promises'
 import {join, resolve} from 'node:path'
 
+import {getStudioConfig} from '@sanity/cli-core'
 import {testCommand, testFixture} from '@sanity/cli-test'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
@@ -11,6 +12,7 @@ import {canCloseWatcher} from '../../../testUtils.js'
 describe('#schema:extract', {timeout: 60 * 1000}, () => {
   afterEach(() => {
     vi.clearAllMocks()
+    vi.unstubAllEnvs()
   })
 
   test('should extract schema', async () => {
@@ -52,6 +54,62 @@ describe('#schema:extract', {timeout: 60 * 1000}, () => {
     )
   })
 
+  test.each(['false', 'true'])(
+    'extracts real styled-components imports with bundling=%s',
+    async (bundling) => {
+      vi.stubEnv('SANITY_CLI_STUDIO_WORKER_BUNDLE', bundling)
+      const cwd = await testFixture('basic-studio')
+      process.chdir(cwd)
+      const configPath = join(cwd, 'sanity.config.ts')
+      const config = await readFile(configPath, 'utf8')
+      await writeFile(
+        configPath,
+        `import styled, {css, styled as namedStyled} from 'styled-components'\n` +
+          `const Preview = styled.div(css({color: 'red'}))\n` +
+          `if (styled !== namedStyled) throw new Error('Different styled instances')\n` +
+          config.replace(
+            'types: schemaTypes',
+            "types: [...schemaTypes, {name: 'styledPreview', type: 'string', components: {input: Preview}}]",
+          ),
+      )
+      const {error} = await testCommand(ExtractSchemaCommand, [])
+      if (error) throw error
+      const schema = JSON.parse(await readFile(join(cwd, 'schema.json'), 'utf8'))
+      expect(schema).toEqual(
+        expect.arrayContaining([expect.objectContaining({name: 'styledPreview'})]),
+      )
+    },
+  )
+
+  test.each(['root', 'config'])(
+    'extracts bundled configuration through a symlinked %s',
+    async (target) => {
+      vi.stubEnv('SANITY_CLI_STUDIO_WORKER_BUNDLE', 'true')
+      const cwd = await testFixture('basic-studio')
+      const linkedRoot = `${cwd}-linked`
+      try {
+        if (target === 'root') {
+          await symlink(cwd, linkedRoot, 'junction')
+          process.chdir(linkedRoot)
+        } else {
+          await rename(join(cwd, 'sanity.config.ts'), join(cwd, 'actual.config.ts'))
+          await symlink('actual.config.ts', join(cwd, 'sanity.config.ts'), 'file')
+          process.chdir(cwd)
+        }
+        const rootPath = target === 'root' ? linkedRoot : cwd
+        const workspaces = await getStudioConfig(rootPath, {resolvePlugins: true})
+        expect(workspaces).toHaveLength(1)
+        const {error} = await testCommand(ExtractSchemaCommand, [])
+        if (error) throw error
+        const schema = JSON.parse(await readFile(join(cwd, 'schema.json'), 'utf8'))
+        expect(schema.length).toBeGreaterThan(0)
+      } finally {
+        process.chdir(cwd)
+        if (target === 'root') await rm(linkedRoot, {force: true})
+      }
+    },
+  )
+
   test('should start watch mode and extract initial schema', async () => {
     const cwd = await testFixture('basic-studio')
     process.chdir(cwd)
@@ -66,6 +124,30 @@ describe('#schema:extract', {timeout: 60 * 1000}, () => {
     if (canCloseWatcher(result)) {
       await result.close()
     }
+  })
+
+  test('reloads bundled configuration between worker tasks', async () => {
+    vi.stubEnv('SANITY_CLI_STUDIO_WORKER_BUNDLE', 'true')
+    const cwd = await testFixture('basic-studio')
+    process.chdir(cwd)
+    const first = await testCommand(ExtractSchemaCommand, [])
+    if (first.error) throw first.error
+
+    const schemaIndexPath = join(cwd, 'schemaTypes', 'index.ts')
+    const content = await readFile(schemaIndexPath, 'utf8')
+    await writeFile(
+      schemaIndexPath,
+      content.replace(
+        'schemaTypes = [',
+        "schemaTypes = [{name: 'addedAfterExtraction', type: 'string'}, ",
+      ),
+    )
+    const second = await testCommand(ExtractSchemaCommand, ['--force'])
+    if (second.error) throw second.error
+    const schema = JSON.parse(await readFile(join(cwd, 'schema.json'), 'utf8'))
+    expect(schema).toEqual(
+      expect.arrayContaining([expect.objectContaining({name: 'addedAfterExtraction'})]),
+    )
   })
 
   test('should fail with validation errors for invalid schema (duplicate types)', async () => {
