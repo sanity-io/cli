@@ -1,5 +1,21 @@
 # Change Log
 
+## 8.19.0
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-v8.18.0...cli-v8.19.0)
+
+_2026-10-17_
+
+### Features
+
+- **tokens:** create organization tokens with org permissions and project roles ([#1989](https://github.com/sanity-io/cli/pull/1989)) ([9f33a2f](https://github.com/sanity-io/cli/commit/9f33a2f1f4308e3c31c2cf1cd4db9544cd3d65c3))
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/cli-core bumped to 3.10.0
+
 ## 8.18.0
 
 [Compare changes](https://github.com/sanity-io/cli/compare/cli-v8.17.1...cli-v8.18.0)
