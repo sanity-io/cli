@@ -4093,37 +4093,46 @@ EXAMPLES
 
 ## `sanity tokens create [LABEL]`
 
-Create a new API token for the project
+Create a new API token with access to an organization and its projects
 
 ```
 USAGE
-  $ sanity tokens create [LABEL] [-p <id>] [--expires-at 2027-01-01] [--json] [--role viewer] [-y]
+  $ sanity tokens create [LABEL] [-p <id>] [--organization <id>] [--expires-at 2027-01-01] [--grant
+    context=editor...] [--json] [--role viewer] [-y]
 
 ARGUMENTS
   [LABEL]  Label for the new token
 
 FLAGS
-  -y, --yes                    Skip prompts and use defaults (unattended mode)
-      --expires-at=2027-01-01  Date or timestamp the token expires (ISO 8601; tokens never expire by default)
-      --json                   Output as JSON
-      --role=viewer            Role to assign to the token (defaults to viewer in unattended mode)
+  -y, --yes                      Skip prompts and use defaults (unattended mode)
+      --expires-at=2027-01-01    Date or timestamp the token expires (ISO 8601; tokens never expire by default)
+      --grant=context=editor...  Access to grant, as <permission>[=<role>] or project:<projectId>=<role>[,<role>].
+                                 Permissions: context, blueprints, media-library, canvas, sdk-apps, access,
+                                 deploy-studios. Repeatable
+      --json                     Output as JSON
+      --role=viewer              Role to assign on the project (defaults to viewer in unattended mode)
 
 OVERRIDE FLAGS
-  -p, --project-id=<id>  Project ID to create token in (overrides CLI configuration)
+  -p, --project-id=<id>    Project ID to create token in (overrides CLI configuration)
+      --organization=<id>  Organization to create an organization token in (overrides CLI configuration)
 
 DESCRIPTION
-  Create a new API token for the project
+  Create a new API token with access to an organization and its projects
 
 EXAMPLES
-  Create a token with a label
+  Create a token, choosing its access interactively
 
     $ sanity tokens create "My API Token"
 
-  Create a token with editor role
+  Create an organization token with Context, Blueprints and project access
 
-    $ sanity tokens create "My API Token" --role=editor
+    $ sanity tokens create "CI Token" --grant context=developer --grant blueprints --grant project:abc123=editor
 
-  Create a token in unattended mode
+  Create a project token with editor role
+
+    $ sanity tokens create "My Token" --project-id abc123 --role=editor
+
+  Create a project token in unattended mode
 
     $ sanity tokens create "CI Token" --role=editor --yes
 
@@ -4134,10 +4143,6 @@ EXAMPLES
   Output token information as JSON
 
     $ sanity tokens create "API Token" --json
-
-  Create a token for a specific project
-
-    $ sanity tokens create "My Token" --project-id abc123 --role=editor
 ```
 
 ## `sanity tokens delete [TOKENID]`
