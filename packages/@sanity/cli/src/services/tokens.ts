@@ -52,10 +52,32 @@ export function getProjectMembership(robot: Robot, projectId: string): Membershi
   )
 }
 
+interface RobotBody {
+  label: string
+  memberships: Membership[]
+
+  expiresAt?: string
+}
+
+async function postRobot(
+  url: string,
+  {expiresAt, ...body}: RobotBody,
+  query: Record<string, string> = {},
+): Promise<RobotWithToken> {
+  const client = await getClient()
+
+  return client.request<RobotWithToken>({
+    body: {...body, ...(expiresAt === undefined ? {} : {expiresAt})},
+    method: 'POST',
+    query,
+    url,
+  })
+}
+
 interface CreateTokenOptions {
   label: string
   projectId: string
-  roleName: string
+  roleNames: string[]
 
   expiresAt?: string
   sendNotification?: boolean
@@ -69,20 +91,36 @@ interface CreateTokenOptions {
  * @internal
  */
 export async function createToken(options: CreateTokenOptions): Promise<RobotWithToken> {
-  const {expiresAt, label, projectId, roleName, sendNotification} = options
+  const {expiresAt, label, projectId, roleNames, sendNotification} = options
 
-  const client = await getClient()
-
-  return client.request<RobotWithToken>({
-    body: {
+  return postRobot(
+    `/access/project/${projectId}/robots`,
+    {
+      expiresAt,
       label,
-      memberships: [{resourceId: projectId, resourceType: 'project', roleNames: [roleName]}],
-      ...(expiresAt === undefined ? {} : {expiresAt}),
+      memberships: [{resourceId: projectId, resourceType: 'project', roleNames}],
     },
-    method: 'POST',
-    query: sendNotification === false ? {sendNotification: 'false'} : {},
-    url: `/access/project/${projectId}/robots`,
-  })
+    sendNotification === false ? {sendNotification: 'false'} : {},
+  )
+}
+
+interface CreateOrganizationTokenOptions extends RobotBody {
+  organizationId: string
+}
+
+/**
+ * Create an organization token, which can hold organization permissions and roles on several projects
+ * @param options - The options for the organization token
+ * @returns A promise that resolves to the created robot, including its secret token
+ *
+ * @internal
+ */
+export async function createOrganizationToken(
+  options: CreateOrganizationTokenOptions,
+): Promise<RobotWithToken> {
+  const {organizationId, ...body} = options
+
+  return postRobot(`/access/organization/${organizationId}/robots`, body)
 }
 
 interface DeleteTokenOptions {

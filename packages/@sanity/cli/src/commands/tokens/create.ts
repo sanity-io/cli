@@ -1,18 +1,48 @@
 import {Args, Flags} from '@oclif/core'
+import {CLIError} from '@oclif/core/errors'
 import {exitCodes, SanityCommand, subdebug} from '@sanity/cli-core'
+import {getErrorMessage, isProjectRootNotFoundError} from '@sanity/cli-core/errors'
 import {input, select} from '@sanity/cli-core/ux'
+import {ClientError} from '@sanity/client'
 
+import {
+  MissingOrganizationError,
+  resolveOrganizationId,
+} from '../../actions/context/resolveOrganizationId.js'
 import {expiryInDays, parseExpiryDate} from '../../actions/tokens/expiry.js'
-import {type SelectedTokenRole} from '../../actions/tokens/types.js'
+import {
+  DEFAULT_ROLE,
+  findGrantConflict,
+  formatGrant,
+  getProjectTokenMembership,
+  type Grant,
+  parseGrant,
+  projectGrantKey,
+  toMemberships,
+} from '../../actions/tokens/grants.js'
+import {type RobotWithToken} from '../../actions/tokens/types.js'
 import {validateRole} from '../../actions/tokens/validateRole.js'
+import {promptForGrants} from '../../prompts/promptForGrants.js'
 import {promptForProject} from '../../prompts/promptForProject.js'
-import {createToken, getTokenRoles} from '../../services/tokens.js'
-import {getProjectIdFlag} from '../../util/sharedFlags.js'
+import {listProjects} from '../../services/projects.js'
+import {createOrganizationToken, createToken} from '../../services/tokens.js'
+import {getOrganizationFlag, getProjectIdFlag} from '../../util/sharedFlags.js'
 
 const tokensCreateDebug = subdebug('tokens:create')
 
+type Access = {
+  expiresAt: string | undefined
+  grants: Grant[]
+
+  organizationId?: string
+  roleTitle?: string
+}
+
 // Mirrors the expiry presets offered by sanity.io/manage
 const EXPIRY_PRESET_DAYS = [30, 60, 90]
+
+const ORGANIZATION_FORBIDDEN_MESSAGE =
+  'You need permission to create organization tokens. Grant a single project to create a project token instead.'
 
 export class CreateTokenCommand extends SanityCommand<typeof CreateTokenCommand> {
   static override args = {
@@ -22,20 +52,26 @@ export class CreateTokenCommand extends SanityCommand<typeof CreateTokenCommand>
     }),
   }
 
-  static override description = 'Create a new API token for the project'
+  static override description =
+    'Create a new API token with access to an organization and its projects'
 
   static override examples = [
     {
       command: '<%= config.bin %> <%= command.id %> "My API Token"',
-      description: 'Create a token with a label',
+      description: 'Create a token, choosing its access interactively',
     },
     {
-      command: '<%= config.bin %> <%= command.id %> "My API Token" --role=editor',
-      description: 'Create a token with editor role',
+      command:
+        '<%= config.bin %> <%= command.id %> "CI Token" --grant context=developer --grant blueprints --grant project:abc123=editor',
+      description: 'Create an organization token with Context, Blueprints and project access',
+    },
+    {
+      command: '<%= config.bin %> <%= command.id %> "My Token" --project-id abc123 --role=editor',
+      description: 'Create a project token with editor role',
     },
     {
       command: '<%= config.bin %> <%= command.id %> "CI Token" --role=editor --yes',
-      description: 'Create a token in unattended mode',
+      description: 'Create a project token in unattended mode',
     },
     {
       command: '<%= config.bin %> <%= command.id %> "Build Token" --expires-at 2027-01-01',
@@ -45,10 +81,6 @@ export class CreateTokenCommand extends SanityCommand<typeof CreateTokenCommand>
       command: '<%= config.bin %> <%= command.id %> "API Token" --json',
       description: 'Output token information as JSON',
     },
-    {
-      command: '<%= config.bin %> <%= command.id %> "My Token" --project-id abc123 --role=editor',
-      description: 'Create a token for a specific project',
-    },
   ]
 
   static override flags = {
@@ -56,16 +88,26 @@ export class CreateTokenCommand extends SanityCommand<typeof CreateTokenCommand>
       description: 'Project ID to create token in',
       semantics: 'override',
     }),
+    ...getOrganizationFlag({
+      description: 'Organization to create an organization token in',
+      semantics: 'override',
+    }),
     'expires-at': Flags.string({
       description: 'Date or timestamp the token expires (ISO 8601; tokens never expire by default)',
       helpValue: '2027-01-01',
+    }),
+    grant: Flags.string({
+      description:
+        'Access to grant, as <permission>[=<role>] or project:<projectId>=<role>[,<role>]. Permissions: context, blueprints, media-library, canvas, sdk-apps, access, deploy-studios. Repeatable',
+      helpValue: 'context=editor',
+      multiple: true,
     }),
     json: Flags.boolean({
       default: false,
       description: 'Output as JSON',
     }),
     role: Flags.string({
-      description: 'Role to assign to the token (defaults to viewer in unattended mode)',
+      description: 'Role to assign on the project (defaults to viewer in unattended mode)',
       helpValue: 'viewer',
     }),
     yes: Flags.boolean({
@@ -80,7 +122,6 @@ export class CreateTokenCommand extends SanityCommand<typeof CreateTokenCommand>
   public async run(): Promise<void> {
     const {args, flags} = await this.parse(CreateTokenCommand)
     const {label: givenLabel} = args
-    const {json, role} = flags
 
     const label = givenLabel === undefined ? await this.promptForLabel() : givenLabel.trim()
     if (!label) {
@@ -90,57 +131,112 @@ export class CreateTokenCommand extends SanityCommand<typeof CreateTokenCommand>
     }
 
     const flagExpiresAt = this.parseExpiryFlag(flags['expires-at'])
+    const getExpiry = async () =>
+      flags['expires-at'] === undefined ? this.promptForExpiry() : flagExpiresAt
+    const flagGrants = (flags.grant ?? []).map((value) => this.parseGrantFlag(value))
+    const grantConflict = findGrantConflict(flagGrants)
+    if (grantConflict) {
+      this.error(grantConflict, {exit: exitCodes.USAGE_ERROR})
+    }
 
-    const projectId = await this.getProjectId({
-      fallback: () =>
-        promptForProject({
-          requiredPermissions: [
-            {grant: 'read', permission: 'sanity.project.roles'},
-            {grant: 'create', permission: 'sanity.project.tokens'},
-          ],
-        }),
-    })
+    const {expiresAt, grants, organizationId, roleTitle}: Access =
+      this.isUnattended() || flagGrants.length > 0 || flags.role !== undefined
+        ? {...(await this.getFlagGrants(flagGrants)), expiresAt: await getExpiry()}
+        : await this.promptForAccess(getExpiry)
 
-    const selectedRole = await (role
-      ? validateRole(role, projectId, this.output)
-      : this.promptForRole(projectId))
-
-    const expiresAt =
-      flags['expires-at'] === undefined ? await this.promptForExpiry() : flagExpiresAt
-
+    let token: RobotWithToken
     try {
-      tokensCreateDebug(`Creating token for project ${projectId}`, {
+      token = await this.createTokenForGrants({
         expiresAt,
+        grants,
         label,
-        roleName: selectedRole.name,
+        organizationId,
       })
-      const token = await createToken({
-        expiresAt,
-        label,
-        projectId,
-        roleName: selectedRole.name,
-      })
-
-      if (json) {
-        this.log(JSON.stringify(token, null, 2))
-        return
-      }
-
-      this.log('API token created')
-      this.log(`Label: ${token.label}`)
-      this.log(`ID: ${token.id}`)
-      this.log(`Role: ${selectedRole.title}`)
-      if (token.expiresAt) {
-        this.log(`Expires: ${token.expiresAt}`)
-      }
-      this.log(`Token: ${token.token}`)
-      this.log('')
-      this.log("Copy the token now. It won't be shown again.")
     } catch (error) {
-      const err = error as Error
+      if (error instanceof CLIError) throw error
+      tokensCreateDebug('Error creating token', error)
+      this.error(`Token creation failed:\n${getErrorMessage(error)}`, {
+        exit: exitCodes.RUNTIME_ERROR,
+      })
+    }
 
-      tokensCreateDebug(`Error creating token for project ${projectId}`, err)
-      this.error(`Token creation failed:\n${err.message}`, {exit: exitCodes.RUNTIME_ERROR})
+    if (flags.json) {
+      this.log(JSON.stringify(token, null, 2))
+      return
+    }
+
+    this.log('API token created')
+    this.log(`Label: ${token.label}`)
+    this.log(`ID: ${token.id}`)
+    if (roleTitle) {
+      this.log(`Role: ${roleTitle}`)
+    }
+    if (token.expiresAt) {
+      this.log(`Expires: ${token.expiresAt}`)
+    }
+    this.log(`Token: ${token.token}`)
+    this.log('')
+    this.log("Copy the token now. It won't be shown again.")
+
+    if (!this.isUnattended()) {
+      this.log('')
+      this.log('To create the same token without prompts:')
+      this.log(`  ${formatCreateCommand(this.config.bin, {expiresAt, grants, label, token})}`)
+    }
+  }
+
+  private async createTokenForGrants(options: {
+    expiresAt: string | undefined
+    grants: Grant[]
+    label: string
+    organizationId: string | undefined
+  }): Promise<RobotWithToken> {
+    const {expiresAt, grants, label} = options
+    const projectMembership = getProjectTokenMembership(grants)
+    if (projectMembership) {
+      const {resourceId: projectId, roleNames} = projectMembership
+      return createToken({expiresAt, label, projectId, roleNames})
+    }
+
+    const organizationId = options.organizationId ?? (await this.resolveOrganization())
+    try {
+      return await createOrganizationToken({
+        expiresAt,
+        label,
+        memberships: toMemberships(grants, organizationId),
+        organizationId,
+      })
+    } catch (error) {
+      if (error instanceof ClientError && error.statusCode === 403) {
+        throw new Error(ORGANIZATION_FORBIDDEN_MESSAGE, {cause: error})
+      }
+      throw error
+    }
+  }
+
+  private async getFlagGrants(grants: Grant[]): Promise<{grants: Grant[]; roleTitle?: string}> {
+    const {'project-id': projectIdFlag, role} = this.flags
+    if (grants.length > 0 && !projectIdFlag && !role) {
+      return {grants}
+    }
+
+    const projectId = await this.resolveProjectId()
+    const projectKey = projectGrantKey(projectId)
+    if (grants.some((grant) => grant.key === projectKey)) {
+      if (role) {
+        this.error(
+          `Set the role for project ${projectId} with either --role or --grant ${projectKey}=<role>, not both.`,
+          {exit: exitCodes.USAGE_ERROR},
+        )
+      }
+      return {grants}
+    }
+
+    const projectRole = role ? await validateRole(role, projectId, this.output) : DEFAULT_ROLE
+
+    return {
+      grants: [...grants, {key: projectKey, roles: [projectRole.name]}],
+      roleTitle: grants.length === 0 ? projectRole.title : undefined,
     }
   }
 
@@ -155,6 +251,43 @@ export class CreateTokenCommand extends SanityCommand<typeof CreateTokenCommand>
     }
 
     return parsed.expiresAt
+  }
+
+  private parseGrantFlag(value: string): Grant {
+    const parsed = parseGrant(value.trim())
+    if ('error' in parsed) {
+      this.error(parsed.error, {exit: exitCodes.USAGE_ERROR})
+    }
+
+    return parsed.grant
+  }
+
+  private async promptForAccess(getExpiry: () => Promise<string | undefined>): Promise<Access> {
+    const requestedProjectId = this.flags['project-id']
+    const configProjectId = (await this.tryGetCliConfig()).api?.projectId
+    const projects = await listProjects({onlyExplicitMembership: false})
+    const organizationOf = (projectId: string | undefined) =>
+      projects.find((project) => project.id === projectId)?.organizationId ?? undefined
+    const organizationId = await this.resolveOrganization({
+      fallback: organizationOf(configProjectId),
+      preferred: organizationOf(requestedProjectId),
+    })
+    const organizationProjects = projects.filter(
+      (project) => project.organizationId === organizationId,
+    )
+    if (requestedProjectId && !organizationProjects.some(({id}) => id === requestedProjectId)) {
+      this.error(
+        `Project ${requestedProjectId} isn't in organization ${organizationId}, or you don't have access to it.`,
+        {exit: exitCodes.USAGE_ERROR},
+      )
+    }
+
+    const expiresAt = await getExpiry()
+    const grants = await promptForGrants({
+      preselectedProjectId: requestedProjectId,
+      projects: organizationProjects,
+    })
+    return {expiresAt, grants, organizationId}
   }
 
   private async promptForExpiry(): Promise<string | undefined> {
@@ -214,35 +347,79 @@ export class CreateTokenCommand extends SanityCommand<typeof CreateTokenCommand>
     return label.trim()
   }
 
-  private async promptForRole(projectId: string): Promise<SelectedTokenRole> {
-    if (this.isUnattended()) {
-      return {name: 'viewer', title: 'Viewer'} // Default role for unattended mode
+  private async resolveOrganization(
+    projectOrganizations: {fallback?: string; preferred?: string} = {},
+  ): Promise<string> {
+    const {fallback, preferred} = projectOrganizations
+    try {
+      return await resolveOrganizationId({
+        configuredOrganizationId:
+          preferred ?? (await this.tryGetCliConfig()).app?.organizationId ?? fallback,
+        flagOrganizationId: this.flags.organization,
+        unattended: this.isUnattended(),
+      })
+    } catch (error) {
+      tokensCreateDebug('Error resolving organization', error)
+      this.error(getErrorMessage(error), {
+        exit:
+          error instanceof MissingOrganizationError
+            ? exitCodes.USAGE_ERROR
+            : exitCodes.RUNTIME_ERROR,
+      })
     }
-
-    const roles = await getTokenRoles(projectId)
-    const robotRoles = roles.filter((role) => role.appliesToRobots)
-
-    tokensCreateDebug('Robot roles', {robotRoles})
-
-    if (robotRoles.length === 0) {
-      this.error('No roles available for tokens', {exit: exitCodes.RUNTIME_ERROR})
-    }
-
-    const selectedRoleName = await select({
-      choices: robotRoles.map((role) => ({
-        name: `${role.title} (${role.name})`,
-        short: role.title,
-        value: role.name,
-      })),
-      default: 'viewer',
-      message: 'Select role for the token:',
-    })
-
-    const selectedRole = robotRoles.find((r) => r.name === selectedRoleName)
-    if (!selectedRole) {
-      this.error('No roles available for tokens', {exit: exitCodes.RUNTIME_ERROR})
-    }
-
-    return {name: selectedRole.name, title: selectedRole.title}
   }
+
+  private async resolveProjectId(): Promise<string> {
+    if (!this.isUnattended()) {
+      return this.getProjectId({
+        fallback: () =>
+          promptForProject({
+            requiredPermissions: [
+              {grant: 'read', permission: 'sanity.project.roles'},
+              {grant: 'create', permission: 'sanity.project.tokens'},
+            ],
+          }),
+      })
+    }
+
+    try {
+      return await this.getProjectId()
+    } catch (error) {
+      if (!isProjectRootNotFoundError(error)) throw error
+      this.error(
+        'Token access is required. Pass at least one `--grant`, or `--project-id` to create a project token.',
+        {exit: exitCodes.USAGE_ERROR},
+      )
+    }
+  }
+}
+
+function quoteShellArg(value: string): string {
+  return /^[\w./:@=,-]+$/.test(value) ? value : `'${value.replaceAll("'", String.raw`'\''`)}'`
+}
+
+function formatCreateCommand(
+  bin: string,
+  {
+    expiresAt,
+    grants,
+    label,
+    token,
+  }: {
+    expiresAt: string | undefined
+    grants: Grant[]
+    label: string
+    token: RobotWithToken
+  },
+): string {
+  const organizationId =
+    token.managedBy?.resourceType === 'organization' ? token.managedBy.resourceId : undefined
+  return [
+    `${bin} tokens create`,
+    quoteShellArg(label),
+    ...(organizationId ? [`--organization ${organizationId}`] : []),
+    ...(expiresAt ? [`--expires-at ${expiresAt}`] : []),
+    ...grants.map((grant) => `--grant ${formatGrant(grant)}`),
+    '--yes',
+  ].join(' ')
 }

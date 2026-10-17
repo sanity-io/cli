@@ -1,10 +1,11 @@
 import {exitCodes} from '@sanity/cli-core/ExitCodes'
-import {input, select} from '@sanity/cli-core/ux'
+import {input, roleChecklist, select} from '@sanity/cli-core/ux'
 import {mockApi, testCommand} from '@sanity/cli-test'
 import {cleanAll, pendingMocks} from 'nock'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
 import {TOKENS_API_VERSION} from '../../../actions/tokens/constants.js'
+import {listProjects} from '../../../services/projects.js'
 import {CreateTokenCommand} from '../create.js'
 
 vi.mock('@sanity/cli-core/ux', async () => {
@@ -12,12 +13,17 @@ vi.mock('@sanity/cli-core/ux', async () => {
   return {
     ...actual,
     input: vi.fn(),
+    roleChecklist: vi.fn(),
     select: vi.fn(),
   }
 })
 
+vi.mock('../../../services/projects.js', () => ({listProjects: vi.fn()}))
+
 const mockedInput = vi.mocked(input)
+const mockedRoleChecklist = vi.mocked(roleChecklist)
 const mockedSelect = vi.mocked(select)
+const mockedListProjects = vi.mocked(listProjects)
 
 const testProjectId = 'test-project'
 
@@ -80,6 +86,24 @@ function mockRobotWithToken(options: {
   }
 }
 
+function mockRobotCreation(uri: string) {
+  const request: {body?: unknown} = {}
+  const [, resourceType, resourceId] = uri.split('/').slice(1)
+  mockApi({apiVersion: TOKENS_API_VERSION, method: 'post', uri}).reply(201, (_uri, body) => {
+    request.body = body
+    return {
+      ...mockRobotWithToken({
+        id: 'robot-new',
+        label: 'CI',
+        roleNames: [],
+        token: 'sk_new',
+      }),
+      managedBy: {resourceId, resourceType},
+    }
+  })
+  return request
+}
+
 describe('#tokens:create', () => {
   beforeEach(() => {
     vi.stubEnv('SANITY_INTERNAL_ENV', 'production')
@@ -93,60 +117,159 @@ describe('#tokens:create', () => {
     expect(pending, 'pending mocks').toEqual([])
   })
 
-  test('creates token with label argument and default role', async () => {
-    mockApi({
-      apiVersion: TOKENS_API_VERSION,
-      uri: '/access/project/test-project/roles',
-    }).reply(200, {data: [viewerRole, editorRole], nextCursor: null})
+  test('creates an organization token from the checklist and prints the equivalent command', async () => {
+    mockedListProjects.mockResolvedValueOnce([
+      {displayName: 'Website', id: testProjectId, organizationId: 'org-1'},
+      {displayName: 'Catalog', id: 'catalog', organizationId: 'org-1'},
+      {displayName: 'Elsewhere', id: 'elsewhere', organizationId: 'org-2'},
+    ] as Awaited<ReturnType<typeof listProjects>>)
+    mockedSelect.mockResolvedValueOnce('30')
+    mockedRoleChecklist.mockResolvedValueOnce([
+      {role: 'developer', value: 'context'},
+      {value: 'blueprints'},
+      {role: 'editor', value: `project:${testProjectId}`},
+      {role: 'viewer', value: 'project:catalog'},
+    ])
 
-    mockApi({
-      apiVersion: TOKENS_API_VERSION,
-      method: 'post',
-      uri: '/access/project/test-project/robots',
-    }).reply(
-      201,
-      mockRobotWithToken({
-        id: 'robot-123',
-        label: 'My Test Token',
-        roleNames: ['viewer'],
-        token: 'sk_test_abcd1234',
-      }),
-    )
+    const request = mockRobotCreation('/access/organization/org-1/robots')
 
-    mockedSelect.mockResolvedValueOnce('viewer').mockResolvedValueOnce('never')
-
-    const {error, stdout} = await testCommand(CreateTokenCommand, ['My Test Token'], {
+    const {error, stdout} = await testCommand(CreateTokenCommand, ['CI'], {
       mocks: defaultMocks,
     })
 
     expect(error).toBeUndefined()
-    expect(stdout).toContain('API token created')
-    expect(stdout).toContain('Label: My Test Token')
-    expect(stdout).toContain('ID: robot-123')
-    expect(stdout).toContain('Role: Viewer')
-    expect(stdout).toContain('Token: sk_test_abcd1234')
-    expect(stdout).toContain("Copy the token now. It won't be shown again.")
+    const {sections} = mockedRoleChecklist.mock.calls[0][0]
+    expect(sections[1].items.map(({value}) => value)).toEqual([
+      `project:${testProjectId}`,
+      'project:catalog',
+    ])
+    expect(sections[1].items.some(({checked}) => checked)).toBe(false)
+    expect(mockedListProjects).toHaveBeenCalledWith({onlyExplicitMembership: false})
+    const {expiresAt} = request.body as {expiresAt: string}
+    expect(request.body).toEqual({
+      expiresAt: expect.any(String),
+      label: 'CI',
+      memberships: [
+        {
+          resourceId: 'org-1',
+          resourceType: 'organization',
+          roleNames: ['knowledge-base-developer-robot', 'blueprints-deployer-robot'],
+        },
+        {
+          resourceId: testProjectId,
+          resourceType: 'project',
+          roleNames: ['editor'],
+        },
+        {
+          resourceId: 'catalog',
+          resourceType: 'project',
+          roleNames: ['viewer'],
+        },
+      ],
+    })
+    expect(stdout).toContain('Token: sk_new')
+    expect(stdout).toContain(
+      `tokens create CI --organization org-1 --expires-at ${expiresAt} --grant context=developer --grant blueprints --grant project:${testProjectId}=editor --grant project:catalog=viewer --yes`,
+    )
   })
 
-  test('creates token with specific role', async () => {
+  test('rejects a --project-id outside the organization before prompting', async () => {
+    mockedListProjects.mockResolvedValueOnce([
+      {displayName: 'Website', id: testProjectId, organizationId: 'org-1'},
+    ] as Awaited<ReturnType<typeof listProjects>>)
+
+    const {error} = await testCommand(
+      CreateTokenCommand,
+      ['CI', '--project-id=elsewhere', '--organization=org-1'],
+      {mocks: defaultMocks},
+    )
+
+    expect(error?.message).toContain("Project elsewhere isn't in organization org-1")
+    expect(error?.oclif?.exit).toBe(exitCodes.USAGE_ERROR)
+    expect(mockedRoleChecklist).not.toHaveBeenCalled()
+  })
+
+  test('merges repeated --grant flags into one membership per resource', async () => {
+    const request = mockRobotCreation('/access/organization/org-1/robots')
+
+    const {error} = await testCommand(
+      CreateTokenCommand,
+      [
+        'CI',
+        '--organization=org-1',
+        '--grant=context=editor',
+        '--grant=context=editor',
+        '--grant=project:p1=editor',
+        '--grant=project:p1=editor,deploy-studio',
+        '--yes',
+      ],
+      {mocks: defaultMocks},
+    )
+
+    expect(error).toBeUndefined()
+    expect(request.body).toEqual({
+      label: 'CI',
+      memberships: [
+        {
+          resourceId: 'org-1',
+          resourceType: 'organization',
+          roleNames: ['knowledge-base-editor-robot'],
+        },
+        {
+          resourceId: 'p1',
+          resourceType: 'project',
+          roleNames: ['editor', 'deploy-studio'],
+        },
+      ],
+    })
+  })
+
+  test('uses the explicit project grant role instead of adding viewer for --project-id', async () => {
+    const request = mockRobotCreation('/access/project/p1/robots')
+
+    const {error} = await testCommand(
+      CreateTokenCommand,
+      ['CI', '--project-id=p1', '--grant=project:p1=restricted-reader', '--yes'],
+      {mocks: defaultMocks},
+    )
+
+    expect(error).toBeUndefined()
+    expect(request.body).toEqual({
+      label: 'CI',
+      memberships: [
+        {
+          resourceId: 'p1',
+          resourceType: 'project',
+          roleNames: ['restricted-reader'],
+        },
+      ],
+    })
+  })
+
+  test('explains a 403 from the organization endpoint', async () => {
+    mockApi({
+      apiVersion: TOKENS_API_VERSION,
+      method: 'post',
+      uri: '/access/organization/org-1/robots',
+    }).reply(403, {message: 'Forbidden'})
+
+    const {error} = await testCommand(
+      CreateTokenCommand,
+      ['CI', '--organization=org-1', '--grant=blueprints', '--yes'],
+      {mocks: defaultMocks},
+    )
+
+    expect(error?.message).toContain('You need permission to create organization tokens')
+    expect(error?.oclif?.exit).toBe(exitCodes.RUNTIME_ERROR)
+  })
+
+  test('creates a project token with --role, as before org grants', async () => {
     mockApi({
       apiVersion: TOKENS_API_VERSION,
       uri: '/access/project/test-project/roles',
     }).reply(200, {data: [viewerRole, editorRole], nextCursor: null})
 
-    mockApi({
-      apiVersion: TOKENS_API_VERSION,
-      method: 'post',
-      uri: '/access/project/test-project/robots',
-    }).reply(
-      201,
-      mockRobotWithToken({
-        id: 'robot-456',
-        label: 'Editor Token',
-        roleNames: ['editor'],
-        token: 'sk_test_editor1234',
-      }),
-    )
+    const request = mockRobotCreation('/access/project/test-project/robots')
 
     mockedSelect.mockResolvedValueOnce('never')
 
@@ -154,10 +277,19 @@ describe('#tokens:create', () => {
       mocks: defaultMocks,
     })
 
+    expect(request.body).toEqual({
+      label: 'Editor Token',
+      memberships: [
+        {
+          resourceId: testProjectId,
+          resourceType: 'project',
+          roleNames: ['editor'],
+        },
+      ],
+    })
     expect(stdout).toContain('API token created')
-    expect(stdout).toContain('Label: Editor Token')
     expect(stdout).toContain('Role: Editor')
-    expect(stdout).toContain('Token: sk_test_editor1234')
+    expect(stdout).toContain("'Editor Token' --grant project:test-project=editor")
   })
 
   test('outputs the created robot as JSON when --json flag is used', async () => {
@@ -207,6 +339,8 @@ describe('#tokens:create', () => {
 
     expect(stdout).toContain('API token created')
     expect(stdout).toContain('Label: Unattended Token')
+    expect(stdout).toContain('Role: Viewer')
+    expect(stdout).not.toContain('To create the same token')
     expect(mockedSelect).not.toHaveBeenCalled()
     expect(mockedInput).not.toHaveBeenCalled()
   })
@@ -258,16 +392,27 @@ describe('#tokens:create', () => {
       }),
     )
 
-    mockedSelect.mockResolvedValueOnce('viewer').mockResolvedValueOnce('30')
+    mockedSelect.mockResolvedValueOnce('30')
 
-    const {stdout} = await testCommand(CreateTokenCommand, ['Preset Token'], {mocks: defaultMocks})
+    const {stdout} = await testCommand(CreateTokenCommand, ['Preset Token', '--role=viewer'], {
+      mocks: defaultMocks,
+    })
 
     expect(mockedSelect).toHaveBeenLastCalledWith({
       choices: [
         {name: 'Never', value: 'never'},
-        {name: expect.stringMatching(/^30 days \(\d{4}-\d{2}-\d{2}\)$/), value: '30'},
-        {name: expect.stringMatching(/^60 days \(\d{4}-\d{2}-\d{2}\)$/), value: '60'},
-        {name: expect.stringMatching(/^90 days \(\d{4}-\d{2}-\d{2}\)$/), value: '90'},
+        {
+          name: expect.stringMatching(/^30 days \(\d{4}-\d{2}-\d{2}\)$/),
+          value: '30',
+        },
+        {
+          name: expect.stringMatching(/^60 days \(\d{4}-\d{2}-\d{2}\)$/),
+          value: '60',
+        },
+        {
+          name: expect.stringMatching(/^90 days \(\d{4}-\d{2}-\d{2}\)$/),
+          value: '90',
+        },
         {name: 'Custom date', value: 'custom'},
       ],
       default: 'never',
@@ -298,10 +443,12 @@ describe('#tokens:create', () => {
       }),
     )
 
-    mockedSelect.mockResolvedValueOnce('viewer').mockResolvedValueOnce('custom')
+    mockedSelect.mockResolvedValueOnce('custom')
     mockedInput.mockResolvedValueOnce('2030-01-01')
 
-    const {stdout} = await testCommand(CreateTokenCommand, ['Custom Token'], {mocks: defaultMocks})
+    const {stdout} = await testCommand(CreateTokenCommand, ['Custom Token', '--role=viewer'], {
+      mocks: defaultMocks,
+    })
 
     expect(mockedInput).toHaveBeenCalledWith({
       message: 'Expiry date (ISO 8601, e.g. 2027-01-01):',
@@ -363,9 +510,11 @@ describe('#tokens:create', () => {
       uri: '/access/project/test-project/robots',
     }).reply(500, {message: 'Internal Server Error'})
 
-    mockedSelect.mockResolvedValueOnce('viewer').mockResolvedValueOnce('never')
+    mockedSelect.mockResolvedValueOnce('never')
 
-    const {error} = await testCommand(CreateTokenCommand, ['Failed Token'], {mocks: defaultMocks})
+    const {error} = await testCommand(CreateTokenCommand, ['Failed Token', '--role=viewer'], {
+      mocks: defaultMocks,
+    })
 
     expect(error).toBeInstanceOf(Error)
     expect(error?.message).toContain('Token creation failed')
@@ -373,43 +522,21 @@ describe('#tokens:create', () => {
     expect(error?.oclif?.exit).toBe(1)
   })
 
-  test('throws error when no project ID is found', async () => {
-    const {error} = await testCommand(CreateTokenCommand, ['Test Token'], {
+  test('requires a grant or project in unattended mode', async () => {
+    const {error} = await testCommand(CreateTokenCommand, ['Test Token', '--yes'], {
       mocks: {
         ...defaultMocks,
         cliConfig: {api: {projectId: undefined}},
       },
     })
 
-    expect(error).toBeInstanceOf(Error)
-    expect(error?.message).toContain('Unable to determine project ID')
-    expect(error?.oclif?.exit).toBe(1)
-  })
-
-  test('handles no roles available for tokens', async () => {
-    const adminRole = {
-      ...viewerRole,
-      appliesToRobots: false, // Not applicable to robots
-      description: 'Full access',
-      name: 'admin',
-      title: 'Admin',
-    }
-
-    mockApi({
-      apiVersion: TOKENS_API_VERSION,
-      uri: '/access/project/test-project/roles',
-    }).reply(200, {data: [adminRole], nextCursor: null})
-
-    const {error} = await testCommand(CreateTokenCommand, ['Test Token'], {mocks: defaultMocks})
-
-    expect(error).toBeInstanceOf(Error)
-    expect(error?.message).toContain('No roles available for tokens')
-    expect(error?.oclif?.exit).toBe(1)
+    expect(error?.message).toContain('Token access is required')
+    expect(error?.oclif?.exit).toBe(exitCodes.USAGE_ERROR)
   })
 
   test('prompts for label when not provided in interactive mode', async () => {
     mockedInput.mockResolvedValueOnce('Prompted Label')
-    mockedSelect.mockResolvedValueOnce('viewer').mockResolvedValueOnce('never')
+    mockedSelect.mockResolvedValueOnce('never')
 
     mockApi({
       apiVersion: TOKENS_API_VERSION,
@@ -430,7 +557,9 @@ describe('#tokens:create', () => {
       }),
     )
 
-    const {stdout} = await testCommand(CreateTokenCommand, [], {mocks: defaultMocks})
+    const {stdout} = await testCommand(CreateTokenCommand, ['--role=viewer'], {
+      mocks: defaultMocks,
+    })
 
     expect(mockedInput).toHaveBeenCalledWith({
       message: 'Token label:',
@@ -443,7 +572,7 @@ describe('#tokens:create', () => {
   test('validates label input - rejects empty label', async () => {
     // Mock input to capture the validation function and return a valid label
     mockedInput.mockResolvedValueOnce('Valid Label')
-    mockedSelect.mockResolvedValueOnce('viewer').mockResolvedValueOnce('never')
+    mockedSelect.mockResolvedValueOnce('never')
 
     mockApi({
       apiVersion: TOKENS_API_VERSION,
@@ -464,7 +593,9 @@ describe('#tokens:create', () => {
       }),
     )
 
-    await testCommand(CreateTokenCommand, [], {mocks: defaultMocks})
+    await testCommand(CreateTokenCommand, ['--role=viewer'], {
+      mocks: defaultMocks,
+    })
 
     // Test that the validation function correctly rejects empty and whitespace-only strings
     const inputCall = mockedInput.mock.calls[0]
@@ -481,7 +612,11 @@ describe('#tokens:create', () => {
 
   test.each([
     {args: ['--yes'], description: 'with --yes', isInteractive: true},
-    {args: [], description: 'without an interactive terminal', isInteractive: false},
+    {
+      args: [],
+      description: 'without an interactive terminal',
+      isInteractive: false,
+    },
   ])('requires a label in unattended mode $description', async ({args, isInteractive}) => {
     const {error} = await testCommand(CreateTokenCommand, args, {
       mocks: {
