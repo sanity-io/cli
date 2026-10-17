@@ -358,4 +358,113 @@ describe('#tokens:list', () => {
     expect(stdout).toContain('contributor')
     expect(stdout).not.toContain('...')
   })
+  describe('organization scope', () => {
+    const orgToken = {
+      ...mockRobots[0],
+      managedBy: {resourceId: 'org-1', resourceType: 'organization'},
+      memberships: [
+        {
+          resourceId: 'org-1',
+          resourceType: 'organization',
+          roleNames: ['knowledge-base-viewer-robot', 'blueprints-deployer-robot'],
+        },
+        {resourceId: 'abc123', resourceType: 'project', roleNames: ['viewer']},
+      ],
+    }
+
+    test('shows organization access despite a configured project', async () => {
+      Object.defineProperty(process.stdout, 'columns', {configurable: true, value: 200})
+      mockApi({
+        apiVersion: TOKENS_API_VERSION,
+        query: {includeChildren: 'true'},
+        uri: '/access/organization/org-1/robots',
+      }).reply(200, robotsPage([orgToken]))
+      const {error, stdout} = await testCommand(TokensListCommand, ['--organization', 'org-1'], {
+        mocks: defaultMocks,
+      })
+      expect(error).toBeUndefined()
+      expect(stdout).toContain('Access')
+      expect(stdout).toContain('Context: Viewer')
+      expect(stdout).toContain('Blueprints')
+      expect(stdout).toContain('project:abc123: viewer')
+      expect(stdout).toContain('2030-06-15')
+    })
+
+    test('returns org tokens as JSON without requiring project configuration', async () => {
+      mockApi({
+        apiVersion: TOKENS_API_VERSION,
+        query: {includeChildren: 'true'},
+        uri: '/access/organization/org-1/robots',
+      }).reply(
+        200,
+        robotsPage([
+          orgToken,
+          {...mockRobots[1], managedBy: {resourceId: testProjectId, resourceType: 'project'}},
+        ]),
+      )
+      const {error, stdout} = await testCommand(
+        TokensListCommand,
+        ['--organization', 'org-1', '--json'],
+        {mocks: {...defaultMocks, cliConfig: {}}},
+      )
+      expect(error).toBeUndefined()
+      expect(JSON.parse(stdout)).toEqual([orgToken])
+    })
+
+    test.each([false, true])('handles an empty org list (JSON: %s)', async (json) => {
+      mockApi({
+        apiVersion: TOKENS_API_VERSION,
+        query: {includeChildren: 'true'},
+        uri: '/access/organization/org-1/robots',
+      }).reply(200, robotsPage([]))
+      const {error, stdout} = await testCommand(
+        TokensListCommand,
+        ['--organization', 'org-1', ...(json ? ['--json'] : [])],
+        {mocks: defaultMocks},
+      )
+      expect(error).toBeUndefined()
+      expect(stdout).toBe(json ? '[]\n' : 'No API tokens found for this organization.\n')
+    })
+
+    test.each([403, 404, 500])(
+      'reports org list failure %s without falling back to the project',
+      async (status) => {
+        mockApi({
+          apiVersion: TOKENS_API_VERSION,
+          query: {includeChildren: 'true'},
+          uri: '/access/organization/org-1/robots',
+        }).reply(status, {message: 'Organization request failed'})
+        const {error} = await testCommand(TokensListCommand, ['--organization', 'org-1'], {
+          mocks: defaultMocks,
+        })
+        expect(error?.message).toContain('Organization request failed')
+        expect(error?.oclif?.exit).toBe(1)
+      },
+    )
+
+    test('rejects conflicting scope flags', async () => {
+      const {error} = await testCommand(
+        TokensListCommand,
+        ['--organization', 'org-1', '--project-id', 'abc123'],
+        {mocks: defaultMocks},
+      )
+      expect(error?.message).toContain('cannot also be provided')
+      expect(error?.oclif?.exit).toBe(2)
+    })
+
+    test('does not infer organization scope from configuration', async () => {
+      mockApi({
+        apiVersion: TOKENS_API_VERSION,
+        uri: `/access/project/${testProjectId}/robots`,
+      }).reply(200, robotsPage([]))
+      const {error, stdout} = await testCommand(TokensListCommand, [], {
+        mocks: {
+          ...defaultMocks,
+          cliConfig: {...defaultMocks.cliConfig, app: {organizationId: 'org-1'}},
+        },
+      })
+      expect(error).toBeUndefined()
+      expect(stdout).toContain('this project')
+    })
+  })
 })

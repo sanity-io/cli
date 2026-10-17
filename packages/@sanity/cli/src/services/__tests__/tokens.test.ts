@@ -5,7 +5,9 @@ import {TOKENS_API_VERSION} from '../../actions/tokens/constants.js'
 import {type Membership, type Robot} from '../../actions/tokens/types.js'
 import {
   createToken,
+  deleteOrganizationToken,
   deleteToken,
+  getOrganizationTokens,
   getProjectMembership,
   getTokenRoles,
   getTokens,
@@ -286,5 +288,60 @@ describe('getTokenRoles', () => {
     mockRequest.mockRejectedValue(new Error('Unauthorized'))
 
     await expect(getTokenRoles(testProjectId)).rejects.toThrow('Unauthorized')
+  })
+})
+
+describe('organization tokens', () => {
+  const organizationToken: Robot = {
+    ...testRobot,
+    managedBy: {resourceId: 'org-1', resourceType: 'organization'},
+  }
+
+  test('includes project-only org tokens, filters other managers, and keeps includeChildren across pages', async () => {
+    mockRequest
+      .mockResolvedValueOnce({
+        data: [
+          {...testRobot, managedBy: {resourceId: testProjectId, resourceType: 'project'}},
+          testRobot,
+          {
+            ...organizationToken,
+            managedBy: {resourceId: 'other-org', resourceType: 'organization'},
+          },
+        ],
+        nextCursor: 'cursor-1',
+      })
+      .mockResolvedValueOnce({data: [organizationToken], nextCursor: null})
+
+    expect(await getOrganizationTokens('org-1')).toEqual([organizationToken])
+    expect(mockRequest).toHaveBeenNthCalledWith(1, {
+      query: {includeChildren: 'true'},
+      url: '/access/organization/org-1/robots',
+    })
+    expect(mockRequest).toHaveBeenNthCalledWith(2, {
+      query: {includeChildren: 'true', nextCursor: 'cursor-1'},
+      url: '/access/organization/org-1/robots',
+    })
+  })
+
+  test('returns an empty organization list', async () => {
+    mockRequest.mockResolvedValue({data: [], nextCursor: null})
+    expect(await getOrganizationTokens('org-1')).toEqual([])
+  })
+
+  test('deletes using the organization scope and robot ID', async () => {
+    mockRequest.mockResolvedValue(undefined)
+    await deleteOrganizationToken({organizationId: 'org-1', tokenId: 'robot-1'})
+    expect(mockRequest).toHaveBeenCalledWith({
+      method: 'DELETE',
+      url: '/access/organization/org-1/robots/robot-1',
+    })
+  })
+
+  test('propagates organization list and deletion failures', async () => {
+    mockRequest.mockRejectedValue(new Error('Forbidden'))
+    await expect(getOrganizationTokens('org-1')).rejects.toThrow('Forbidden')
+    await expect(
+      deleteOrganizationToken({organizationId: 'org-1', tokenId: 'robot-1'}),
+    ).rejects.toThrow('Forbidden')
   })
 })
