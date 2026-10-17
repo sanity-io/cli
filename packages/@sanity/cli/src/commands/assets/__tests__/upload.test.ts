@@ -56,7 +56,7 @@ describe('#assets:upload', () => {
         '--filename=private-hero.png',
         '--dataset=production',
       ],
-      UploadAssetCommand.telemetry,
+      UploadAssetCommand,
     )
 
     expect(result.extraArguments).toEqual(['--file', '--filename', '--dataset=production'])
@@ -72,7 +72,7 @@ describe('#assets:upload', () => {
         '--from-url=https://private.example.com/hero.png?signature=secret',
         '--dataset=production',
       ],
-      UploadAssetCommand.telemetry,
+      UploadAssetCommand,
     )
 
     expect(result.extraArguments).toEqual(['--from-url', '--dataset=production'])

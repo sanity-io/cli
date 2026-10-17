@@ -13,6 +13,7 @@ import {type Level} from '../../actions/documents/types.js'
 import {validateDocuments} from '../../actions/documents/validate.js'
 import {reporters} from '../../actions/documents/validation/reporters/index.js'
 import {getDatasetFlag, getProjectIdFlag} from '../../util/sharedFlags.js'
+import {defineCommandTelemetry} from '../../util/telemetry/commandTelemetry.js'
 
 export class ValidateDocumentsCommand extends SanityCommand<typeof ValidateDocumentsCommand> {
   static description = 'Validate documents in a dataset against the studio schema'
@@ -84,6 +85,8 @@ export class ValidateDocumentsCommand extends SanityCommand<typeof ValidateDocum
   }
 
   static override hiddenAliases: string[] = ['document:validate']
+
+  static telemetry = defineCommandTelemetry(this.flags, {redact: ['file']})
 
   public async run(): Promise<void> {
     const {flags} = await this.parse(ValidateDocumentsCommand)

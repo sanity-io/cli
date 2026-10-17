@@ -7,6 +7,7 @@ import {confirm} from '@sanity/cli-core/ux'
 import {extractSchema} from '../../actions/schema/extractSchema.js'
 import {getExtractOptions} from '../../actions/schema/getExtractOptions.js'
 import {watchExtractSchema} from '../../actions/schema/watchExtractSchema.js'
+import {defineCommandTelemetry} from '../../util/telemetry/commandTelemetry.js'
 
 const description = `
 Extract a JSON representation of a Sanity schema within a Studio context.
@@ -62,6 +63,8 @@ export class ExtractSchemaCommand extends SanityCommand<typeof ExtractSchemaComm
   }
 
   static override hiddenAliases: string[] = ['schema:extract']
+
+  static telemetry = defineCommandTelemetry(this.flags, {redact: ['path', 'watch-patterns']})
 
   public async run(): Promise<{close?: () => Promise<void>} | void> {
     const {flags} = await this.parse(ExtractSchemaCommand)
