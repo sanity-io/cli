@@ -9,6 +9,7 @@ type Role = {title: string; value: string}
 
 const SPACE = ' '
 const RIGHT = '\u001B[C'
+const LEFT = '\u001B[D'
 const ENTER = '\r'
 
 const viewer = {title: 'Viewer', value: 'viewer'}
@@ -79,6 +80,22 @@ describe('roleChecklist role lookups', () => {
     await prompt.press(ENTER)
 
     await expect(prompt.answer).resolves.toEqual([{role: 'editor', value: 'project:p1'}])
+  })
+
+  test('applies a role change pressed in the same input chunk as enter', async () => {
+    const prompt = startChecklist([
+      {
+        checked: true,
+        name: 'Website',
+        role: 'editor',
+        roles: [viewer, editor],
+        value: 'project:p1',
+      },
+    ])
+
+    await prompt.press(LEFT + ENTER)
+
+    await expect(prompt.answer).resolves.toEqual([{role: 'viewer', value: 'project:p1'}])
   })
 
   test.each([

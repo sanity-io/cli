@@ -227,7 +227,10 @@ export const roleChecklist: (
       }
 
       const offset = key.name === 'right' ? 1 : -1
-      await loadRoles(current)
+      if (current.loadRoles) {
+        await loadRoles(current)
+        if (settled.current) return
+      }
       updateRow(current.value, (row) => cycleRole(row, offset))
     })
 
