@@ -1,5 +1,15 @@
 # Changelog
 
+## 3.10.0
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-core-v3.9.2...cli-core-v3.10.0)
+
+_2026-10-17_
+
+### Features
+
+- **tokens:** create organization tokens with org permissions and project roles ([#1989](https://github.com/sanity-io/cli/pull/1989)) ([9f33a2f](https://github.com/sanity-io/cli/commit/9f33a2f1f4308e3c31c2cf1cd4db9544cd3d65c3))
+
 ## 3.9.2
 
 [Compare changes](https://github.com/sanity-io/cli/compare/cli-core-v3.9.1...cli-core-v3.9.2)
