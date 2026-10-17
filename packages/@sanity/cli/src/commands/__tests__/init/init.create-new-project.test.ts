@@ -23,6 +23,10 @@ const mocks = vi.hoisted(() => ({
   usersGetById: vi.fn(),
 }))
 
+vi.mock('../../../prompts/init/promptForInitType.js', () => ({
+  promptForInitType: vi.fn().mockResolvedValue('studio'),
+}))
+
 vi.mock('../../../util/detectFramework.js', () => ({
   detectFrameworkRecord: mocks.detectFrameworkRecord,
 }))

@@ -8,6 +8,7 @@ import {getE2EDataset, getE2EOrganizationId, getE2EProjectId, runCli} from '../.
 const orgId = getE2EOrganizationId()
 const projectId = getE2EProjectId()
 const dataset = getE2EDataset()
+const isRegistryMode = process.env.E2E_REGISTRY_MODE === 'true'
 
 describe('sanity init - app', {timeout: 120_000}, () => {
   let tmp: Awaited<ReturnType<typeof createTmpDir>>
@@ -93,6 +94,48 @@ describe('sanity init - app', {timeout: 120_000}, () => {
       expect(cliConfig).toContain(orgId)
     })
   })
+
+  test.skipIf(isRegistryMode)(
+    'creates an App SDK app from the interactive type choice',
+    async () => {
+      const session = await runCli({
+        args: [
+          'init',
+          '--project',
+          projectId,
+          '--dataset',
+          dataset,
+          '--output-path',
+          tmp.path,
+          '--package-manager',
+          'pnpm',
+          '--no-git',
+          '--no-mcp',
+          '--no-install',
+        ],
+        interactive: true,
+      })
+
+      await session.waitForText(/What would you like to create/i)
+      await session.selectOption('App SDK')
+
+      await session.waitForExit(0, 90_000)
+
+      const output = session.getOutput()
+      expect(output).toContain('https://www.sanity.io/app-sdk')
+      expect(output).toContain('Your custom app has been scaffolded')
+      expect(output).not.toMatch(/Select project template/i)
+
+      const app = readFileSync(`${tmp.path}/src/App.tsx`, 'utf8')
+      expect(app).toContain(projectId)
+      expect(app).toContain(dataset)
+      const cliConfig = readFileSync(`${tmp.path}/sanity.cli.ts`, 'utf8')
+      expect(cliConfig).toContain(orgId)
+      expect(cliConfig).toContain('entry')
+      expect(existsSync(`${tmp.path}/package.json`)).toBe(true)
+      expect(existsSync(`${tmp.path}/sanity.config.ts`)).toBe(false)
+    },
+  )
 
   // Keeps a real install: the flow drives the package manager prompt, which
   // only appears when there is an install to run.

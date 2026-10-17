@@ -10,6 +10,10 @@ import {InitCommand} from '../../init.js'
 const mockConfirm = vi.hoisted(() => vi.fn())
 const mockDetectedFramework = vi.hoisted(() => vi.fn())
 
+vi.mock('../../../prompts/init/promptForInitType.js', () => ({
+  promptForInitType: vi.fn().mockResolvedValue('studio'),
+}))
+
 vi.mock('@sanity/cli-core/ux', async () => {
   const actual = await vi.importActual('@sanity/cli-core/ux')
 
