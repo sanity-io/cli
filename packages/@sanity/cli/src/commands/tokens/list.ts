@@ -3,9 +3,9 @@ import {exitCodes, SanityCommand, subdebug} from '@sanity/cli-core'
 import {getErrorMessage} from '@sanity/cli-core/errors'
 
 import {formatTokenAccess} from '../../actions/tokens/formatTokenAccess.js'
-import {type Robot, type TokenScope} from '../../actions/tokens/types.js'
-import {promptForProject} from '../../prompts/promptForProject.js'
-import {getOrganizationTokens, getProjectMembership, getTokens} from '../../services/tokens.js'
+import {type Robot} from '../../actions/tokens/types.js'
+import {getTokens} from '../../services/tokens.js'
+import {resolveTokenScope} from '../../util/resolveTokenScope.js'
 import {Table} from '../../util/responsiveTable.js'
 import {getOrganizationFlag, getProjectIdFlag} from '../../util/sharedFlags.js'
 
@@ -54,25 +54,15 @@ export class TokensListCommand extends SanityCommand<typeof TokensListCommand> {
     const {json} = flags
     const outputJson = json ?? false
 
-    let scope: TokenScope
-    if (flags.organization) {
-      scope = {resourceId: flags.organization, resourceType: 'organization'}
-    } else {
-      const projectId = await this.getProjectId({
-        fallback: () =>
-          promptForProject({
-            requiredPermissions: [{grant: 'read', permission: 'sanity.project.tokens'}],
-          }),
-      })
-      scope = {resourceId: projectId, resourceType: 'project'}
-    }
+    const scope = await resolveTokenScope({
+      getProjectId: this.getProjectId.bind(this),
+      grant: 'read',
+      organization: flags.organization,
+    })
 
     let tokens: Robot[]
     try {
-      tokens =
-        scope.resourceType === 'organization'
-          ? await getOrganizationTokens(scope.resourceId)
-          : await getTokens(scope.resourceId)
+      tokens = await getTokens(scope)
     } catch (error) {
       const message = getErrorMessage(error)
       listTokenDebug(`Error fetching tokens for ${scope.resourceType} ${scope.resourceId}`, error)
@@ -104,10 +94,7 @@ export class TokensListCommand extends SanityCommand<typeof TokensListCommand> {
     })
 
     for (const token of tokens) {
-      const roles =
-        scope.resourceType === 'organization'
-          ? formatTokenAccess(token)
-          : getProjectMembership(token, scope.resourceId)?.roleNames.join(', ') || 'No roles'
+      const roles = formatTokenAccess(token, scope)
 
       table.addRow({
         expires: token.expiresAt ? token.expiresAt.slice(0, 10) : 'Never',

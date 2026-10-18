@@ -5,9 +5,7 @@ import {TOKENS_API_VERSION} from '../../actions/tokens/constants.js'
 import {type Membership, type Robot} from '../../actions/tokens/types.js'
 import {
   createToken,
-  deleteOrganizationToken,
   deleteToken,
-  getOrganizationTokens,
   getProjectMembership,
   getTokenRoles,
   getTokens,
@@ -29,6 +27,8 @@ vi.mock(import('@sanity/cli-core'), async (importOriginal) => {
 const mockGetGlobalCliClient = vi.mocked(getGlobalCliClient)
 
 const testProjectId = 'test-project'
+const projectScope = {resourceId: testProjectId, resourceType: 'project'} as const
+const organizationScope = {resourceId: 'org-1', resourceType: 'organization'} as const
 
 const projectMembership: Membership = {
   resourceId: testProjectId,
@@ -134,7 +134,7 @@ describe('deleteToken', () => {
   test('deletes the robot by id', async () => {
     mockRequest.mockResolvedValue(undefined)
 
-    await deleteToken({projectId: testProjectId, tokenId: 'robot-1'})
+    await deleteToken(projectScope, 'robot-1')
 
     expect(mockRequest).toHaveBeenCalledWith({
       method: 'DELETE',
@@ -145,9 +145,7 @@ describe('deleteToken', () => {
   test('propagates errors from the API', async () => {
     mockRequest.mockRejectedValue(new Error('Not found'))
 
-    await expect(deleteToken({projectId: testProjectId, tokenId: 'missing'})).rejects.toThrow(
-      'Not found',
-    )
+    await expect(deleteToken(projectScope, 'missing')).rejects.toThrow('Not found')
   })
 })
 
@@ -181,7 +179,7 @@ describe('getTokens', () => {
   test('returns robots as reported by the API', async () => {
     mockRequest.mockResolvedValue({data: [testRobot], nextCursor: null})
 
-    const tokens = await getTokens(testProjectId)
+    const tokens = await getTokens(projectScope)
 
     expect(mockRequest).toHaveBeenCalledWith({
       query: {},
@@ -195,7 +193,7 @@ describe('getTokens', () => {
       .mockResolvedValueOnce({data: [testRobot], nextCursor: 'cursor-1'})
       .mockResolvedValueOnce({data: [{...testRobot, id: 'robot-2'}], nextCursor: null})
 
-    const tokens = await getTokens(testProjectId)
+    const tokens = await getTokens(projectScope)
 
     expect(mockRequest).toHaveBeenNthCalledWith(1, {
       query: {},
@@ -224,7 +222,7 @@ describe('getTokens', () => {
       nextCursor: null,
     })
 
-    const tokens = await getTokens(testProjectId)
+    const tokens = await getTokens(projectScope)
 
     expect(tokens.map((token) => token.id)).toEqual(['robot-project', 'robot-1'])
   })
@@ -232,7 +230,7 @@ describe('getTokens', () => {
   test('propagates errors from the API', async () => {
     mockRequest.mockRejectedValue(new Error('Unauthorized'))
 
-    await expect(getTokens(testProjectId)).rejects.toThrow('Unauthorized')
+    await expect(getTokens(projectScope)).rejects.toThrow('Unauthorized')
   })
 })
 
@@ -312,36 +310,74 @@ describe('organization tokens', () => {
       })
       .mockResolvedValueOnce({data: [organizationToken], nextCursor: null})
 
-    expect(await getOrganizationTokens('org-1')).toEqual([organizationToken])
+    expect(await getTokens(organizationScope)).toEqual([organizationToken])
     expect(mockRequest).toHaveBeenNthCalledWith(1, {
-      query: {includeChildren: 'true'},
+      query: {includeChildren: 'true', limit: '500'},
       url: '/access/organization/org-1/robots',
     })
     expect(mockRequest).toHaveBeenNthCalledWith(2, {
-      query: {includeChildren: 'true', nextCursor: 'cursor-1'},
+      query: {includeChildren: 'true', limit: '500', nextCursor: 'cursor-1'},
       url: '/access/organization/org-1/robots',
     })
   })
 
   test('returns an empty organization list', async () => {
     mockRequest.mockResolvedValue({data: [], nextCursor: null})
-    expect(await getOrganizationTokens('org-1')).toEqual([])
+    expect(await getTokens(organizationScope)).toEqual([])
   })
 
-  test('deletes using the organization scope and robot ID', async () => {
-    mockRequest.mockResolvedValue(undefined)
-    await deleteOrganizationToken({organizationId: 'org-1', tokenId: 'robot-1'})
-    expect(mockRequest).toHaveBeenCalledWith({
+  test('verifies the manager before deleting using the organization scope and robot ID', async () => {
+    mockRequest.mockResolvedValueOnce(organizationToken).mockResolvedValueOnce(undefined)
+    await deleteToken(organizationScope, 'robot-1')
+    expect(mockRequest).toHaveBeenNthCalledWith(1, {
+      url: '/access/organization/org-1/robots/robot-1',
+    })
+    expect(mockRequest).toHaveBeenNthCalledWith(2, {
       method: 'DELETE',
       url: '/access/organization/org-1/robots/robot-1',
     })
   })
 
-  test('propagates organization list and deletion failures', async () => {
+  test.each([
+    {
+      managedBy: {resourceId: 'org-1', resourceType: 'project'},
+      name: 'project-managed token with implied organization access',
+    },
+    {
+      managedBy: {resourceId: 'other-org', resourceType: 'organization'},
+      name: 'token managed by another organization',
+    },
+    {managedBy: undefined, name: 'token without manager metadata'},
+  ])('refuses to delete a $name', async ({managedBy}) => {
+    mockRequest.mockResolvedValue({...organizationToken, managedBy})
+
+    await expect(deleteToken(organizationScope, 'robot-1')).rejects.toThrow(
+      'Token "robot-1" is not managed by organization "org-1"',
+    )
+    expect(mockRequest).toHaveBeenCalledExactlyOnceWith({
+      url: '/access/organization/org-1/robots/robot-1',
+    })
+  })
+
+  test('does not delete when the ownership lookup fails', async () => {
     mockRequest.mockRejectedValue(new Error('Forbidden'))
-    await expect(getOrganizationTokens('org-1')).rejects.toThrow('Forbidden')
-    await expect(
-      deleteOrganizationToken({organizationId: 'org-1', tokenId: 'robot-1'}),
-    ).rejects.toThrow('Forbidden')
+
+    await expect(deleteToken(organizationScope, 'robot-1')).rejects.toThrow('Forbidden')
+    expect(mockRequest).toHaveBeenCalledExactlyOnceWith({
+      url: '/access/organization/org-1/robots/robot-1',
+    })
+  })
+
+  test('propagates deletion failures after verifying ownership', async () => {
+    mockRequest
+      .mockResolvedValueOnce(organizationToken)
+      .mockRejectedValueOnce(new Error('Not found'))
+    await expect(deleteToken(organizationScope, 'robot-1')).rejects.toThrow('Not found')
+    expect(mockRequest).toHaveBeenCalledTimes(2)
+  })
+
+  test('propagates organization list failures', async () => {
+    mockRequest.mockRejectedValue(new Error('Forbidden'))
+    await expect(getTokens(organizationScope)).rejects.toThrow('Forbidden')
   })
 })

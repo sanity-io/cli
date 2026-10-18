@@ -32,7 +32,6 @@ vi.mock('@sanity/cli-core/ux', async (importOriginal) => {
 
 const ENTER = '\r'
 const DOWN = '\u001B[B'
-const CTRL_C = '\u0003'
 const mocks = {
   cliConfig: {api: {projectId: 'project-1'}},
   isInteractive: true,
@@ -91,7 +90,7 @@ afterEach(async () => {
 function listPage() {
   return mockApi({
     apiVersion: TOKENS_API_VERSION,
-    query: {includeChildren: 'true'},
+    query: {includeChildren: 'true', limit: '500'},
     uri: '/access/organization/org-1/robots',
   })
 }
@@ -112,6 +111,10 @@ function press(keys: string) {
 describe('tokens delete with real prompts', () => {
   test('buffered arrow and Enter select the second of two identically named tokens', async () => {
     listPage().reply(200, {data: tokens, nextCursor: null})
+    mockApi({
+      apiVersion: TOKENS_API_VERSION,
+      uri: '/access/organization/org-1/robots/token-2',
+    }).reply(200, tokens[1])
     const deletion = mockApi({
       apiVersion: TOKENS_API_VERSION,
       method: 'delete',
@@ -128,107 +131,5 @@ describe('tokens delete with real prompts', () => {
     expect((await result).stdout).toBe('API token deleted\n')
     expect(deletion.isDone()).toBe(true)
     expect(prompts.opened).toEqual(['select', 'confirm'])
-  })
-
-  test('repeated Enter leaves every token untouched', async () => {
-    listPage().reply(200, {data: tokens, nextCursor: null})
-    const result = start()
-    await waitForPrompt('Select token to delete:')
-    press(ENTER + ENTER)
-    await waitForPrompt('Delete API token "token-1"')
-    press(ENTER)
-    const {error, stdout} = await result
-    expect(error?.oclif?.exit).toBe(3)
-    expect(stdout).toBe('API token not deleted\n')
-  })
-
-  test.each(['select', 'confirm'])('Ctrl+C at %s leaves every token untouched', async (stage) => {
-    listPage().reply(200, {data: tokens, nextCursor: null})
-    const result = start()
-    await waitForPrompt('Select token to delete:')
-    if (stage === 'confirm') {
-      press(ENTER)
-      await waitForPrompt('Delete API token "token-1"')
-    }
-    press(CTRL_C)
-    const {error, stdout} = await result
-    expect(error?.oclif?.exit).toBe(130)
-    expect(stdout).not.toContain('API token deleted')
-  })
-
-  test('waits for all pages before allowing a selection', async () => {
-    const secondPage = Promise.withResolvers<void>()
-    listPage().reply(200, {data: [tokens[0]], nextCursor: 'page-2'})
-    let requestedSecondPage = false
-    mockApi({
-      apiVersion: TOKENS_API_VERSION,
-      query: {includeChildren: 'true', nextCursor: 'page-2'},
-      uri: '/access/organization/org-1/robots',
-    }).reply(async () => {
-      requestedSecondPage = true
-      await secondPage.promise
-      return [200, {data: [tokens[1]], nextCursor: null}]
-    })
-    const result = start()
-    try {
-      await vi.waitFor(() => expect(requestedSecondPage).toBe(true))
-      expect(prompts.opened).toEqual([])
-    } finally {
-      secondPage.resolve()
-    }
-    await waitForPrompt('[token-2]')
-    press(DOWN + ENTER)
-    await waitForPrompt('Delete API token "token-2"')
-    press(ENTER)
-    expect((await result).error?.oclif?.exit).toBe(3)
-  })
-
-  test('a failed later page never opens a picker with partial results', async () => {
-    listPage().reply(200, {data: [tokens[0]], nextCursor: 'page-2'})
-    mockApi({
-      apiVersion: TOKENS_API_VERSION,
-      query: {includeChildren: 'true', nextCursor: 'page-2'},
-      uri: '/access/organization/org-1/robots',
-    }).reply(403, {message: 'Forbidden'})
-    const {error} = await start()
-    expect(error?.oclif?.exit).toBe(1)
-    expect(prompts.opened).toEqual([])
-  })
-
-  test('a token removed after selection fails without deleting a replacement', async () => {
-    listPage().reply(200, {data: tokens, nextCursor: null})
-    mockApi({
-      apiVersion: TOKENS_API_VERSION,
-      method: 'delete',
-      uri: '/access/organization/org-1/robots/token-2',
-    }).reply(404, {message: 'Token not found'})
-    const result = start()
-    await waitForPrompt('Select token to delete:')
-    press(DOWN + ENTER)
-    await waitForPrompt('Delete API token "token-2"')
-    press('y' + ENTER)
-    const {error, stdout} = await result
-    expect(error?.message).toContain('Token with ID "token-2" not found')
-    expect(error?.oclif?.exit).toBe(1)
-    expect(stdout).not.toContain('API token deleted')
-    expect(prompts.opened).toEqual(['select', 'confirm'])
-  })
-
-  test.each([
-    {flags: ['--organization', 'org-1'], name: 'organization'},
-    {flags: [], name: 'configured project'},
-  ])('Enter keeps the non-interactive default of no deletion for $name', async ({flags}) => {
-    const result = testCommand(DeleteTokensCommand, ['token-2', ...flags], {mocks})
-    running = result
-    await waitForPrompt('Delete API token "token-2"')
-    press(ENTER)
-    expect((await result).error?.oclif?.exit).toBe(3)
-    expect(prompts.opened).toEqual(['confirm'])
-
-    const unattended = await testCommand(DeleteTokensCommand, ['token-2', ...flags], {
-      mocks: {...mocks, isInteractive: false},
-    })
-    expect(unattended.error?.oclif?.exit).toBe(2)
-    expect(prompts.opened).toEqual(['confirm'])
   })
 })

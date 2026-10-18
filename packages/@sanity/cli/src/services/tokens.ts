@@ -7,6 +7,7 @@ import {
   type Robot,
   type RobotWithToken,
   type Role,
+  type TokenScope,
 } from '../actions/tokens/types.js'
 
 interface PaginatedResponse<T> {
@@ -127,40 +128,32 @@ export async function createOrganizationToken(
   return postRobot(`/access/organization/${organizationId}/robots`, body)
 }
 
-interface DeleteTokenOptions {
-  projectId: string
-  tokenId: string
+function robotsUrl({resourceId, resourceType}: TokenScope): string {
+  return `/access/${resourceType}/${resourceId}/robots`
 }
 
-/**
- * Delete a token from a project
- * @param options - The options for deleting a token from a project; `tokenId`
- * is the id reported by `getTokens`/`createToken`
- * @returns A promise that resolves when the token is deleted
- *
- * @internal
- */
-export async function deleteToken(options: DeleteTokenOptions): Promise<void> {
-  const {projectId, tokenId} = options
-
-  const client = await getClient()
-
-  return client.request({
-    method: 'DELETE',
-    url: `/access/project/${projectId}/robots/${tokenId}`,
-  })
+function isManagedByOrganization(robot: Robot, organizationId: string): boolean {
+  return (
+    robot.managedBy?.resourceType === 'organization' &&
+    robot.managedBy.resourceId === organizationId
+  )
 }
 
-/** Delete a token from its managing organization. @internal */
-export async function deleteOrganizationToken(options: {
-  organizationId: string
-  tokenId: string
-}): Promise<void> {
+/** Delete a token from the requested scope. @internal */
+export async function deleteToken(scope: TokenScope, tokenId: string): Promise<void> {
   const client = await getClient()
-  return client.request({
-    method: 'DELETE',
-    url: `/access/organization/${options.organizationId}/robots/${options.tokenId}`,
-  })
+  const url = `${robotsUrl(scope)}/${tokenId}`
+
+  if (scope.resourceType === 'organization') {
+    const robot = await client.request<Robot>({url})
+    if (!isManagedByOrganization(robot, scope.resourceId)) {
+      throw new Error(
+        `Token "${tokenId}" is not managed by organization "${scope.resourceId}". Use tokens list --organization ${scope.resourceId} to find tokens managed by this organization.`,
+      )
+    }
+  }
+
+  return client.request({method: 'DELETE', url})
 }
 
 /**
@@ -181,35 +174,18 @@ export async function rotateToken(token: string): Promise<RobotWithToken> {
   })
 }
 
-/**
- * Get all tokens for a project. Tokens managed by an organization are
- * excluded: they cannot be managed at the project scope.
- * @param projectId - The project ID
- * @returns A promise that resolves to an array of robots
- *
- * @internal
- */
-export async function getTokens(projectId: string): Promise<Robot[]> {
+/** List tokens managed at the requested scope. @internal */
+export async function getTokens(scope: TokenScope): Promise<Robot[]> {
   const client = await getClient()
+  const query: Record<string, string> =
+    scope.resourceType === 'organization' ? {includeChildren: 'true', limit: '500'} : {}
+  const robots = await fetchAllPages<Robot>(client, robotsUrl(scope), query)
 
-  const robots = await fetchAllPages<Robot>(client, `/access/project/${projectId}/robots`)
+  if (scope.resourceType === 'organization') {
+    return robots.filter((robot) => isManagedByOrganization(robot, scope.resourceId))
+  }
 
   return robots.filter((robot) => robot.managedBy?.resourceType !== 'organization')
-}
-
-/** List tokens managed by an organization, including those with only project grants. @internal */
-export async function getOrganizationTokens(organizationId: string): Promise<Robot[]> {
-  const client = await getClient()
-  const robots = await fetchAllPages<Robot>(
-    client,
-    `/access/organization/${organizationId}/robots`,
-    {includeChildren: 'true'},
-  )
-
-  return robots.filter(
-    ({managedBy}) =>
-      managedBy?.resourceType === 'organization' && managedBy.resourceId === organizationId,
-  )
 }
 
 /**

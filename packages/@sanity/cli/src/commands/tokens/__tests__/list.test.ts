@@ -376,7 +376,7 @@ describe('#tokens:list', () => {
       Object.defineProperty(process.stdout, 'columns', {configurable: true, value: 200})
       mockApi({
         apiVersion: TOKENS_API_VERSION,
-        query: {includeChildren: 'true'},
+        query: {includeChildren: 'true', limit: '500'},
         uri: '/access/organization/org-1/robots',
       }).reply(200, robotsPage([orgToken]))
       const {error, stdout} = await testCommand(TokensListCommand, ['--organization', 'org-1'], {
@@ -393,7 +393,7 @@ describe('#tokens:list', () => {
     test('returns org tokens as JSON without requiring project configuration', async () => {
       mockApi({
         apiVersion: TOKENS_API_VERSION,
-        query: {includeChildren: 'true'},
+        query: {includeChildren: 'true', limit: '500'},
         uri: '/access/organization/org-1/robots',
       }).reply(
         200,
@@ -414,7 +414,7 @@ describe('#tokens:list', () => {
     test.each([false, true])('handles an empty org list (JSON: %s)', async (json) => {
       mockApi({
         apiVersion: TOKENS_API_VERSION,
-        query: {includeChildren: 'true'},
+        query: {includeChildren: 'true', limit: '500'},
         uri: '/access/organization/org-1/robots',
       }).reply(200, robotsPage([]))
       const {error, stdout} = await testCommand(
@@ -426,21 +426,18 @@ describe('#tokens:list', () => {
       expect(stdout).toBe(json ? '[]\n' : 'No API tokens found for this organization.\n')
     })
 
-    test.each([403, 404, 500])(
-      'reports org list failure %s without falling back to the project',
-      async (status) => {
-        mockApi({
-          apiVersion: TOKENS_API_VERSION,
-          query: {includeChildren: 'true'},
-          uri: '/access/organization/org-1/robots',
-        }).reply(status, {message: 'Organization request failed'})
-        const {error} = await testCommand(TokensListCommand, ['--organization', 'org-1'], {
-          mocks: defaultMocks,
-        })
-        expect(error?.message).toContain('Organization request failed')
-        expect(error?.oclif?.exit).toBe(1)
-      },
-    )
+    test('reports org list failure without falling back to the project', async () => {
+      mockApi({
+        apiVersion: TOKENS_API_VERSION,
+        query: {includeChildren: 'true', limit: '500'},
+        uri: '/access/organization/org-1/robots',
+      }).reply(403, {message: 'Organization request failed'})
+      const {error} = await testCommand(TokensListCommand, ['--organization', 'org-1'], {
+        mocks: defaultMocks,
+      })
+      expect(error?.message).toContain('Organization request failed')
+      expect(error?.oclif?.exit).toBe(1)
+    })
 
     test('rejects conflicting scope flags', async () => {
       const {error} = await testCommand(

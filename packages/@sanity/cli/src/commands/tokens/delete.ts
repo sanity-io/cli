@@ -6,15 +6,9 @@ import {ClientError} from '@sanity/client'
 
 import {formatTokenAccess} from '../../actions/tokens/formatTokenAccess.js'
 import {type TokenScope} from '../../actions/tokens/types.js'
-import {promptForProject} from '../../prompts/promptForProject.js'
-import {
-  deleteOrganizationToken,
-  deleteToken,
-  getOrganizationTokens,
-  getProjectMembership,
-  getTokens,
-} from '../../services/tokens.js'
+import {deleteToken, getTokens} from '../../services/tokens.js'
 import {formatCliErrorMessages} from '../../util/formatCliErrorMessages.js'
+import {resolveTokenScope} from '../../util/resolveTokenScope.js'
 import {getOrganizationFlag, getProjectIdFlag} from '../../util/sharedFlags.js'
 
 const deleteTokenDebug = subdebug('tokens:delete')
@@ -96,18 +90,11 @@ export class DeleteTokensCommand extends SanityCommand<typeof DeleteTokensComman
       }
     }
 
-    let scope: TokenScope
-    if (flags.organization) {
-      scope = {resourceId: flags.organization, resourceType: 'organization'}
-    } else {
-      const projectId = await this.getProjectId({
-        fallback: () =>
-          promptForProject({
-            requiredPermissions: [{grant: 'delete', permission: 'sanity.project.tokens'}],
-          }),
-      })
-      scope = {resourceId: projectId, resourceType: 'project'}
-    }
+    const scope = await resolveTokenScope({
+      getProjectId: this.getProjectId.bind(this),
+      grant: 'delete',
+      organization: flags.organization,
+    })
 
     const tokenId = givenTokenId || (await this.getTokenIdFromList(scope))
 
@@ -127,9 +114,7 @@ export class DeleteTokensCommand extends SanityCommand<typeof DeleteTokensComman
     }
 
     try {
-      await (scope.resourceType === 'organization'
-        ? deleteOrganizationToken({organizationId: scope.resourceId, tokenId})
-        : deleteToken({projectId: scope.resourceId, tokenId}))
+      await deleteToken(scope, tokenId)
 
       this.log('API token deleted')
     } catch (error) {
@@ -146,10 +131,7 @@ export class DeleteTokensCommand extends SanityCommand<typeof DeleteTokensComman
   private async getTokenIdFromList(scope: TokenScope) {
     let tokens: Awaited<ReturnType<typeof getTokens>>
     try {
-      tokens =
-        scope.resourceType === 'organization'
-          ? await getOrganizationTokens(scope.resourceId)
-          : await getTokens(scope.resourceId)
+      tokens = await getTokens(scope)
     } catch (error) {
       const err = error as Error
       deleteTokenDebug(`Error fetching tokens for ${scope.resourceType} ${scope.resourceId}`, err)
@@ -166,10 +148,7 @@ export class DeleteTokensCommand extends SanityCommand<typeof DeleteTokensComman
     }
 
     const choices = tokens.map((token) => {
-      const access =
-        scope.resourceType === 'organization'
-          ? formatTokenAccess(token)
-          : (getProjectMembership(token, scope.resourceId)?.roleNames.join(', ') ?? '')
+      const access = formatTokenAccess(token, scope)
       return {name: `${token.label} [${token.id}] (${access})`, value: token.id}
     })
 
