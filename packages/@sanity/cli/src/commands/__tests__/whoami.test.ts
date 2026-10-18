@@ -3,6 +3,7 @@ import {mockApi, testCommand} from '@sanity/cli-test'
 import {cleanAll, pendingMocks} from 'nock'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
+import {resolveSSOProvider} from '../../actions/whoami/resolveSSOProvider.js'
 import {USERS_API_VERSION} from '../../services/user.js'
 import {WhoamiCommand} from '../whoami.js'
 
@@ -14,7 +15,13 @@ vi.mock('@sanity/cli-core', async () => {
   }
 })
 
+vi.mock('../../actions/whoami/resolveSSOProvider.js', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../../actions/whoami/resolveSSOProvider.js')>()),
+  resolveSSOProvider: vi.fn(),
+}))
+
 const mockedGetCliTokenInfo = vi.mocked(getCliTokenInfo)
+const mockedResolveSSOProvider = vi.mocked(resolveSSOProvider)
 
 const configSource = '/home/user/.config/sanity/config.json'
 
@@ -44,6 +51,7 @@ describe('#whoami', () => {
     expect(stdout).toContain('jane@example.com')
     expect(stdout).toContain('pUser123')
     expect(stdout).toContain('Google')
+    expect(mockedResolveSSOProvider).not.toHaveBeenCalled()
     expect(stdout).toContain(configSource)
   })
 
@@ -64,13 +72,89 @@ describe('#whoami', () => {
     expect(stdout).not.toContain('null')
   })
 
-  test('shows the SAML provider id for SSO users', async () => {
-    mockMe({email: 'sso@example.com', id: 'pSso1', name: 'SSO User', provider: 'saml-acme'})
+  test('shows the SSO provider and organization slug for SAML users', async () => {
+    mockedResolveSSOProvider.mockResolvedValueOnce({
+      organizationId: 'oAcme',
+      organizationName: 'Acme Corp',
+      organizationSlug: 'acme-corp',
+      providerId: 'pOkta',
+      providerName: 'Okta SSO',
+    })
+    mockMe({email: 'sso@example.com', id: 'pSso1', name: 'SSO User', provider: 'saml-pOkta'})
 
     const {error, stdout} = await testCommand(WhoamiCommand, [], {mocks: {token: 'test-token'}})
 
     if (error) throw error
-    expect(stdout).toContain('SAML (acme)')
+    expect(mockedResolveSSOProvider).toHaveBeenCalledWith('pOkta')
+    expect(stdout).toContain('SAML SSO (Okta SSO)')
+    expect(stdout).toContain('Acme Corp (sanity login --sso acme-corp)')
+  })
+
+  test('shows the organization name when it has no slug', async () => {
+    mockedResolveSSOProvider.mockResolvedValueOnce({
+      organizationId: 'oAcme',
+      organizationName: 'Acme Corp',
+      organizationSlug: null,
+      providerId: 'pOkta',
+      providerName: 'Okta SSO',
+    })
+    mockMe({email: 'sso@example.com', id: 'pSso1', name: 'SSO User', provider: 'saml-pOkta'})
+
+    const {error, stdout} = await testCommand(WhoamiCommand, [], {mocks: {token: 'test-token'}})
+
+    if (error) throw error
+    expect(stdout).toContain('Acme Corp')
+    expect(stdout).not.toContain('--sso')
+  })
+
+  test('falls back to "SAML SSO" when the provider cannot be resolved', async () => {
+    mockedResolveSSOProvider.mockResolvedValueOnce(undefined)
+    mockMe({email: 'sso@example.com', id: 'pSso1', name: 'SSO User', provider: 'saml-pOkta'})
+
+    const {error, stdout} = await testCommand(WhoamiCommand, [], {mocks: {token: 'test-token'}})
+
+    if (error) throw error
+    expect(stdout).toContain('SAML SSO')
+    expect(stdout).not.toContain('pOkta')
+    expect(stdout).not.toContain('Org')
+  })
+
+  test('includes SSO details in --json for SAML users', async () => {
+    const sso = {
+      organizationId: 'oAcme',
+      organizationName: 'Acme Corp',
+      organizationSlug: 'acme-corp',
+      providerId: 'pOkta',
+      providerName: 'Okta SSO',
+    }
+    mockedResolveSSOProvider.mockResolvedValueOnce(sso)
+    mockMe({email: 'sso@example.com', id: 'pSso1', name: 'SSO User', provider: 'saml-pOkta'})
+
+    const {error, stdout} = await testCommand(WhoamiCommand, ['--json'], {
+      mocks: {token: 'test-token'},
+    })
+
+    if (error) throw error
+    expect(JSON.parse(stdout)).toEqual({
+      email: 'sso@example.com',
+      id: 'pSso1',
+      name: 'SSO User',
+      provider: 'saml-pOkta',
+      sso,
+      tokenSource: configSource,
+    })
+  })
+
+  test('reports sso as null in --json when the provider cannot be resolved', async () => {
+    mockedResolveSSOProvider.mockResolvedValueOnce(undefined)
+    mockMe({email: 'sso@example.com', id: 'pSso1', name: 'SSO User', provider: 'saml-pOkta'})
+
+    const {error, stdout} = await testCommand(WhoamiCommand, ['--json'], {
+      mocks: {token: 'test-token'},
+    })
+
+    if (error) throw error
+    expect(JSON.parse(stdout).sso).toBeNull()
   })
 
   test('outputs JSON with --json', async () => {
@@ -87,6 +171,27 @@ describe('#whoami', () => {
       name: 'Jane Doe',
       provider: 'github',
       tokenSource: configSource,
+    })
+  })
+
+  test('outputs a null email in --json for API tokens', async () => {
+    mockedGetCliTokenInfo.mockResolvedValue({
+      source: 'SANITY_AUTH_TOKEN environment variable',
+      token: 'robot-token',
+    })
+    mockMe({id: 'pRobot1', name: 'CI deploy token', provider: 'sanity-token'})
+
+    const {error, stdout} = await testCommand(WhoamiCommand, ['--json'], {
+      mocks: {token: 'robot-token'},
+    })
+
+    if (error) throw error
+    expect(JSON.parse(stdout)).toEqual({
+      email: null,
+      id: 'pRobot1',
+      name: 'CI deploy token',
+      provider: 'sanity-token',
+      tokenSource: 'SANITY_AUTH_TOKEN environment variable',
     })
   })
 
