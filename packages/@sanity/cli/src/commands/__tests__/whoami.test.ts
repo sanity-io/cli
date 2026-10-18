@@ -107,6 +107,24 @@ describe('#whoami', () => {
     expect(stdout).not.toContain('--sso')
   })
 
+  test('omits generic SSO provider names that repeat the label', async () => {
+    mockedResolveSSOProvider.mockResolvedValueOnce({
+      organizationId: 'oSanity',
+      organizationName: 'Sanity',
+      organizationSlug: 'sanity',
+      providerId: 'pSaml',
+      providerName: 'saml',
+    })
+    mockMe({email: 'sso@example.com', id: 'pSso1', name: 'SSO User', provider: 'saml-pSaml'})
+
+    const {error, stdout} = await testCommand(WhoamiCommand, [], {mocks: {token: 'test-token'}})
+
+    if (error) throw error
+    expect(stdout).toContain('SAML SSO')
+    expect(stdout).not.toContain('(saml)')
+    expect(stdout).toContain('Sanity (sanity login --sso sanity)')
+  })
+
   test('falls back to "SAML SSO" when the provider cannot be resolved', async () => {
     mockedResolveSSOProvider.mockResolvedValueOnce(undefined)
     mockMe({email: 'sso@example.com', id: 'pSso1', name: 'SSO User', provider: 'saml-pOkta'})

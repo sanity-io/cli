@@ -88,11 +88,18 @@ function formatProvider(
   sso: SSOProviderInfo | undefined,
 ): string {
   if (provider === 'sanity-token') return 'API token'
-  if (samlProviderId) return sso ? `SAML SSO (${sso.providerName})` : 'SAML SSO'
+  if (samlProviderId) return formatSamlProvider(sso)
   return getProviderName(provider)
 }
 
 function formatOrganization(sso: SSOProviderInfo): string {
   if (!sso.organizationSlug) return sso.organizationName
   return `${sso.organizationName} (sanity login --sso ${sso.organizationSlug})`
+}
+
+function formatSamlProvider(sso: SSOProviderInfo | undefined): string {
+  // Provider names like "saml" or "SSO" repeat the label without adding anything
+  const name = sso?.providerName.trim()
+  if (!name || /^(saml|sso|saml sso)$/i.test(name)) return 'SAML SSO'
+  return `SAML SSO (${name})`
 }
