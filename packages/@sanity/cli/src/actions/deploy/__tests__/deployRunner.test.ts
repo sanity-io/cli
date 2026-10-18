@@ -83,7 +83,7 @@ describe('runDeploy dry run', () => {
 
   test('a blocked --json dry run prints the plan only, never a deploy envelope', async () => {
     const output = mockOutput()
-    // A real run's output.error throws to abort; the plan JSON is already out.
+    // A real output.error throws to abort the blocked plan.
     vi.mocked(output.error).mockImplementation(() => {
       throw new CLIError('blocked')
     })
@@ -99,11 +99,10 @@ describe('runDeploy dry run', () => {
         {...dryRunOptions(output), flags: {'dry-run': true, json: true}} as DeployAppOptions,
         spec,
       ),
-    ).rejects.toThrow()
-
-    const logged = vi.mocked(output.log).mock.calls.map((call) => call[0] as string)
-    expect(logged).toHaveLength(1)
-    expect(logged[0]).not.toContain('"deployed"')
+    ).rejects.toMatchObject({
+      payload: {canDeploy: false},
+    })
+    expect(output.log).not.toHaveBeenCalled()
   })
 })
 
@@ -153,7 +152,7 @@ describe('runDeploy real deploy', () => {
     }
   })
 
-  test('a failed deploy emits a {deployed: false} envelope and still errors on stderr', async () => {
+  test('a failed JSON deploy carries its failure envelope and exit status', async () => {
     const output = mockOutput()
     const spec: DeploySpec = {
       listFiles: async () => [],
@@ -163,15 +162,17 @@ describe('runDeploy real deploy', () => {
       type: 'studio',
     }
 
-    await runDeploy({...dryRunOptions(output), flags: {json: true}} as DeployAppOptions, spec)
-
-    const payload = JSON.parse(vi.mocked(output.log).mock.calls.at(-1)![0] as string)
-    expect(payload.deployed).toBe(false)
-    expect(payload.error.message).toContain('boom')
-    // The envelope and the stderr message are the same diagnosis
-    expect(output.error).toHaveBeenCalledWith(payload.error.message, {
-      exit: exitCodes.RUNTIME_ERROR,
+    await expect(
+      runDeploy({...dryRunOptions(output), flags: {json: true}} as DeployAppOptions, spec),
+    ).rejects.toMatchObject({
+      oclif: {exit: exitCodes.RUNTIME_ERROR},
+      payload: {
+        deployed: false,
+        error: {message: expect.stringContaining('boom')},
+      },
     })
+    expect(output.log).not.toHaveBeenCalled()
+    expect(output.error).not.toHaveBeenCalled()
   })
 
   test('without --json a failed deploy stays on stderr, with no envelope', async () => {

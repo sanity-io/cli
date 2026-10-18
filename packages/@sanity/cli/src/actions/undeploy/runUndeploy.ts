@@ -2,7 +2,7 @@ import {styleText} from 'node:util'
 
 import {CLIError} from '@oclif/core/errors'
 import {exitCodes, type Output, subdebug} from '@sanity/cli-core'
-import {getErrorMessage} from '@sanity/cli-core/errors'
+import {getErrorMessage, JsonOutputError} from '@sanity/cli-core/errors'
 import {
   type UndeployAdapter,
   type UndeployTarget,
@@ -16,6 +16,7 @@ import {
   createCollectingReporter,
   createFailFastReporter,
 } from '../../util/checks.js'
+import {outputJson} from '../../util/outputJson.js'
 import {toStderrOutput} from '../../util/toStderrOutput.js'
 import {
   describeUndeployTarget,
@@ -59,7 +60,8 @@ export async function runUndeploy(
 ): Promise<void> {
   const {flags, output} = options
   const json = !!flags.json
-  const emitJson = (payload: unknown) => output.log(JSON.stringify(payload, null, 2))
+  const emitJson = (payload: unknown) => outputJson(output, payload)
+  let failurePayload: unknown
 
   // The JSON payload owns stdout, so the run's progress logs go to stderr; only
   // the final JSON.stringify writes to stdout.
@@ -75,8 +77,11 @@ export async function runUndeploy(
         target: resolution?.type === 'found' ? resolution.target : null,
         type: adapter.type,
       }
-      if (json) emitJson(undeployPlanToJson(plan))
-      else renderUndeployPlan(plan, output)
+      if (json) {
+        const payload = undeployPlanToJson(plan)
+        if (plan.checks.some((check) => check.status === 'fail')) failurePayload = payload
+        else emitJson(payload)
+      } else renderUndeployPlan(plan, output)
       // A blocked plan exits like a real (fail-fast) undeploy would.
       const failed = plan.checks.find((check) => check.status === 'fail')
       if (failed) output.error('Undeploy blocked by failing checks.', {exit: failed.exitCode ?? 1})
@@ -87,16 +92,18 @@ export async function runUndeploy(
     if (json && result) emitJson(result)
   } catch (error) {
     const failure = normalizeFailure(error, adapter.type)
-    // A blocked dry run reaches this catch too (its exit throws) and already
-    // printed its plan, so only a real undeploy adds the {undeployed: false} envelope.
+    // Preserve the blocked plan or the existing undeployment failure envelope.
     if (json && !flags['dry-run']) {
-      emitJson({
+      failurePayload = {
         application: null,
         error: {message: failure.message},
         payload: null,
         reason: failure.message,
         undeployed: false,
-      })
+      }
+    }
+    if (json && failurePayload !== undefined) {
+      throw new JsonOutputError(failure.message, failurePayload, failure.exit)
     }
     output.error(failure.message, {exit: failure.exit})
   }

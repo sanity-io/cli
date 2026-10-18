@@ -1,5 +1,4 @@
-import {Args, Flags} from '@oclif/core'
-import {type FlagInput} from '@oclif/core/interfaces'
+import {Args} from '@oclif/core'
 import {exitCodes, SanityCommand, subdebug} from '@sanity/cli-core'
 import {getErrorMessage} from '@sanity/cli-core/errors'
 import {isHttpError} from '@sanity/client'
@@ -24,6 +23,8 @@ export class GetImportCommand extends SanityCommand<typeof GetImportCommand> {
 
   static override description = 'Get details of an import'
 
+  static override enableJsonFlag = true
+
   static override examples = [
     {
       command: '<%= config.bin %> <%= command.id %> kb-abc123 import-def456',
@@ -34,13 +35,6 @@ export class GetImportCommand extends SanityCommand<typeof GetImportCommand> {
       description: 'Output the import as JSON',
     },
   ]
-
-  static override flags = {
-    json: Flags.boolean({
-      default: false,
-      description: 'Output the import in JSON format',
-    }),
-  } satisfies FlagInput
 
   public async run(): Promise<void> {
     const {importId, knowledgeBaseId} = this.args
@@ -62,7 +56,7 @@ export class GetImportCommand extends SanityCommand<typeof GetImportCommand> {
     }
 
     if (json) {
-      this.log(JSON.stringify(importDetail, null, 2))
+      this.logJson(importDetail)
       return
     }
 

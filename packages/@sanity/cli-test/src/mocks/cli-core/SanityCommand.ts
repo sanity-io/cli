@@ -42,6 +42,7 @@ export function createMockOutput(): Output {
   return {
     error: vi.fn(() => undefined as never),
     log: vi.fn(),
+    logJson: vi.fn(),
     warn: vi.fn(),
   }
 }
@@ -83,6 +84,9 @@ export class SanityCommand extends Command implements SanityCommandInterface {
   }
   public isUnattended() {
     return mocks.SanityCmdIsUnattended()
+  }
+  public override logJson(value: unknown) {
+    this.output.logJson?.(value)
   }
   public resolveIsInteractive() {
     return mocks.SanityCmdResolveIsInteractive()

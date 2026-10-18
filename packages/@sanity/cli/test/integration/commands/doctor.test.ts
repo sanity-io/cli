@@ -25,6 +25,7 @@ const fixturesDir = path.join(
 
 describe('doctor command', () => {
   const originalCwd = process.cwd()
+  const previousExitCode = process.exitCode
 
   beforeEach(() => {
     vi.clearAllMocks()
@@ -35,6 +36,7 @@ describe('doctor command', () => {
 
   afterEach(() => {
     process.chdir(originalCwd)
+    process.exitCode = previousExitCode
   })
 
   test('runs diagnostics and shows results', async () => {
@@ -95,11 +97,11 @@ describe('doctor command', () => {
     const cwd = path.join(fixturesDir, 'standalone-npm')
     process.chdir(cwd)
 
-    const {error, stdout} = await testCommand(DoctorCommand, ['--json'])
+    const {stdout} = await testCommand(DoctorCommand, ['--json'])
 
     const json = JSON.parse(stdout)
     expect(json.summary.errors).toBeGreaterThan(0)
     expect(json.checks.some((c: {status: string}) => c.status === 'error')).toBe(true)
-    expect(error?.oclif?.exit).toBe(1)
+    expect(process.exitCode).toBe(1)
   })
 })

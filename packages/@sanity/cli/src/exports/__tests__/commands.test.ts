@@ -380,6 +380,76 @@ describe('invokeSanityCli', () => {
     expect(process.exitCode).toBe(previousExitCode)
   })
 
+  test('accepts the standard JSON flag and preserves an empty array response', async () => {
+    mockApi({
+      apiVersion: 'v2026-08-25',
+      query: {organizationId: 'org-1'},
+      uri: '/context/knowledge-bases',
+    }).reply(200, {data: [], nextCursor: null})
+
+    const result = await invoke({
+      args: 'context list --organization org-1 --json',
+      config,
+      source: 'mcp',
+      token: 'user-token',
+    })
+
+    expect(result.exitCode).toBe(0)
+    expect(JSON.parse(result.output)).toEqual([])
+  })
+
+  test('JSON runtime failures preserve their exit status and do not append text', async () => {
+    mockApi({
+      apiVersion: 'v2026-08-25',
+      query: {organizationId: 'org-1'},
+      uri: '/context/knowledge-bases',
+    }).reply(403, {error: 'Forbidden', message: 'Access denied', statusCode: 403})
+    const previousExitCode = process.exitCode
+
+    const result = await invoke({
+      args: 'context list --organization org-1 --json',
+      config,
+      source: 'mcp',
+      token: 'user-token',
+    })
+
+    expect(result.exitCode).toBe(1)
+    expect(JSON.parse(result.output)).toMatchObject({
+      error: {message: expect.stringContaining('Access denied')},
+    })
+    expect(process.exitCode).toBe(previousExitCode)
+  })
+
+  test('JSON parser failures preserve their exit status and do not append text', async () => {
+    const previousExitCode = process.exitCode
+    const result = await invoke({
+      args: 'context list --json --not-a-flag',
+      config,
+      source: 'mcp',
+      token: 'user-token',
+    })
+
+    expect(result.exitCode).toBe(2)
+    expect(JSON.parse(result.output)).toMatchObject({
+      error: {message: expect.stringContaining('Nonexistent flag')},
+    })
+    expect(process.exitCode).toBe(previousExitCode)
+  })
+
+  test('JSON policy refusals preserve the usage exit code and remain parseable', async () => {
+    const result = await invoke({
+      args: 'openapi list --web --json',
+      config,
+      source: 'mcp',
+      token: 'user-token',
+    })
+
+    expect(result.exitCode).toBe(2)
+    expect(JSON.parse(result.output)).toMatchObject({
+      error: {message: expect.stringContaining('--web'), oclif: {exit: 2}},
+    })
+  })
+
   test('reports invalid flags as a usage error', async () => {
     const result = await invoke({
       args: 'cors list --no-such-flag',

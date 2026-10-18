@@ -90,6 +90,25 @@ describe('context jobs get', () => {
     expect(error?.oclif?.exit).toBe(1)
   })
 
+  test('a failed watched job produces one JSON report and a nonzero exit code', async () => {
+    const previousExitCode = process.exitCode
+    const failedJob = {...succeededJob, error: 'boom', status: 'failed'}
+    mockJobsGet.mockResolvedValue(failedJob)
+
+    try {
+      const {stdout} = await testCommand(GetJobCommand, [
+        'kb-abc123',
+        'job-def456',
+        '--watch',
+        '--json',
+      ])
+      expect(JSON.parse(stdout)).toEqual(failedJob)
+      expect(process.exitCode).toBe(1)
+    } finally {
+      process.exitCode = previousExitCode
+    }
+  })
+
   test('errors with a friendly message on 404', async () => {
     mockJobsGet.mockRejectedValue(httpError(404))
 

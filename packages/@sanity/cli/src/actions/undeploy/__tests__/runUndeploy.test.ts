@@ -262,7 +262,9 @@ describe('runUndeploy --json', () => {
     const output = mockOutput()
     const undeploy = vi.fn()
     vi.mocked(confirm).mockResolvedValueOnce(false)
-    await runUndeploy(options(output, {json: true}), adapter({undeploy}))
+    await expect(
+      runUndeploy(options(output, {json: true}), adapter({undeploy})),
+    ).rejects.toMatchObject({oclif: {exit: 3}, payload: {undeployed: false}})
 
     expect(confirm).toHaveBeenCalled()
     expect(undeploy).not.toHaveBeenCalled()
@@ -306,23 +308,23 @@ describe('runUndeploy --json', () => {
     })
   })
 
-  test('a failed deletion emits a {undeployed: false} error envelope and still errors on stderr', async () => {
+  test('a failed JSON deletion carries its failure envelope and exit status', async () => {
     const output = mockOutput()
-    await runUndeploy(
-      options(output, {json: true, yes: true}),
-      adapter({
-        undeploy: async () => {
-          throw new Error('boom')
-        },
-      }),
-    )
-
-    const payload = JSON.parse(String(vi.mocked(output.log).mock.calls.at(-1)![0]))
-    expect(payload.undeployed).toBe(false)
-    expect(payload.error.message).toContain('boom')
-    expect(output.error).toHaveBeenCalledWith(payload.error.message, {
-      exit: exitCodes.RUNTIME_ERROR,
+    await expect(
+      runUndeploy(
+        options(output, {json: true, yes: true}),
+        adapter({
+          undeploy: async () => {
+            throw new Error('boom')
+          },
+        }),
+      ),
+    ).rejects.toMatchObject({
+      oclif: {exit: exitCodes.RUNTIME_ERROR},
+      payload: {error: {message: expect.stringContaining('boom')}, undeployed: false},
     })
+    expect(output.log).not.toHaveBeenCalled()
+    expect(output.error).not.toHaveBeenCalled()
   })
 })
 

@@ -268,7 +268,7 @@ describe('#projects:create', () => {
     await CreateProjectCommand.run(['My Project', '--organization=org-1', '--json'])
 
     expect(mocks.SanityCmdOutput.error).not.toHaveBeenCalled()
-    expect(mocks.SanityCmdOutput.log).toHaveBeenCalledWith(JSON.stringify(mockProject, null, 2))
+    expect(mocks.SanityCmdOutput.logJson).toHaveBeenCalledWith(mockProject)
     expect(mocks.SanityCmdOutput.log).not.toHaveBeenCalledWith(
       expect.stringContaining('Project created successfully'),
     )
@@ -282,11 +282,8 @@ describe('#projects:create', () => {
       '--json',
     ])
 
-    const output = vi
-      .mocked(mocks.SanityCmdOutput.log)
-      .mock.calls.map(([message]) => String(message))
-    expect(output).toEqual([JSON.stringify(mockProject, null, 2)])
-    expect(JSON.parse(output[0]!)).toEqual(mockProject)
+    expect(mocks.SanityCmdOutput.logJson).toHaveBeenCalledExactlyOnceWith(mockProject)
+    expect(mocks.SanityCmdOutput.log).not.toHaveBeenCalled()
     expect(mockCreateDataset).toHaveBeenCalledWith(expect.objectContaining({silent: true}))
   })
 })

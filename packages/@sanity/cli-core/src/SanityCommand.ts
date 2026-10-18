@@ -1,6 +1,7 @@
 import {format, styleText} from 'node:util'
 
 import {Command, Interfaces} from '@oclif/core'
+import {CLIError, ExitError} from '@oclif/core/errors'
 import {type CommandError, type Input, type ParserOutput} from '@oclif/core/interfaces'
 
 import {subdebug} from './_exports/debug.js'
@@ -16,6 +17,7 @@ import {type CliConfig} from './config/cli/types/cliConfig.js'
 import {findProjectRoot} from './config/findProjectRoot.js'
 import {type ProjectRootResult} from './config/util/recursivelyResolveProjectRoot.js'
 import {enrichAuthError} from './errors/enrichAuthError.js'
+import {JsonOutputError} from './errors/JsonOutputError.js'
 import {NonInteractiveError} from './errors/NonInteractiveError.js'
 import {ProjectRootNotFoundError} from './errors/ProjectRootNotFoundError.js'
 import {getCliExecutionContext} from './executionContext.js'
@@ -93,6 +95,7 @@ export abstract class SanityCommand<T extends typeof Command>
   public output: Output = {
     error: this.error.bind(this),
     log: this.log.bind(this),
+    logJson: this.logJson.bind(this),
     warn: this.warn.bind(this),
   }
 
@@ -111,9 +114,19 @@ export abstract class SanityCommand<T extends typeof Command>
   protected override async catch(err: CommandError): Promise<void> {
     // ExitPromptError is thrown by `@inquirer/prompts` when the user cancels a prompt
     // The `message === 'SIGINT'` check matches oclif's own convention (see handle.js in @oclif/core)
-    if (err.name === 'ExitPromptError' || err.message === 'SIGINT') {
-      this.logToStderr(styleText('yellow', '\u{203A}') + ' Aborted by user')
-      return this.exit(exitCodes.SIGINT)
+    const isUserAbort = err.name === 'ExitPromptError' || err.message === 'SIGINT'
+    if (isUserAbort) {
+      if (!this.jsonEnabled()) {
+        this.logToStderr(styleText('yellow', '\u{203A}') + ' Aborted by user')
+        return this.exit(exitCodes.SIGINT)
+      }
+      err = new CLIError('Aborted by user', {exit: exitCodes.SIGINT})
+    }
+
+    if (err instanceof ExitError) {
+      if (getCliExecutionContext() || !this.jsonEnabled()) throw err
+      process.exitCode = err.oclif.exit
+      return
     }
 
     // 401s carry login/membership guidance in their message. Applied here
@@ -122,18 +135,21 @@ export abstract class SanityCommand<T extends typeof Command>
     enrichAuthError(err)
 
     // In other cases, we _do_ want to report the error
-    reportCliTraceError(err)
+    if (!isUserAbort) reportCliTraceError(err)
 
     // oclif's base `catch` sets `process.exitCode` as a side effect
     // we do not want to write to the host's own exit status.
     if (getCliExecutionContext()) {
       if (this.jsonEnabled()) {
         this.logJson(this.toErrorJson(err))
-        return
       }
       throw err
     }
 
+    if (this.jsonEnabled()) {
+      process.exitCode =
+        err instanceof CLIError ? err.oclif.exit : (err.exitCode ?? exitCodes.RUNTIME_ERROR)
+    }
     return super.catch(err)
   }
 
@@ -278,6 +294,38 @@ export abstract class SanityCommand<T extends typeof Command>
     })
   }
 
+  public override jsonEnabled(): boolean {
+    if (super.jsonEnabled()) return true
+    if (!this.ctor.enableJsonFlag) return false
+    if (this.flags?.json) return true
+
+    const definitions = {...this.ctor.baseFlags, ...this.ctor.flags}
+    if (definitions.json?.char !== 'j') return false
+
+    for (let index = 0; index < this.argv.length; index++) {
+      const argument = this.argv[index]
+      if (argument === '--') break
+      if (argument.startsWith('--')) {
+        if (!argument.includes('=') && definitions[argument.slice(2)]?.type === 'option') index++
+        continue
+      }
+      if (!argument.startsWith('-')) continue
+      const characters = argument.slice(1)
+      for (let offset = 0; offset < characters.length; offset++) {
+        const flag = Object.entries(definitions).find(
+          ([, value]) => value.char === characters[offset],
+        )
+        if (!flag) break
+        if (flag[0] === 'json') return true
+        if (flag[1].type === 'option') {
+          if (offset === characters.length - 1) index++
+          break
+        }
+      }
+    }
+    return false
+  }
+
   /**
    * Write to stdout — or, when running under an execution context (e.g. from
    * an MCP server), to the context's `stdout` sink. Mirrors oclif's `log`
@@ -318,26 +366,26 @@ export abstract class SanityCommand<T extends typeof Command>
     if (!this.jsonEnabled()) context.stderr(format(message, ...args))
   }
 
-  protected override parse<F extends ParserValues, B extends ParserValues, A extends ParserValues>(
-    options?: Input<F, B, A>,
-    argv: string[] = this.argv,
-  ): Promise<ParserOutput<F, B, A>> {
-    // If no flags defined, exit to default parser early
-    if (!options?.flags) return super.parse(options, argv)
+  protected override async parse<
+    F extends ParserValues,
+    B extends ParserValues,
+    A extends ParserValues,
+  >(options?: Input<F, B, A>, argv: string[] = this.argv): Promise<ParserOutput<F, B, A>> {
+    let resolvedOptions = options
+    if (options?.flags) {
+      const resolvedFlags = resolveUnattendedFlagRequirements(
+        options.flags,
+        this.jsonEnabled() ||
+          isUnattendedInvocation({argv, isInteractive: this.resolveIsInteractive()}),
+      )
+      if (resolvedFlags !== options.flags) {
+        resolvedOptions = {...options, flags: resolvedFlags as Interfaces.FlagInput<F>}
+      }
+    }
 
-    // Resolve the actual required flags based on the current unattended mode value
-    const resolvedFlags = resolveUnattendedFlagRequirements(
-      options.flags,
-      isUnattendedInvocation({argv, isInteractive: this.resolveIsInteractive()}),
-    )
-    // If flags weren't modified, use original options object
-    // Otherwise create a new options object with the resolved flag values
-    const resolvedOptions =
-      resolvedFlags === options.flags
-        ? options
-        : {...options, flags: resolvedFlags as Interfaces.FlagInput<F>}
-
-    return super.parse(resolvedOptions, argv)
+    const parsed = await super.parse(resolvedOptions, argv)
+    if (this.jsonEnabled()) parsed.flags = {...parsed.flags, json: true}
+    return parsed
   }
 
   /**
@@ -360,6 +408,11 @@ export abstract class SanityCommand<T extends typeof Command>
       throw new Error('runInExecutionContext requires a CLI execution context')
     }
     return this._run<TResult>()
+  }
+
+  public override toErrorJson(err: unknown): unknown {
+    if (err instanceof JsonOutputError) return err.payload
+    return super.toErrorJson(err)
   }
 
   /**
