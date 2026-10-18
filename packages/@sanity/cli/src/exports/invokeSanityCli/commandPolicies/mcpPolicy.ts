@@ -281,4 +281,7 @@ export const mcpPolicy: CommandPolicySet = {
 
   // Reads the local project and installed package tree.
   versions: deny,
+
+  // Reads the authenticated user from the API using the execution context token.
+  whoami: allow,
 }
