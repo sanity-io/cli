@@ -1,5 +1,6 @@
 import {Flags} from '@oclif/core'
 import {exitCodes, getCliTokenInfo, SanityCommand} from '@sanity/cli-core'
+import {isHttpError} from '@sanity/client'
 
 import {getProviderName} from '../actions/auth/getProviderName.js'
 import {formatKeyValue} from '../actions/debug/output.js'
@@ -41,7 +42,16 @@ export class WhoamiCommand extends SanityCommand<typeof WhoamiCommand> {
       })
     }
 
-    const user = await getCliUser()
+    const user = await getCliUser().catch((err: unknown) => {
+      // A stale SANITY_AUTH_TOKEN overrides a valid saved login, so "run sanity login" won't help
+      if (tokenInfo.source === ENV_TOKEN_SOURCE && isRejectedToken(err)) {
+        this.error(
+          'Authentication failed using SANITY_AUTH_TOKEN.\nUnset it to use your saved login, or replace it with a valid token.',
+          {exit: exitCodes.RUNTIME_ERROR},
+        )
+      }
+      throw err
+    })
     const samlProviderId = getSamlProviderId(user.provider)
     const sso = samlProviderId ? await resolveSSOProvider(samlProviderId) : undefined
 
@@ -80,6 +90,12 @@ export class WhoamiCommand extends SanityCommand<typeof WhoamiCommand> {
     }
     this.log(formatKeyValue('Token', tokenInfo.source, {indent: 0, padTo}))
   }
+}
+
+const ENV_TOKEN_SOURCE = 'SANITY_AUTH_TOKEN environment variable'
+
+function isRejectedToken(err: unknown): boolean {
+  return isHttpError(err) && (err.statusCode === 401 || err.statusCode === 403)
 }
 
 function formatProvider(

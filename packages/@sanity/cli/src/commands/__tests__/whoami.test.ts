@@ -231,4 +231,33 @@ describe('#whoami', () => {
 
     expect(error).toBeInstanceOf(Error)
   })
+
+  test('explains that an invalid SANITY_AUTH_TOKEN overrides the saved login', async () => {
+    mockedGetCliTokenInfo.mockResolvedValue({
+      source: 'SANITY_AUTH_TOKEN environment variable',
+      token: 'stale-token',
+    })
+    mockMe({message: 'Unauthorized', statusCode: 401}, 401)
+
+    const {error, stdout} = await testCommand(WhoamiCommand, [], {mocks: {token: 'stale-token'}})
+
+    expect(stdout).toBe('')
+    expect(error?.message).toContain('Authentication failed using SANITY_AUTH_TOKEN.')
+    expect(error?.message).toContain('Unset it to use your saved login')
+    expect(error?.message).not.toContain('sanity login')
+    expect(error?.oclif?.exit).toBe(1)
+  })
+
+  test('does not blame SANITY_AUTH_TOKEN for non-auth errors', async () => {
+    mockedGetCliTokenInfo.mockResolvedValue({
+      source: 'SANITY_AUTH_TOKEN environment variable',
+      token: 'robot-token',
+    })
+    mockMe({message: 'Internal Server Error', statusCode: 500}, 500)
+
+    const {error} = await testCommand(WhoamiCommand, [], {mocks: {token: 'robot-token'}})
+
+    expect(error).toBeInstanceOf(Error)
+    expect(error?.message).not.toContain('SANITY_AUTH_TOKEN')
+  })
 })
