@@ -3,6 +3,9 @@ import {afterEach, describe, expect, test, vi} from 'vitest'
 import {NonInteractiveError} from '../../errors/NonInteractiveError.js'
 
 const mockIsInteractive = vi.hoisted(() => vi.fn())
+const mockWithPromptStatus = vi.hoisted(() => vi.fn((_kind, _message, prompt) => prompt()))
+
+vi.mock('../terminalStatus.js', () => ({withPromptStatus: mockWithPromptStatus}))
 
 const mockConfirm = vi.hoisted(() => vi.fn())
 const mockSelect = vi.hoisted(() => vi.fn())
@@ -14,6 +17,9 @@ const mockNumber = vi.hoisted(() => vi.fn())
 const mockExpand = vi.hoisted(() => vi.fn())
 const mockRawlist = vi.hoisted(() => vi.fn())
 const mockSearch = vi.hoisted(() => vi.fn())
+const mockRoleChecklist = vi.hoisted(() => vi.fn())
+
+vi.mock('../roleChecklist.js', () => ({roleChecklist: mockRoleChecklist}))
 
 vi.mock('../../util/isInteractive.js', () => ({
   isInteractive: mockIsInteractive,
@@ -49,6 +55,7 @@ describe('safe prompt wrappers', () => {
     {mock: mockExpand, name: 'expand'},
     {mock: mockRawlist, name: 'rawlist'},
     {mock: mockSearch, name: 'search'},
+    {mock: mockRoleChecklist, name: 'roleChecklist'},
   ] as const
 
   describe('in interactive mode', () => {
@@ -63,6 +70,11 @@ describe('safe prompt wrappers', () => {
 
       expect(result).toBe('result')
       expect(mock).toHaveBeenCalledOnce()
+      expect(mockWithPromptStatus).toHaveBeenCalledWith(
+        name === 'confirm' ? 'permission' : name === 'password' ? 'auth' : 'question',
+        'test',
+        expect.any(Function),
+      )
     })
   })
 
@@ -75,6 +87,7 @@ describe('safe prompt wrappers', () => {
 
       expect(() => wrapper({message: 'test'})).toThrow(NonInteractiveError)
       expect(mock).not.toHaveBeenCalled()
+      expect(mockWithPromptStatus).not.toHaveBeenCalled()
     })
 
     test.each(promptCases)('$name error message includes the prompt name', async ({name}) => {

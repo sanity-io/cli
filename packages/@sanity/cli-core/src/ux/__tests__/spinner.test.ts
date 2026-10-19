@@ -8,6 +8,11 @@ const {oraMock, oraPromiseMock} = vi.hoisted(() => ({
   oraPromiseMock: vi.fn(),
 }))
 
+const {stopStatus, updateStatus} = vi.hoisted(() => ({stopStatus: vi.fn(), updateStatus: vi.fn()}))
+vi.mock('../terminalStatus.js', () => ({
+  createTerminalStatus: () => ({stop: stopStatus, update: updateStatus}),
+}))
+
 vi.mock('ora', () => ({
   default: oraMock,
   oraPromise: oraPromiseMock,
@@ -15,7 +20,26 @@ vi.mock('ora', () => ({
 
 describe('spinner', () => {
   beforeEach(() => {
-    oraMock.mockClear()
+    vi.clearAllMocks()
+    oraMock.mockReset()
+    const instance = {
+      isEnabled: true,
+      isSpinning: false,
+      render: vi.fn(function () {
+        return instance
+      }),
+      start: vi.fn(function (text?: string) {
+        instance.isSpinning = true
+        if (text) instance.text = text
+        return instance
+      }),
+      stop: vi.fn(function () {
+        instance.isSpinning = false
+        return instance
+      }),
+      text: '',
+    }
+    oraMock.mockReturnValue(instance)
     oraPromiseMock.mockClear()
   })
 
@@ -39,16 +63,59 @@ describe('spinner', () => {
     oraPromiseMock.mockResolvedValue(42)
 
     await expect(spinnerPromise(Promise.resolve(42), 'Working')).resolves.toBe(42)
-    expect(oraPromiseMock).toHaveBeenCalledWith(expect.any(Promise), {
+    expect(oraPromiseMock).toHaveBeenCalledWith(expect.any(Function), {
       discardStdin: false,
       text: 'Working',
     })
 
     await spinnerPromise(Promise.resolve(42), {discardStdin: true, text: 'Working'})
-    expect(oraPromiseMock).toHaveBeenLastCalledWith(expect.any(Promise), {
+    expect(oraPromiseMock).toHaveBeenLastCalledWith(expect.any(Function), {
       discardStdin: true,
       text: 'Working',
     })
+  })
+
+  test('reports spinner text on start and render, and releases status on stop', () => {
+    const instance = spinner().start('Building')
+    expect(updateStatus).toHaveBeenLastCalledWith({message: 'Building', state: 'working'})
+    instance.text = 'Uploading'
+    instance.render()
+    expect(updateStatus).toHaveBeenLastCalledWith({message: 'Uploading', state: 'working'})
+    expect(instance.stop()).toBe(instance)
+    expect(stopStatus).toHaveBeenCalledOnce()
+    updateStatus.mockClear()
+    instance.render()
+    expect(updateStatus).not.toHaveBeenCalled()
+    instance.start('Again')
+    expect(updateStatus).toHaveBeenLastCalledWith({message: 'Again', state: 'working'})
+  })
+
+  test('does not report a disabled spinner', () => {
+    const instance = spinner()
+    instance.isEnabled = false
+    instance.start('Disabled')
+    instance.render()
+    expect(updateStatus).not.toHaveBeenCalled()
+  })
+
+  test('tracks the already-started spinner passed to promise actions', async () => {
+    const instance = oraMock().start('Working')
+    oraPromiseMock.mockImplementationOnce(async (action) => {
+      try {
+        return await action(instance)
+      } finally {
+        instance.stop()
+      }
+    })
+    const action = vi.fn(async (spin) => {
+      spin.text = 'Uploading'
+      spin.render()
+      return 42
+    })
+    await expect(spinnerPromise(action)).resolves.toBe(42)
+    expect(updateStatus).toHaveBeenCalledWith({message: 'Working', state: 'working'})
+    expect(updateStatus).toHaveBeenLastCalledWith({message: 'Uploading', state: 'working'})
+    expect(stopStatus).toHaveBeenCalledOnce()
   })
 
   test('is silent and chainable under an execution context', () => {

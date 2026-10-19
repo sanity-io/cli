@@ -5,6 +5,15 @@ import {requiredWhenUnattended} from '../_exports/flags.js'
 import {runWithCliExecutionContext} from '../executionContext.js'
 import {SanityCommand} from '../SanityCommand.js'
 
+const {finishStatus, updateStatus} = vi.hoisted(() => ({
+  finishStatus: vi.fn(),
+  updateStatus: vi.fn(),
+}))
+vi.mock('../ux/terminalStatus.js', () => ({
+  createTerminalStatus: () => ({update: updateStatus}),
+  finishTerminalStatus: finishStatus,
+}))
+
 function createMockedRunCommand<T extends typeof Command>(mocks: {
   cliConfig?: Mock
   run: (this: (typeof SanityCommand<T>)['prototype'], ...args: any[]) => Promise<void>
@@ -59,6 +68,36 @@ function createUnattendedRequiredCommand(isInteractive: boolean) {
 describe('SanityCommand', () => {
   afterEach(() => {
     vi.clearAllMocks()
+  })
+
+  describe('terminal status lifecycle', () => {
+    test('reports working at initialization and done on success', async () => {
+      await createMockedRunCommand({run: async () => {}}).run([])
+      expect(updateStatus).toHaveBeenCalledWith({state: 'working'})
+      expect(finishStatus).toHaveBeenCalledExactlyOnceWith('done')
+    })
+
+    test.each([
+      {error: new Error('failed'), state: 'error'},
+      {error: Object.assign(new Error('cancelled'), {name: 'ExitPromptError'}), state: 'idle'},
+      {error: new Error('SIGINT'), state: 'idle'},
+      {error: Object.assign(new Error('exit'), {oclif: {exit: 3}}), state: 'idle'},
+      {error: Object.assign(new Error('exit'), {oclif: {exit: 0}}), state: 'done'},
+      {error: Object.assign(new Error('exit'), {exitCode: 130}), state: 'idle'},
+    ])('reports $state for $error', async ({error, state}) => {
+      const previousExitCode = process.exitCode
+      const command = createMockedRunCommand({
+        run: async () => {
+          throw error
+        },
+      })
+      try {
+        await expect(command.run([])).rejects.toThrow()
+        expect(finishStatus).toHaveBeenCalledExactlyOnceWith(state)
+      } finally {
+        process.exitCode = previousExitCode
+      }
+    })
   })
 
   describe('unattended flag requirements', () => {
