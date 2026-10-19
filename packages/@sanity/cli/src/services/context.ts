@@ -298,3 +298,45 @@ export async function applyIssues(
   const client = await getContextClient(knowledgeBaseId)
   return client.context.issues.apply({issueIds})
 }
+
+/**
+ * List all current instructions for a knowledge base
+ */
+export async function listInstructions(knowledgeBaseId: string): Promise<Context.InstructionDoc[]> {
+  const client = await getContextStoreClient(knowledgeBaseId)
+  return client.context.instructions.list()
+}
+
+/**
+ * Create a standing instruction that steers every build
+ */
+export async function createInstruction(
+  knowledgeBaseId: string,
+  params: Context.CreateInstructionParams,
+): Promise<Context.CreateInstructionResponse> {
+  const client = await getContextClient(knowledgeBaseId)
+  return client.context.instructions.create(params)
+}
+
+/**
+ * Edit an instruction's statement or source scope
+ */
+export async function editInstruction(
+  knowledgeBaseId: string,
+  instructionId: string,
+  params: Context.EditInstructionParams,
+): Promise<Context.Instruction> {
+  const client = await getContextClient(knowledgeBaseId)
+  return client.context.instructions.edit({instructionId, ...params})
+}
+
+/**
+ * Delete an instruction from a knowledge base
+ */
+export async function deleteInstruction(
+  knowledgeBaseId: string,
+  instructionId: string,
+): Promise<void> {
+  const client = await getContextClient(knowledgeBaseId)
+  await client.context.instructions.delete({instructionId})
+}
