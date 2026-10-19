@@ -1219,6 +1219,9 @@ importers:
       ora:
         specifier: 'catalog:'
         version: 9.4.1
+      osc-status:
+        specifier: ^1.0.0
+        version: 1.0.0
       rxjs:
         specifier: 'catalog:'
         version: 7.8.2
@@ -8451,6 +8454,10 @@ packages:
   os-homedir@1.0.2:
     resolution: {integrity: sha512-B5JU3cabzk8c67mRRd3ECmROafjYMXbuzlwtqdM8IbS8ktlTix8aFGb2bAGKrSRIlnfKwovGUUr72JUPyOb6kQ==}
     engines: {node: '>=0.10.0'}
+
+  osc-status@1.0.0:
+    resolution: {integrity: sha512-BgyxMwX3aqjKBbFETQZWaJHI9faQyRzn0+tYCUL32UsnyuDyI2GZo3MtTv+uO+oVQhB4vN/PYAIPpLETDusWWg==}
+    engines: {node: '>=22'}
 
   outdent@0.5.0:
     resolution: {integrity: sha512-/jHxFIzoMXdqPzTaCpFzAAWhpkSjZPF4Vsn6jAfNpmbH/ymsmd7Qc6VE9BGn0L6YMj6uwpQLxCECpus4ukKS9Q==}
@@ -17594,6 +17601,8 @@ snapshots:
       string-width: 8.2.2
 
   os-homedir@1.0.2: {}
+
+  osc-status@1.0.0: {}
 
   outdent@0.5.0: {}
 
