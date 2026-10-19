@@ -32,7 +32,7 @@ export async function buildStudioSchemasAndManifests(
   applicationId: string,
   options: BuildStudioSchemasAndManifestsWorkerData,
 ): Promise<BuildStudioSchemasAndManifestsWorkerSuccess> {
-  const {configPath, isExternal, outPath, projectId, verbose, workDir} = options
+  const {configPath, isExternal, outPath, projectId, schemaRequired, verbose, workDir} = options
 
   const trace = getCliTelemetry().trace(SchemaBuild, {
     // If the studio is externally hosted, we don't need to extract the manifest
@@ -58,7 +58,7 @@ export async function buildStudioSchemasAndManifests(
           isExternal,
           outPath,
           projectId,
-          schemaRequired: false,
+          schemaRequired,
           verbose,
           workDir,
         } satisfies BuildStudioSchemasAndManifestsWorkerData,
