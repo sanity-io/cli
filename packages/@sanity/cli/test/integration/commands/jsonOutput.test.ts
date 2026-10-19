@@ -18,6 +18,7 @@ import {CreateTokenCommand} from '../../../src/commands/tokens/create.js'
 import {TokensListCommand} from '../../../src/commands/tokens/list.js'
 import {RotateTokenCommand} from '../../../src/commands/tokens/rotate.js'
 import {UndeployCommand} from '../../../src/commands/undeploy.js'
+import {WhoamiCommand} from '../../../src/commands/whoami.js'
 
 const previousExitCode = process.exitCode
 
@@ -44,6 +45,7 @@ describe('JSON argument errors', () => {
     TokensListCommand,
     RotateTokenCommand,
     UndeployCommand,
+    WhoamiCommand,
   ])('%s returns one JSON error and usage exit code', async (command) => {
     const {stderr, stdout} = await testCommand(command, ['--json', '--not-a-flag'])
     expect(JSON.parse(stdout)).toMatchObject({
