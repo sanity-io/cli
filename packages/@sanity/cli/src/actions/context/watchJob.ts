@@ -11,6 +11,14 @@ import {waitForJob} from './waitForJob.js'
  * terminal status is not `succeeded` — turning either outcome into a
  * command error (and exit code) is the caller's responsibility.
  */
+/**
+ * Error message for a job that ended in a non-succeeded terminal state,
+ * e.g. "Build failed: <reason>"
+ */
+export function formatJobFailure(noun: string, job: Context.Job): string {
+  return `${noun} ${job.status}${job.error ? `: ${job.error}` : ''}`
+}
+
 export async function watchJob(
   knowledgeBaseId: string,
   jobId: string,
