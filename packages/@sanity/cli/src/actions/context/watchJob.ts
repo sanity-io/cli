@@ -35,14 +35,14 @@ export async function watchJob(
       },
     })
   } catch (error) {
-    spin.fail()
+    spin.fail(label)
     throw error
   }
 
   if (job.status === 'succeeded') {
-    spin.succeed(successText)
+    spin.succeed(successText ?? label)
   } else {
-    spin.fail()
+    spin.fail(label)
   }
 
   return job

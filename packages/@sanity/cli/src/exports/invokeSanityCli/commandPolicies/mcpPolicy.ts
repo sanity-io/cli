@@ -94,6 +94,10 @@ export const mcpPolicy: CommandPolicySet = {
   'context:build': conditionalDenyFlags('watch'),
   'context:create': allow,
   'context:delete': allow,
+  'context:entries:get': allow,
+  'context:entries:list': allow,
+  // See context:build — --watch has no deadline and would hang the MCP tool call.
+  'context:entries:rebuild': conditionalDenyFlags('watch'),
   'context:get': allow,
   // --file reads the import payload from the local filesystem; text, URL and
   // dataset imports are remote-only.

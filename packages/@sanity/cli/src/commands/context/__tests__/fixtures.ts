@@ -101,3 +101,32 @@ export const conflictIssue: Context.IssueDoc = {
     suggestedFix: 'Choose the correct refund window.',
   },
 }
+
+export const entry: Context.EntryDoc = {
+  _createdAt: '2026-08-01T00:00:00Z',
+  _id: 'entry.def456',
+  _rev: 'rev-1',
+  _type: 'sanity.context.entry',
+  _updatedAt: '2026-08-01T00:00:00Z',
+  body: '# Refunds\nRefunds are processed within 10 days.',
+  citations: [
+    {
+      _key: 'citation-1',
+      _type: 'sanity.context.citation',
+      filename: 'refunds.md',
+      sourceId: 'source-def456',
+    },
+  ],
+  generatedAt: '2026-08-01T01:00:00Z',
+  knowledgeBaseId: 'kb-abc123',
+  path: 'billing/refunds',
+  revisionId: 'revision-1',
+  schemaVersion: 1,
+  status: 'filled',
+  title: 'Refunds',
+  tldr: {
+    centrality: 'core',
+    excludes: 'Chargebacks',
+    scope: 'How and when refunds are processed',
+  },
+}

@@ -246,3 +246,34 @@ export async function applyIssues(
   const client = await getContextClient(knowledgeBaseId)
   return client.context.issues.apply({issueIds})
 }
+
+/**
+ * List all entries for a knowledge base, path-ordered, without bodies
+ */
+export async function listEntries(knowledgeBaseId: string): Promise<Context.Entry[]> {
+  const client = await getContextStoreClient(knowledgeBaseId)
+  return client.context.entries.list()
+}
+
+/**
+ * Get a single entry with its body and citations by outline path, or `null`
+ * when no entry sits at that path
+ */
+export async function getEntry(
+  knowledgeBaseId: string,
+  path: string,
+): Promise<Context.EntryDoc | null> {
+  const client = await getContextStoreClient(knowledgeBaseId)
+  return client.context.entries.get({path})
+}
+
+/**
+ * Rebuild one entry from its sources by outline path
+ */
+export async function rebuildEntry(
+  knowledgeBaseId: string,
+  path: string,
+): Promise<Context.RebuildEntryResponse> {
+  const client = await getContextClient(knowledgeBaseId)
+  return client.context.entries.rebuild({path})
+}
