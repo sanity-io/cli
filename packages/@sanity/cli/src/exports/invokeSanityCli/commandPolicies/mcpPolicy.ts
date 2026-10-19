@@ -106,6 +106,9 @@ export const mcpPolicy: CommandPolicySet = {
   'context:jobs:get': conditionalDenyFlags('watch'),
   'context:list': allow,
   'context:refresh': allow,
+  'context:sources:delete': allow,
+  'context:sources:get': allow,
+  'context:sources:list': allow,
   'context:update': allow,
 
   'cors:add': allow,
