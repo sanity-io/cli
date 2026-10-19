@@ -7,14 +7,16 @@ import {exitCodes, SanityCommand} from '@sanity/cli-core'
 
 import {deploySchemas} from '../../actions/schema/deploySchemas.js'
 import {schemasDeployDebug} from '../../actions/schema/utils/debug.js'
+import {
+  removedManifestFlags,
+  warnOnRemovedManifestFlags,
+} from '../../actions/schema/utils/removedManifestFlags.js'
 import {parseTag} from '../../actions/schema/utils/schemaStoreValidation.js'
 
 const description = `
 Deploy schema documents into workspace datasets.
 
 Note: This command is experimental and subject to change.
-
-Regenerates a manifest file by default. To re-use an existing manifest, use --no-extract-manifest.
 `.trim()
 
 export class DeploySchemaCommand extends SanityCommand<typeof DeploySchemaCommand> {
@@ -32,16 +34,7 @@ export class DeploySchemaCommand extends SanityCommand<typeof DeploySchemaComman
   ]
 
   static override flags = {
-    'extract-manifest': Flags.boolean({
-      allowNo: true,
-      default: true,
-      description: 'Regenerate manifest before deploying (use --no-extract-manifest to skip)',
-    }),
-    'manifest-dir': Flags.directory({
-      default: './dist/static',
-      description: 'Directory containing manifest file',
-      helpValue: '<directory>',
-    }),
+    ...removedManifestFlags,
     tag: Flags.string({
       description: 'Add a tag suffix to the schema id',
       helpValue: '<tag>',
@@ -71,6 +64,8 @@ export class DeploySchemaCommand extends SanityCommand<typeof DeploySchemaComman
   public async run(): Promise<void> {
     const {flags} = await this.parse(DeploySchemaCommand)
     const {tag, workspace} = flags
+
+    warnOnRemovedManifestFlags(flags, this.output)
 
     try {
       const workDir = (await this.getProjectRoot()).directory
