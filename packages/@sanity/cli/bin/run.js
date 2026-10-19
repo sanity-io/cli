@@ -21,6 +21,11 @@ if (!isSupportedNodeVersion(majorVersion, minorVersion)) {
   process.exit(1)
 }
 
+process.title = 'sanity'
+if (process.stderr.isTTY) {
+  process.stderr.write('\u001B]2;Sanity\u0007')
+}
+
 settings.enableAutoTranspile = false
 
 await execute({dir: import.meta.url})
