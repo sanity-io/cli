@@ -47,6 +47,7 @@ export async function promptForAppTemplateSetup({
 
   if (unattended || hasProjectFlag) {
     if (!project && !newProject) {
+      trace.log({datasetName: '', selectedOption: 'skip', step: 'createOrSelectDataset'})
       return {datasetName: '', displayName: '', projectId: ''}
     }
     const projectResult = await getOrCreateProject({
@@ -66,6 +67,12 @@ export async function promptForAppTemplateSetup({
       projectId: projectResult.projectId,
       showDefaultConfigPrompt: false,
       unattended,
+      visibility,
+    })
+    trace.log({
+      datasetName: datasetResult.datasetName,
+      selectedOption: datasetResult.userAction,
+      step: 'createOrSelectDataset',
       visibility,
     })
     return {
@@ -97,6 +104,7 @@ export async function promptForAppTemplateSetup({
 
   if (selected === SKIP_PROJECT) {
     trace.log({selectedOption: 'skip', step: 'configureAppProject'})
+    trace.log({datasetName: '', selectedOption: 'skip', step: 'createOrSelectDataset'})
     return {datasetName: '', displayName: '', projectId: ''}
   }
 
@@ -130,6 +138,12 @@ export async function promptForAppTemplateSetup({
     projectId: projectResult.projectId,
     showDefaultConfigPrompt: false,
     unattended: false,
+    visibility,
+  })
+  trace.log({
+    datasetName: datasetResult.datasetName,
+    selectedOption: datasetResult.userAction,
+    step: 'createOrSelectDataset',
     visibility,
   })
   return {
