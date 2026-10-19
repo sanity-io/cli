@@ -70,6 +70,13 @@ export const ORG_PERMISSIONS: OrgPermission[] = [
   },
 ]
 
+export const ORG_ROLE_LABELS = new Map<string, string>(
+  ORG_PERMISSIONS.flatMap((permission) => {
+    if ('roleName' in permission) return [[permission.roleName, permission.title]]
+    return permission.roles.map((role) => [role.roleName, `${permission.title}: ${role.title}`])
+  }),
+)
+
 const findOrgPermission = (key: string) =>
   ORG_PERMISSIONS.find((permission) => permission.key === key)
 
