@@ -7,15 +7,27 @@ const CONTEXT_API_VERSION = 'v2026-08-25'
  * Knowledge-base-scoped methods on `client.context` (imports, builds, jobs)
  * operate on the client's configured `resource`; collection-level methods
  * (`client.context.knowledgeBases.*`) are addressed per call and need none.
+ * GROQ-backed reads also need `context.organizationId`.
  */
-async function getContextClient(knowledgeBaseId?: string) {
+async function getContextClient(knowledgeBaseId?: string, organizationId?: string) {
   return getGlobalCliClient({
     apiVersion: CONTEXT_API_VERSION,
     requireUser: true,
     ...(knowledgeBaseId === undefined
       ? {}
       : {resource: {id: knowledgeBaseId, type: 'knowledge-base' as const}}),
+    ...(organizationId === undefined ? {} : {context: {organizationId}}),
   })
+}
+
+/**
+ * GROQ-backed reads (issues, instructions, entries) query the organization's
+ * document store, where documents are keyed by the knowledge base's public ID.
+ * Fetching the knowledge base resolves both, whichever of its IDs was passed.
+ */
+async function getContextStoreClient(knowledgeBaseId: string) {
+  const {organizationId, publicId} = await getKnowledgeBase(knowledgeBaseId)
+  return getContextClient(publicId, organizationId)
 }
 
 /**
@@ -217,4 +229,72 @@ export async function getSourceContent(
 export async function deleteSource(knowledgeBaseId: string, sourceId: string): Promise<void> {
   const client = await getContextClient(knowledgeBaseId)
   await client.context.sources.delete({sourceId})
+}
+
+/**
+ * List all issues for a knowledge base, optionally narrowed to one status
+ */
+export async function listIssues(
+  knowledgeBaseId: string,
+  status?: Context.IssueDoc['status'],
+): Promise<Context.IssueDoc[]> {
+  const client = await getContextStoreClient(knowledgeBaseId)
+  return client.context.issues.list({status})
+}
+
+/**
+ * Get a single issue by ID, or `null` when it does not exist
+ */
+export async function getIssue(
+  knowledgeBaseId: string,
+  issueId: string,
+): Promise<Context.IssueDoc | null> {
+  const client = await getContextStoreClient(knowledgeBaseId)
+  return client.context.issues.get({issueId})
+}
+
+/**
+ * Resolve a conflict issue by choosing one of its sides (by index). Choosing
+ * a side other than the entry's current content starts a rewrite job.
+ */
+export async function resolveIssue(
+  knowledgeBaseId: string,
+  issueId: string,
+  resolution: number,
+): Promise<Context.ResolveIssueResponse> {
+  const client = await getContextClient(knowledgeBaseId)
+  return client.context.issues.resolve({issueId, resolution})
+}
+
+/**
+ * Dismiss an issue
+ */
+export async function dismissIssue(
+  knowledgeBaseId: string,
+  issueId: string,
+): Promise<Context.DismissIssueResponse> {
+  const client = await getContextClient(knowledgeBaseId)
+  return client.context.issues.dismiss({issueId})
+}
+
+/**
+ * Reopen a dismissed or resolved issue
+ */
+export async function reopenIssue(
+  knowledgeBaseId: string,
+  issueId: string,
+): Promise<Context.ReopenIssueResponse> {
+  const client = await getContextClient(knowledgeBaseId)
+  return client.context.issues.reopen({issueId})
+}
+
+/**
+ * Apply accepted issues to a knowledge base in one batch
+ */
+export async function applyIssues(
+  knowledgeBaseId: string,
+  issueIds: string[],
+): Promise<Context.ApplyIssuesResponse> {
+  const client = await getContextClient(knowledgeBaseId)
+  return client.context.issues.apply({issueIds})
 }

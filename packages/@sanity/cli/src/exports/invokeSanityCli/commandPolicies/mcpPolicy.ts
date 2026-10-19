@@ -103,6 +103,14 @@ export const mcpPolicy: CommandPolicySet = {
   'context:imports:get': allow,
   'context:imports:list': allow,
   // See context:build — --watch has no deadline and would hang the MCP tool call.
+  'context:issues:apply': conditionalDenyFlags('watch'),
+  'context:issues:dismiss': allow,
+  'context:issues:get': allow,
+  'context:issues:list': allow,
+  'context:issues:reopen': allow,
+  // See context:build — --watch has no deadline and would hang the MCP tool call.
+  'context:issues:resolve': conditionalDenyFlags('watch'),
+  // See context:build — --watch has no deadline and would hang the MCP tool call.
   'context:jobs:get': conditionalDenyFlags('watch'),
   'context:list': allow,
   'context:refresh': allow,

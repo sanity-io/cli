@@ -5,7 +5,7 @@ import {getErrorMessage} from '@sanity/cli-core/errors'
 import {spinner} from '@sanity/cli-core/ux'
 import {isHttpError} from '@sanity/client'
 
-import {watchJob} from '../../actions/context/watchJob.js'
+import {formatJobFailure, watchJob} from '../../actions/context/watchJob.js'
 import {formatKeyValue} from '../../actions/debug/output.js'
 import {buildKnowledgeBase, cancelKnowledgeBaseBuild} from '../../services/context.js'
 
@@ -97,7 +97,7 @@ export class BuildKnowledgeBaseCommand extends SanityCommand<typeof BuildKnowled
     }
 
     if (job.status !== 'succeeded') {
-      this.error(`Build ${job.status}${job.error ? `: ${job.error}` : ''}`, {
+      this.error(formatJobFailure('Build', job), {
         exit: exitCodes.RUNTIME_ERROR,
       })
     }
