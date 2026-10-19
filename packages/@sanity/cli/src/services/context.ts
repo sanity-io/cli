@@ -166,3 +166,55 @@ export async function getJob(knowledgeBaseId: string, jobId: string): Promise<Co
   const client = await getContextClient(knowledgeBaseId)
   return client.context.jobs.get({jobId})
 }
+
+/**
+ * List sources for a knowledge base, optionally filtered by status or the
+ * import they came from (drains pagination)
+ */
+export async function listSources(
+  knowledgeBaseId: string,
+  filter: {importId?: string; status?: Context.Source['status']},
+): Promise<Context.Source[]> {
+  const client = await getContextClient(knowledgeBaseId)
+
+  const sources: Context.Source[] = []
+  let cursor: string | undefined
+  do {
+    const page = await client.context.sources.list({...filter, cursor})
+    sources.push(...page.data)
+    cursor = page.nextCursor ?? undefined
+  } while (cursor !== undefined)
+
+  return sources
+}
+
+/**
+ * Get a single source by ID
+ */
+export async function getSource(
+  knowledgeBaseId: string,
+  sourceId: string,
+): Promise<Context.SourceDetail> {
+  const client = await getContextClient(knowledgeBaseId)
+  return client.context.sources.get({sourceId})
+}
+
+/**
+ * Get a source's distilled content, optionally a 1-based line range
+ */
+export async function getSourceContent(
+  knowledgeBaseId: string,
+  sourceId: string,
+  lines?: {endLine: number; startLine: number},
+): Promise<Context.SourceContentResponse> {
+  const client = await getContextClient(knowledgeBaseId)
+  return client.context.sources.content({sourceId, ...lines})
+}
+
+/**
+ * Delete a source from a knowledge base
+ */
+export async function deleteSource(knowledgeBaseId: string, sourceId: string): Promise<void> {
+  const client = await getContextClient(knowledgeBaseId)
+  await client.context.sources.delete({sourceId})
+}

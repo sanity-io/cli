@@ -59,3 +59,19 @@ export const succeededJob: Context.Job = {
   startedAt: '2026-08-01T00:00:00.000Z',
   status: 'succeeded',
 }
+
+export const source: Context.SourceDetail = {
+  canonicalUrl: 'https://example.com/docs/refunds',
+  createdAt: '2026-08-01T00:00:00.000Z',
+  distilledAt: '2026-08-01T00:30:00.000Z',
+  externalId: null,
+  fetchedAt: '2026-08-01T00:10:00.000Z',
+  filename: 'refunds.md',
+  id: 'source-def456',
+  kind: 'web',
+  knowledgeBaseId: '00000000-0000-0000-0000-000000000001',
+  sizeBytes: 2048,
+  status: 'ready',
+  tldr: 'How refunds are processed',
+  topics: ['billing', 'refunds'],
+}
