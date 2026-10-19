@@ -1,3 +1,4 @@
+import {type WorkspaceSchemaInput} from '@sanity/cli-build/_internal/manifest'
 import {StudioManifest} from 'sanity'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
@@ -33,15 +34,13 @@ const studioManifest: StudioManifest = {
   workspaces: [],
 }
 
-function createWorkspaceManifest(overrides: Record<string, unknown> = {}) {
+function createSchemaInput(overrides: Partial<WorkspaceSchemaInput> = {}): WorkspaceSchemaInput {
   return {
-    basePath: '/',
     dataset: 'production',
+    manifestSchema: [{name: 'post', type: 'document'}],
     name: 'default',
     projectId,
-    schema: [{name: 'post', type: 'document'}],
     title: 'Default',
-    tools: [],
     ...overrides,
   }
 }
@@ -73,17 +72,19 @@ function createPort() {
   }
 }
 
-/** The manifests the stubbed build hands to the worker's `workspaceManifestsHandler`. */
-let handedManifests: Record<string, unknown>[] = []
+/**
+ * The schema inputs the stubbed build hands to the worker's `workspaceSchemaHandler`.
+ */
+let handedSchemaInputs: WorkspaceSchemaInput[] = []
 
 beforeEach(() => {
-  handedManifests = [createWorkspaceManifest()]
+  handedSchemaInputs = [createSchemaInput()]
   mockExtractValidationFromSchemaError.mockResolvedValue(undefined)
   mockUpdateWorkspacesSchemas.mockResolvedValue(undefined)
   // Mirrors cli-build: the build invokes the handler, and a handler failure fails the build.
   mockWorkerBuildStudioSchemasAndManifests.mockImplementation(async (options) => {
-    await options.workspaceManifestsHandler?.(handedManifests)
-    return {studioManifest, type: 'success', workspaceManifests: handedManifests}
+    await options.workspaceSchemaHandler?.(handedSchemaInputs)
+    return {schemaInputs: handedSchemaInputs, studioManifest, type: 'success'}
   })
 })
 
@@ -130,6 +131,54 @@ describe('deployStudioSchemasAndManifestsWorker', () => {
     expect(mockWorkerBuildStudioSchemasAndManifests).not.toHaveBeenCalled()
   })
 
+  describe('schema deployment', () => {
+    test('deploys the schema inputs handed back by the build', async () => {
+      const {port} = createPort()
+      handedSchemaInputs = [
+        createSchemaInput(),
+        createSchemaInput({
+          dataset: 'staging',
+          manifestSchema: [{name: 'author', type: 'document'}],
+          name: 'staging',
+          projectId: 'other-project',
+          title: undefined,
+        }),
+      ]
+
+      await deployStudioSchemasAndManifestsWorker(port, createWorkerData())
+
+      expect(mockUpdateWorkspacesSchemas).toHaveBeenCalledWith({
+        verbose: false,
+        workspaces: [
+          {
+            dataset: 'production',
+            manifestSchema: [{name: 'post', type: 'document'}],
+            name: 'default',
+            projectId,
+            title: 'Default',
+          },
+          {
+            dataset: 'staging',
+            manifestSchema: [{name: 'author', type: 'document'}],
+            name: 'staging',
+            projectId: 'other-project',
+            title: undefined,
+          },
+        ],
+      })
+    })
+
+    test('passes the verbose flag through to the schema deployment', async () => {
+      const {port} = createPort()
+
+      await deployStudioSchemasAndManifestsWorker(port, createWorkerData({verbose: true}))
+
+      expect(mockUpdateWorkspacesSchemas).toHaveBeenCalledWith(
+        expect.objectContaining({verbose: true}),
+      )
+    })
+  })
+
   describe('failures', () => {
     test('posts a serialized error with the extracted validation', async () => {
       const {messages, port} = createPort()
@@ -160,6 +209,17 @@ describe('deployStudioSchemasAndManifestsWorker', () => {
       await deployStudioSchemasAndManifestsWorker(port, createWorkerData())
 
       expect(messages).toEqual([{error: 'kaboom', type: 'error', validation: undefined}])
+    })
+
+    test('reports a failed schema deployment as an error message', async () => {
+      const {messages, port} = createPort()
+      mockUpdateWorkspacesSchemas.mockRejectedValue(new Error('Failed to deploy 1/1 schemas'))
+
+      await deployStudioSchemasAndManifestsWorker(port, createWorkerData())
+
+      expect(messages).toEqual([
+        {error: 'Failed to deploy 1/1 schemas', type: 'error', validation: undefined},
+      ])
     })
   })
 })

@@ -1,7 +1,7 @@
 import {type StudioManifest, type Workspace} from 'sanity'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
-import {type CreateWorkspaceManifest} from '../../manifest/types.js'
+import {type CreateWorkspaceManifest, type WorkspaceSchemaInput} from '../../manifest/types.js'
 import {workerBuildStudioSchemasAndManifests} from '../buildStudioSchemasAndManifestsWorker.js'
 import {type BuildStudioSchemasAndManifestsWorkerData} from '../types.js'
 
@@ -44,7 +44,8 @@ const workspaceManifests: CreateWorkspaceManifest[] = [
     icon: 'favicon.ico',
     name: 'default',
     projectId: 'proj1234',
-    schema: [],
+    schema: [{name: 'post', type: 'document'}],
+    title: 'Default',
     tools: [],
   },
   {
@@ -52,9 +53,27 @@ const workspaceManifests: CreateWorkspaceManifest[] = [
     dataset: 'staging',
     icon: 'favicon.ico',
     name: 'staging',
-    projectId: 'proj1234',
-    schema: [],
+    projectId: 'other-project',
+    schema: [{name: 'author', type: 'document'}],
     tools: [],
+  },
+]
+
+/** What `workspaceManifests` maps onto once the schema inputs are built. */
+const schemaInputs: WorkspaceSchemaInput[] = [
+  {
+    dataset: 'production',
+    manifestSchema: [{name: 'post', type: 'document'}],
+    name: 'default',
+    projectId: 'proj1234',
+    title: 'Default',
+  },
+  {
+    dataset: 'staging',
+    manifestSchema: [{name: 'author', type: 'document'}],
+    name: 'staging',
+    projectId: 'other-project',
+    title: undefined,
   },
 ]
 
@@ -148,7 +167,7 @@ describe('buildStudioSchemasAndManifestsWorker', () => {
       })
 
       expect(result).toEqual({
-        schemaInputs: expect.objectContaining(result.schemaInputs),
+        schemaInputs,
         studioManifest,
         type: 'success',
       })
@@ -165,13 +184,14 @@ describe('buildStudioSchemasAndManifestsWorker', () => {
         workDir: '/studio',
         workspaceManifests,
       })
-      expect(workspaceSchemaHandler).toHaveBeenCalledWith(result.schemaInputs)
+      expect(workspaceSchemaHandler).toHaveBeenCalledWith(schemaInputs)
     })
 
     test('skips the handler when none is provided', async () => {
       const result = await workerBuildStudioSchemasAndManifests(createOptions({isExternal: false}))
 
       expect(result.type).toBe('success')
+      expect(result.schemaInputs).toEqual(schemaInputs)
       expect(mockWriteManifestFile).toHaveBeenCalledTimes(1)
       expect(mockUploadSchemaToLexicon).toHaveBeenCalledTimes(1)
     })
@@ -182,7 +202,7 @@ describe('buildStudioSchemasAndManifestsWorker', () => {
       const result = await workerBuildStudioSchemasAndManifests(createOptions({isExternal: false}))
 
       expect(result).toEqual({
-        schemaInputs: expect.objectContaining(result.schemaInputs),
+        schemaInputs,
         studioManifest: null,
         type: 'success',
       })
@@ -204,7 +224,7 @@ describe('buildStudioSchemasAndManifestsWorker', () => {
       ).rejects.toThrow('Failed to upload schema')
     })
 
-    test('propagates failures from the workspace manifests handler', async () => {
+    test('propagates failures from the workspace schema handler', async () => {
       const workspaceSchemaHandler = vi.fn().mockRejectedValue(new Error('Handler exploded'))
 
       await expect(
@@ -217,11 +237,11 @@ describe('buildStudioSchemasAndManifestsWorker', () => {
   })
 
   describe('external studio', () => {
-    test('uploads the schema and calls the handler without writing a manifest file', async () => {
+    test('uploads the schema and skips the handler when the schema is not required', async () => {
       const workspaceSchemaHandler = vi.fn().mockResolvedValue(undefined)
 
       const result = await workerBuildStudioSchemasAndManifests({
-        ...createOptions({isExternal: true, verbose: true}),
+        ...createOptions({isExternal: true, schemaRequired: false, verbose: true}),
         workspaceSchemaHandler,
       })
 
@@ -238,6 +258,33 @@ describe('buildStudioSchemasAndManifestsWorker', () => {
         workspaces,
       })
       expect(workspaceSchemaHandler).not.toHaveBeenCalled()
+      expect(mockWriteManifestFile).not.toHaveBeenCalled()
+    })
+
+    test('builds schema inputs and calls the handler when the schema is required', async () => {
+      const workspaceSchemaHandler = vi.fn().mockResolvedValue(undefined)
+
+      const result = await workerBuildStudioSchemasAndManifests({
+        ...createOptions({isExternal: true, schemaRequired: true}),
+        workspaceSchemaHandler,
+      })
+
+      expect(result).toEqual({
+        schemaInputs,
+        studioManifest,
+        type: 'success',
+      })
+
+      expect(workspaceSchemaHandler).toHaveBeenCalledWith(schemaInputs)
+      expect(mockWriteManifestFile).not.toHaveBeenCalled()
+    })
+
+    test('returns schema inputs when the schema is required and no handler is provided', async () => {
+      const result = await workerBuildStudioSchemasAndManifests(
+        createOptions({isExternal: true, schemaRequired: true}),
+      )
+
+      expect(result.schemaInputs).toEqual(schemaInputs)
       expect(mockWriteManifestFile).not.toHaveBeenCalled()
     })
 
@@ -263,6 +310,17 @@ describe('buildStudioSchemasAndManifestsWorker', () => {
       await expect(
         workerBuildStudioSchemasAndManifests(createOptions({isExternal: true})),
       ).rejects.toThrow('Failed to upload schema')
+    })
+
+    test('propagates failures from the workspace schema handler when the schema is required', async () => {
+      const workspaceSchemaHandler = vi.fn().mockRejectedValue(new Error('Handler exploded'))
+
+      await expect(
+        workerBuildStudioSchemasAndManifests({
+          ...createOptions({isExternal: true, schemaRequired: true}),
+          workspaceSchemaHandler,
+        }),
+      ).rejects.toThrow('Handler exploded')
     })
   })
 })
