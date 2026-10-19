@@ -1,5 +1,5 @@
 import {existsSync} from 'node:fs'
-import {mkdir, readFile, writeFile} from 'node:fs/promises'
+import {mkdir, readFile, rm, rmdir, stat, unlink, writeFile} from 'node:fs/promises'
 import {join} from 'node:path'
 
 import {mockApi, testCommand, testFixture} from '@sanity/cli-test'
@@ -162,6 +162,162 @@ describe('#typegen:generate with typegen.resources', {timeout: 60 * 1000}, () =>
     expect(error?.oclif?.exit).toBe(1)
     expect(existsSync(join(cwd, 'src', 'production.types.ts'))).toBe(false)
     expect(existsSync(join(cwd, 'src', 'staging.types.ts'))).toBe(false)
+  })
+})
+
+/** Resolves once `check` returns true, or rejects after `timeout` milliseconds. */
+async function waitUntil(check: () => Promise<boolean>, timeout = 20_000): Promise<void> {
+  const deadline = Date.now() + timeout
+  while (!(await check())) {
+    if (Date.now() > deadline) throw new Error('Timed out waiting for the condition')
+    await new Promise((resolve) => setTimeout(resolve, 100))
+  }
+}
+
+async function fileIncludes(path: string, text: string): Promise<boolean> {
+  try {
+    return (await readFile(path, 'utf8')).includes(text)
+  } catch {
+    return false
+  }
+}
+
+/**
+ * Runs the command with `--watch`. `stop` calls the SIGINT handler the command registered, and
+ * none registered by anything else.
+ */
+function startWatching() {
+  const otherListeners = new Set(process.listeners('SIGINT'))
+  const promise = testCommand(TypegenGenerateCommand, ['--watch'])
+  const stop = () => {
+    process.listeners('SIGINT').find((listener) => !otherListeners.has(listener))?.('SIGINT')
+  }
+  return {promise, stop}
+}
+
+describe('#typegen:generate --watch with typegen.resources', {timeout: 60 * 1000}, () => {
+  afterEach(() => {
+    cleanAll()
+  })
+
+  test('generates again when a query changes, and not when it writes its own output', async () => {
+    // The output matches the query pattern, as in the App SDK guide.
+    const cwd = await setUpProject({resources: [{...staging, generates: './src/staging/types.ts'}]})
+    const output = join(cwd, 'src', 'staging', 'types.ts')
+
+    const {promise, stop} = startWatching()
+    try {
+      await waitUntil(() => fileIncludes(output, 'BookTitleQueryResult'))
+
+      await writeFile(
+        join(cwd, 'src', 'staging', 'queries.ts'),
+        `${query}\nexport const bookIdsQuery = defineQuery('*[_type == "book"]._id')\n`,
+      )
+      await waitUntil(() => fileIncludes(output, 'BookIdsQueryResult'))
+
+      // A run started by writing the output would write it again about a second later.
+      const {mtimeMs} = await stat(output)
+      await new Promise((resolve) => setTimeout(resolve, 2500))
+      expect((await stat(output)).mtimeMs).toBe(mtimeMs)
+    } finally {
+      stop()
+    }
+
+    const {error, stdout} = await promise
+    if (error) throw error
+    expect(stdout).toContain('change: src/staging/queries.ts')
+    expect(stdout).not.toContain('types.ts')
+  })
+
+  test('picks up a query directory that is removed with its parent and created again', async () => {
+    const cwd = await setUpProject({
+      resources: [{...staging, generates: './staging.types.ts', path: './queries/staging/*.ts'}],
+    })
+    await mkdir(join(cwd, 'queries', 'staging'), {recursive: true})
+    await writeFile(join(cwd, 'queries', 'staging', 'queries.ts'), query)
+    const output = join(cwd, 'staging.types.ts')
+
+    const {promise, stop} = startWatching()
+    try {
+      await waitUntil(() => fileIncludes(output, 'BookTitleQueryResult'))
+
+      // As when switching to a git branch without the directory and back: the file, then each
+      // directory up to `queries`, without pauses. Then wait for the run that the removal starts,
+      // so only a renewed watch can see the directory come back.
+      await unlink(join(cwd, 'queries', 'staging', 'queries.ts'))
+      await rmdir(join(cwd, 'queries', 'staging'))
+      await rmdir(join(cwd, 'queries'))
+      await waitUntil(async () => !(await fileIncludes(output, 'BookTitleQueryResult')))
+
+      await mkdir(join(cwd, 'queries', 'staging'), {recursive: true})
+      await writeFile(
+        join(cwd, 'queries', 'staging', 'queries.ts'),
+        `${query}\nexport const bookIdsQuery = defineQuery('*[_type == "book"]._id')\n`,
+      )
+      await waitUntil(() => fileIncludes(output, 'BookIdsQueryResult'))
+    } finally {
+      stop()
+    }
+
+    const {error} = await promise
+    if (error) throw error
+  })
+
+  test('generates once a local schema file that was missing at startup appears', async () => {
+    const cwd = await setUpProject({resources: [staging]})
+    const schema = await readFile(join(cwd, 'staging.schema.json'), 'utf8')
+    await rm(join(cwd, 'staging.schema.json'))
+    const output = join(cwd, 'src', 'staging.types.ts')
+
+    const {promise, stop} = startWatching()
+    try {
+      await new Promise((resolve) => setTimeout(resolve, 1500))
+      expect(existsSync(output)).toBe(false)
+
+      await writeFile(join(cwd, 'staging.schema.json'), schema)
+      await waitUntil(() => fileIncludes(output, 'BookTitleQueryResult'))
+    } finally {
+      stop()
+    }
+
+    const {error, stderr} = await promise
+    if (error) throw error
+    expect(stderr).toContain('Failed to generate types for "abc123.staging": Schema file not found')
+  })
+
+  test('generates from the schema fetched at startup on every run', async () => {
+    const cwd = await setUpProject({resources: [production, staging]})
+    // Each mock answers one request.
+    mockBinding('abc123', 'production').reply(200, {
+      _meta: {producer: 'api', schemaVersion: 'uEiB-test', source: null, sourceLabel: null},
+      name: 'schema',
+      types: [],
+    })
+    mockApi({
+      apiVersion: SCHEMA_DESCRIPTOR_API_VERSION,
+      uri: '/descriptors/schemas/uEiB-test',
+    }).reply(200, descriptor)
+    const output = join(cwd, 'src', 'production.types.ts')
+
+    const {promise, stop} = startWatching()
+    try {
+      await waitUntil(() => fileIncludes(join(cwd, 'src', 'staging.types.ts'), 'Book'))
+
+      await writeFile(
+        join(cwd, 'src', 'production', 'queries.ts'),
+        `${query}\nexport const bookIdsQuery = defineQuery('*[_type == "book"]._id')\n`,
+      )
+      await waitUntil(() => fileIncludes(output, 'BookIdsQueryResult'))
+    } finally {
+      stop()
+    }
+
+    const {error, stderr} = await promise
+    if (error) throw error
+    expect(pendingMocks()).toEqual([])
+    expect(stderr.match(/Fetched the schema bound to abc123\.production/g)).toHaveLength(1)
+    // Still the fetched schema, in which `title` is required.
+    expect(await readFile(output, 'utf8')).toMatch(/export type Book = \{[^}]*\btitle: string;/)
   })
 })
 
