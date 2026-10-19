@@ -117,3 +117,20 @@ export const conflictIssue: Context.IssueDoc = {
     suggestedFix: 'Choose the correct refund window.',
   },
 }
+
+export const instruction: Context.InstructionDoc = {
+  _createdAt: '2026-08-01T00:00:00Z',
+  _id: 'instruction.def456',
+  _rev: 'rev-1',
+  _type: 'sanity.context.instruction',
+  _updatedAt: '2026-08-01T00:00:00Z',
+  archivedAt: null,
+  archivedReason: null,
+  knowledgeBaseId: 'kb-abc123',
+  origin: 'human',
+  schemaVersion: 1,
+  scopeSources: [{_key: 'source-def456', contentHash: 'hash-1', sourceId: 'source-def456'}],
+  sourceIssueId: null,
+  statement: 'Treat the pricing page as authoritative.',
+  status: 'active',
+}
