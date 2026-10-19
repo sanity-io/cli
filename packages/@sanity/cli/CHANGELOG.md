@@ -1,5 +1,15 @@
 # Change Log
 
+## 8.21.0
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-v8.20.0...cli-v8.21.0)
+
+_2026-10-19_
+
+### Features
+
+- **tokens:** list and delete organization tokens ([#1992](https://github.com/sanity-io/cli/pull/1992)) ([0c842e5](https://github.com/sanity-io/cli/commit/0c842e56b121a82713f657bee0f7df3bb9e9754d))
+
 ## 8.20.0
 
 [Compare changes](https://github.com/sanity-io/cli/compare/cli-v8.19.0...cli-v8.20.0)
