@@ -1,5 +1,15 @@
 # Change Log
 
+## 8.20.0
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-v8.19.0...cli-v8.20.0)
+
+_2026-10-18_
+
+### Features
+
+- add whoami command ([#1993](https://github.com/sanity-io/cli/pull/1993)) ([d5a67b1](https://github.com/sanity-io/cli/commit/d5a67b1bca28962151c5686eed71c149637f199d))
+
 ## 8.19.0
 
 [Compare changes](https://github.com/sanity-io/cli/compare/cli-v8.18.0...cli-v8.19.0)

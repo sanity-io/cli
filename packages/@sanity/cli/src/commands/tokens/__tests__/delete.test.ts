@@ -174,8 +174,8 @@ describe('#tokens:delete', () => {
     expect(stdout).toBe('API token deleted\n')
     expect(select).toHaveBeenCalledWith({
       choices: [
-        {name: 'API Token (editor)', value: 'token-api-123'},
-        {name: 'Read Token (viewer)', value: 'token-read-456'},
+        {name: 'API Token [token-api-123] (editor)', value: 'token-api-123'},
+        {name: 'Read Token [token-read-456] (viewer)', value: 'token-read-456'},
       ],
       message: 'Select token to delete:',
     })
@@ -205,7 +205,9 @@ describe('#tokens:delete', () => {
     const {stdout} = await testCommand(DeleteTokensCommand, [], {mocks: defaultMocks})
     expect(stdout).toBe('API token deleted\n')
     expect(select).toHaveBeenCalledWith({
-      choices: [{name: 'Multi Role Token (editor, viewer)', value: 'token-multi-123'}],
+      choices: [
+        {name: 'Multi Role Token [token-multi-123] (editor, viewer)', value: 'token-multi-123'},
+      ],
       message: 'Select token to delete:',
     })
   })
@@ -234,7 +236,7 @@ describe('#tokens:delete', () => {
     const {stdout} = await testCommand(DeleteTokensCommand, [], {mocks: defaultMocks})
     expect(stdout).toBe('API token deleted\n')
     expect(select).toHaveBeenCalledWith({
-      choices: [{name: 'No Role Token ()', value: 'token-no-role-123'}],
+      choices: [{name: 'No Role Token [token-no-role-123] (No roles)', value: 'token-no-role-123'}],
       message: 'Select token to delete:',
     })
   })
@@ -343,5 +345,190 @@ describe('#tokens:delete', () => {
     expect(error).toBeInstanceOf(Error)
     expect(error?.message).toContain('Token deletion failed')
     expect(error?.oclif?.exit).toBe(1)
+  })
+  describe('organization scope', () => {
+    const orgToken: Robot = {
+      ...TEST_ROBOTS.API_TOKEN,
+      managedBy: {resourceId: 'org-1', resourceType: 'organization'},
+      memberships: [
+        {
+          resourceId: 'org-1',
+          resourceType: 'organization',
+          roleNames: ['knowledge-base-viewer-robot'],
+        },
+        {resourceId: 'abc123', resourceType: 'project', roleNames: ['viewer']},
+      ],
+    }
+
+    test('deletes by ID unattended without project config or prompts', async () => {
+      const {confirm, select} = await import('@sanity/cli-core/ux')
+      mockApi({
+        apiVersion: TOKENS_API_VERSION,
+        uri: '/access/organization/org-1/robots/token-api-123',
+      }).reply(200, orgToken)
+      mockApi({
+        apiVersion: TOKENS_API_VERSION,
+        method: 'delete',
+        uri: '/access/organization/org-1/robots/token-api-123',
+      }).reply(204)
+      const {error, stdout} = await testCommand(
+        DeleteTokensCommand,
+        ['token-api-123', '--organization', 'org-1', '--yes'],
+        {mocks: {...defaultMocks, cliConfig: {}, isInteractive: false}},
+      )
+      expect(error).toBeUndefined()
+      expect(stdout).toBe('API token deleted\n')
+      expect(confirm).not.toHaveBeenCalled()
+      expect(select).not.toHaveBeenCalled()
+    })
+
+    test('selects only organization-managed tokens and confirms revocation of all access', async () => {
+      const {confirm, select} = await import('@sanity/cli-core/ux')
+      vi.mocked(select).mockResolvedValue(orgToken.id)
+      vi.mocked(confirm).mockResolvedValue(true)
+      mockApi({
+        apiVersion: TOKENS_API_VERSION,
+        query: {includeChildren: 'true', limit: '500'},
+        uri: '/access/organization/org-1/robots',
+      }).reply(
+        200,
+        robotsPage([
+          orgToken,
+          {
+            ...TEST_ROBOTS.READ_TOKEN,
+            managedBy: {resourceId: testProjectId, resourceType: 'project'},
+          },
+        ]),
+      )
+      mockApi({
+        apiVersion: TOKENS_API_VERSION,
+        uri: '/access/organization/org-1/robots/token-api-123',
+      }).reply(200, orgToken)
+      mockApi({
+        apiVersion: TOKENS_API_VERSION,
+        method: 'delete',
+        uri: '/access/organization/org-1/robots/token-api-123',
+      }).reply(204)
+      const {error, stdout} = await testCommand(DeleteTokensCommand, ['--organization', 'org-1'], {
+        mocks: defaultMocks,
+      })
+      expect(error).toBeUndefined()
+      expect(stdout).toBe('API token deleted\n')
+      expect(select).toHaveBeenCalledWith({
+        choices: [
+          {
+            name: 'API Token [token-api-123] (Context: Viewer; project:abc123: viewer)',
+            value: orgToken.id,
+          },
+        ],
+        message: 'Select token to delete:',
+      })
+      expect(confirm).toHaveBeenCalledWith({
+        default: false,
+        message:
+          'Delete API token "token-api-123" from organization "org-1"? This revokes all of its organization and project access.',
+      })
+    })
+
+    test('cancels organization deletion', async () => {
+      const {confirm} = await import('@sanity/cli-core/ux')
+      vi.mocked(confirm).mockResolvedValue(false)
+      const {error, stdout} = await testCommand(
+        DeleteTokensCommand,
+        ['token-api-123', '--organization', 'org-1'],
+        {mocks: defaultMocks},
+      )
+      expect(error?.oclif?.exit).toBe(3)
+      expect(stdout).toBe('API token not deleted\n')
+    })
+
+    test('reports an empty organization list', async () => {
+      mockApi({
+        apiVersion: TOKENS_API_VERSION,
+        query: {includeChildren: 'true', limit: '500'},
+        uri: '/access/organization/org-1/robots',
+      }).reply(200, robotsPage([]))
+      const {error} = await testCommand(DeleteTokensCommand, ['--organization', 'org-1'], {
+        mocks: defaultMocks,
+      })
+      expect(error?.message).toBe('No API tokens found for this organization.')
+      expect(error?.oclif?.exit).toBe(1)
+    })
+
+    test('reports organization list permissions', async () => {
+      mockApi({
+        apiVersion: TOKENS_API_VERSION,
+        query: {includeChildren: 'true', limit: '500'},
+        uri: '/access/organization/org-1/robots',
+      }).reply(403, {message: 'Forbidden'})
+      const {error} = await testCommand(DeleteTokensCommand, ['--organization', 'org-1'], {
+        mocks: defaultMocks,
+      })
+      expect(error?.message).toContain('Check the organization ID and your access permissions')
+      expect(error?.oclif?.exit).toBe(1)
+    })
+
+    test('reports a missing token from the ownership lookup', async () => {
+      mockApi({
+        apiVersion: TOKENS_API_VERSION,
+        uri: '/access/organization/org-1/robots/token-api-123',
+      }).reply(404, {message: 'Token not found'})
+      const {error} = await testCommand(
+        DeleteTokensCommand,
+        ['token-api-123', '--organization', 'org-1', '--yes'],
+        {mocks: defaultMocks},
+      )
+      expect(error?.message).toContain('Token with ID "token-api-123" not found')
+      expect(error?.oclif?.exit).toBe(1)
+    })
+
+    test('rejects a project-managed token by ID even when the organization endpoint returns it', async () => {
+      mockApi({
+        apiVersion: TOKENS_API_VERSION,
+        uri: '/access/organization/org-1/robots/token-api-123',
+      }).reply(200, {
+        ...orgToken,
+        managedBy: {resourceId: testProjectId, resourceType: 'project'},
+      })
+      const {error, stdout} = await testCommand(
+        DeleteTokensCommand,
+        ['token-api-123', '--organization', 'org-1', '--yes'],
+        {mocks: defaultMocks},
+      )
+      expect(error?.message).toContain(
+        'Token "token-api-123" is not managed by organization "org-1"',
+      )
+      expect(error?.message).toContain('tokens list --organization org-1')
+      expect(error?.oclif?.exit).toBe(1)
+      expect(stdout).not.toContain('API token deleted')
+    })
+
+    test('rejects conflicting scopes', async () => {
+      const {error} = await testCommand(
+        DeleteTokensCommand,
+        ['token-api-123', '--organization', 'org-1', '--project-id', 'abc123', '--yes'],
+        {mocks: defaultMocks},
+      )
+      expect(error?.message).toContain('cannot also be provided')
+      expect(error?.oclif?.exit).toBe(2)
+    })
+
+    test('requires ID and confirmation in unattended organization mode', async () => {
+      const {confirm, select} = await import('@sanity/cli-core/ux')
+      const {error} = await testCommand(DeleteTokensCommand, ['--organization', 'org-1', '--yes'], {
+        mocks: {...defaultMocks, isInteractive: false},
+      })
+      expect(error?.message).toContain('Token ID is required')
+      expect(error?.oclif?.exit).toBe(2)
+      const missingYes = await testCommand(
+        DeleteTokensCommand,
+        ['token-api-123', '--organization', 'org-1'],
+        {mocks: {...defaultMocks, isInteractive: false}},
+      )
+      expect(missingYes.error?.message).toContain('Missing required flag yes')
+      expect(missingYes.error?.oclif?.exit).toBe(2)
+      expect(confirm).not.toHaveBeenCalled()
+      expect(select).not.toHaveBeenCalled()
+    })
   })
 })

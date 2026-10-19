@@ -213,6 +213,24 @@ describe('invokeSanityCli', () => {
     }
   })
 
+  test('whoami reports the invocation token user without touching host config', async () => {
+    mockApi({apiVersion: USERS_API_VERSION, uri: '/users/me'})
+      .matchHeader('authorization', 'Bearer user-token')
+      .reply(200, {email: 'jane@example.com', id: 'pUser123', name: 'Jane Doe', provider: 'github'})
+
+    const result = await invoke({args: 'whoami --json', config, source: 'mcp', token: 'user-token'})
+
+    expect(result.commandId).toBe('whoami')
+    expect(result.exitCode).toBe(0)
+    expect(JSON.parse(result.output)).toEqual({
+      email: 'jane@example.com',
+      id: 'pUser123',
+      name: 'Jane Doe',
+      provider: 'github',
+      tokenSource: 'CLI execution context',
+    })
+  })
+
   test('an empty table renders as a message rather than an empty result', async () => {
     mockApi({
       apiVersion: PROJECTS_API_VERSION,

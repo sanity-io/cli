@@ -1,19 +1,24 @@
 import {exitCodes, SanityCommand, subdebug} from '@sanity/cli-core'
 import {getErrorMessage} from '@sanity/cli-core/errors'
 
+import {formatTokenAccess} from '../../actions/tokens/formatTokenAccess.js'
 import {type Robot} from '../../actions/tokens/types.js'
-import {promptForProject} from '../../prompts/promptForProject.js'
-import {getProjectMembership, getTokens} from '../../services/tokens.js'
+import {getTokens} from '../../services/tokens.js'
+import {resolveTokenScope} from '../../util/resolveTokenScope.js'
 import {Table} from '../../util/responsiveTable.js'
-import {getProjectIdFlag} from '../../util/sharedFlags.js'
+import {getOrganizationFlag, getProjectIdFlag} from '../../util/sharedFlags.js'
 
 const listTokenDebug = subdebug('tokens:list')
 
 export class TokensListCommand extends SanityCommand<typeof TokensListCommand> {
-  static override description = 'List API tokens for the project'
+  static override description = 'List API tokens for a project or organization'
   static override enableJsonFlag = true
 
   static override examples = [
+    {
+      command: '<%= config.bin %> <%= command.id %> --organization org123',
+      description: 'List tokens managed by an organization',
+    },
     {
       command: '<%= config.bin %> <%= command.id %>',
       description: 'List tokens for the project',
@@ -28,6 +33,11 @@ export class TokensListCommand extends SanityCommand<typeof TokensListCommand> {
     },
   ]
   static override flags = {
+    ...getOrganizationFlag({
+      description: 'List tokens managed by this organization',
+      exclusive: ['project-id'],
+      semantics: 'specify',
+    }),
     ...getProjectIdFlag({
       description: 'Project ID to list tokens for',
       semantics: 'override',
@@ -41,20 +51,18 @@ export class TokensListCommand extends SanityCommand<typeof TokensListCommand> {
     const {json} = flags
     const outputJson = json ?? false
 
-    // Ensure we have project context
-    const projectId = await this.getProjectId({
-      fallback: () =>
-        promptForProject({
-          requiredPermissions: [{grant: 'read', permission: 'sanity.project.tokens'}],
-        }),
+    const scope = await resolveTokenScope({
+      getProjectId: this.getProjectId.bind(this),
+      grant: 'read',
+      organization: flags.organization,
     })
 
     let tokens: Robot[]
     try {
-      tokens = await getTokens(projectId)
+      tokens = await getTokens(scope)
     } catch (error) {
       const message = getErrorMessage(error)
-      listTokenDebug(`Error fetching tokens for project ${projectId}`, error)
+      listTokenDebug(`Error fetching tokens for ${scope.resourceType} ${scope.resourceId}`, error)
       this.error(`Token list retrieval failed:\n${message}`, {exit: exitCodes.RUNTIME_ERROR})
     }
 
@@ -64,7 +72,7 @@ export class TokensListCommand extends SanityCommand<typeof TokensListCommand> {
     }
 
     if (tokens.length === 0) {
-      this.log('No API tokens found for this project.')
+      this.log(`No API tokens found for this ${scope.resourceType}.`)
       return
     }
 
@@ -72,14 +80,18 @@ export class TokensListCommand extends SanityCommand<typeof TokensListCommand> {
       columns: [
         {alignment: 'left', name: 'label', title: 'Label'},
         {alignment: 'left', name: 'id', title: 'ID'},
-        {alignment: 'left', name: 'roles', title: 'Roles'},
+        {
+          alignment: 'left',
+          name: 'roles',
+          title: scope.resourceType === 'organization' ? 'Access' : 'Roles',
+        },
         {alignment: 'left', name: 'expires', title: 'Expires'},
       ],
       title: `Found ${tokens.length} API tokens`,
     })
 
     for (const token of tokens) {
-      const roles = getProjectMembership(token, projectId)?.roleNames.join(', ') || 'No roles'
+      const roles = formatTokenAccess(token, scope)
 
       table.addRow({
         expires: token.expiresAt ? token.expiresAt.slice(0, 10) : 'Never',
