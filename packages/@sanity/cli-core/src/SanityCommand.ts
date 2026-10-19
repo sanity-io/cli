@@ -27,6 +27,7 @@ import {type CLITelemetryStore} from './telemetry/types.js'
 import {type Output} from './types.js'
 import {isInteractive} from './util/isInteractive.js'
 import {isUnattendedInvocation, isUnattended as resolveIsUnattended} from './util/isUnattended.js'
+import {hasJsonFlagInArgv, toRelayableErrorJson} from './util/jsonInvocation.js'
 
 type Flags<T extends typeof Command> = Interfaces.InferredFlags<
   (typeof SanityCommand)['baseFlags'] & T['flags']
@@ -294,36 +295,21 @@ export abstract class SanityCommand<T extends typeof Command>
     })
   }
 
+  /**
+   * Whether this run should emit JSON, resolved before `parse()` so that error
+   * paths reached during parsing agree with the ones reached during `run()`.
+   *
+   * oclif's own check also treats `SANITY_CONTENT_TYPE=json` as a request for
+   * JSON. That reads the host process's environment, so it is consulted only
+   * for a real command line: a programmatic invocation must decide from its own
+   * arguments, never from whatever the embedding process happens to export.
+   */
   public override jsonEnabled(): boolean {
-    if (super.jsonEnabled()) return true
     if (!this.ctor.enableJsonFlag) return false
+    if (!getCliExecutionContext() && super.jsonEnabled()) return true
     if (this.flags?.json) return true
 
-    const definitions = {...this.ctor.baseFlags, ...this.ctor.flags}
-    if (definitions.json?.char !== 'j') return false
-
-    for (let index = 0; index < this.argv.length; index++) {
-      const argument = this.argv[index]
-      if (argument === '--') break
-      if (argument.startsWith('--')) {
-        if (!argument.includes('=') && definitions[argument.slice(2)]?.type === 'option') index++
-        continue
-      }
-      if (!argument.startsWith('-')) continue
-      const characters = argument.slice(1)
-      for (let offset = 0; offset < characters.length; offset++) {
-        const flag = Object.entries(definitions).find(
-          ([, value]) => value.char === characters[offset],
-        )
-        if (!flag) break
-        if (flag[0] === 'json') return true
-        if (flag[1].type === 'option') {
-          if (offset === characters.length - 1) index++
-          break
-        }
-      }
-    }
-    return false
+    return hasJsonFlagInArgv(this.argv, {...this.ctor.baseFlags, ...this.ctor.flags})
   }
 
   /**
@@ -410,8 +396,14 @@ export abstract class SanityCommand<T extends typeof Command>
     return this._run<TResult>()
   }
 
+  /**
+   * A command-specific report wins; otherwise oclif's envelope, trimmed to a
+   * bounded set of properties when a programmatic caller will relay it. See
+   * {@link toRelayableErrorJson} for why the untrimmed form is unsafe there.
+   */
   public override toErrorJson(err: unknown): unknown {
     if (err instanceof JsonOutputError) return err.payload
+    if (getCliExecutionContext()) return toRelayableErrorJson(err)
     return super.toErrorJson(err)
   }
 

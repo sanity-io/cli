@@ -64,8 +64,13 @@ function deployOptions({
   } as unknown as DeployAppOptions
 }
 
+/** The `--json` envelope the deploy emitted, which stdout receives verbatim. */
 function deployedPayload(output: Output) {
-  return JSON.parse(vi.mocked(output.log).mock.calls.at(-1)![0] as string)
+  return vi.mocked(output.logJson).mock.calls.at(-1)![0] as {
+    action: string
+    application: Record<string, unknown>
+    payload: Record<string, unknown>
+  }
 }
 
 beforeEach(() => {

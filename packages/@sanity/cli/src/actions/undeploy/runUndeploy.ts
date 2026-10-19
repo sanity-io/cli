@@ -16,7 +16,6 @@ import {
   createCollectingReporter,
   createFailFastReporter,
 } from '../../util/checks.js'
-import {outputJson} from '../../util/outputJson.js'
 import {toStderrOutput} from '../../util/toStderrOutput.js'
 import {
   describeUndeployTarget,
@@ -60,7 +59,7 @@ export async function runUndeploy(
 ): Promise<void> {
   const {flags, output} = options
   const json = !!flags.json
-  const emitJson = (payload: unknown) => outputJson(output, payload)
+  const emitJson = (payload: unknown) => output.logJson(payload)
   let failurePayload: unknown
 
   // The JSON payload owns stdout, so the run's progress logs go to stderr; only

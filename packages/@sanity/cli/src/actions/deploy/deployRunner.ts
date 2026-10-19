@@ -4,7 +4,6 @@ import {getErrorMessage, JsonOutputError} from '@sanity/cli-core/errors'
 import {type WorkbenchDeployPayload} from '@sanity/workbench-cli/deploy'
 
 import {createCollectingReporter, createFailFastReporter} from '../../util/checks.js'
-import {outputJson} from '../../util/outputJson.js'
 import {toStderrOutput} from '../../util/toStderrOutput.js'
 import {type DeployCheck, type DeployCheckReporter, type DeployTarget} from './deployChecks.js'
 import {deployDebug} from './deployDebug.js'
@@ -60,7 +59,7 @@ export interface DeploySpec {
 export async function runDeploy(options: DeployAppOptions, spec: DeploySpec): Promise<void> {
   const {output} = options
   const json = !!options.flags.json
-  const emitJson = (payload: unknown) => outputJson(output, payload)
+  const emitJson = (payload: unknown) => output.logJson(payload)
   let failurePayload: unknown
 
   // The JSON payload owns stdout, so the run's progress logs go to stderr; only

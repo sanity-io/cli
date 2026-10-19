@@ -93,6 +93,7 @@ function createTestContext(): InitContext {
       // vi.fn() satisfies the mock here.
       error: vi.fn() as unknown as InitContext['output']['error'],
       log: vi.fn(),
+      logJson: vi.fn(),
       warn: vi.fn(),
     },
     telemetry: {
@@ -100,6 +101,7 @@ function createTestContext(): InitContext {
         complete: vi.fn(),
         error: vi.fn(),
         log: vi.fn(),
+        logJson: vi.fn(),
         newContext: vi.fn().mockReturnValue(vi.fn()),
         start: vi.fn(),
       }),

@@ -36,6 +36,7 @@ import {
 } from '@sanity/cli-core/commandPolicy'
 import {runWithCliExecutionContext, type SanityEnvironment} from '@sanity/cli-core/executionContext'
 import {type SanityCommand} from '@sanity/cli-core/SanityCommand'
+import {hasJsonFlagInArgv, toRelayableErrorJson} from '@sanity/cli-core/util'
 import {type FetchFunction} from 'get-it'
 import {parseArgsStringToArgv} from 'string-argv'
 
@@ -44,10 +45,7 @@ import {resolveCommandPolicies} from './commandPolicies/index.js'
 import {isHelpRequest, renderInvokableHelp} from './help.js'
 import {prettyPrintError} from './prettyPrintError.js'
 
-type InvokableCommand = Pick<
-  SanityCommand<typeof Command>,
-  'jsonEnabled' | 'runInExecutionContext' | 'toErrorJson'
->
+type InvokableCommand = Pick<SanityCommand<typeof Command>, 'runInExecutionContext'>
 
 /**
  * Whether a command can run in isolation, which in practice means it extends
@@ -61,14 +59,12 @@ type InvokableCommand = Pick<
  * assumes.
  */
 function supportsIsolatedExecution(CommandClass: Command.Class): boolean {
-  const prototype = CommandClass.prototype as
-    | Partial<Pick<InvokableCommand, 'runInExecutionContext'>>
-    | undefined
+  const prototype = CommandClass.prototype as Partial<InvokableCommand> | undefined
   return typeof prototype?.runInExecutionContext === 'function'
 }
 
 /**
- * Instantiate a command for isolated execution.
+ * Instantiate a policy-approved command for isolated execution.
  *
  * `runInExecutionContext()` runs the instance without oclif's static
  * `Command.run()` — the static runner re-enters `Config.load()` (filesystem
@@ -100,6 +96,15 @@ function loadCliCommandConfig(): Promise<Config> {
 }
 
 let cachedConfig: Promise<Config> | undefined
+
+/**
+ * Serialize a failure the way a command's own `--json` output would, matching
+ * the indentation `SanityCommand.logJson` uses so that every JSON result this
+ * function returns looks the same regardless of which stage produced it.
+ */
+function toRelayableJson(err: unknown): string {
+  return JSON.stringify(toRelayableErrorJson(err), null, 2)
+}
 
 function unknownCommandResult(argv: string[], policySet: CommandPolicySet): InvokeSanityCliResult {
   const available = Object.entries(policySet)
@@ -280,16 +285,11 @@ async function invokeSanityCliInContext(
   // like every other fail-closed path here.
   if (!supportsIsolatedExecution(CommandClass)) return unknownCommandResult(argv, policySet)
 
-  let command: InvokableCommand
-  try {
-    command = instantiateCommand(CommandClass, commandArgv, resolvedConfig)
-  } catch (err) {
-    return {
-      commandId,
-      exitCode: err.oclif?.exit ?? exitCodes.RUNTIME_ERROR,
-      output: prettyPrintError(err) || String(err),
-    }
-  }
+  // Resolved from argv rather than from a command instance, so that nothing is
+  // constructed before the policy has approved the invocation.
+  const wantsJson =
+    CommandClass.enableJsonFlag === true &&
+    hasJsonFlagInArgv(commandArgv, {...CommandClass.baseFlags, ...CommandClass.flags})
 
   // Parse with the command's real definitions (without executing anything) so
   // conditional policies are evaluated against typed args/flags, not tokens.
@@ -309,11 +309,10 @@ async function invokeSanityCliInContext(
       flags: parsed.flags as Record<string, unknown>,
     }
   } catch (err) {
-    const message = err instanceof Error ? err.message : String(err)
     return {
       commandId,
       exitCode: exitCodes.USAGE_ERROR,
-      output: command.jsonEnabled() ? JSON.stringify(command.toErrorJson(err), null, 2) : message,
+      output: wantsJson ? toRelayableJson(err) : err instanceof Error ? err.message : String(err),
     }
   }
 
@@ -333,13 +332,20 @@ async function invokeSanityCliInContext(
     return {
       commandId,
       exitCode: exitCodes.USAGE_ERROR,
-      output: command.jsonEnabled()
-        ? JSON.stringify(
-            command.toErrorJson(new CLIError(output, {exit: exitCodes.USAGE_ERROR})),
-            null,
-            2,
-          )
+      output: wantsJson
+        ? toRelayableJson(new CLIError(output, {exit: exitCodes.USAGE_ERROR}))
         : output,
+    }
+  }
+
+  let command: InvokableCommand
+  try {
+    command = instantiateCommand(CommandClass, commandArgv, resolvedConfig)
+  } catch (err) {
+    return {
+      commandId,
+      exitCode: err.oclif?.exit ?? exitCodes.RUNTIME_ERROR,
+      output: wantsJson ? toRelayableJson(err) : prettyPrintError(err) || String(err),
     }
   }
 
@@ -354,8 +360,18 @@ async function invokeSanityCliInContext(
       return {commandId, exitCode: exitCodes.SUCCESS, output: output.join('\n')}
     }
 
-    const message = prettyPrintError(err) || String(err)
-    if (message && !command.jsonEnabled()) output.push(message)
+    if (wantsJson) {
+      // The command's own `catch` emits the JSON body, so the pretty-printed
+      // message is dropped: appending it would corrupt the payload. Nothing
+      // emitted at all means the failure bypassed that path (a bare
+      // `this.exit(n)` throws before it), and the caller is owed parseable
+      // output regardless.
+      if (output.length === 0) output.push(toRelayableJson(err))
+    } else {
+      const message = prettyPrintError(err) || String(err)
+      if (message) output.push(message)
+    }
+
     return {
       commandId,
       exitCode: typeof exit === 'number' ? exit : exitCodes.RUNTIME_ERROR,

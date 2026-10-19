@@ -40,6 +40,7 @@ const mockGetPartialEnvWithNpmPath = vi.mocked(getPartialEnvWithNpmPath)
 const mockOutput: Output = {
   error: vi.fn() as never,
   log: vi.fn(),
+  logJson: vi.fn(),
   warn: vi.fn(),
 }
 

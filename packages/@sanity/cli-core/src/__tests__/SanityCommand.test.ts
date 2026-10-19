@@ -472,12 +472,13 @@ describe('JSON command output', () => {
   })
 
   test('environment-selected JSON mode reaches parsed flags', async () => {
+    let observed: {json: unknown; unattended: boolean} | undefined
     class EnvCommand extends SanityCommand<typeof EnvCommand> {
       static override enableJsonFlag = true
       public override async run(): Promise<void> {
         const {flags} = await this.parse(EnvCommand)
-        expect(flags.json).toBe(true)
-        expect(this.isUnattended()).toBe(true)
+        this.flags = flags as typeof this.flags
+        observed = {json: flags.json, unattended: this.isUnattended()}
       }
     }
     const config = await Config.load()
@@ -485,7 +486,34 @@ describe('JSON command output', () => {
       .spyOn(config, 'scopedEnvVar')
       .mockImplementation((key) => (key === 'CONTENT_TYPE' ? 'json' : undefined))
     try {
-      await runWithCliExecutionContext({}, () => new EnvCommand([], config).runInExecutionContext())
+      await new EnvCommand([], config).run()
+      expect(observed).toEqual({json: true, unattended: true})
+    } finally {
+      env.mockRestore()
+    }
+  })
+
+  /**
+   * `SANITY_CONTENT_TYPE` belongs to whatever process is embedding the CLI. A
+   * programmatic invocation decides from its own argv, so that a host which
+   * happens to export the variable cannot reshape output for every caller.
+   */
+  test('ignores the environment under an execution context, but still honours argv', async () => {
+    class EnvCommand extends SanityCommand<typeof EnvCommand> {
+      static override enableJsonFlag = true
+      public override async run(): Promise<void> {}
+    }
+    const config = await Config.load()
+    const env = vi
+      .spyOn(config, 'scopedEnvVar')
+      .mockImplementation((key) => (key === 'CONTENT_TYPE' ? 'json' : undefined))
+    try {
+      expect(new EnvCommand([], config).jsonEnabled()).toBe(true)
+
+      await runWithCliExecutionContext({}, () => {
+        expect(new EnvCommand([], config).jsonEnabled()).toBe(false)
+        expect(new EnvCommand(['--json'], config).jsonEnabled()).toBe(true)
+      })
     } finally {
       env.mockRestore()
     }

@@ -468,6 +468,66 @@ describe('invokeSanityCli', () => {
     })
   })
 
+  /**
+   * oclif's error JSON spreads every enumerable own property, which for a
+   * parser error means the whole parser input — each flag definition, the
+   * command, and its oclif config — and for an API error the entire HTTP
+   * response. A host relays this straight to a model, so it stays bounded.
+   */
+  test('JSON failures stay small and carry no parser or transport internals', async () => {
+    mockApi({
+      apiVersion: 'v2026-08-25',
+      query: {organizationId: 'org-1'},
+      uri: '/context/knowledge-bases',
+    }).reply(403, {error: 'Forbidden', message: 'Access denied', statusCode: 403})
+
+    const [parserFailure, runtimeFailure] = [
+      await invoke({args: 'context list --json --not-a-flag', config, source: 'mcp', token: 't'}),
+      await invoke({
+        args: 'context list --organization org-1 --json',
+        config,
+        source: 'mcp',
+        token: 'user-token',
+      }),
+    ]
+
+    for (const {output} of [parserFailure, runtimeFailure]) {
+      expect(Object.keys(JSON.parse(output).error).toSorted()).toEqual(
+        expect.not.arrayContaining(['parse', 'response', 'responseBody']),
+      )
+      expect(output.length).toBeLessThan(1024)
+    }
+  })
+
+  /**
+   * `SANITY_CONTENT_TYPE` is oclif's own opt-in to JSON output, read straight
+   * from the environment. That environment belongs to the embedding process,
+   * so it must not decide the shape of a programmatic result.
+   */
+  test('ignores the host environment when choosing an output format', async () => {
+    vi.stubEnv('SANITY_CONTENT_TYPE', 'json')
+    mockApi({
+      apiVersion: 'v2026-08-25',
+      query: {organizationId: 'org-1'},
+      uri: '/context/knowledge-bases',
+    }).reply(200, {data: [{id: 'kb-1', title: 'Docs'}], nextCursor: null})
+
+    try {
+      const result = await invoke({
+        args: 'context list --organization org-1',
+        config,
+        source: 'mcp',
+        token: 'user-token',
+      })
+
+      expect(result.exitCode).toBe(0)
+      expect(() => JSON.parse(result.output)).toThrow()
+      expect(result.output).toContain('Docs')
+    } finally {
+      vi.stubEnv('SANITY_CONTENT_TYPE', '')
+    }
+  })
+
   test('reports invalid flags as a usage error', async () => {
     const result = await invoke({
       args: 'cors list --no-such-flag',

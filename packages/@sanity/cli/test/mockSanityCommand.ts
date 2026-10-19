@@ -28,6 +28,7 @@ export function createMockSanityCommand() {
       output: Output = {
         error: mocks.SanityCmdOutputError,
         log: mocks.SanityCmdOutputLog,
+        logJson: mocks.SanityCmdOutputLogJson,
         warn: mocks.SanityCmdOutputWarn,
       }
       public exit(code?: number) {

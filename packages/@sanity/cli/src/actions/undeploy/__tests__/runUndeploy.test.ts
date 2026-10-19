@@ -19,7 +19,12 @@ import {
 
 vi.mock('@sanity/cli-core/ux', async () => import('@sanity/cli-test/mocks/cli-core/ux'))
 
-const mockOutput = () => ({error: vi.fn(), log: vi.fn(), warn: vi.fn()}) as unknown as Output
+const mockOutput = () =>
+  ({error: vi.fn(), log: vi.fn(), logJson: vi.fn(), warn: vi.fn()}) as unknown as Output
+
+/** The JSON payload the run emitted, which `--json` sends to stdout verbatim. */
+const lastJson = <T = unknown>(output: Output): T =>
+  vi.mocked(output.logJson).mock.calls.at(-1)![0] as T
 
 const options = (output: Output, flags: Partial<UndeployOptions['flags']> = {}): UndeployOptions =>
   ({
@@ -242,9 +247,9 @@ describe('runUndeploy --json', () => {
     const output = mockOutput()
     await runUndeploy(options(output, {'dry-run': true, json: true}), adapter())
 
-    const logged = vi.mocked(output.log).mock.calls.map((call) => String(call[0]))
-    expect(logged).toHaveLength(1)
-    const payload = JSON.parse(logged[0]!)
+    expect(output.log).not.toHaveBeenCalled()
+    expect(vi.mocked(output.logJson).mock.calls).toHaveLength(1)
+    const payload = lastJson<{canUndeploy: boolean; payload: {appId: string}}>(output)
     expect(payload.canUndeploy).toBe(true)
     expect(payload.payload.appId).toBe('app-1')
   })
@@ -253,7 +258,7 @@ describe('runUndeploy --json', () => {
     const output = mockOutput()
     await runUndeploy(options(output, {json: true, yes: true}), adapter())
 
-    const payload = JSON.parse(String(vi.mocked(output.log).mock.calls.at(-1)![0]))
+    const payload = lastJson<{payload: {appId: string}; undeployed: boolean}>(output)
     expect(payload.undeployed).toBe(true)
     expect(payload.payload.appId).toBe('app-1')
   })
@@ -288,7 +293,7 @@ describe('runUndeploy --json', () => {
       }),
     )
 
-    const payload = JSON.parse(String(vi.mocked(output.log).mock.calls.at(-1)![0]))
+    const payload = lastJson<{application: {summary: string}}>(output)
     expect(payload.application.summary).toBe('from the server')
   })
 
@@ -299,8 +304,7 @@ describe('runUndeploy --json', () => {
       adapter({resolveTarget: async () => ({message: 'No application ID provided', type: 'none'})}),
     )
 
-    const payload = JSON.parse(String(vi.mocked(output.log).mock.calls.at(-1)![0]))
-    expect(payload).toEqual({
+    expect(lastJson(output)).toEqual({
       application: null,
       payload: null,
       reason: 'No application ID provided',

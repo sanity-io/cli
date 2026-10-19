@@ -43,6 +43,7 @@ describe('SchemaError', () => {
     const output: Output = {
       error: vi.fn() as unknown as Output['error'],
       log: vi.fn(),
+      logJson: vi.fn(),
       warn: vi.fn(),
     }
 
@@ -66,6 +67,7 @@ describe('SchemaError', () => {
     const output: Output = {
       error: vi.fn() as unknown as Output['error'],
       log: vi.fn(),
+      logJson: vi.fn(),
       warn: vi.fn(),
     }
 

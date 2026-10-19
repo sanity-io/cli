@@ -5,7 +5,12 @@ import {describe, expect, test, vi} from 'vitest'
 import {type DeploySpec, runDeploy} from '../deployRunner.js'
 import {type DeployAppOptions} from '../types.js'
 
-const mockOutput = () => ({error: vi.fn(), log: vi.fn(), warn: vi.fn()}) as unknown as Output
+const mockOutput = () =>
+  ({error: vi.fn(), log: vi.fn(), logJson: vi.fn(), warn: vi.fn()}) as unknown as Output
+
+/** The JSON payload the run emitted, which `--json` sends to stdout verbatim. */
+const lastJson = <T = unknown>(output: Output): T =>
+  vi.mocked(output.logJson).mock.calls.at(-1)![0] as T
 
 const dryRunOptions = (output: Output): DeployAppOptions =>
   ({
@@ -77,8 +82,7 @@ describe('runDeploy dry run', () => {
       spec,
     )
 
-    const payload = JSON.parse(vi.mocked(output.log).mock.calls.at(-1)![0] as string)
-    expect(payload.payload.version).toBe('9.9.9')
+    expect(lastJson<{payload: {version: string}}>(output).payload.version).toBe('9.9.9')
   })
 
   test('a blocked --json dry run prints the plan only, never a deploy envelope', async () => {
@@ -102,7 +106,7 @@ describe('runDeploy dry run', () => {
     ).rejects.toMatchObject({
       payload: {canDeploy: false},
     })
-    expect(output.log).not.toHaveBeenCalled()
+    expect(output.logJson).not.toHaveBeenCalled()
   })
 })
 
@@ -129,8 +133,7 @@ describe('runDeploy real deploy', () => {
 
     await runDeploy({...dryRunOptions(output), flags: {json: true}} as DeployAppOptions, spec)
 
-    const payload = JSON.parse(vi.mocked(output.log).mock.calls.at(-1)![0] as string)
-    expect(payload).toEqual({deployed: true, reason: null, ...result})
+    expect(lastJson(output)).toEqual({deployed: true, reason: null, ...result})
   })
 
   test('a plain deploy emits no workbench-only keys', async () => {
@@ -146,7 +149,7 @@ describe('runDeploy real deploy', () => {
 
     await runDeploy({...dryRunOptions(output), flags: {json: true}} as DeployAppOptions, spec)
 
-    const payload = JSON.parse(vi.mocked(output.log).mock.calls.at(-1)![0] as string)
+    const payload = lastJson<{payload: Record<string, unknown>}>(output)
     for (const key of ['views', 'services', 'config', 'installationId']) {
       expect(payload.payload).not.toHaveProperty(key)
     }

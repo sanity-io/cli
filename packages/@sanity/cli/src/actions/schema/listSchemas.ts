@@ -6,7 +6,6 @@ import {logSymbols} from '@sanity/cli-core/ux'
 import {type Workspace} from 'sanity'
 
 import {getSchemas} from '../../services/schemas.js'
-import {outputJson} from '../../util/outputJson.js'
 import {Table} from '../../util/responsiveTable.js'
 import {isDefined} from './schemaTypeHelpers.js'
 import {type UniqWorkspaceWorkerData} from './types.js'
@@ -59,7 +58,7 @@ export async function listSchemas(options: ListSchemasOptions): Promise<void> {
   }
 
   if (json) {
-    outputJson(output, id ? parsedSchemas[0] : parsedSchemas)
+    output.logJson(id ? parsedSchemas[0] : parsedSchemas)
   } else {
     printSchemas({output, schemas: parsedSchemas, workspaces: projectDatasets})
   }

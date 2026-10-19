@@ -25,6 +25,7 @@ function editor(name: Editor['name']): Editor {
 const mockOutput = {
   error: vi.fn() as never,
   log: vi.fn(),
+  logJson: vi.fn(),
   warn: vi.fn(),
 }
 
