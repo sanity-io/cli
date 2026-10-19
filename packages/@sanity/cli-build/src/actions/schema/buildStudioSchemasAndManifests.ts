@@ -3,14 +3,14 @@ import {type SchemaValidationProblemGroup} from '@sanity/types'
 import {type StudioManifest} from 'sanity'
 
 import {SchemaBuild} from '../../telemetry/extractSchema.telemetry.js'
-import {CreateWorkspaceManifest} from '../manifest/types.js'
+import {WorkspaceSchemaInput} from '../manifest/types.js'
 import {type BuildStudioSchemasAndManifestsWorkerData} from './types.js'
 import {SchemaExtractionError} from './utils/SchemaExtractionError.js'
 
 export type BuildStudioSchemasAndManifestsWorkerSuccess = {
+  schemaInputs: WorkspaceSchemaInput[] | null
   studioManifest: StudioManifest | null
   type: 'success'
-  workspaceManifests: CreateWorkspaceManifest[]
 }
 type BuildStudioSchemasAndManifestsWorkerError = {
   error: string
@@ -58,6 +58,7 @@ export async function buildStudioSchemasAndManifests(
           isExternal,
           outPath,
           projectId,
+          schemaRequired: false,
           verbose,
           workDir,
         } satisfies BuildStudioSchemasAndManifestsWorkerData,

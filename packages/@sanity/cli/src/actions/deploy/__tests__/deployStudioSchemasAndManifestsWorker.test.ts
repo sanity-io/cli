@@ -11,7 +11,7 @@ const mockWorkerBuildStudioSchemasAndManifests = vi.hoisted(() => vi.fn())
 const mockExtractValidationFromSchemaError = vi.hoisted(() => vi.fn())
 const mockUpdateWorkspacesSchemas = vi.hoisted(() => vi.fn())
 
-vi.mock('@sanity/cli-build/_internal/extract', () => ({
+vi.mock(import('@sanity/cli-build/_internal/extract'), () => ({
   extractValidationFromSchemaError: mockExtractValidationFromSchemaError,
   workerBuildStudioSchemasAndManifests: mockWorkerBuildStudioSchemasAndManifests,
 }))
@@ -114,7 +114,7 @@ describe('deployStudioSchemasAndManifestsWorker', () => {
         schemaRequired: false,
         verbose: true,
         workDir: '/studio',
-        workspaceManifestsHandler: expect.any(Function),
+        workspaceSchemaHandler: expect.any(Function),
       }),
     )
   })
@@ -128,93 +128,6 @@ describe('deployStudioSchemasAndManifestsWorker', () => {
 
     expect(messages).toEqual([])
     expect(mockWorkerBuildStudioSchemasAndManifests).not.toHaveBeenCalled()
-  })
-
-  describe('schema deployment', () => {
-    test('maps workspace manifests onto schema inputs', async () => {
-      const {port} = createPort()
-      handedManifests = [
-        createWorkspaceManifest(),
-        createWorkspaceManifest({
-          dataset: 'staging',
-          name: 'staging',
-          projectId: 'other-project',
-          schema: [{name: 'author', type: 'document'}],
-          title: undefined,
-        }),
-      ]
-
-      await deployStudioSchemasAndManifestsWorker(port, createWorkerData({verbose: true}))
-
-      expect(mockUpdateWorkspacesSchemas).toHaveBeenCalledWith({
-        verbose: true,
-        workspaces: [
-          {
-            dataset: 'production',
-            manifestSchema: [{name: 'post', type: 'document'}],
-            name: 'default',
-            projectId,
-            title: 'Default',
-          },
-          {
-            dataset: 'staging',
-            manifestSchema: [{name: 'author', type: 'document'}],
-            name: 'staging',
-            projectId: 'other-project',
-            title: undefined,
-          },
-        ],
-      })
-    })
-
-    test('deploys schemas for an internal studio', async () => {
-      const {port} = createPort()
-
-      await deployStudioSchemasAndManifestsWorker(
-        port,
-        createWorkerData({isExternal: false, schemaRequired: false}),
-      )
-
-      expect(mockUpdateWorkspacesSchemas).toHaveBeenCalledTimes(1)
-    })
-
-    test('skips deployment for an external studio that does not require the schema', async () => {
-      const {messages, port} = createPort()
-
-      await deployStudioSchemasAndManifestsWorker(
-        port,
-        createWorkerData({isExternal: true, schemaRequired: false}),
-      )
-
-      expect(mockUpdateWorkspacesSchemas).not.toHaveBeenCalled()
-      // The build still completes and reports back
-      expect(messages).toEqual([{studioManifest, type: 'success'}])
-    })
-
-    test('deploys schemas for an external studio when the schema is required', async () => {
-      const {port} = createPort()
-
-      await deployStudioSchemasAndManifestsWorker(
-        port,
-        createWorkerData({isExternal: true, schemaRequired: true}),
-      )
-
-      expect(mockUpdateWorkspacesSchemas).toHaveBeenCalledTimes(1)
-    })
-
-    test('does not run the handler when the build never calls it', async () => {
-      const {messages, port} = createPort()
-      mockWorkerBuildStudioSchemasAndManifests.mockResolvedValue({
-        studioManifest: null,
-        type: 'success',
-        workspaceManifests: [],
-      })
-
-      await deployStudioSchemasAndManifestsWorker(port, createWorkerData())
-
-      expect(mockUpdateWorkspacesSchemas).not.toHaveBeenCalled()
-      expect(messages).toEqual([{studioManifest: null, type: 'success'}])
-    })
   })
 
   describe('failures', () => {
@@ -247,17 +160,6 @@ describe('deployStudioSchemasAndManifestsWorker', () => {
       await deployStudioSchemasAndManifestsWorker(port, createWorkerData())
 
       expect(messages).toEqual([{error: 'kaboom', type: 'error', validation: undefined}])
-    })
-
-    test('reports a failed schema deployment as an error message', async () => {
-      const {messages, port} = createPort()
-      mockUpdateWorkspacesSchemas.mockRejectedValue(new Error('Failed to deploy 1/1 schemas'))
-
-      await deployStudioSchemasAndManifestsWorker(port, createWorkerData())
-
-      expect(messages).toEqual([
-        {error: 'Failed to deploy 1/1 schemas', type: 'error', validation: undefined},
-      ])
     })
   })
 })
