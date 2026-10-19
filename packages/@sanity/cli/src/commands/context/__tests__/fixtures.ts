@@ -59,3 +59,45 @@ export const succeededJob: Context.Job = {
   startedAt: '2026-08-01T00:00:00.000Z',
   status: 'succeeded',
 }
+
+export const issue: Context.IssueDoc = {
+  _createdAt: '2026-08-01T00:00:00Z',
+  _id: 'issue.def456',
+  _rev: 'rev-1',
+  _type: 'sanity.context.issue',
+  _updatedAt: '2026-08-01T00:00:00Z',
+  content: {
+    citedSourceIds: ['source-def456'],
+    issue: 'The refunds entry says 5 days, but the source now says 10 days.',
+    kind: 'update_required',
+    scopePath: 'billing/refunds',
+    severity: 'suggestion',
+    suggestedFix: 'Update the refund window to 10 days.',
+  },
+  fingerprint: 'fingerprint-1',
+  knowledgeBaseId: 'kb-abc123',
+  resolution: null,
+  resolvedAt: null,
+  resolvedBy: null,
+  revisionId: null,
+  schemaVersion: 1,
+  status: 'open',
+}
+
+export const conflictIssue: Context.IssueDoc = {
+  ...issue,
+  _id: 'issue.conflict789',
+  content: {
+    claimKey: 'refunds.window',
+    issue: 'Two entries disagree on the refund window.',
+    kind: 'conflict',
+    scopePath: '*',
+    severity: 'critical',
+    sides: [
+      {claim: 'Refunds are processed within 5 days.', entryPaths: ['billing/refunds']},
+      {claim: 'Refunds are processed within 10 days.', entryPaths: ['billing/faq']},
+    ],
+    suggested: 1,
+    suggestedFix: 'Choose the correct refund window.',
+  },
+}
