@@ -1,3 +1,4 @@
+import {findBlueprintFile, readBlueprint} from '@sanity/blueprints/resolve'
 import {SchemaExtractionError} from '@sanity/cli-build/_internal/extract'
 import {type CliConfig, exitCodes, type Output} from '@sanity/cli-core'
 import {
@@ -15,6 +16,10 @@ import {deployStudio} from '../deployStudio.js'
 import {deployStudioSchemasAndManifests} from '../deployStudioSchemasAndManifests.js'
 import {type DeployAppOptions, type DeployFlags} from '../types.js'
 
+vi.mock(import('@sanity/blueprints/resolve'), async () => ({
+  findBlueprintFile: vi.fn(),
+  readBlueprint: vi.fn(),
+}))
 vi.mock(import('@sanity/workbench-cli/deploy'), async (importOriginal) => ({
   ...(await importOriginal()),
   checkBuiltOutput: vi.fn(),
@@ -25,6 +30,8 @@ vi.mock(import('@sanity/workbench-cli/deploy'), async (importOriginal) => ({
 }))
 vi.mock('@sanity/cli-core', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@sanity/cli-core')>()),
+  // Stubbed so the blueprint check never reads the developer's own auth config.
+  getCliToken: vi.fn(async () => 'token'),
   getLocalPackageVersion: vi.fn(async () => '4.10.0'),
 }))
 vi.mock('@sanity/cli-core/ux', async () => import('@sanity/cli-test/mocks/cli-core/ux'))
@@ -40,6 +47,8 @@ const mockDeployWorkbenchApp = vi.mocked(deployWorkbenchApp)
 const mockGetApplication = vi.mocked(getApplication)
 const mockListApplications = vi.mocked(listApplications)
 const mockBuildStudio = vi.mocked(buildStudio)
+const mockFindBlueprintFile = vi.mocked(findBlueprintFile)
+const mockReadBlueprint = vi.mocked(readBlueprint)
 
 // `getWorkbench` is left unmocked: it resolves the branded `app` below.
 function deployOptions({
@@ -75,6 +84,11 @@ function deployedPayload(output: Output) {
 
 beforeEach(() => {
   vi.clearAllMocks()
+  // `clearAllMocks` keeps implementations, so reset the blueprint stubs back to
+  // "no blueprint next to the studio" — otherwise one suite's blueprint blocks
+  // every deploy that follows it.
+  mockFindBlueprintFile.mockReset().mockReturnValue(undefined)
+  mockReadBlueprint.mockReset()
   mockListApplications.mockResolvedValue([])
   mockCreateStudio.mockResolvedValue({
     application: {
@@ -237,6 +251,67 @@ describe('deployStudio (federated studio)', () => {
       expect.stringContaining('Workspace base paths must share the same first segment'),
       {exit: exitCodes.RUNTIME_ERROR},
     )
+  })
+})
+
+type BlueprintInfo = Awaited<ReturnType<typeof readBlueprint>>
+
+/**
+ * A blueprint found at `/root/sanity.blueprint.ts`, declaring `resources`.
+ * A resource's `root` is resolved relative to that file, so `'.'` is the
+ * `/root` studio these options deploy.
+ */
+function mockBlueprint(resources: Record<string, unknown>[]) {
+  mockFindBlueprintFile.mockReturnValue('/root/sanity.blueprint.ts')
+  mockReadBlueprint.mockResolvedValue({resources} as unknown as BlueprintInfo)
+}
+
+/** Stands in for the process exit a real run's `output.error` performs. */
+function failOnError(options: DeployAppOptions) {
+  return vi.mocked(options.output.error).mockImplementation(() => {
+    throw new Error('exit')
+  })
+}
+
+describe('deployStudio (blueprint-managed studio)', () => {
+  test('a studio referenced by a blueprint is blocked before anything is created', async () => {
+    const options = deployOptions()
+    const error = failOnError(options)
+    mockBlueprint([{name: 'studio', root: '.', type: 'sanity.studio'}])
+
+    await expect(deployStudio(options)).rejects.toThrow('exit')
+
+    expect(error.mock.calls[0][0]).toBe(
+      'Using the `deploy` command for a studio that is referenced by a blueprint is not allowed: ' +
+        'Deploy the studio using the `blueprints deploy` command',
+    )
+    expect(error.mock.calls[0][1]).toEqual({exit: 1})
+    expect(mockCreateStudio).not.toHaveBeenCalled()
+    expect(mockBuildStudio).not.toHaveBeenCalled()
+    expect(mockDeployWorkbenchApp).not.toHaveBeenCalled()
+    expect(vi.mocked(deployStudioSchemasAndManifests)).not.toHaveBeenCalled()
+  })
+
+  test('a blueprint referencing a different studio does not block the deploy', async () => {
+    const options = deployOptions()
+    mockBlueprint([{name: 'studio', root: './other-studio', type: 'sanity.studio'}])
+
+    await deployStudio(options)
+
+    expect(options.output.error).not.toHaveBeenCalled()
+    expect(mockDeployWorkbenchApp).toHaveBeenCalledWith(
+      expect.objectContaining({applicationId: 'studio-1'}),
+    )
+  })
+
+  test('no blueprint file leaves the deploy untouched and reads no blueprint', async () => {
+    const options = deployOptions()
+    mockFindBlueprintFile.mockReturnValue(undefined)
+
+    await deployStudio(options)
+
+    expect(mockReadBlueprint).not.toHaveBeenCalled()
+    expect(mockDeployWorkbenchApp).toHaveBeenCalled()
   })
 })
 
