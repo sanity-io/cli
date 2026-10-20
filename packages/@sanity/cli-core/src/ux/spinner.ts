@@ -8,6 +8,7 @@ import ora, {
 } from 'ora'
 
 import {getCliExecutionContext} from '../executionContext.js'
+import {createTerminalStatus} from './terminalStatus.js'
 
 /**
  * Uncolored counterparts of the `log-symbols` glyphs a real spinner persists
@@ -108,15 +109,52 @@ function normalize<T extends Options>(options?: string | T): T {
   return {discardStdin: false, ...resolved}
 }
 
+function withSpinnerStatus(instance: Ora): Ora {
+  const status = createTerminalStatus()
+  const start = instance.start.bind(instance)
+  const stop = instance.stop.bind(instance)
+  const render = instance.render.bind(instance)
+  let active = instance.isSpinning
+  const update = () => {
+    if (active && instance.isEnabled) status.update({message: instance.text, state: 'working'})
+  }
+
+  instance.start = (text) => {
+    active = true
+    start(text)
+    update()
+    return instance
+  }
+  instance.render = () => {
+    update()
+    return render()
+  }
+  instance.stop = () => {
+    active = false
+    stop()
+    status.stop()
+    return instance
+  }
+  update()
+  return instance
+}
+
 export function spinner(options?: Options | string): Ora {
-  return getCliExecutionContext() ? silentSpinner(options) : ora(normalize(options))
+  return getCliExecutionContext()
+    ? silentSpinner(options)
+    : withSpinnerStatus(ora(normalize(options)))
 }
 
 export function spinnerPromise<T>(
   action: ((instance: Ora) => PromiseLike<T>) | PromiseLike<T>,
   options?: PromiseOptions<T> | string,
 ): Promise<T> {
-  if (!getCliExecutionContext()) return oraPromise(action, normalize(options))
+  if (!getCliExecutionContext()) {
+    return oraPromise((instance) => {
+      const tracked = withSpinnerStatus(instance)
+      return typeof action === 'function' ? action(tracked) : action
+    }, normalize(options))
+  }
   return Promise.resolve(typeof action === 'function' ? action(silentSpinner(options)) : action)
 }
 

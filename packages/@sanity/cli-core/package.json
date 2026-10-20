@@ -146,6 +146,7 @@
     "log-symbols": "^7.0.1",
     "obug": "catalog:",
     "ora": "catalog:",
+    "osc-status": "^1.0.0",
     "rxjs": "catalog:",
     "vite": "catalog:",
     "wrap-ansi": "^9.0.2",
