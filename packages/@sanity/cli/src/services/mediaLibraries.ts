@@ -109,6 +109,32 @@ export function getMediaLibrariesForOrganization(organizationId: string): Promis
   return listActiveMediaLibraries({organizationId})
 }
 
+interface QueryResponse<T> {
+  result?: T
+}
+
+/**
+ * Fetch the stored aspect documents of a media library
+ * @param mediaLibraryId - The media library ID
+ * @returns A promise that resolves to the aspect documents, ordered by id
+ *
+ * @internal
+ */
+export async function getAspects(mediaLibraryId: string): Promise<Array<Record<string, unknown>>> {
+  const client = await getMediaLibraryClient()
+
+  const response = await client.request<QueryResponse<Array<Record<string, unknown>>> | undefined>({
+    body: {
+      params: {type: MEDIA_LIBRARY_ASSET_ASPECT_TYPE_NAME},
+      query: `*[_type == $type] | order(_id asc)`,
+    },
+    method: 'POST',
+    url: `/media-libraries/${mediaLibraryId}/query`,
+  })
+
+  return response?.result ?? []
+}
+
 interface DeployAspectsOptions {
   aspects: MediaLibraryAssetAspectDocument[]
   mediaLibraryId: string

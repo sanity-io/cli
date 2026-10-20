@@ -90,13 +90,19 @@ export async function initApp({
         `\nRun ${styleText('cyan', getInstallCommand(pkgManager))} to install dependencies.`,
       )
     }
+    let hasActiveLibrary = false
     if (organizationId) {
       output.log(`\nConfigured for organization ${styleText('cyan', organizationId)}.`)
-      await warnIfNoActiveMediaLibrary(organizationId, output)
+      hasActiveLibrary = await warnIfNoActiveMediaLibrary(organizationId, output)
     }
     output.log(
       '\nField definitions live in `src/fields/` and are registered in `sanity.cli.ts` — see the README for the authoring rules.',
     )
+    if (hasActiveLibrary) {
+      output.log(
+        `\nAlready defining aspects in your Media Library? Generate field modules from them with ${styleText('cyan', 'npx sanity media pull-aspects')}.`,
+      )
+    }
     output.log('\nRefer to our documentation for a walkthrough:')
     output.log(styleText(['blue', 'underline'], 'https://www.sanity.io/docs/media-library'))
     await logMcpConfirmation(mcpConfigured, output)
@@ -162,16 +168,19 @@ async function logMcpConfirmation(mcpConfigured: EditorName[], output: Output): 
  * empty, so say so now — init is the one interactive, authenticated moment.
  * API errors (offline, no access to the org, timeout) are swallowed: this is
  * a hint, not a gate.
+ *
+ * @returns whether the organization has an active library — `false` also on
+ * lookup failure, so follow-up suggestions stay silent in the unknown case.
  */
 export async function warnIfNoActiveMediaLibrary(
   organizationId: string,
   output: Output,
-): Promise<void> {
+): Promise<boolean> {
   try {
     const libraries = await getMediaLibrariesForOrganization(organizationId)
-    if (libraries.length > 0) return
+    if (libraries.length > 0) return true
   } catch {
-    return
+    return false
   }
 
   const manageUrl = `${isStaging() ? 'https://sanity.work' : 'https://www.sanity.io'}/manage`
@@ -182,4 +191,5 @@ export async function warnIfNoActiveMediaLibrary(
       `organization — enable it in Manage (${manageUrl}) or learn more at ` +
       `https://www.sanity.io/docs/media-library.`,
   )
+  return false
 }

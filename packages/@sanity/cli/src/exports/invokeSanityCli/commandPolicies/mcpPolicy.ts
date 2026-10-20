@@ -211,6 +211,8 @@ export const mcpPolicy: CommandPolicySet = {
     deniedFlags: ['replace-aspects'],
     validate: ({args}) => typeof args.source === 'string' && isRemoteAssetSource(args.source),
   }),
+  // Writes generated field modules to the local filesystem.
+  'media:pull-aspects': deny,
 
   // Creates migration source files in the local project.
   'migrations:create': deny,
