@@ -1,3 +1,4 @@
+import {isFromCliConfig} from '@sanity/cli-core/flags'
 import {describe, expect, test} from 'vitest'
 
 import {getDatasetFlag, getOrganizationFlag, getProjectIdFlag} from '../sharedFlags.js'
@@ -101,11 +102,15 @@ describe('getDatasetFlag', () => {
 })
 
 describe('getOrganizationFlag', () => {
-  test('override semantics: appends suffix and sets OVERRIDE helpGroup', () => {
+  test('override semantics: CLI-config default, OVERRIDE helpGroup, no suffix', () => {
     const flags = getOrganizationFlag({description: 'Organization to query', semantics: 'override'})
     const flag = flags.organization
-    expect(flag.description).toBe('Organization to query (overrides CLI configuration)')
+    // The config fallback lives on the flag (fromCliConfig): terminal help
+    // shows the resolved value, remote schemas require the flag instead.
+    expect(flag.description).toBe('Organization to query')
     expect(flag.helpGroup).toBe('OVERRIDE')
+    expect(isFromCliConfig(flag)).toBe(true)
+    expect(flag.noCacheDefault).toBe(true)
   })
 
   test('specify semantics: no suffix, no helpGroup', () => {
@@ -116,6 +121,7 @@ describe('getOrganizationFlag', () => {
     const flag = flags.organization
     expect(flag.description).toBe('Organization to list for')
     expect(flag.helpGroup).toBeUndefined()
+    expect(isFromCliConfig(flag)).toBe(false)
   })
 
   test('specify semantics: uses default description when none provided', () => {

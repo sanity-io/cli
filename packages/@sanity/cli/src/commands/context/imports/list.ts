@@ -1,8 +1,7 @@
-import {Args, Flags} from '@oclif/core'
-import {type FlagInput} from '@oclif/core/interfaces'
+import {Args} from '@oclif/core'
 import {exitCodes, SanityCommand, subdebug} from '@sanity/cli-core'
 import {getErrorMessage} from '@sanity/cli-core/errors'
-import {isHttpError} from '@sanity/client'
+import {type Context, isHttpError} from '@sanity/client'
 
 import {listImports} from '../../../services/context.js'
 import {Table} from '../../../util/responsiveTable.js'
@@ -19,6 +18,8 @@ export class ListImportsCommand extends SanityCommand<typeof ListImportsCommand>
 
   static override description = 'List imports for a knowledge base'
 
+  static override enableJsonFlag = true
+
   static override examples = [
     {
       command: '<%= config.bin %> <%= command.id %> kb-abc123',
@@ -30,16 +31,8 @@ export class ListImportsCommand extends SanityCommand<typeof ListImportsCommand>
     },
   ]
 
-  static override flags = {
-    json: Flags.boolean({
-      default: false,
-      description: 'Output imports in JSON format',
-    }),
-  } satisfies FlagInput
-
-  public async run(): Promise<void> {
+  public async run(): Promise<{imports: Context.Import[]}> {
     const {knowledgeBaseId} = this.args
-    const {json} = this.flags
 
     let imports
     try {
@@ -56,14 +49,9 @@ export class ListImportsCommand extends SanityCommand<typeof ListImportsCommand>
       })
     }
 
-    if (json) {
-      this.log(JSON.stringify(imports, null, 2))
-      return
-    }
-
     if (imports.length === 0) {
       this.log('No imports found')
-      return
+      return {imports}
     }
 
     const table = new Table({
@@ -89,5 +77,6 @@ export class ListImportsCommand extends SanityCommand<typeof ListImportsCommand>
     }
 
     this.log(table.render())
+    return {imports}
   }
 }

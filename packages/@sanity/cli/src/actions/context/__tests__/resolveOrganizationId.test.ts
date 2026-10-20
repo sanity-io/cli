@@ -13,10 +13,11 @@ describe('resolveOrganizationId', () => {
     vi.clearAllMocks()
   })
 
+  // The sanity.cli.ts fallback lives on the flag itself (fromCliConfig), so
+  // the flag value is the only input here.
   test('prefers the flag value', async () => {
     await expect(
       resolveOrganizationId({
-        configuredOrganizationId: 'org-from-config',
         flagOrganizationId: 'org-from-flag',
         unattended: true,
       }),
@@ -24,20 +25,9 @@ describe('resolveOrganizationId', () => {
     expect(mockPromptForOrganization).not.toHaveBeenCalled()
   })
 
-  test('falls back to the configured organization', async () => {
-    await expect(
-      resolveOrganizationId({
-        configuredOrganizationId: 'org-from-config',
-        flagOrganizationId: undefined,
-        unattended: true,
-      }),
-    ).resolves.toBe('org-from-config')
-  })
-
   test('throws MissingOrganizationError when unattended and unresolved', async () => {
     await expect(
       resolveOrganizationId({
-        configuredOrganizationId: undefined,
         flagOrganizationId: undefined,
         unattended: true,
       }),
@@ -50,7 +40,6 @@ describe('resolveOrganizationId', () => {
 
     await expect(
       resolveOrganizationId({
-        configuredOrganizationId: undefined,
         flagOrganizationId: undefined,
         unattended: false,
       }),
