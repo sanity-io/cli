@@ -11,7 +11,14 @@ import {
 } from '../../../services/userApplications.js'
 import {buildApp} from '../../build/buildApp.js'
 import {createMockOutput} from '../../dev/__tests__/testHelpers.js'
-import {deployApp, logAppDeployed, syncApplicationMetadata} from '../deployApp.js'
+import {type AspectSyncPlan} from '../../media/aspectSync/syncAspects.js'
+import {
+  deployApp,
+  logAppDeployed,
+  reportAspectSyncPlan,
+  syncApplicationMetadata,
+} from '../deployApp.js'
+import {type DeployCheck, type DeployCheckReporter} from '../deployChecks.js'
 import {findUserApplication} from '../findUserApplication.js'
 import {resolveAppDeployTarget} from '../resolveDeployTarget.js'
 import {type DeployAppOptions, type DeployFlags} from '../types.js'
@@ -92,6 +99,63 @@ describe('logAppDeployed', () => {
       expect(logged).toContain("appId: 'app-2'")
     },
   )
+})
+
+function collectReports() {
+  const reports: DeployCheck[] = []
+  const reporter = {report: (check: DeployCheck) => reports.push(check)} as DeployCheckReporter
+  return {reporter, reports}
+}
+
+describe('reportAspectSyncPlan', () => {
+  const basePlan: AspectSyncPlan = {
+    documents: [
+      {_id: 'caption', _type: 'sanity.asset.aspect', definition: {}},
+      {_id: 'notes', _type: 'sanity.asset.aspect', definition: {}},
+    ],
+    mediaLibraryId: 'library-1',
+    staleIds: [],
+    strippedByField: {},
+  }
+
+  test('reports the upserts as a pass and nothing else for a clean plan', () => {
+    const {reporter, reports} = collectReports()
+
+    reportAspectSyncPlan(reporter, basePlan)
+
+    expect(reports).toEqual([
+      {
+        message: 'Will sync 2 aspect definitions to media library library-1',
+        status: 'pass',
+      },
+    ])
+  })
+
+  test('reports deletions prominently as a warning naming every stale id', () => {
+    const {reporter, reports} = collectReports()
+
+    reportAspectSyncPlan(reporter, {...basePlan, staleIds: ['legacy', 'oldAspect']})
+
+    const warning = reports.find((check) => check.status === 'warn')
+    expect(warning?.message).toContain(
+      'Will delete 2 stored aspect definitions with no matching config field: legacy, oldAspect',
+    )
+    expect(warning?.solution).toContain('aspects.<name> values on assets stay put')
+    expect(warning?.solution).toContain('sanity media pull-aspects')
+  })
+
+  test('reports stripped non-serializable values without warning', () => {
+    const {reporter, reports} = collectReports()
+
+    reportAspectSyncPlan(reporter, {
+      ...basePlan,
+      strippedByField: {notes: ['definition.components', 'definition.validation']},
+    })
+
+    const stripped = reports.find((check) => check.message.includes('non-serializable'))
+    expect(stripped?.status).toBe('pass')
+    expect(stripped?.message).toContain('notes (definition.components, definition.validation)')
+  })
 })
 
 describe('syncApplicationMetadata', () => {

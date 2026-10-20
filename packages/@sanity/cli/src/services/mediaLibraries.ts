@@ -189,6 +189,80 @@ export function getAspects(mediaLibraryId: string): Promise<StoredAspectDocument
   })
 }
 
+/** Page size for id-cursor pagination of stored-aspect-id queries. */
+const ASPECT_ID_PAGE_SIZE = 1000
+
+/**
+ * Fetch every stored aspect document `_id` of a media library with an
+ * id-cursor loop. The query API caps single-response sizes, and the consumer
+ * acts destructively on the result (mirror deletes), where a silently
+ * truncated list means reporting success while stale documents are left
+ * behind.
+ *
+ * The loop only terminates on an *empty* page — a short page is not trusted
+ * as exhaustion, in case the endpoint ever returns fewer rows than the
+ * requested slice (response-size caps). The cursor advances past the last
+ * returned id regardless, so partial slices just mean extra round-trips.
+ *
+ * Pinned to the `published` perspective so stale detection never sees draft
+ * ids: the sync's upserts write published documents and its deletes match ids
+ * exactly, so drafts (not normally used for aspect docs) are out of scope
+ * either way — the endpoint's default perspective could flag a `drafts.*` id
+ * as stale and target it for deletion.
+ *
+ * @internal
+ */
+export async function getStoredAspectIds(mediaLibraryId: string): Promise<string[]> {
+  const client = await getMediaLibraryClient()
+
+  const ids: string[] = []
+  let lastId = ''
+  for (;;) {
+    const response = await client.request<QueryResponse<Array<{_id: string}>> | undefined>({
+      body: {
+        params: {lastId, type: MEDIA_LIBRARY_ASSET_ASPECT_TYPE_NAME},
+        query: `*[_type == $type && _id > $lastId] | order(_id) [0...${ASPECT_ID_PAGE_SIZE}]{_id}`,
+      },
+      method: 'POST',
+      query: {perspective: 'published'},
+      tag: 'aspect-sync',
+      url: `/media-libraries/${mediaLibraryId}/query`,
+    })
+    const page = response?.result ?? []
+    const last = page.at(-1)
+    if (!last) break
+    for (const doc of page) ids.push(doc._id)
+    lastId = last._id
+  }
+  return ids
+}
+
+interface MutateAspectsResponse {
+  results?: Array<{id: string; operation: string}>
+}
+
+/**
+ * Apply one aspect-sync transaction — the upsert/delete mutation list built by
+ * `buildSyncMutations` — to a media library in a single request.
+ *
+ * @internal
+ */
+export async function mutateAspects(options: {
+  mediaLibraryId: string
+  mutations: unknown[]
+}): Promise<MutateAspectsResponse> {
+  const {mediaLibraryId, mutations} = options
+
+  const client = await getMediaLibraryClient()
+
+  return client.request<MutateAspectsResponse>({
+    body: {mutations},
+    method: 'POST',
+    tag: 'aspect-sync',
+    url: `/media-libraries/${mediaLibraryId}/mutate`,
+  })
+}
+
 interface DeployAspectsOptions {
   aspects: MediaLibraryAssetAspectDocument[]
   mediaLibraryId: string

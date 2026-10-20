@@ -90,6 +90,10 @@ export class DeployCommand extends SanityCommand<typeof DeployCommand> {
       default: false,
       description: 'Output the result as JSON',
     }),
+    'media-library-id': Flags.string({
+      description:
+        'For a Media Library config deploy: the media library to sync the aspect definitions to. Defaults to the single active library of the configured organization; required when the organization has several',
+    }),
     minify: Flags.boolean({
       allowNo: true,
       default: true,

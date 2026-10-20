@@ -34,6 +34,17 @@ export interface DeployPayload extends Partial<WorkbenchDeployPayload> {
   type: 'coreApp' | 'studio'
   version: string | null
 
+  /**
+   * The aspect-document sync a media-library config deploy will run: every
+   * config field is upserted, stored definitions without a matching config
+   * field are deleted (the config mirrors into the library). Collected during
+   * planning, so a `--dry-run --json` consumer sees the deletions too.
+   */
+  aspectSync?: {
+    deleteIds: string[]
+    mediaLibraryId: string
+    upsertIds: string[]
+  }
   organizationId?: string
   projectId?: string
 }
