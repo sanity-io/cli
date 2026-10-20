@@ -376,11 +376,12 @@ export abstract class SanityCommand<T extends typeof Command>
     A extends ParserValues,
   >(options?: Input<F, B, A>, argv: string[] = this.argv): Promise<ParserOutput<F, B, A>> {
     let resolvedOptions = options
+    const jsonEnabled = this.jsonEnabled()
+
     if (options?.flags) {
       const resolvedFlags = resolveUnattendedFlagRequirements(
         options.flags,
-        this.jsonEnabled() ||
-          isUnattendedInvocation({argv, isInteractive: this.resolveIsInteractive()}),
+        jsonEnabled || isUnattendedInvocation({argv, isInteractive: this.resolveIsInteractive()}),
       )
       if (resolvedFlags !== options.flags) {
         resolvedOptions = {...options, flags: resolvedFlags as Interfaces.FlagInput<F>}
@@ -388,7 +389,9 @@ export abstract class SanityCommand<T extends typeof Command>
     }
 
     const parsed = await super.parse(resolvedOptions, argv)
-    parsed.flags = {...parsed.flags, json: this.jsonEnabled()}
+    const jsonFlag = Boolean(parsed.flags.json) || jsonEnabled
+
+    parsed.flags = {...parsed.flags, json: jsonFlag}
     return parsed
   }
 
