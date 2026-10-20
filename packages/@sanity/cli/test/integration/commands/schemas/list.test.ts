@@ -215,7 +215,7 @@ describe('#schema:list', {timeout: 60 * 1000}, () => {
     expect(stdout).toContain('↳ Failed to fetch schema from "test":\n  Bad request')
   })
 
-  test('suppresses text warnings in JSON mode without corrupting stdout', async () => {
+  test('writes JSON diagnostics to stderr without corrupting stdout', async () => {
     mockApi({
       apiVersion: SCHEMA_API_VERSION,
       uri: `/projects/${projectId}/datasets/test/schemas`,
@@ -234,7 +234,7 @@ describe('#schema:list', {timeout: 60 * 1000}, () => {
     const {stderr, stdout} = await testCommand(ListSchemaCommand, ['--json'])
 
     expect(JSON.parse(stdout)).toEqual([expect.objectContaining({_id: '_.schemas.staging'})])
-    expect(stderr).toBe('')
+    expect(stderr).toContain('Failed to fetch schema from "test"')
   })
 
   test('prints warning if schema request fails due to permissions', async () => {

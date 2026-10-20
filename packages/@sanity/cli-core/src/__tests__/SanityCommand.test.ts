@@ -262,6 +262,31 @@ describe('SanityCommand', () => {
       expect(err).toEqual(['Warning: careful now', 'Warning: warned error', 'diagnostics'])
     })
 
+    test('logDiagnostic survives JSON mode, where log, warn and logToStderr do not', async () => {
+      const out: string[] = []
+      const err: string[] = []
+      const cmdClass = createMockedRunCommand({
+        run: async function () {
+          this.log('suppressed')
+          this.warn('also suppressed')
+          this.logToStderr('suppressed too')
+          this.logDiagnostic('could not read dataset "test"')
+          this.logJson([{id: 'kept'}])
+        },
+      })
+      cmdClass.enableJsonFlag = true
+
+      await runWithCliExecutionContext(
+        {stderr: (line) => err.push(line), stdout: (line) => out.push(line)},
+        () => cmdClass.run(['--json']),
+      )
+
+      // The payload has to stay parseable on its own, with the diagnostic kept
+      // to the other stream rather than dropped.
+      expect(JSON.parse(out.join('\n'))).toEqual([{id: 'kept'}])
+      expect(err).toEqual(['could not read dataset "test"'])
+    })
+
     test('concurrent invocations with different sinks do not cross-talk', async () => {
       const makeCommand = (label: string) =>
         createMockedRunCommand({

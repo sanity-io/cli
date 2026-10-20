@@ -198,7 +198,7 @@ export class CreateProjectCommand extends SanityCommand<typeof CreateProjectComm
       return
     } catch (error) {
       debug(`Error creating dataset: ${error}`)
-      this.output.warn(`Project created but dataset creation failed: ${error}`)
+      this.output.logDiagnostic(`Warning: Project created but dataset creation failed: ${error}`)
       return
     }
   }

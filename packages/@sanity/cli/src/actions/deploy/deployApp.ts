@@ -460,7 +460,7 @@ export async function syncApplicationMetadata({
     spin.fail()
     const message = getErrorMessage(err)
     deployDebug('Error updating application metadata', {message})
-    output.warn(`Error updating application metadata: ${message}`)
+    output.logDiagnostic(`Warning: Error updating application metadata: ${message}`)
     return application
   }
 }

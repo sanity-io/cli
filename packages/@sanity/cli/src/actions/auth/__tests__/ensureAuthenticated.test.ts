@@ -28,6 +28,7 @@ vi.mock('../login/login.js', () => ({
 const mockOutput = {
   error: vi.fn() as never,
   log: vi.fn(),
+  logDiagnostic: vi.fn(),
   logJson: vi.fn(),
   warn: vi.fn(),
 }

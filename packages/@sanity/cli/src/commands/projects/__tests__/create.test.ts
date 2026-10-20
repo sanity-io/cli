@@ -250,7 +250,7 @@ describe('#projects:create', () => {
     expect(mocks.SanityCmdOutput.log).toHaveBeenCalledWith(
       expect.stringContaining('Project created successfully'),
     )
-    expect(mocks.SanityCmdOutput.warn).toHaveBeenCalledWith(
+    expect(mocks.SanityCmdOutput.logDiagnostic).toHaveBeenCalledWith(
       expect.stringContaining('Project created but dataset creation failed'),
     )
     expect(mocks.SanityCmdOutput.log).toHaveBeenCalledWith(

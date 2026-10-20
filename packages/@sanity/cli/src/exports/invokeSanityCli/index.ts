@@ -25,7 +25,6 @@
 import {fileURLToPath} from 'node:url'
 
 import {Command, Config, Flags, Parser, settings} from '@oclif/core'
-import {CLIError} from '@oclif/core/errors'
 import {getHelpFlagAdditions, normalizeArgv} from '@oclif/core/help'
 import {exitCodes} from '@sanity/cli-core'
 import {
@@ -36,7 +35,6 @@ import {
 } from '@sanity/cli-core/commandPolicy'
 import {runWithCliExecutionContext, type SanityEnvironment} from '@sanity/cli-core/executionContext'
 import {type SanityCommand} from '@sanity/cli-core/SanityCommand'
-import {hasJsonFlagInArgv, toRelayableErrorJson} from '@sanity/cli-core/util'
 import {type FetchFunction} from 'get-it'
 import {parseArgsStringToArgv} from 'string-argv'
 
@@ -97,13 +95,11 @@ function loadCliCommandConfig(): Promise<Config> {
 
 let cachedConfig: Promise<Config> | undefined
 
-/**
- * Serialize a failure the way a command's own `--json` output would, matching
- * the indentation `SanityCommand.logJson` uses so that every JSON result this
- * function returns looks the same regardless of which stage produced it.
- */
-function toRelayableJson(err: unknown): string {
-  return JSON.stringify(toRelayableErrorJson(err), null, 2)
+function withoutJsonFlag(argv: string[]): string[] {
+  // Anything after `--` belongs to the command, not to us.
+  const passThrough = argv.indexOf('--')
+  const limit = passThrough === -1 ? argv.length : passThrough
+  return argv.filter((token, index) => index >= limit || token !== '--json')
 }
 
 function unknownCommandResult(argv: string[], policySet: CommandPolicySet): InvokeSanityCliResult {
@@ -272,7 +268,8 @@ async function invokeSanityCliInContext(
   // space-separated topics, accepting colon-separated ids as-is), then apply
   // the policy. Denied and uncategorized ids fail closed, indistinguishable
   // from commands that don't exist.
-  const [commandId = '', ...commandArgv] = normalizeArgv(resolvedConfig, argv)
+  const [commandId = '', ...requestedArgv] = normalizeArgv(resolvedConfig, argv)
+  const commandArgv = withoutJsonFlag(requestedArgv)
   const policy = policySet[commandId] ?? deny
   const commandDefinition =
     policy.kind === 'deny' ? undefined : resolvedConfig.findCommand(commandId)
@@ -284,12 +281,6 @@ async function invokeSanityCliInContext(
   // a command isolatable. One that isn't is treated as if it did not exist,
   // like every other fail-closed path here.
   if (!supportsIsolatedExecution(CommandClass)) return unknownCommandResult(argv, policySet)
-
-  // Resolved from argv rather than from a command instance, so that nothing is
-  // constructed before the policy has approved the invocation.
-  const wantsJson =
-    CommandClass.enableJsonFlag === true &&
-    hasJsonFlagInArgv(commandArgv, {...CommandClass.baseFlags, ...CommandClass.flags})
 
   // Parse with the command's real definitions (without executing anything) so
   // conditional policies are evaluated against typed args/flags, not tokens.
@@ -312,7 +303,7 @@ async function invokeSanityCliInContext(
     return {
       commandId,
       exitCode: exitCodes.USAGE_ERROR,
-      output: wantsJson ? toRelayableJson(err) : err instanceof Error ? err.message : String(err),
+      output: err instanceof Error ? err.message : String(err),
     }
   }
 
@@ -332,9 +323,7 @@ async function invokeSanityCliInContext(
     return {
       commandId,
       exitCode: exitCodes.USAGE_ERROR,
-      output: wantsJson
-        ? toRelayableJson(new CLIError(output, {exit: exitCodes.USAGE_ERROR}))
-        : output,
+      output,
     }
   }
 
@@ -345,7 +334,7 @@ async function invokeSanityCliInContext(
     return {
       commandId,
       exitCode: err.oclif?.exit ?? exitCodes.RUNTIME_ERROR,
-      output: wantsJson ? toRelayableJson(err) : prettyPrintError(err) || String(err),
+      output: prettyPrintError(err) || String(err),
     }
   }
 
@@ -360,17 +349,8 @@ async function invokeSanityCliInContext(
       return {commandId, exitCode: exitCodes.SUCCESS, output: output.join('\n')}
     }
 
-    if (wantsJson) {
-      // The command's own `catch` emits the JSON body, so the pretty-printed
-      // message is dropped: appending it would corrupt the payload. Nothing
-      // emitted at all means the failure bypassed that path (a bare
-      // `this.exit(n)` throws before it), and the caller is owed parseable
-      // output regardless.
-      if (output.length === 0) output.push(toRelayableJson(err))
-    } else {
-      const message = prettyPrintError(err) || String(err)
-      if (message) output.push(message)
-    }
+    const message = prettyPrintError(err) || String(err)
+    if (message) output.push(message)
 
     return {
       commandId,

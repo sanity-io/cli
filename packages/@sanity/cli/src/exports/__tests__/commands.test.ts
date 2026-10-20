@@ -218,17 +218,13 @@ describe('invokeSanityCli', () => {
       .matchHeader('authorization', 'Bearer user-token')
       .reply(200, {email: 'jane@example.com', id: 'pUser123', name: 'Jane Doe', provider: 'github'})
 
-    const result = await invoke({args: 'whoami --json', config, source: 'mcp', token: 'user-token'})
+    const result = await invoke({args: 'whoami', config, source: 'mcp', token: 'user-token'})
 
     expect(result.commandId).toBe('whoami')
     expect(result.exitCode).toBe(0)
-    expect(JSON.parse(result.output)).toEqual({
-      email: 'jane@example.com',
-      id: 'pUser123',
-      name: 'Jane Doe',
-      provider: 'github',
-      tokenSource: 'CLI execution context',
-    })
+    expect(result.output).toContain('Jane Doe')
+    expect(result.output).toContain('jane@example.com')
+    expect(result.output).toContain('CLI execution context')
   })
 
   test('an empty table renders as a message rather than an empty result', async () => {
@@ -398,7 +394,13 @@ describe('invokeSanityCli', () => {
     expect(process.exitCode).toBe(previousExitCode)
   })
 
-  test('accepts the standard JSON flag and preserves an empty array response', async () => {
+  /**
+   * A result is a single `output` string fed by one sink for both stdout and
+   * stderr, so it cannot carry a payload and a diagnostic apart from one
+   * another. Until that has an answer, a request for JSON is dropped and the
+   * command runs its text path, rather than the invocation being refused.
+   */
+  test('ignores a request for JSON and returns the command text output', async () => {
     mockApi({
       apiVersion: 'v2026-08-25',
       query: {organizationId: 'org-1'},
@@ -413,10 +415,31 @@ describe('invokeSanityCli', () => {
     })
 
     expect(result.exitCode).toBe(0)
-    expect(JSON.parse(result.output)).toEqual([])
+    expect(result.output).toBe('No knowledge bases found')
   })
 
-  test('JSON runtime failures preserve their exit status and do not append text', async () => {
+  test('a dropped JSON flag still reaches the command with its other flags', async () => {
+    mockApi({
+      apiVersion: 'v2026-08-25',
+      query: {organizationId: 'org-1'},
+      uri: '/context/knowledge-bases',
+    }).reply(200, {
+      data: [{publicId: 'kb1', state: 'created', title: 'Handbook'}],
+      nextCursor: null,
+    })
+
+    const result = await invoke({
+      args: 'context list --json --organization org-1',
+      config,
+      source: 'mcp',
+      token: 'user-token',
+    })
+
+    expect(result.exitCode).toBe(0)
+    expect(result.output).toContain('Handbook')
+  })
+
+  test('runtime failures stay text and preserve their exit status', async () => {
     mockApi({
       apiVersion: 'v2026-08-25',
       query: {organizationId: 'org-1'},
@@ -432,13 +455,11 @@ describe('invokeSanityCli', () => {
     })
 
     expect(result.exitCode).toBe(1)
-    expect(JSON.parse(result.output)).toMatchObject({
-      error: {message: expect.stringContaining('Access denied')},
-    })
+    expect(result.output).toContain('Access denied')
     expect(process.exitCode).toBe(previousExitCode)
   })
 
-  test('JSON parser failures preserve their exit status and do not append text', async () => {
+  test('parser failures stay text and preserve the usage exit code', async () => {
     const previousExitCode = process.exitCode
     const result = await invoke({
       args: 'context list --json --not-a-flag',
@@ -448,13 +469,11 @@ describe('invokeSanityCli', () => {
     })
 
     expect(result.exitCode).toBe(2)
-    expect(JSON.parse(result.output)).toMatchObject({
-      error: {message: expect.stringContaining('Nonexistent flag')},
-    })
+    expect(result.output).toContain('Nonexistent flag')
     expect(process.exitCode).toBe(previousExitCode)
   })
 
-  test('JSON policy refusals preserve the usage exit code and remain parseable', async () => {
+  test('policy refusals preserve the usage exit code', async () => {
     const result = await invoke({
       args: 'openapi list --web --json',
       config,
@@ -463,18 +482,15 @@ describe('invokeSanityCli', () => {
     })
 
     expect(result.exitCode).toBe(2)
-    expect(JSON.parse(result.output)).toMatchObject({
-      error: {message: expect.stringContaining('--web'), oclif: {exit: 2}},
-    })
+    expect(result.output).toContain('--web')
   })
 
   /**
-   * oclif's error JSON spreads every enumerable own property, which for a
-   * parser error means the whole parser input — each flag definition, the
-   * command, and its oclif config — and for an API error the entire HTTP
-   * response. A host relays this straight to a model, so it stays bounded.
+   * A host relays a failure straight to a model, so it stays bounded and free
+   * of the parser input or the HTTP response that produced it — neither of
+   * which a caller can act on, and the token least of all.
    */
-  test('JSON failures stay small and carry no parser or transport internals', async () => {
+  test('failures stay small and carry no parser or transport internals', async () => {
     mockApi({
       apiVersion: 'v2026-08-25',
       query: {organizationId: 'org-1'},
@@ -492,9 +508,8 @@ describe('invokeSanityCli', () => {
     ]
 
     for (const {output} of [parserFailure, runtimeFailure]) {
-      expect(Object.keys(JSON.parse(output).error).toSorted()).toEqual(
-        expect.not.arrayContaining(['parse', 'response', 'responseBody']),
-      )
+      expect(output).not.toContain('Bearer')
+      expect(output).not.toContain('responseBody')
       expect(output.length).toBeLessThan(1024)
     }
   })

@@ -1,6 +1,6 @@
 import {format, styleText} from 'node:util'
 
-import {Command, Interfaces} from '@oclif/core'
+import {Command, Interfaces, ux} from '@oclif/core'
 import {CLIError, ExitError} from '@oclif/core/errors'
 import {type CommandError, type Input, type ParserOutput} from '@oclif/core/interfaces'
 
@@ -96,6 +96,7 @@ export abstract class SanityCommand<T extends typeof Command>
   public output: Output = {
     error: this.error.bind(this),
     log: this.log.bind(this),
+    logDiagnostic: this.logDiagnostic.bind(this),
     logJson: this.logJson.bind(this),
     warn: this.warn.bind(this),
   }
@@ -125,6 +126,7 @@ export abstract class SanityCommand<T extends typeof Command>
     }
 
     if (err instanceof ExitError) {
+      if (err.oclif.exit !== exitCodes.SUCCESS) reportCliTraceError(err)
       if (getCliExecutionContext() || !this.jsonEnabled()) throw err
       process.exitCode = err.oclif.exit
       return
@@ -324,6 +326,24 @@ export abstract class SanityCommand<T extends typeof Command>
       return
     }
     if (!this.jsonEnabled()) context.stdout(format(message, ...args))
+  }
+
+  /**
+   * Write a diagnostic that stays visible in JSON mode.
+   *
+   * `log`, `warn` and `logToStderr` are all suppressed once `--json` is on, so
+   * a command that skipped part of its work would report the remainder as a
+   * complete result. stderr carries it instead, where it cannot corrupt the
+   * payload: JSON mode is reachable only from a real command line, since
+   * programmatic invocations drop the flag.
+   */
+  public logDiagnostic(message: string): void {
+    const context = getCliExecutionContext()
+    if (context?.stderr) {
+      context.stderr(message)
+      return
+    }
+    ux.stderr(message)
   }
 
   /**
