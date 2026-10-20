@@ -11,9 +11,11 @@ import {copy} from '../../util/copy.js'
 import {resolveLatestVersions} from '../../util/resolveLatestVersions.js'
 import {createAppCliConfig} from './createAppCliConfig.js'
 import {createCliConfig} from './createCliConfig.js'
+import {createMediaLibraryCliConfig} from './createMediaLibraryCliConfig.js'
 import {createPackageManifest} from './createPackageManifest.js'
 import {createStudioConfig, type GenerateConfigOptions} from './createStudioConfig.js'
 import {determineAppTemplate} from './determineAppTemplate.js'
+import {determineMediaLibraryTemplate} from './determineMediaLibraryTemplate.js'
 import {processTemplate} from './processTemplate.js'
 import {sdkAppDependencies} from './sdkAppDependencies.js'
 import {studioDependencies} from './studioDependencies.js'
@@ -44,6 +46,14 @@ export async function bootstrapLocalTemplate(
   const sourceDir = path.join(templatesDir, templateName)
   const sharedDir = path.join(templatesDir, 'shared')
   const isAppTemplate = determineAppTemplate(templateName)
+  const isMediaLibraryTemplate = determineMediaLibraryTemplate(templateName)
+  // Media Library config apps bring their own dependency set: neither the
+  // SDK-app base nor the studio base applies (see templates/mediaLibraryConfig.ts).
+  const baseDependencies = isAppTemplate
+    ? sdkAppDependencies
+    : isMediaLibraryTemplate
+      ? {dependencies: {}, devDependencies: {}}
+      : studioDependencies
 
   // Check that we have a template info file (dependencies, plugins etc)
   const template = templates[templateName]
@@ -59,6 +69,16 @@ export async function bootstrapLocalTemplate(
   await copy(sourceDir, outputPath, {
     rename: useTypeScript ? toTypeScriptPath : undefined,
   })
+  // The Media Library template ships its own eslint config (a
+  // restricted-imports override for field modules), stored as .txt — same
+  // trick as shared/gitignore.txt — so the repo's own ESLint doesn't pick it
+  // up as the nearest config for the template files.
+  if (isMediaLibraryTemplate) {
+    await fs.rename(
+      path.join(outputPath, 'eslint.config.txt'),
+      path.join(outputPath, 'eslint.config.mjs'),
+    )
+  }
   debug(`Copying shared template code from : ${sharedDir}`)
   await copy(path.join(sharedDir, 'gitignore.txt'), outputPath, {rename: () => '.gitignore'})
   // Dashboard apps dev and deploy differently, so their docs replace the
@@ -91,8 +111,8 @@ export async function bootstrapLocalTemplate(
   // Resolve latest versions of Sanity-dependencies
   spin = spinner('Resolving latest module versions').start()
   const dependencyVersions = await resolveLatestVersions({
-    ...(isAppTemplate ? sdkAppDependencies.dependencies : studioDependencies.dependencies),
-    ...(isAppTemplate ? sdkAppDependencies.devDependencies : studioDependencies.devDependencies),
+    ...baseDependencies.dependencies,
+    ...baseDependencies.devDependencies,
     ...template.dependencies,
     ...template.devDependencies,
   })
@@ -101,7 +121,7 @@ export async function bootstrapLocalTemplate(
   // Use the resolved version for the given dependency
   const dependencies: Record<string, string> = {}
   for (const dependency of Object.keys({
-    ...(isAppTemplate ? sdkAppDependencies.dependencies : studioDependencies.dependencies),
+    ...baseDependencies.dependencies,
     ...template.dependencies,
   })) {
     dependencies[dependency] = dependencyVersions[dependency]
@@ -109,7 +129,7 @@ export async function bootstrapLocalTemplate(
 
   const devDependencies: Record<string, string> = {}
   for (const dependency of Object.keys({
-    ...(isAppTemplate ? sdkAppDependencies.devDependencies : studioDependencies.devDependencies),
+    ...baseDependencies.devDependencies,
     ...template.devDependencies,
   })) {
     devDependencies[dependency] = dependencyVersions[dependency]
@@ -120,7 +140,7 @@ export async function bootstrapLocalTemplate(
   /**
    * Currently app init doesn't ask for a name, so we use the last part of the path
    */
-  if (isAppTemplate) {
+  if (isAppTemplate || isMediaLibraryTemplate) {
     packageJsonName = slugify(path.basename(outputPath))
   }
 
@@ -139,7 +159,8 @@ export async function bootstrapLocalTemplate(
   const packageManifest = createPackageManifest({
     dependencies,
     devDependencies,
-    isAppTemplate,
+    // Media Library config apps also skip the opinionated prettier config.
+    isAppTemplate: isAppTemplate || isMediaLibraryTemplate,
     name: packageJsonName,
     scripts: template.scripts,
     type: template.type,
@@ -152,38 +173,45 @@ export async function bootstrapLocalTemplate(
   })
 
   // ...and a CLI config (`sanity.cli.[ts|js]`)
-  const cliConfig = isAppTemplate
-    ? createAppCliConfig({
-        entry: template.entry!,
-        isWorkbenchApp: variables.workbench,
-        organizationId: variables.organizationId,
-        slug,
-        title,
-      })
-    : createCliConfig({
-        autoUpdates: variables.autoUpdates,
-        dataset: variables.dataset,
-        isWorkbenchApp: variables.workbench,
-        organizationId: variables.organizationId,
-        projectId: variables.projectId,
-        slug,
-        title,
-      })
+  // oxlint-disable-next-line no-nested-ternary -- three scaffold shapes share one write path
+  const cliConfig = isMediaLibraryTemplate
+    ? createMediaLibraryCliConfig({organizationId: variables.organizationId})
+    : isAppTemplate
+      ? createAppCliConfig({
+          entry: template.entry!,
+          isWorkbenchApp: variables.workbench,
+          organizationId: variables.organizationId,
+          slug,
+          title,
+        })
+      : createCliConfig({
+          autoUpdates: variables.autoUpdates,
+          dataset: variables.dataset,
+          isWorkbenchApp: variables.workbench,
+          organizationId: variables.organizationId,
+          projectId: variables.projectId,
+          slug,
+          title,
+        })
 
   // Write non-template files to disc
   const codeExt = useTypeScript ? 'ts' : 'js'
   await Promise.all(
     [
-      isAppTemplate
+      isAppTemplate || isMediaLibraryTemplate
         ? Promise.resolve(null)
         : writeFileIfNotExists(`sanity.config.${codeExt}`, studioConfig),
       writeFileIfNotExists(`sanity.cli.${codeExt}`, cliConfig),
       writeFileIfNotExists('package.json', packageManifest),
 
-      writeFileIfNotExists(
-        'eslint.config.mjs',
-        `import studio from '@sanity/eslint-config-studio'\n\nexport default [...studio]\n`,
-      ),
+      // The Media Library template ships its own eslint.config.mjs (a
+      // restricted-imports override for field modules) in the copied files.
+      isMediaLibraryTemplate
+        ? Promise.resolve(null)
+        : writeFileIfNotExists(
+            'eslint.config.mjs',
+            `import studio from '@sanity/eslint-config-studio'\n\nexport default [...studio]\n`,
+          ),
     ].filter(Boolean),
   )
 

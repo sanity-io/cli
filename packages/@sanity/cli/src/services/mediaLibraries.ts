@@ -93,6 +93,29 @@ export async function getMediaLibraries(projectId: string): Promise<MediaLibrary
   return response.data.filter((library) => library.status === 'active')
 }
 
+/**
+ * Get a list of active media libraries for an organization
+ * @param organizationId - The organization ID
+ * @returns A promise that resolves to the active media libraries
+ *
+ * @internal
+ */
+export async function getMediaLibrariesForOrganization(
+  organizationId: string,
+): Promise<MediaLibrary[]> {
+  const client = await getMediaLibraryClient()
+
+  const response = await client.request<MediaLibrariesResponse>({
+    method: 'GET',
+    query: {
+      organizationId,
+    },
+    url: `/media-libraries`,
+  })
+
+  return response.data.filter((library) => library.status === 'active')
+}
+
 interface DeployAspectsOptions {
   aspects: MediaLibraryAssetAspectDocument[]
   mediaLibraryId: string

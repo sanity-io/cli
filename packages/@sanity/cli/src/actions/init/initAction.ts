@@ -26,6 +26,7 @@ import {setupMCP} from '../mcp/setupMCP.js'
 import {setupSkills} from '../skills/setupSkills.js'
 import {checkNextJsReactCompatibility} from './checkNextJsReactCompatibility.js'
 import {determineAppTemplate} from './determineAppTemplate.js'
+import {determineMediaLibraryTemplate} from './determineMediaLibraryTemplate.js'
 import {createOrAppendEnvVars} from './env/createOrAppendEnvVars.js'
 import {initApp} from './initApp.js'
 import {InitError} from './initError.js'
@@ -96,7 +97,13 @@ export async function initAction(options: InitOptions, context: InitContext): Pr
     )
   }
 
-  const isAppTemplate = options.template ? determineAppTemplate(options.template) : false
+  // Media Library config templates ride the app init flow end to end:
+  // organization-only project details, app unattended-flag rules, `initApp`.
+  // Template-shape differences are handled downstream (bootstrapLocalTemplate
+  // and initApp check `determineMediaLibraryTemplate` themselves).
+  const isAppTemplate = options.template
+    ? determineAppTemplate(options.template) || determineMediaLibraryTemplate(options.template)
+    : false
 
   if (options.unattended) {
     checkFlagsInUnattendedMode(options, {isAppTemplate, isNextJs})
