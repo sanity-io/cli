@@ -22,7 +22,12 @@ describe('CLI intake sanitation', () => {
     ['documents', ['query', 'private@example.test'], ['query']],
     ['deploy', ['private/path'], []],
     ['functions', ['deploy', 'private-function'], ['deploy']],
+    ['functions', ['build', 'private-function'], ['build']],
+    ['blueprints', ['add', 'private-resource'], ['add']],
+    ['workflows', ['list', 'private-workflow'], ['list']],
+    ['workflows', ['definition', 'show', 'private-definition'], ['definition', 'show']],
     ['exec', ['script.ts', '--', 'private'], []],
+    ['whoami', ['private'], []],
   ])('retains the recognized %s path, excluding positional input', (group, args, expected) => {
     expect(commandIdentity(group, args)).toEqual({
       commandArguments: expected,
@@ -239,6 +244,60 @@ describe('approved CLI payloads', () => {
     )
     expect(result).toMatchObject({context: metrics, data: metrics})
     expect(JSON.stringify(result)).not.toContain('private')
+  })
+
+  test.each([
+    {step: 'started'},
+    {
+      averageGenerationDuration: 25,
+      generationFailedCount: 0,
+      generationSuccessfulCount: 3,
+      step: 'stopped',
+      watcherDuration: 1500,
+    },
+  ])('preserves TypeGen watch metrics for $step', (metrics) => {
+    const result = sanitizeTelemetryEvent(
+      event({
+        context: {...metrics, configPath: 'private'},
+        data: {...metrics, outputPath: 'private'},
+        name: 'Typegen Watch Mode Started',
+        type: 'trace.log',
+        version: 0,
+      }),
+    )
+    expect(result).toMatchObject({
+      context: metrics,
+      data: metrics,
+      name: 'Typegen Watch Mode Started',
+      type: 'trace.log',
+      version: 0,
+    })
+    expect(JSON.stringify(result)).not.toContain('private')
+    expect(sanitizeTelemetryEvent(result)).toEqual(result)
+  })
+
+  test('rejects invalid TypeGen watch metrics and unrecognized versions', () => {
+    const input = event({
+      data: {
+        averageGenerationDuration: Infinity,
+        generationFailedCount: -1,
+        generationSuccessfulCount: 'private',
+        step: 'private',
+        watcherDuration: Number.NaN,
+      },
+      name: 'Typegen Watch Mode Started',
+      version: 0,
+    })
+    expect(sanitizeTelemetryEvent(input)).toMatchObject({data: {}})
+    expect(
+      sanitizeTelemetryEvent(
+        event({
+          data: {generationSuccessfulCount: 3, step: 'stopped'},
+          name: 'Typegen Watch Mode Started',
+          version: 99,
+        }),
+      ),
+    ).toMatchObject({data: {}})
   })
 
   test('omits unknown event versions and invalid metric values', () => {

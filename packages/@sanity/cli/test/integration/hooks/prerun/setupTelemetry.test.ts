@@ -15,6 +15,7 @@ import {
   reportCliTraceError,
 } from '@sanity/cli-core'
 import {createTestToken, mockApi, testHook} from '@sanity/cli-test'
+import {TypegenWatchModeTrace} from '@sanity/codegen'
 import {type TelemetryEvent} from '@sanity/telemetry'
 import {cleanAll, pendingMocks} from 'nock'
 import {glob} from 'tinyglobby'
@@ -22,8 +23,10 @@ import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
 import {setupTelemetry} from '../../../../src/hooks/prerun/setupTelemetry.js'
 import {TELEMETRY_API_VERSION} from '../../../../src/services/telemetry.js'
+import {commandIdentity} from '../../../../src/util/telemetry/cliCommandIdentity.js'
 import {flushTelemetryFiles} from '../../../../src/util/telemetry/flushTelemetryFiles.js'
 import {readNDJSON} from '../../../../src/util/telemetry/readNDJSON.js'
+import {sanitizeTelemetryEvent} from '../../../../src/util/telemetry/sanitizeTelemetryEvent.js'
 import {getCommandAndConfig} from '../../../helpers/getCommandAndConfig.js'
 
 const mockTelemetryDebug = vi.hoisted(() => {
@@ -167,6 +170,47 @@ describe('setupTelemetry integration test', () => {
     clearCliTelemetry()
   })
 
+  test('preserves every resolved built-in and bundled plugin command without positional input', async () => {
+    const pluginCommands = config.commands.filter((command) =>
+      ['@sanity/runtime-cli', '@sanity/workflow-cli'].includes(command.pluginName ?? ''),
+    )
+    expect(new Set(pluginCommands.map((command) => command.pluginName))).toEqual(
+      new Set(['@sanity/runtime-cli', '@sanity/workflow-cli']),
+    )
+    for (const command of config.commands) {
+      const {id} = await command.load()
+      const [groupOrCommand, ...commandArguments] = id.split(':')
+      const expected = {commandArguments, groupOrCommand}
+      expect(commandIdentity(id, ['private-input']), id).toEqual(expected)
+      expect(commandIdentity(groupOrCommand, [...commandArguments, 'private-input']), id).toEqual(
+        expected,
+      )
+    }
+  })
+
+  test('recognizes the watch event emitted by the installed TypeGen package', () => {
+    const {name, version} = TypegenWatchModeTrace
+    const data = {
+      averageGenerationDuration: 25,
+      generationFailedCount: 0,
+      generationSuccessfulCount: 3,
+      step: 'stopped',
+      watcherDuration: 1500,
+    }
+    expect(
+      sanitizeTelemetryEvent({
+        context: undefined,
+        createdAt: new Date().toISOString(),
+        data,
+        name,
+        sessionId: 'session_01h3s55cezeqby0hf79brgdqj0',
+        traceId: 'trace_01h3s55cezeqby0hf79brgdqj0',
+        type: 'trace.log',
+        version,
+      }),
+    ).toMatchObject({data, name, version})
+  })
+
   test('shows telemetry disclosure when not previously disclosed', async () => {
     const {stderr} = await testHook<'prerun'>(setupTelemetry, {
       config,
@@ -232,6 +276,21 @@ describe('setupTelemetry integration test', () => {
   })
 
   test.each([
+    {
+      expected: ['--dataset', '--project-id'],
+      flags: ['-dprivate', '-pprivate'],
+      id: 'documents:validate',
+    },
+    {
+      expected: ['--dataset', '--project-id'],
+      flags: ['-d=private', '-p=private'],
+      id: 'documents:validate',
+    },
+    {
+      expected: ['--dataset', '--project-id'],
+      flags: ['-d', 'private', '-p', 'private'],
+      id: 'documents:validate',
+    },
     {
       expected: ['--file', '--format=json'],
       flags: ['--file=private', '--format=json'],

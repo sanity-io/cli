@@ -5,10 +5,11 @@ import {parseArguments} from '../parseArguments.js'
 import {defineCommandTelemetry} from '../telemetry/commandTelemetry.js'
 
 const flags = {
-  dataset: Flags.string(),
+  dataset: Flags.string({char: 'd'}),
   file: Flags.string(),
-  format: Flags.string({aliases: ['output-format', 'p'], char: 'f', charAliases: ['o']}),
+  format: Flags.string({aliases: ['output-format', 'r'], char: 'f', charAliases: ['o']}),
   header: Flags.string({char: 'H', multiple: true}),
+  'project-id': Flags.string({char: 'p'}),
   quiet: Flags.boolean({char: 'q'}),
   token: Flags.string({aliases: ['auth-token'], char: 't'}),
   watch: Flags.boolean({allowNo: true}),
@@ -58,6 +59,24 @@ describe('parseArguments', () => {
     expect(result.extraArguments).toContain('--token')
   })
 
+  test.each([
+    {
+      args: ['-dproduction', '-ppr0j1234'],
+      expected: ['--dataset=production', '--project-id=pr0j1234'],
+    },
+    {
+      args: ['-d=production', '-p=pr0j1234'],
+      expected: ['--dataset=production', '--project-id=pr0j1234'],
+    },
+    {args: ['-d', 'production', '-p', 'pr0j1234'], expected: ['--dataset', '--project-id']},
+    {
+      args: ['-qdproduction', '-fjson', '-f=yaml'],
+      expected: ['--quiet', '--dataset=production', '--format=json', '--format=yaml'],
+    },
+  ])('canonicalizes resolved option names for $args', ({args, expected}) => {
+    expect(parse(args).extraArguments).toEqual(expected)
+  })
+
   test('handles repeated headers and consumes dash-leading values', () => {
     expect(
       parse(['-HAuthorization: Bearer private', '--header=-private', '-H', '--format=private'])
@@ -89,8 +108,8 @@ describe('parseArguments', () => {
 
   test('recognizes non-sensitive aliases and boolean negation', () => {
     expect(
-      parse(['--output-format=json', '-ojson', '-pjson', '--no-watch']).extraArguments,
-    ).toEqual(['--output-format=json', '-ojson', '-pjson', '--no-watch'])
+      parse(['--output-format=json', '-ojson', '-rjson', '--no-watch']).extraArguments,
+    ).toEqual(['--format=json', '--format=json', '--format=json', '--no-watch'])
   })
 
   test('does not log an invalid value attached to a boolean', () => {

@@ -186,6 +186,16 @@ const eventSchemas: Record<string, {fields: Schema; versions: number[]}> = {
     versions: [0],
   },
   'Studio Build Completed': {fields: {outputSize: number}, versions: [0]},
+  'Typegen Watch Mode Started': {
+    fields: {
+      averageGenerationDuration: number,
+      generationFailedCount: number,
+      generationSuccessfulCount: number,
+      step: oneOf('started', 'stopped'),
+      watcherDuration: number,
+    },
+    versions: [0],
+  },
   'Types Generated': {
     fields: {
       configMethod: oneOf('legacy', 'cli'),

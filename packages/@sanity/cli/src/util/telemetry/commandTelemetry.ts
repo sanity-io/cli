@@ -86,7 +86,12 @@ export function collectTelemetryFlags(
       // An unknown option may consume the next token, including a known flag's spelling.
       // Stop rather than interpreting private input as telemetry.
       if (!flag) break
-      result.push(flag.redact || !flag.option ? flag.canonical : argument)
+      const value = separator === -1 ? undefined : argument.slice(separator + 1)
+      result.push(
+        flag.redact || !flag.option || value === undefined
+          ? flag.canonical
+          : `${flag.canonical}=${value}`,
+      )
       if (flag.option && separator === -1) index++
       continue
     }
@@ -99,7 +104,9 @@ export function collectTelemetryFlags(
         continue
       }
       const value = argument.slice(offset + 1)
-      result.push(flag.redact || !value ? flag.canonical : `-${argument[offset]}${value}`)
+      result.push(
+        flag.redact || !value ? flag.canonical : `${flag.canonical}=${value.replace(/^=/, '')}`,
+      )
       if (!value) index++
       break
     }
