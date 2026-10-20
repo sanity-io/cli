@@ -29,7 +29,7 @@ interface CreateOrSelectProjectStep {
 
 interface CreateOrSelectDatasetStep {
   datasetName: string
-  selectedOption: 'create' | 'none' | 'select'
+  selectedOption: 'create' | 'none' | 'select' | 'skip'
   step: 'createOrSelectDataset'
 
   visibility?: 'private' | 'public'

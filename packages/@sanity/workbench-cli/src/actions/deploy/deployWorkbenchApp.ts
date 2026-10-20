@@ -1,4 +1,5 @@
-import {basename, dirname} from 'node:path'
+import {readFile} from 'node:fs/promises'
+import {basename, dirname, join} from 'node:path'
 import {createGzip} from 'node:zlib'
 
 import {type AppVisibility, type CliConfig} from '@sanity/cli-core'
@@ -80,6 +81,7 @@ export async function createCoreApp(options: {
  * @internal
  */
 export async function createStudio(options: {
+  externalUrl?: string
   name?: string
   organizationId: string
   projectId: string | undefined
@@ -107,6 +109,10 @@ export async function createStudio(options: {
  * `onDeployed` fires the instant the deployment is live, before the metadata
  * sync — so a caller can disarm a create-time rollback that must not delete an
  * application once it has an active deployment.
+ *
+ * The build's `mf-manifest.json` ships with every deployment. `isExternal`
+ * skips the tarball: the customer serves the build from the application's
+ * registered origin.
  * @internal
  */
 export async function deployWorkbenchApp(options: {
@@ -116,6 +122,7 @@ export async function deployWorkbenchApp(options: {
   icon?: string
   isApp: boolean
   isAutoUpdating: boolean
+  isExternal?: boolean
   label?: string
   onDeployed?: () => void
   /**
@@ -136,6 +143,7 @@ export async function deployWorkbenchApp(options: {
     icon,
     isApp,
     isAutoUpdating,
+    isExternal = false,
     label = 'Deploying...',
     onDeployed,
     slug,
@@ -145,7 +153,10 @@ export async function deployWorkbenchApp(options: {
     visibility,
     workspaces,
   } = options
-  const tarball = createTar({cwd: dirname(sourceDir)}, [basename(sourceDir)]).pipe(createGzip())
+  const mfManifest = JSON.parse(await readFile(join(sourceDir, 'mf-manifest.json'), 'utf8'))
+  const tarball = isExternal
+    ? undefined
+    : createTar({cwd: dirname(sourceDir)}, [basename(sourceDir)]).pipe(createGzip())
 
   const spin = spinner(label).start()
   try {
@@ -157,6 +168,7 @@ export async function deployWorkbenchApp(options: {
         toBrettInterface(iface, version),
       ),
       isAutoUpdating,
+      mfManifest,
       tarball,
       version,
       workspaces,

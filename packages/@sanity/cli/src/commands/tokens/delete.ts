@@ -4,10 +4,12 @@ import {requiredWhenUnattended} from '@sanity/cli-core/flags'
 import {confirm, select} from '@sanity/cli-core/ux'
 import {ClientError} from '@sanity/client'
 
-import {promptForProject} from '../../prompts/promptForProject.js'
-import {deleteToken, getProjectMembership, getTokens} from '../../services/tokens.js'
+import {formatTokenAccess} from '../../actions/tokens/formatTokenAccess.js'
+import {type TokenScope} from '../../actions/tokens/types.js'
+import {deleteToken, getTokens} from '../../services/tokens.js'
 import {formatCliErrorMessages} from '../../util/formatCliErrorMessages.js'
-import {getProjectIdFlag} from '../../util/sharedFlags.js'
+import {resolveTokenScope} from '../../util/resolveTokenScope.js'
+import {getOrganizationFlag, getProjectIdFlag} from '../../util/sharedFlags.js'
 
 const deleteTokenDebug = subdebug('tokens:delete')
 
@@ -19,9 +21,17 @@ export class DeleteTokensCommand extends SanityCommand<typeof DeleteTokensComman
     }),
   }
 
-  static override description = 'Delete an API token from the project'
+  static override description = 'Delete an API token from a project or organization'
 
   static override examples = [
+    {
+      command: '<%= config.bin %> <%= command.id %> --organization org123',
+      description: 'Interactively select and delete an organization token',
+    },
+    {
+      command: '<%= config.bin %> <%= command.id %> silJ2lFmK6dONB --organization org123 --yes',
+      description: 'Delete an organization token without confirmation',
+    },
     {
       command: '<%= config.bin %> <%= command.id %>',
       description: 'Interactively select and delete a token',
@@ -41,6 +51,11 @@ export class DeleteTokensCommand extends SanityCommand<typeof DeleteTokensComman
   ]
 
   static override flags = {
+    ...getOrganizationFlag({
+      description: 'Delete a token managed by this organization',
+      exclusive: ['project-id'],
+      semantics: 'specify',
+    }),
     ...getProjectIdFlag({
       description: 'Project ID to delete token from',
       semantics: 'override',
@@ -54,8 +69,6 @@ export class DeleteTokensCommand extends SanityCommand<typeof DeleteTokensComman
   }
 
   static override hiddenAliases: string[] = ['token:delete']
-
-  private projectId!: string
 
   public async run(): Promise<void> {
     const {args, flags} = await this.parse(DeleteTokensCommand)
@@ -77,22 +90,21 @@ export class DeleteTokensCommand extends SanityCommand<typeof DeleteTokensComman
       }
     }
 
-    // Ensure we have project context
-    const projectId = await this.getProjectId({
-      fallback: () =>
-        promptForProject({
-          requiredPermissions: [{grant: 'delete', permission: 'sanity.project.tokens'}],
-        }),
+    const scope = await resolveTokenScope({
+      getProjectId: this.getProjectId.bind(this),
+      grant: 'delete',
+      organization: flags.organization,
     })
 
-    this.projectId = projectId
-
-    const tokenId = givenTokenId || (await this.getTokenIdFromList())
+    const tokenId = givenTokenId || (await this.getTokenIdFromList(scope))
 
     if (!skipConfirmation) {
       const confirmed = await confirm({
         default: false,
-        message: `Delete API token "${tokenId}"?`,
+        message:
+          scope.resourceType === 'organization'
+            ? `Delete API token "${tokenId}" from organization "${scope.resourceId}"? This revokes all of its organization and project access.`
+            : `Delete API token "${tokenId}"?`,
       })
 
       if (!confirmed) {
@@ -102,10 +114,7 @@ export class DeleteTokensCommand extends SanityCommand<typeof DeleteTokensComman
     }
 
     try {
-      await deleteToken({
-        projectId: this.projectId,
-        tokenId,
-      })
+      await deleteToken(scope, tokenId)
 
       this.log('API token deleted')
     } catch (error) {
@@ -119,29 +128,29 @@ export class DeleteTokensCommand extends SanityCommand<typeof DeleteTokensComman
     }
   }
 
-  private async getTokenIdFromList() {
+  private async getTokenIdFromList(scope: TokenScope) {
     let tokens: Awaited<ReturnType<typeof getTokens>>
     try {
-      tokens = await getTokens(this.projectId)
+      tokens = await getTokens(scope)
     } catch (error) {
       const err = error as Error
-      deleteTokenDebug(`Error fetching tokens for project ${this.projectId}`, err)
+      deleteTokenDebug(`Error fetching tokens for ${scope.resourceType} ${scope.resourceId}`, err)
       this.error(
-        `Could not list API tokens:\n${err.message}\nCheck the project ID and your access permissions, then try again.`,
+        `Could not list API tokens:\n${err.message}\nCheck the ${scope.resourceType} ID and your access permissions, then try again.`,
         {exit: exitCodes.RUNTIME_ERROR},
       )
     }
 
     if (tokens.length === 0) {
-      this.error('No API tokens found for this project.', {
+      this.error(`No API tokens found for this ${scope.resourceType}.`, {
         exit: exitCodes.RUNTIME_ERROR,
       })
     }
 
-    const choices = tokens.map((token) => ({
-      name: `${token.label} (${getProjectMembership(token, this.projectId)?.roleNames.join(', ') ?? ''})`,
-      value: token.id,
-    }))
+    const choices = tokens.map((token) => {
+      const access = formatTokenAccess(token, scope)
+      return {name: `${token.label} [${token.id}] (${access})`, value: token.id}
+    })
 
     return select({
       choices,

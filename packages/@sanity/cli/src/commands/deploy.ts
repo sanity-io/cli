@@ -41,6 +41,10 @@ export class DeployCommand extends SanityCommand<typeof DeployCommand> {
       description: 'Register an externally hosted studio (studioHost contains full URL)',
     },
     {
+      command: '<%= config.bin %> <%= command.id %> --external --url https://apps.example.com',
+      description: 'Register an externally hosted studio, served from the provided origin',
+    },
+    {
       command: '<%= config.bin %> <%= command.id %> --create --title "My App" --yes --json',
       description:
         'Create and deploy an App SDK app without prompts. Save application.id as deployment.appId, then omit --create on later deploys',
@@ -78,7 +82,7 @@ export class DeployCommand extends SanityCommand<typeof DeployCommand> {
     external: Flags.boolean({
       default: false,
       description: 'Register an externally hosted studio',
-      exclusive: ['source-maps', 'minify', 'build'],
+      exclusive: ['source-maps', 'minify'],
     }),
     json: Flags.boolean({
       char: 'j',
@@ -104,7 +108,7 @@ export class DeployCommand extends SanityCommand<typeof DeployCommand> {
     }),
     url: Flags.string({
       description:
-        'Studio URL for deployment. For external studios, the full URL. For hosted studios, the hostname (e.g. "my-studio" or "my-studio.sanity.studio")',
+        'Studio URL for deployment. For external deploys, the full URL. For hosted studios, the hostname (e.g. "my-studio" or "my-studio.sanity.studio")',
     }),
     verbose: Flags.boolean({
       default: false,

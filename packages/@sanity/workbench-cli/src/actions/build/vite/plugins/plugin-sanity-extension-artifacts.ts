@@ -1,11 +1,17 @@
 import fs from 'node:fs'
 import path from 'node:path'
+import {fileURLToPath} from 'node:url'
 
 import {type Plugin} from 'vite'
 
 import {type GeneratedArtifact} from '../../artifact.js'
+import {WORKER_BUS_ENTRY} from '../../services/artifact.js'
 import {RUNTIME_DIR} from '../constants.js'
 import {getFederationApi} from './plugin-module-federation.js'
+
+const workerBusPath = fileURLToPath(
+  new URL('../../../../_exports/_internal_worker_bus.js', import.meta.url),
+)
 
 function relativeImport(fromFile: string, toFile: string): string {
   const rel = path.relative(path.dirname(fromFile), toFile).split(path.sep).join('/')
@@ -44,6 +50,12 @@ export function sanityExtensionArtifacts(options: {
   artifacts: readonly GeneratedArtifact[]
 }): Plugin {
   return {
+    // The generated worker.js imports the bus client from this package, which
+    // the app has no dependency on and so can't resolve by name.
+    config: () => ({
+      optimizeDeps: {exclude: [WORKER_BUS_ENTRY]},
+      resolve: {alias: {[WORKER_BUS_ENTRY]: workerBusPath}},
+    }),
     configResolved(config) {
       writeArtifacts({
         artifacts: options.artifacts,

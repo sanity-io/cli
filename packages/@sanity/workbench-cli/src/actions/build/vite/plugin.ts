@@ -6,6 +6,11 @@ import {type PluginOption} from 'vite'
 
 import {type WorkbenchExposes} from '../../../resolveWorkbenchApp.js'
 import {artifactExposes, workbenchArtifacts} from '../artifact.js'
+import {isMediaLibraryConfigApp} from '../configs/configApp.js'
+import {
+  hasMediaLibraryIslandRuntime,
+  MEDIA_LIBRARY_ISLAND_RUNTIME_MODULE,
+} from '../configs/mediaLibraryIslandRuntime.js'
 import {FEDERATION_FILE_NAME, RUNTIME_DIR} from './constants.js'
 import {sanityFederationHost} from './plugins/plugin-federation-host.js'
 import {type FederationOptions, sanityModuleFederation} from './plugins/plugin-module-federation.js'
@@ -91,11 +96,25 @@ export const federation = (options: FederationPluginOptions): PluginOption => {
 
   const entryPath = resolveEntryPath(generatedEntry)
 
+  // A Media Library config's `./island-runtime` expose re-exports the mount
+  // runtime from the app's installed `sanity`; skip it (the host falls back to
+  // degraded rendering for custom inputs) when that version predates the entry,
+  // since an unresolvable import would fail the whole build.
+  const isConfigApp = isMediaLibraryConfigApp(exposes)
+  const islandRuntime = isConfigApp && hasMediaLibraryIslandRuntime(workDir)
+  if (isConfigApp && !islandRuntime) {
+    // eslint-disable-next-line no-console -- build-time warning for the app developer
+    console.warn(
+      `The installed sanity version does not ship ${MEDIA_LIBRARY_ISLAND_RUNTIME_MODULE}; ` +
+        'custom field inputs will not render in the Media Library until sanity is upgraded.',
+    )
+  }
+
   // Each view component (`./views/<view>/<component>`) and each service loader
   // (`./services/<name>`) is exposed straight to the host, pointing at the file
   // the extension-artifacts plugin generates under RUNTIME_DIR. A service's
   // worker bundle carries no expose — the host reaches it through its loader.
-  const artifacts = workbenchArtifacts(exposes ?? {})
+  const artifacts = workbenchArtifacts(exposes ?? {}, {islandRuntime})
   const artifactModuleExposes = artifactExposes(artifacts, (artifactPath) =>
     resolveEntryPath(`./${RUNTIME_DIR}/${artifactPath}`),
   )

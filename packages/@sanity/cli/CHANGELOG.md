@@ -1,5 +1,90 @@
 # Change Log
 
+## 8.21.0
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-v8.20.0...cli-v8.21.0)
+
+_2026-10-19_
+
+### Features
+
+- **tokens:** list and delete organization tokens ([#1992](https://github.com/sanity-io/cli/pull/1992)) ([0c842e5](https://github.com/sanity-io/cli/commit/0c842e56b121a82713f657bee0f7df3bb9e9754d))
+
+## 8.20.0
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-v8.19.0...cli-v8.20.0)
+
+_2026-10-18_
+
+### Features
+
+- add whoami command ([#1993](https://github.com/sanity-io/cli/pull/1993)) ([d5a67b1](https://github.com/sanity-io/cli/commit/d5a67b1bca28962151c5686eed71c149637f199d))
+
+## 8.19.0
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-v8.18.0...cli-v8.19.0)
+
+_2026-10-17_
+
+### Features
+
+- **tokens:** create organization tokens with org permissions and project roles ([#1989](https://github.com/sanity-io/cli/pull/1989)) ([9f33a2f](https://github.com/sanity-io/cli/commit/9f33a2f1f4308e3c31c2cf1cd4db9544cd3d65c3))
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/cli-core bumped to 3.10.0
+
+## 8.18.0
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-v8.17.1...cli-v8.18.0)
+
+_2026-10-16_
+
+### Features
+
+- **workbench-cli:** let worker services respond to event topics ([#1986](https://github.com/sanity-io/cli/pull/1986)) ([0940360](https://github.com/sanity-io/cli/commit/0940360e17dcafe2137c24d99e4ecb6c883ad3c2))
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/workbench-cli bumped to 2.11.0
+
+## 8.17.1
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-v8.17.0...cli-v8.17.1)
+
+_2026-10-15_
+
+### Bug Fixes
+
+- **workbench-cli:** load window views without an entry ([#1982](https://github.com/sanity-io/cli/pull/1982)) ([c7876b8](https://github.com/sanity-io/cli/commit/c7876b88527317e296d27c2ca3d2c53c43fffe8b))
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/workbench-cli bumped to 2.10.0
+
+## 8.17.0
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-v8.16.0...cli-v8.17.0)
+
+_2026-10-15_
+
+### Features
+
+- **deploy:** `--external` for federated studios ([#1965](https://github.com/sanity-io/cli/pull/1965)) ([62b3bee](https://github.com/sanity-io/cli/commit/62b3beeea3d81635dcb759421489b5cf0b84fa76))
+- **workbench-cli:** give worker services a message bus ([#1970](https://github.com/sanity-io/cli/pull/1970)) ([6b2e917](https://github.com/sanity-io/cli/commit/6b2e917f4573df1a97c1f35df8cd4e2dc637c785))
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/workbench-cli bumped to 2.9.0
+
 ## 8.16.0
 
 [Compare changes](https://github.com/sanity-io/cli/compare/cli-v8.15.0...cli-v8.16.0)

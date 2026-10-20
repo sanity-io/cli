@@ -40,6 +40,7 @@ const workspaces: BrettWorkspace[] = [
   },
 ]
 const access: BrettAccess[] = [{resourceId: 'proj-1.production', resourceType: 'dataset'}]
+const mfManifest = {id: 'my-studio', metaData: {remoteEntry: {name: 'remoteEntry-abc.js'}}}
 
 /** The (name, value) pairs a call appended to its FormData. */
 function appendedFields(): Array<[string, unknown]> {
@@ -149,6 +150,23 @@ describe('createApplication', () => {
     expect(mockClient.request.mock.calls[0][0].body).toMatchObject({isSingleton: true})
   })
 
+  test('includes externalUrl on create when set', async () => {
+    mockClient.request.mockResolvedValueOnce({id: 'studio_1'})
+
+    await createApplication({
+      externalUrl: 'https://studio.example.com',
+      organizationId: 'org-1',
+      projectId: 'proj-1',
+      slug: 'my-studio',
+      title: 'My Studio',
+      type: 'studio',
+    })
+
+    expect(mockClient.request.mock.calls[0][0].body).toMatchObject({
+      externalUrl: 'https://studio.example.com',
+    })
+  })
+
   test('sends studio config for a studio create, no workspaces', async () => {
     mockClient.request.mockResolvedValueOnce({id: 'app_1'})
 
@@ -191,6 +209,7 @@ describe('createDeployment', () => {
       applicationId: 'app_1',
       interfaces,
       isAutoUpdating: true,
+      mfManifest,
       tarball: tarball(),
       version: '1.2.4',
     })
@@ -202,6 +221,9 @@ describe('createDeployment', () => {
     expect(fields).toContainEqual(['version', '1.2.4'])
     expect(fields).toContainEqual(['isAutoUpdating', 'true'])
     expect(fields).toContainEqual(['interfaces', JSON.stringify(interfaces)])
+    expect(fields).toContainEqual(['mfManifest', JSON.stringify(mfManifest)])
+    // The server requires every field part to precede the tarball.
+    expect(fields.at(-1)?.[0]).toBe('tarball')
     expect(fields.map(([name]) => name)).not.toContain('config')
     expect(fields.map(([name]) => name)).not.toContain('workspaces')
     expect(fields.map(([name]) => name)).not.toContain('access')
@@ -214,6 +236,7 @@ describe('createDeployment', () => {
       applicationId: 'app_1',
       interfaces,
       isAutoUpdating: false,
+      mfManifest,
       tarball: tarball(),
       version: '3.0.1',
       workspaces,
@@ -230,6 +253,7 @@ describe('createDeployment', () => {
       applicationId: 'app_1',
       interfaces,
       isAutoUpdating: false,
+      mfManifest,
       tarball: tarball(),
       version: '3.0.1',
     })
@@ -245,11 +269,28 @@ describe('createDeployment', () => {
       applicationId: 'app_1',
       interfaces,
       isAutoUpdating: false,
+      mfManifest,
       tarball: tarball(),
       version: '3.0.1',
     })
 
     expect(appendedFields().map(([name]) => name)).not.toContain('access')
+  })
+
+  test('sends no tarball for an external deployment', async () => {
+    mockClient.request.mockResolvedValueOnce({id: 'dep_1'})
+
+    await createDeployment({
+      applicationId: 'studio_1',
+      interfaces,
+      isAutoUpdating: false,
+      mfManifest,
+      version: '1.0.0',
+    })
+
+    const fields = appendedFields()
+    expect(fields).toContainEqual(['mfManifest', JSON.stringify(mfManifest)])
+    expect(fields.map(([name]) => name)).not.toContain('tarball')
   })
 })
 

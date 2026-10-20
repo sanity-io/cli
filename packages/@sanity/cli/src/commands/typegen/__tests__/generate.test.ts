@@ -50,6 +50,12 @@ vi.mock(import('../../../actions/typegen/generateResourceTypes.js'), () => ({
   resolveResourceSchemas,
 }))
 
+const watchResourceTypes = vi.hoisted(() =>
+  vi.fn<typeof import('../../../actions/typegen/watchResourceTypes.js').watchResourceTypes>(),
+)
+
+vi.mock(import('../../../actions/typegen/watchResourceTypes.js'), () => ({watchResourceTypes}))
+
 const {TypegenGenerateCommand} = await import('../generate.js')
 
 const baseResult = {
@@ -253,6 +259,7 @@ describe('#typegen:generate', () => {
       const [resolveOptions] = resolveResourceSchemas.mock.calls[0]
       expect(resolveOptions.resources).toEqual([remote, local])
       expect(resolveOptions.workDir).toBe(convertToSystemPath('/test/path'))
+      expect(resolveOptions.checkSchemaFiles).toBe(true)
 
       expect(generateResourceTypes).toHaveBeenCalledOnce()
       const [generateOptions] = generateResourceTypes.mock.calls[0]
@@ -304,14 +311,67 @@ describe('#typegen:generate', () => {
       expect(generateResourceTypes).not.toHaveBeenCalled()
     })
 
-    test('rejects --watch as a usage error', async () => {
+    test('with --watch, resolves every schema once, then watches the resources', async () => {
+      mockResolution()
+      const stop = vi.fn().mockResolvedValue(undefined)
+      watchResourceTypes.mockReturnValue({
+        getStats: () => ({
+          averageGenerationDuration: 5,
+          generationFailedCount: 0,
+          generationSuccessfulCount: 1,
+          watcherDuration: 10,
+        }),
+        stop,
+      })
+
+      const promise = testCommand(TypegenGenerateCommand, ['--watch'], {mocks: resourceMocks})
+
+      await waitForSigintListener()
+      const [options] = watchResourceTypes.mock.calls[0]
+      options.onChange?.('change', 'src/queries.ts')
+      options.onError?.(new Error('Failed to generate types for "abc123.staging"'))
+
+      const sigintListener = process.listeners('SIGINT').at(-1)
+      if (!sigintListener) throw new Error('Expected a SIGINT listener to be registered')
+      sigintListener('SIGINT')
+
+      const {error, stderr, stdout} = await promise
+      if (error) throw error
+
+      expect(resolveResourceSchemas).toHaveBeenCalledOnce()
+      // A missing local schema file is reported on each run until it appears.
+      expect(resolveResourceSchemas.mock.calls[0][0].checkSchemaFiles).toBe(false)
+      expect(watchResourceTypes).toHaveBeenCalledOnce()
+      expect(options.resolved).toBe(resolved)
+      expect(options.workDir).toBe(convertToSystemPath('/test/path'))
+      expect(options.config.overloadClientMethods).toBe(false)
+      expect(typeof options.onProgress?.(resolved[0])).toBe('function')
+
+      // The watcher generates; the command does not generate on its own.
+      expect(generateResourceTypes).not.toHaveBeenCalled()
+      expect(runTypegenWatcher).not.toHaveBeenCalled()
+
+      expect(stderr).toContain('Fetched the schema bound to abc123.production (uEiB-version)')
+      expect(stdout).toContain('change: src/queries.ts')
+      expect(stderr).toContain('Failed to generate types for "abc123.staging"')
+      expect(stop).toHaveBeenCalledOnce()
+      expect(process.listenerCount('SIGINT')).toBe(0)
+      expect(process.listenerCount('SIGTERM')).toBe(0)
+    })
+
+    test('with --watch, exits 1 when a schema cannot be located', async () => {
+      resolveResourceSchemas.mockRejectedValue(
+        new Error('Failed to get the schema for "abc123.production": No schema is bound'),
+      )
+
       const {error} = await testCommand(TypegenGenerateCommand, ['--watch'], {
         mocks: resourceMocks,
       })
 
-      expect(error?.message).toContain('Watch mode does not support typegen.resources yet')
-      expect(error?.oclif?.exit).toBe(2)
-      expect(runTypegenWatcher).not.toHaveBeenCalled()
+      expect(error?.message).toContain('Failed to get the schema for "abc123.production"')
+      expect(error?.oclif?.exit).toBe(1)
+      expect(watchResourceTypes).not.toHaveBeenCalled()
+      expect(process.listenerCount('SIGINT')).toBe(0)
     })
   })
 

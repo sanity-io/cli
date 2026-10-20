@@ -115,6 +115,19 @@ describe('resolveResourceSchemas', () => {
     )
   })
 
+  test('does not read a local schema file when checkSchemaFiles is false', async () => {
+    const resolved = await resolveResourceSchemas({
+      checkSchemaFiles: false,
+      resources: [local],
+      workDir: '/project',
+    })
+
+    expect(mockReadFile).not.toHaveBeenCalled()
+    expect(resolved).toEqual([
+      {key: 'abc123.staging', resource: local, schemaPath: './schema.staging.json'},
+    ])
+  })
+
   test('fails when a configured schema file is not valid JSON', async () => {
     mockReadFile.mockResolvedValue('[{"name": "book"')
 

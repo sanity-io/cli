@@ -1,5 +1,35 @@
 # Changelog
 
+## 3.10.0
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-core-v3.9.2...cli-core-v3.10.0)
+
+_2026-10-17_
+
+### Features
+
+- **tokens:** create organization tokens with org permissions and project roles ([#1989](https://github.com/sanity-io/cli/pull/1989)) ([9f33a2f](https://github.com/sanity-io/cli/commit/9f33a2f1f4308e3c31c2cf1cd4db9544cd3d65c3))
+
+## 3.9.2
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-core-v3.9.1...cli-core-v3.9.2)
+
+_2026-10-15_
+
+### Bug Fixes
+
+- `sanity deploy` no longer uploads an empty schema when `sanity.config` also exports `projectId` and `dataset` by name. The default export is now read first, like in v3. ([#1980](https://github.com/sanity-io/cli/pull/1980)) ([993a875](https://github.com/sanity-io/cli/commit/993a875214162529d9ba0a0ffb9ca6dcc4690941))
+
+## 3.9.1
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-core-v3.9.0...cli-core-v3.9.1)
+
+_2026-10-14_
+
+### Bug Fixes
+
+- **cli-core:** skip dependency source maps in the studio worker ([#1967](https://github.com/sanity-io/cli/pull/1967)) ([a31f941](https://github.com/sanity-io/cli/commit/a31f94133517fa18216712ce4d39f2324d1a6092))
+
 ## 3.9.0
 
 [Compare changes](https://github.com/sanity-io/cli/compare/cli-core-v3.8.2...cli-core-v3.9.0)

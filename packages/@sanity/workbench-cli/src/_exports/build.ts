@@ -17,5 +17,9 @@ export {buildFederatedApp} from '../actions/build/vite/discover-shared-dependenc
 export {workbenchOptimizeDeps} from '../actions/build/vite/optimize-deps.js'
 export {workbenchVitePlugins} from '../actions/build/vite/workbench-vite-plugins.js'
 export {buildAppId} from '../appId.js'
-export {resolveWorkbenchApp, type WorkbenchExposes} from '../resolveWorkbenchApp.js'
+export {
+  resolveAppEntry,
+  resolveWorkbenchApp,
+  type WorkbenchExposes,
+} from '../resolveWorkbenchApp.js'
 export {type ResolvedMediaLibraryConfig, resolveWorkbenchConfig} from '../resolveWorkbenchConfig.js'
