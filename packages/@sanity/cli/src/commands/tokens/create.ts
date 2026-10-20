@@ -55,6 +55,8 @@ export class CreateTokenCommand extends SanityCommand<typeof CreateTokenCommand>
   static override description =
     'Create a new API token with access to an organization and its projects'
 
+  static override enableJsonFlag = true
+
   static override examples = [
     {
       command: '<%= config.bin %> <%= command.id %> "My API Token"',
@@ -101,10 +103,6 @@ export class CreateTokenCommand extends SanityCommand<typeof CreateTokenCommand>
         'Access to grant, as <permission>[=<role>] or project:<projectId>=<role>[,<role>]. Permissions: context, blueprints, media-library, canvas, sdk-apps, access, deploy-studios. Repeatable',
       helpValue: 'context=editor',
       multiple: true,
-    }),
-    json: Flags.boolean({
-      default: false,
-      description: 'Output as JSON',
     }),
     role: Flags.string({
       description: 'Role to assign on the project (defaults to viewer in unattended mode)',
@@ -161,7 +159,7 @@ export class CreateTokenCommand extends SanityCommand<typeof CreateTokenCommand>
     }
 
     if (flags.json) {
-      this.log(JSON.stringify(token, null, 2))
+      this.logJson(token)
       return
     }
 

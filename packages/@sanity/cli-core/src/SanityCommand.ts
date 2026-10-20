@@ -1,6 +1,7 @@
 import {format, styleText} from 'node:util'
 
-import {Command, Interfaces} from '@oclif/core'
+import {Command, Interfaces, ux} from '@oclif/core'
+import {CLIError, ExitError} from '@oclif/core/errors'
 import {type CommandError, type Input, type ParserOutput} from '@oclif/core/interfaces'
 
 import {subdebug} from './_exports/debug.js'
@@ -16,6 +17,7 @@ import {type CliConfig} from './config/cli/types/cliConfig.js'
 import {findProjectRoot} from './config/findProjectRoot.js'
 import {type ProjectRootResult} from './config/util/recursivelyResolveProjectRoot.js'
 import {enrichAuthError} from './errors/enrichAuthError.js'
+import {JsonOutputError} from './errors/JsonOutputError.js'
 import {NonInteractiveError} from './errors/NonInteractiveError.js'
 import {ProjectRootNotFoundError} from './errors/ProjectRootNotFoundError.js'
 import {getCliExecutionContext} from './executionContext.js'
@@ -25,6 +27,7 @@ import {type CLITelemetryStore} from './telemetry/types.js'
 import {type Output} from './types.js'
 import {isInteractive} from './util/isInteractive.js'
 import {isUnattendedInvocation, isUnattended as resolveIsUnattended} from './util/isUnattended.js'
+import {hasJsonFlagInArgv, toRelayableErrorJson} from './util/jsonInvocation.js'
 
 type Flags<T extends typeof Command> = Interfaces.InferredFlags<
   (typeof SanityCommand)['baseFlags'] & T['flags']
@@ -93,6 +96,8 @@ export abstract class SanityCommand<T extends typeof Command>
   public output: Output = {
     error: this.error.bind(this),
     log: this.log.bind(this),
+    logDiagnostic: this.logDiagnostic.bind(this),
+    logJson: this.logJson.bind(this),
     warn: this.warn.bind(this),
   }
 
@@ -102,7 +107,6 @@ export abstract class SanityCommand<T extends typeof Command>
    * @returns The telemetry store.
    */
   protected telemetry!: CLITelemetryStore
-
   /**
    * Report real command errors to the CLI command trace.
    * User aborts (SIGINT, ExitPromptError) are not reported — the trace is left
@@ -111,9 +115,20 @@ export abstract class SanityCommand<T extends typeof Command>
   protected override async catch(err: CommandError): Promise<void> {
     // ExitPromptError is thrown by `@inquirer/prompts` when the user cancels a prompt
     // The `message === 'SIGINT'` check matches oclif's own convention (see handle.js in @oclif/core)
-    if (err.name === 'ExitPromptError' || err.message === 'SIGINT') {
-      this.logToStderr(styleText('yellow', '\u{203A}') + ' Aborted by user')
-      return this.exit(exitCodes.SIGINT)
+    const isUserAbort = err.name === 'ExitPromptError' || err.message === 'SIGINT'
+    if (isUserAbort) {
+      if (!this.jsonEnabled()) {
+        this.logToStderr(styleText('yellow', '\u{203A}') + ' Aborted by user')
+        return this.exit(exitCodes.SIGINT)
+      }
+      err = new CLIError('Aborted by user', {exit: exitCodes.SIGINT})
+    }
+
+    if (err instanceof ExitError) {
+      if (err.oclif.exit !== exitCodes.SUCCESS) reportCliTraceError(err)
+      if (getCliExecutionContext() || !this.jsonEnabled()) throw err
+      process.exitCode = err.oclif.exit
+      return
     }
 
     // 401s carry login/membership guidance in their message. Applied here
@@ -122,18 +137,21 @@ export abstract class SanityCommand<T extends typeof Command>
     enrichAuthError(err)
 
     // In other cases, we _do_ want to report the error
-    reportCliTraceError(err)
+    if (!isUserAbort) reportCliTraceError(err)
 
     // oclif's base `catch` sets `process.exitCode` as a side effect
     // we do not want to write to the host's own exit status.
     if (getCliExecutionContext()) {
       if (this.jsonEnabled()) {
         this.logJson(this.toErrorJson(err))
-        return
       }
       throw err
     }
 
+    if (this.jsonEnabled()) {
+      process.exitCode =
+        err instanceof CLIError ? err.oclif.exit : (err.exitCode ?? exitCodes.RUNTIME_ERROR)
+    }
     return super.catch(err)
   }
 
@@ -279,6 +297,22 @@ export abstract class SanityCommand<T extends typeof Command>
   }
 
   /**
+   * Whether this run should emit JSON.
+   *
+   * oclif's own check also treats `SANITY_CONTENT_TYPE=json` as a request for
+   * JSON. That reads the host process's environment, so it is consulted only
+   * for a real command line: a programmatic invocation must decide from its own
+   * arguments, never from whatever the embedding process happens to export.
+   */
+  public override jsonEnabled(): boolean {
+    if (!this.ctor.enableJsonFlag) return false
+    if (this.flags) return Boolean(this.flags.json)
+
+    if (!getCliExecutionContext() && super.jsonEnabled()) return true
+    return hasJsonFlagInArgv(this.argv, {...this.ctor.baseFlags, ...this.ctor.flags})
+  }
+
+  /**
    * Write to stdout — or, when running under an execution context (e.g. from
    * an MCP server), to the context's `stdout` sink. Mirrors oclif's `log`
    * semantics: suppressed when `--json` is enabled, printf-style formatting.
@@ -290,6 +324,24 @@ export abstract class SanityCommand<T extends typeof Command>
       return
     }
     if (!this.jsonEnabled()) context.stdout(format(message, ...args))
+  }
+
+  /**
+   * Write a diagnostic that stays visible in JSON mode.
+   *
+   * `log`, `warn` and `logToStderr` are all suppressed once `--json` is on, so
+   * a command that skipped part of its work would report the remainder as a
+   * complete result. stderr carries it instead, where it cannot corrupt the
+   * payload: JSON mode is reachable only from a real command line, since
+   * programmatic invocations drop the flag.
+   */
+  public logDiagnostic(message: string): void {
+    const context = getCliExecutionContext()
+    if (context?.stderr) {
+      context.stderr(message)
+      return
+    }
+    ux.stderr(message)
   }
 
   /**
@@ -318,26 +370,29 @@ export abstract class SanityCommand<T extends typeof Command>
     if (!this.jsonEnabled()) context.stderr(format(message, ...args))
   }
 
-  protected override parse<F extends ParserValues, B extends ParserValues, A extends ParserValues>(
-    options?: Input<F, B, A>,
-    argv: string[] = this.argv,
-  ): Promise<ParserOutput<F, B, A>> {
-    // If no flags defined, exit to default parser early
-    if (!options?.flags) return super.parse(options, argv)
+  protected override async parse<
+    F extends ParserValues,
+    B extends ParserValues,
+    A extends ParserValues,
+  >(options?: Input<F, B, A>, argv: string[] = this.argv): Promise<ParserOutput<F, B, A>> {
+    let resolvedOptions = options
+    const jsonEnabled = this.jsonEnabled()
 
-    // Resolve the actual required flags based on the current unattended mode value
-    const resolvedFlags = resolveUnattendedFlagRequirements(
-      options.flags,
-      isUnattendedInvocation({argv, isInteractive: this.resolveIsInteractive()}),
-    )
-    // If flags weren't modified, use original options object
-    // Otherwise create a new options object with the resolved flag values
-    const resolvedOptions =
-      resolvedFlags === options.flags
-        ? options
-        : {...options, flags: resolvedFlags as Interfaces.FlagInput<F>}
+    if (options?.flags) {
+      const resolvedFlags = resolveUnattendedFlagRequirements(
+        options.flags,
+        jsonEnabled || isUnattendedInvocation({argv, isInteractive: this.resolveIsInteractive()}),
+      )
+      if (resolvedFlags !== options.flags) {
+        resolvedOptions = {...options, flags: resolvedFlags as Interfaces.FlagInput<F>}
+      }
+    }
 
-    return super.parse(resolvedOptions, argv)
+    const parsed = await super.parse(resolvedOptions, argv)
+    const jsonFlag = Boolean(parsed.flags.json) || jsonEnabled
+
+    parsed.flags = {...parsed.flags, json: jsonFlag}
+    return parsed
   }
 
   /**
@@ -360,6 +415,17 @@ export abstract class SanityCommand<T extends typeof Command>
       throw new Error('runInExecutionContext requires a CLI execution context')
     }
     return this._run<TResult>()
+  }
+
+  /**
+   * A command-specific report wins; otherwise oclif's envelope, trimmed to a
+   * bounded set of properties when a programmatic caller will relay it. See
+   * {@link toRelayableErrorJson} for why the untrimmed form is unsafe there.
+   */
+  public override toErrorJson(err: unknown): unknown {
+    if (err instanceof JsonOutputError) return err.payload
+    if (getCliExecutionContext()) return toRelayableErrorJson(err)
+    return super.toErrorJson(err)
   }
 
   /**

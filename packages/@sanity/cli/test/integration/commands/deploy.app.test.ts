@@ -78,6 +78,7 @@ const mockExtractCoreAppManifest = vi.mocked(extractCoreAppManifest)
 
 const appId = 'app-id'
 const organizationId = 'org-id'
+const previousExitCode = process.exitCode
 
 const defaultMocks = {
   cliConfig: {
@@ -110,6 +111,7 @@ describe('#deploy app', () => {
   })
 
   afterEach(() => {
+    process.exitCode = previousExitCode
     vi.clearAllMocks()
     const pending = pendingMocks()
     cleanAll()
@@ -272,12 +274,12 @@ describe('#deploy app', () => {
       if (dryRun) args.push('--dry-run')
       if (title !== undefined) args.push('--title', title)
 
-      const {error, stdout} = await testCommand(DeployCommand, args, {
+      const {stdout} = await testCommand(DeployCommand, args, {
         config: {root: cwd},
         mocks: {cliConfig: {app: {organizationId, title: '   '}}, isInteractive: false},
       })
 
-      expect(error?.oclif?.exit).toBe(2)
+      expect(process.exitCode).toBe(2)
       const result = JSON.parse(stdout)
       if (dryRun) {
         expect(result.canDeploy).toBe(false)
@@ -300,12 +302,12 @@ describe('#deploy app', () => {
       uri: '/user-applications',
     }).reply(200, [{id: 'existing-app', title: 'Existing App'}])
 
-    const {error, stdout} = await testCommand(DeployCommand, ['--title', 'New App', '--json'], {
+    const {stdout} = await testCommand(DeployCommand, ['--title', 'New App', '--json'], {
       config: {root: cwd},
       mocks: {cliConfig: {app: {organizationId}}, isInteractive: false},
     })
 
-    expect(error?.oclif?.exit).toBe(2)
+    expect(process.exitCode).toBe(2)
     expect(JSON.parse(stdout)).toMatchObject({
       deployed: false,
       error: {message: expect.stringContaining('sanity deploy --create --title')},

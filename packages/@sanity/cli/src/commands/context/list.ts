@@ -1,4 +1,3 @@
-import {Flags} from '@oclif/core'
 import {type FlagInput} from '@oclif/core/interfaces'
 import {exitCodes, SanityCommand, subdebug} from '@sanity/cli-core'
 import {getErrorMessage} from '@sanity/cli-core/errors'
@@ -15,6 +14,8 @@ const listContextDebug = subdebug('context:list')
 
 export class ListKnowledgeBasesCommand extends SanityCommand<typeof ListKnowledgeBasesCommand> {
   static override description = 'List knowledge bases in an organization'
+
+  static override enableJsonFlag = true
 
   static override examples = [
     {
@@ -35,10 +36,6 @@ export class ListKnowledgeBasesCommand extends SanityCommand<typeof ListKnowledg
     ...getOrganizationFlag({
       description: 'Organization to list knowledge bases for',
       semantics: 'override',
-    }),
-    json: Flags.boolean({
-      default: false,
-      description: 'Output knowledge bases in JSON format',
     }),
   } satisfies FlagInput
 
@@ -73,7 +70,7 @@ export class ListKnowledgeBasesCommand extends SanityCommand<typeof ListKnowledg
     }
 
     if (json) {
-      this.log(JSON.stringify(knowledgeBases, null, 2))
+      this.logJson(knowledgeBases)
       return
     }
 

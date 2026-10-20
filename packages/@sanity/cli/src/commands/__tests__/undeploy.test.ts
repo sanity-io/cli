@@ -567,6 +567,7 @@ describe('#undeploy', () => {
   })
 
   test('--json without --yes reports the required confirmation as JSON', async () => {
+    const previousExitCode = process.exitCode
     mockApi({
       apiVersion: 'v2024-08-01',
       query: {appHost: 'my-host', appType: 'studio'},
@@ -576,7 +577,7 @@ describe('#undeploy', () => {
       id: 'app-id',
     })
 
-    const {error, stdout} = await testCommand(UndeployCommand, ['--json'], {
+    const {stdout} = await testCommand(UndeployCommand, ['--json'], {
       mocks: {
         cliConfig: {
           api: {projectId: 'test'},
@@ -597,7 +598,8 @@ describe('#undeploy', () => {
       reason: 'Undeploy requires confirmation. Pass --yes to continue.',
       undeployed: false,
     })
-    expect(error?.oclif?.exit).toBe(exitCodes.USAGE_ERROR)
+    expect(process.exitCode).toBe(exitCodes.USAGE_ERROR)
+    process.exitCode = previousExitCode
   })
 
   test('workbench app dry run resolves the Brett application', async () => {
@@ -890,7 +892,7 @@ describe('#undeploy', () => {
       expect(stderr).not.toContain('instead of')
     })
 
-    test('prefers the argument over studioHost and warns', async () => {
+    test('prefers the argument over studioHost and suppresses warnings in JSON mode', async () => {
       mockApi({
         apiVersion: 'v2024-08-01',
         uri: '/projects/test/user-applications/arg-id',
@@ -910,8 +912,7 @@ describe('#undeploy', () => {
         },
       })
 
-      expect(stderr).toMatch(/Using app ID "arg-id" instead of[\s›]+studio host "my-host"/)
-      // The warning stays off stdout, so the JSON payload still parses
+      expect(stderr).not.toContain('Using app ID')
       const payload = JSON.parse(stdout)
       expect(payload.undeployed).toBe(true)
       expect(payload.url).toBe('https://arg-host.sanity.studio')

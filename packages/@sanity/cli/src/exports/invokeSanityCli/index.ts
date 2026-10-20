@@ -24,7 +24,7 @@
  */
 import {fileURLToPath} from 'node:url'
 
-import {Command, Config, Parser, settings} from '@oclif/core'
+import {Command, Config, Flags, Parser, settings} from '@oclif/core'
 import {getHelpFlagAdditions, normalizeArgv} from '@oclif/core/help'
 import {exitCodes} from '@sanity/cli-core'
 import {
@@ -94,6 +94,13 @@ function loadCliCommandConfig(): Promise<Config> {
 }
 
 let cachedConfig: Promise<Config> | undefined
+
+function withoutJsonFlag(argv: string[]): string[] {
+  // Anything after `--` belongs to the command, not to us.
+  const passThrough = argv.indexOf('--')
+  const limit = passThrough === -1 ? argv.length : passThrough
+  return argv.filter((token, index) => index >= limit || token !== '--json')
+}
 
 function unknownCommandResult(argv: string[], policySet: CommandPolicySet): InvokeSanityCliResult {
   const available = Object.entries(policySet)
@@ -261,7 +268,8 @@ async function invokeSanityCliInContext(
   // space-separated topics, accepting colon-separated ids as-is), then apply
   // the policy. Denied and uncategorized ids fail closed, indistinguishable
   // from commands that don't exist.
-  const [commandId = '', ...commandArgv] = normalizeArgv(resolvedConfig, argv)
+  const [commandId = '', ...requestedArgv] = normalizeArgv(resolvedConfig, argv)
+  const commandArgv = withoutJsonFlag(requestedArgv)
   const policy = policySet[commandId] ?? deny
   const commandDefinition =
     policy.kind === 'deny' ? undefined : resolvedConfig.findCommand(commandId)
@@ -280,9 +288,11 @@ async function invokeSanityCliInContext(
   try {
     const parsed = await Parser.parse(commandArgv, {
       args: CommandClass.args,
-      baseFlags: CommandClass.baseFlags,
-      enableJsonFlag: CommandClass.enableJsonFlag,
-      flags: CommandClass.flags,
+      flags: {
+        ...(CommandClass.enableJsonFlag ? {json: Flags.boolean()} : {}),
+        ...CommandClass.baseFlags,
+        ...CommandClass.flags,
+      },
       strict: CommandClass.strict,
     })
     invocation = {
@@ -317,8 +327,18 @@ async function invokeSanityCliInContext(
     }
   }
 
+  let command: InvokableCommand
   try {
-    const command = instantiateCommand(CommandClass, commandArgv, resolvedConfig)
+    command = instantiateCommand(CommandClass, commandArgv, resolvedConfig)
+  } catch (err) {
+    return {
+      commandId,
+      exitCode: err.oclif?.exit ?? exitCodes.RUNTIME_ERROR,
+      output: prettyPrintError(err) || String(err),
+    }
+  }
+
+  try {
     await command.runInExecutionContext()
     return {commandId, exitCode: exitCodes.SUCCESS, output: output.join('\n')}
   } catch (err) {
@@ -331,6 +351,7 @@ async function invokeSanityCliInContext(
 
     const message = prettyPrintError(err) || String(err)
     if (message) output.push(message)
+
     return {
       commandId,
       exitCode: typeof exit === 'number' ? exit : exitCodes.RUNTIME_ERROR,
