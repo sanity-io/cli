@@ -107,7 +107,6 @@ export abstract class SanityCommand<T extends typeof Command>
    * @returns The telemetry store.
    */
   protected telemetry!: CLITelemetryStore
-
   /**
    * Report real command errors to the CLI command trace.
    * User aborts (SIGINT, ExitPromptError) are not reported — the trace is left
@@ -298,8 +297,7 @@ export abstract class SanityCommand<T extends typeof Command>
   }
 
   /**
-   * Whether this run should emit JSON, resolved before `parse()` so that error
-   * paths reached during parsing agree with the ones reached during `run()`.
+   * Whether this run should emit JSON.
    *
    * oclif's own check also treats `SANITY_CONTENT_TYPE=json` as a request for
    * JSON. That reads the host process's environment, so it is consulted only
@@ -308,9 +306,9 @@ export abstract class SanityCommand<T extends typeof Command>
    */
   public override jsonEnabled(): boolean {
     if (!this.ctor.enableJsonFlag) return false
-    if (!getCliExecutionContext() && super.jsonEnabled()) return true
-    if (this.flags?.json) return true
+    if (this.flags) return Boolean(this.flags.json)
 
+    if (!getCliExecutionContext() && super.jsonEnabled()) return true
     return hasJsonFlagInArgv(this.argv, {...this.ctor.baseFlags, ...this.ctor.flags})
   }
 
@@ -390,7 +388,7 @@ export abstract class SanityCommand<T extends typeof Command>
     }
 
     const parsed = await super.parse(resolvedOptions, argv)
-    if (this.jsonEnabled()) parsed.flags = {...parsed.flags, json: true}
+    parsed.flags = {...parsed.flags, json: this.jsonEnabled()}
     return parsed
   }
 

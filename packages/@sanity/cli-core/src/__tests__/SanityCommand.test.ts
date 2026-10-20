@@ -427,6 +427,44 @@ describe('JSON command output', () => {
     expect(command.jsonEnabled()).toBe(expected)
   })
 
+  test.each([
+    {argv: [], expected: false},
+    {argv: ['--json'], expected: true},
+  ])('settles flags.json to $expected for $argv', async ({argv, expected}) => {
+    // `parse` records the answer either way, so `jsonEnabled` can read it back
+    // rather than rescanning argv on every log line for the rest of the run.
+    let seen: unknown
+    const cmdClass = createMockedRunCommand({
+      run: async function () {
+        seen = (this.flags as {json?: boolean}).json
+      },
+    })
+    cmdClass.enableJsonFlag = true
+
+    await cmdClass.run(argv)
+
+    expect(seen).toBe(expected)
+  })
+
+  test('defers to parsed flags for JSON requests the argv scan cannot see', () => {
+    // Past `init()`, `flags.json` is the answer, so a request the pre-parse
+    // scan misses — a flag alias, which it does not resolve — is still honored.
+    class AliasCommand extends SanityCommand<typeof AliasCommand> {
+      static override enableJsonFlag = true
+      static override flags = {json: Flags.boolean({aliases: ['as-json']})}
+      public applyParsedFlags(): void {
+        this.flags = {json: true} as never
+      }
+      public async run(): Promise<void> {}
+    }
+    const command = new AliasCommand(['--as-json'], {} as Config)
+    expect(command.jsonEnabled()).toBe(false)
+
+    command.applyParsedFlags()
+
+    expect(command.jsonEnabled()).toBe(true)
+  })
+
   test.each([1, 2, 3, 130])('preserves exit code %s for terminal JSON failures', async (exit) => {
     class FailingCommand extends JsonCommand {
       public override async run(): Promise<void> {

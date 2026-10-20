@@ -1,10 +1,13 @@
 type FlagDefinitions = Record<string, {char?: string; type?: string} | undefined>
 
 /**
- * Walks argv the way oclif's parser would: stopping at `--`, honouring the `--json` long form,
- * and recognizing a short alias inside a bundle such as `-yj`. Option flags
- * consume the following token, which keeps a value like `--name -j` from being
- * read as a request for JSON.
+ * Walks argv the way oclif's parser would: stopping at `--`, honouring the
+ * `--json` long form, and recognizing a short alias inside a bundle such as
+ * `-yj`. A token following an option flag is skipped, so a parse that fails on
+ * `--name -j` is not read as a request for JSON.
+ *
+ * `--json=<value>` counts regardless of the value. oclif discards the `=` part
+ * for a boolean flag.
  */
 export function hasJsonFlagInArgv(argv: string[], definitions: FlagDefinitions): boolean {
   for (let index = 0; index < argv.length; index++) {
@@ -12,7 +15,7 @@ export function hasJsonFlagInArgv(argv: string[], definitions: FlagDefinitions):
     if (argument === '--') break
 
     if (argument.startsWith('--')) {
-      if (argument === '--json') return true
+      if (argument === '--json' || argument.startsWith('--json=')) return true
       if (!argument.includes('=') && definitions[argument.slice(2)]?.type === 'option') index++
       continue
     }

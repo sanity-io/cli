@@ -1,4 +1,4 @@
-import {Flags} from '@oclif/core'
+import {Flags, Parser} from '@oclif/core'
 import {CLIError} from '@oclif/core/errors'
 import {describe, expect, test} from 'vitest'
 
@@ -16,7 +16,11 @@ describe('hasJsonFlagInArgv', () => {
     {argv: ['-j'], expected: true},
     {argv: ['-yj'], expected: true},
     {argv: ['-jy'], expected: true},
+    {argv: ['--json=true'], expected: true},
+    // oclif drops the `=` part for a boolean, so this still parses as JSON mode
+    {argv: ['--json=false'], expected: true},
     {argv: ['--name=x', '-j'], expected: true},
+    {argv: ['--name=--json'], expected: false},
     {argv: ['-n', 'x', '-j'], expected: true},
     {argv: ['--name', '-j'], expected: false},
     {argv: ['-nj'], expected: false},
@@ -26,6 +30,17 @@ describe('hasJsonFlagInArgv', () => {
     {argv: [], expected: false},
   ])('resolves $argv to $expected', ({argv, expected}) => {
     expect(hasJsonFlagInArgv(argv, definitions)).toBe(expected)
+  })
+
+  test.each(['--json=true', '--json=false'])('agrees with oclif on %s', async (argument) => {
+    // The equals form only reaches `run()` on a non-strict command; a strict
+    // one rejects the leftover value. Either way the scan has to match what
+    // the parser concluded, so that a failure during parsing formats the same
+    // way as one after it.
+    const parsed = await Parser.parse([argument], {flags: definitions, strict: false})
+
+    expect(parsed.flags.json).toBe(true)
+    expect(hasJsonFlagInArgv([argument], definitions)).toBe(true)
   })
 
   test('recognizes the long form without a declared short alias', () => {
