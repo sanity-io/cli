@@ -528,7 +528,9 @@ async function main() {
   // don't each produce their own content release.
   const existingReleaseId = token ? await findActiveRelease(client) : null
   const timestamp = new Date().toISOString().replaceAll(/[:.]/g, '-').slice(0, 19)
-  const releaseId = existingReleaseId ?? `${RELEASE_PREFIX}${timestamp}`
+  // The title always reflects the latest run; the name stays fixed once created.
+  const releaseTitle = `${RELEASE_PREFIX}${timestamp}`
+  const releaseId = existingReleaseId ?? releaseTitle
   const releaseVersions = existingReleaseId
     ? await fetchReleaseVersions(client, existingReleaseId)
     : new Map<string, VersionId>()
@@ -634,7 +636,7 @@ async function main() {
       if (!existingReleaseId) {
         console.log(`\nCreating release: ${releaseId}`)
         await client.releases.create({
-          metadata: {releaseType: 'undecided', title: releaseId},
+          metadata: {releaseType: 'undecided', title: releaseTitle},
           releaseId,
         })
         console.log('Release created.')
@@ -642,6 +644,14 @@ async function main() {
 
       console.log('Committing transaction...')
       await tx.commit({autoGenerateArrayKeys: true})
+
+      if (existingReleaseId) {
+        console.log(`Updating release title: ${releaseTitle}`)
+        await client.releases.edit({
+          patch: {set: {'metadata.title': releaseTitle}},
+          releaseId,
+        })
+      }
     } catch (error) {
       console.error(`Error committing transaction: ${error}`)
       process.exit(1)
@@ -650,6 +660,7 @@ async function main() {
 
   console.log('\n── Summary ──')
   console.log(`Release:   ${releaseId}`)
+  console.log(`Title:     ${releaseTitle}`)
   console.log(`Updated:   ${updated} existing documents`)
   console.log(`Created:   ${created} new documents`)
   console.log(`Unchanged: ${unchanged} documents`)
