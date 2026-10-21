@@ -45,7 +45,9 @@ function mockNoStoredIds(libraryId: string) {
   }).reply(200, {result: []})
 }
 
-describe('planAspectSync against the real media-library-config template', () => {
+// jiti's cold transform of the real template takes ~1s on Linux but can
+// exceed the 5s default on Windows runners.
+describe('planAspectSync against the real media-library-config template', {timeout: 30_000}, () => {
   afterEach(() => {
     vi.unstubAllEnvs()
     const pending = pendingMocks()
