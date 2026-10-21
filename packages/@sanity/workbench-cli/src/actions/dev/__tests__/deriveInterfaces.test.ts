@@ -163,14 +163,14 @@ describe('deriveInterfaces', () => {
     ])
   })
 
-  test('inherits global placement metadata for panel and window views', () => {
+  test('inherits global placement metadata, without its group on panels', () => {
     const app = workbenchApp({
       dock: {group: 'applications', order: 100},
       entry: './src/App.tsx',
       views: [
         {name: 'feed', src: './src/Feed.tsx', surface: 'panel', title: 'Feed'},
         {
-          dock: {group: 'user'},
+          dock: {group: 'system'},
           name: 'settings',
           src: './src/Settings.tsx',
           surface: 'window',
@@ -195,17 +195,17 @@ describe('deriveInterfaces', () => {
         .map((iface) => ({metadata: iface.metadata, name: iface.name, surface: iface.surface})),
     ).toStrictEqual([
       {
-        metadata: {dock: {group: 'applications', order: 100}},
+        metadata: {dock: {order: 100}},
         name: 'feed',
         surface: 'panel',
       },
       {
-        metadata: {dock: {group: 'user', order: 100}},
+        metadata: {dock: {group: 'system', order: 100}},
         name: 'settings',
         surface: 'window',
       },
       {
-        metadata: {dock: {group: 'applications', order: 20}},
+        metadata: {dock: {order: 20}},
         name: 'inbox',
         surface: 'panel',
       },

@@ -28,7 +28,7 @@ export const DefineAppInputSchema = z
      * @internal
      */
     applicationType: z.optional(ApplicationType),
-    /** Default placement inherited by panel and window views. */
+    /** Default placement inherited by window views. */
     dock: z.optional(DockSchema),
     /**
      * App entrypoint module. Defaults to `./src/App.tsx` when omitted. The build
