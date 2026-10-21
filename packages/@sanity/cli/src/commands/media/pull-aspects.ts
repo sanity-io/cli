@@ -98,8 +98,15 @@ export class MediaPullAspectsCommand extends SanityCommand<typeof MediaPullAspec
     const root = await this.getProjectRoot()
     // The generated `src:` entries and the ownership story both assume the
     // modules live inside the project; a path escaping the root is a mistake.
+    // `outDirRelative` (not the raw flag) feeds the report so an absolute
+    // --out-dir inside the root still prints proper relative `src:` entries.
     const outDirAbsolute = path.resolve(root.directory, outDir)
-    if (path.relative(root.directory, outDirAbsolute).startsWith('..')) {
+    const outDirRelative = path.relative(root.directory, outDirAbsolute)
+    if (
+      path.isAbsolute(outDirRelative) ||
+      outDirRelative === '..' ||
+      outDirRelative.startsWith(`..${path.sep}`)
+    ) {
       this.error(`--out-dir must stay inside the project root (got "${outDir}")`, {
         exit: exitCodes.USAGE_ERROR,
       })
@@ -126,6 +133,7 @@ export class MediaPullAspectsCommand extends SanityCommand<typeof MediaPullAspec
       // modules; pulling the stored mirror back over them would regress local
       // edits, so they are skipped unless --overwrite says otherwise.
       const configuredNames = new Set(config.fields.map((field) => field.name))
+      const configuredSrcByName = new Map(config.fields.map((field) => [field.name, field.src]))
 
       const skipped: SkippedAspect[] = []
 
@@ -166,6 +174,9 @@ export class MediaPullAspectsCommand extends SanityCommand<typeof MediaPullAspec
       }
 
       const generated: GeneratedFieldModule[] = []
+      // Module name -> written path relative to the project root, so the
+      // report shows where each module actually landed.
+      const writtenPaths = new Map<string, string>()
       for (const module of winners) {
         if (!overwrite && configuredNames.has(module.name)) {
           skipped.push({
@@ -177,10 +188,13 @@ export class MediaPullAspectsCommand extends SanityCommand<typeof MediaPullAspec
           continue
         }
 
-        const destination = path.join(outDirAbsolute, module.filename)
+        const defaultDestination = path.join(outDirAbsolute, module.filename)
         // The pull generates `.ts`, but a hand-written module for the same
         // field may be `.tsx` (the template ships one) — treat both as taken.
-        const existing = await firstExisting([destination, destination.replace(/\.ts$/, '.tsx')])
+        const existing = await firstExisting([
+          defaultDestination,
+          defaultDestination.replace(/\.ts$/, '.tsx'),
+        ])
         if (!overwrite && existing) {
           skipped.push({
             id: module.name,
@@ -193,12 +207,23 @@ export class MediaPullAspectsCommand extends SanityCommand<typeof MediaPullAspec
           continue
         }
 
+        // When overwriting a field the config already declares, the module
+        // must land at the declared `src` path — writing <out-dir>/<name>.ts
+        // instead would orphan the new file while deploy keeps evaluating the
+        // old one. Failing that, replace the module found on disk (which may
+        // be the .tsx variant), and only then fall back to the default.
+        const declaredSrc = overwrite ? configuredSrcByName.get(module.name) : undefined
+        const destination = declaredSrc
+          ? path.resolve(root.directory, declaredSrc)
+          : (existing ?? defaultDestination)
+
         await mkdir(path.dirname(destination), {recursive: true})
         await writeFile(destination, module.source)
+        writtenPaths.set(module.name, path.relative(root.directory, destination))
         generated.push(module)
       }
 
-      this.report({configuredNames, generated, outDir, skipped})
+      this.report({configuredNames, generated, outDir: outDirRelative, skipped, writtenPaths})
     } catch (error) {
       // Ctrl+C on the library prompt and errors that already carry their exit
       // code (`this.error` inside helpers) pass through to SanityCommand.catch.
@@ -218,11 +243,13 @@ export class MediaPullAspectsCommand extends SanityCommand<typeof MediaPullAspec
     generated,
     outDir,
     skipped,
+    writtenPaths,
   }: {
     configuredNames: Set<string>
     generated: GeneratedFieldModule[]
     outDir: string
     skipped: SkippedAspect[]
+    writtenPaths: Map<string, string>
   }): void {
     if (skipped.length > 0) {
       this.logToStderr('')
@@ -247,7 +274,8 @@ export class MediaPullAspectsCommand extends SanityCommand<typeof MediaPullAspec
       `${logSymbols.success} ${styleText('bold', `Generated ${generated.length} field ${pluralize('module', generated.length)}`)}`,
     )
     for (const module of generated) {
-      this.log(`  - ${module.name} ${styleText('dim', `${outDir}/${module.filename}`)}`)
+      const location = writtenPaths.get(module.name) ?? path.join(outDir, module.filename)
+      this.log(`  - ${module.name} ${styleText('dim', location)}`)
       for (const warning of module.warnings) {
         this.log(`    ${logSymbols.warning} ${warning}`)
       }
@@ -263,7 +291,7 @@ export class MediaPullAspectsCommand extends SanityCommand<typeof MediaPullAspec
       )
       this.log('')
       this.log(
-        formatFieldEntries(newEntries, outDir)
+        formatFieldEntries(newEntries, outDir, writtenPaths)
           .split('\n')
           .map((line) => `  ${line}`)
           .join('\n'),

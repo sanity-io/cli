@@ -152,16 +152,25 @@ export function aspectDocumentToFieldModule(doc: PullableAspectDocument): PullAs
 
 /**
  * The paste-ready `fields: [...]` entries for `sanity.cli.ts`, one line per
- * generated module.
+ * generated module. When `writtenPaths` (module name to root-relative path)
+ * has an entry for a module, that path wins — the module may have replaced an
+ * existing file (e.g. a `.tsx` variant) rather than landing at the default
+ * `<srcDir>/<filename>` location.
  *
  * @internal
  */
-export function formatFieldEntries(modules: GeneratedFieldModule[], srcDir: string): string {
+export function formatFieldEntries(
+  modules: GeneratedFieldModule[],
+  srcDir: string,
+  writtenPaths?: Map<string, string>,
+): string {
   const dir = srcDir.replaceAll('\\', '/').replace(/\/+$/, '')
   return modules
     .map((module) => {
+      const src =
+        writtenPaths?.get(module.name)?.replaceAll('\\', '/') ?? `${dir}/${module.filename}`
       const publicPart = module.public === undefined ? '' : `, public: ${module.public}`
-      return `{name: '${module.name}', src: './${dir}/${module.filename}', title: ${quote(module.title)}${publicPart}},`
+      return `{name: '${module.name}', src: './${src}', title: ${quote(module.title)}${publicPart}},`
     })
     .join('\n')
 }

@@ -13,11 +13,15 @@ import {MediaPullAspectsCommand} from '../pull-aspects.js'
 const mockFsAccess = vi.hoisted(() => vi.fn())
 const mockFsMkdir = vi.hoisted(() => vi.fn())
 const mockFsWriteFile = vi.hoisted(() => vi.fn())
+const mockPromptForMediaLibrary = vi.hoisted(() => vi.fn())
 
 vi.mock('node:fs/promises', () => ({
   access: mockFsAccess,
   mkdir: mockFsMkdir,
   writeFile: mockFsWriteFile,
+}))
+vi.mock('../../../prompts/promptForMediaLibrary.js', () => ({
+  promptForMediaLibrary: mockPromptForMediaLibrary,
 }))
 
 const defaultMocks = {
@@ -234,6 +238,94 @@ describe('#media:pull-aspects', () => {
       `A file already exists at ${path.join('src', 'fields', 'caption.tsx')}`,
     )
     expect(stdout).toContain('No field modules generated.')
+  })
+
+  test('with --overwrite, a declared field is rewritten at its declared src path', async () => {
+    createTestToken('test-token')
+    mockLibraryList([{id: 'test-library-id'}])
+    mockAspectQuery('test-library-id', [
+      {
+        _id: 'notes',
+        _type: 'sanity.asset.aspect',
+        definition: {name: 'notes', title: 'Notes', type: 'text'},
+      },
+    ])
+    mockFsAccess.mockRejectedValue(new Error('ENOENT'))
+    mockFsMkdir.mockResolvedValue(undefined)
+    mockFsWriteFile.mockResolvedValue(undefined)
+
+    const {stdout} = await testCommand(MediaPullAspectsCommand, ['--overwrite'], {
+      mocks: {
+        ...defaultMocks,
+        cliConfig: {
+          app: unstable_defineMediaLibrary({
+            // The declared module lives outside --out-dir and is .tsx; the
+            // overwrite must replace it there — not orphan a new
+            // src/fields/notes.ts that deploy would never evaluate.
+            fields: [{name: 'notes', src: './aspects/notes.tsx', title: 'Notes'}],
+            organizationId: 'test-org-id',
+          }),
+        },
+      },
+    })
+
+    expect(mockFsWriteFile).toHaveBeenCalledTimes(1)
+    expect(mockFsWriteFile).toHaveBeenCalledWith(
+      convertToSystemPath('/test/project/aspects/notes.tsx'),
+      expect.stringContaining(`export default defineField({`),
+    )
+    expect(stdout).toContain('Generated 1 field module')
+    expect(stdout).toContain(path.join('aspects', 'notes.tsx'))
+    // Already declared, so no "add this to sanity.cli.ts" suggestion.
+    expect(stdout).not.toContain(`{name: 'notes'`)
+  })
+
+  test('with --overwrite, an undeclared field replaces the existing .tsx file it found', async () => {
+    createTestToken('test-token')
+    mockLibraryList([{id: 'test-library-id'}])
+    mockAspectQuery('test-library-id', [
+      {
+        _id: 'caption',
+        _type: 'sanity.asset.aspect',
+        definition: {name: 'caption', title: 'Caption', type: 'string'},
+      },
+    ])
+    // Only the hand-written .tsx variant exists on disk.
+    mockFsAccess.mockImplementation((filePath: string) =>
+      String(filePath).endsWith('.tsx') ? Promise.resolve() : Promise.reject(new Error('ENOENT')),
+    )
+    mockFsMkdir.mockResolvedValue(undefined)
+    mockFsWriteFile.mockResolvedValue(undefined)
+
+    const {stdout} = await testCommand(MediaPullAspectsCommand, ['--overwrite'], {
+      mocks: defaultMocks,
+    })
+
+    expect(mockFsWriteFile).toHaveBeenCalledTimes(1)
+    expect(mockFsWriteFile).toHaveBeenCalledWith(
+      convertToSystemPath('/test/project/src/fields/caption.tsx'),
+      expect.stringContaining(`export default defineField({`),
+    )
+    // The suggested config entry points at the file that was written.
+    expect(stdout).toContain(
+      `{name: 'caption', src: './src/fields/caption.tsx', title: 'Caption'},`,
+    )
+  })
+
+  test('exits with the SIGINT code when the library prompt is cancelled', async () => {
+    createTestToken('test-token')
+    mockLibraryList([{id: 'library-one'}, {id: 'library-two'}])
+    mockPromptForMediaLibrary.mockRejectedValue(
+      Object.assign(new Error('SIGINT'), {name: 'ExitPromptError'}),
+    )
+
+    const {error, stderr} = await testCommand(MediaPullAspectsCommand, [], {mocks: defaultMocks})
+
+    expect(mockPromptForMediaLibrary).toHaveBeenCalledTimes(1)
+    expect(error?.oclif?.exit).toBe(exitCodes.SIGINT)
+    expect(stderr).toContain('Aborted by user')
+    // The catch-all must not rebrand the cancellation as a pull failure.
+    expect(stderr).not.toContain('Failed to pull aspects')
   })
 
   test('rejects a --media-library-id that is not an active library of the organization', async () => {
