@@ -176,7 +176,11 @@ describe('#tokens:list', () => {
   })
 
   test('handles network errors gracefully', async () => {
-    // Don't set up any mock to simulate network failure
+    mockApi({
+      apiVersion: TOKENS_API_VERSION,
+      uri: `/access/project/${testProjectId}/robots`,
+    }).replyWithError(new Error('Network Error'))
+
     const {error} = await testCommand(TokensListCommand, [], {mocks: defaultMocks})
 
     expect(error).toBeInstanceOf(Error)
