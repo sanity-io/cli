@@ -9,7 +9,7 @@ import {
   subdebug,
 } from '@sanity/cli-core'
 import {getErrorMessage} from '@sanity/cli-core/errors'
-import {spinner} from '@sanity/cli-core/ux'
+import {logSymbols, spinner} from '@sanity/cli-core/ux'
 import {resolveWorkbenchConfig} from '@sanity/workbench-cli/deploy'
 
 import {VALID_ASPECT_NAME} from '../../actions/media/aspectName.js'
@@ -39,7 +39,7 @@ const SAMPLE_SIZE = 10
  * sync: deploying a config only mirrors aspect *definitions* — `aspects.<name>`
  * values on assets are never touched and resurface if a matching field comes
  * back. This command removes that data. Irreversible fan-out mutation, so it
- * never prompts: without `--yes` it only reports what would change.
+ * never asks for confirmation: without `--yes` it only reports what would change.
  */
 export class MediaPruneAspectDataCommand extends SanityCommand<typeof MediaPruneAspectDataCommand> {
   static override args = {
@@ -117,9 +117,15 @@ export class MediaPruneAspectDataCommand extends SanityCommand<typeof MediaPrune
       })
 
       const spin = spinner('Finding assets that carry the aspect').start()
-      const storedIds = await getStoredAspectIds(mediaLibraryId, 'prune-aspect-data')
-      const carriers = await getAspectDataCarrierIds(mediaLibraryId, aspectName)
-      spin.stop()
+      let storedIds: string[]
+      let carriers: string[]
+      try {
+        storedIds = await getStoredAspectIds(mediaLibraryId, 'prune-aspect-data')
+        carriers = await getAspectDataCarrierIds(mediaLibraryId, aspectName)
+      } finally {
+        // Also on failure — a spinner left running garbles the error output.
+        spin.stop()
+      }
 
       // Guardrails, not gates: pruning while either is true can be deliberate
       // (e.g. clearing data before re-shaping a field), so warn and continue.
@@ -145,9 +151,11 @@ export class MediaPruneAspectDataCommand extends SanityCommand<typeof MediaPrune
       }
 
       const sample = carriers.slice(0, SAMPLE_SIZE)
+      // "documents", not "assets": under the raw perspective drafts and
+      // release versions are separate ids, so an asset count would overstate.
       this.log(
         `${styleText('bold', String(carriers.length))} ${pluralize(
-          'asset',
+          'document',
           carriers.length,
         )} in media library ${styleText('bold', mediaLibraryId)} ${
           carriers.length === 1 ? 'carries' : 'carry'
@@ -185,10 +193,10 @@ export class MediaPruneAspectDataCommand extends SanityCommand<typeof MediaPrune
           // message says how far it got and that a retry finishes the rest.
           throw new Error(
             `Removed aspects.${aspectName} from ${pruned} of ${carriers.length} ${pluralize(
-              'asset',
+              'document',
               carriers.length,
             )} before a batch failed: ${getErrorMessage(batchError)}\n` +
-              `Re-running the command with --yes is safe — already-pruned assets no longer ` +
+              `Re-running the command with --yes is safe — already-pruned documents no longer ` +
               `match and only the remaining ${carriers.length - pruned} will be mutated.`,
             {cause: batchError},
           )
@@ -199,8 +207,8 @@ export class MediaPruneAspectDataCommand extends SanityCommand<typeof MediaPrune
 
       this.log('')
       this.log(
-        `${styleText('green', '✓')} aspects.${aspectName} removed from ${pruned} ${pluralize(
-          'asset',
+        `${logSymbols.success} aspects.${aspectName} removed from ${pruned} ${pluralize(
+          'document',
           pruned,
         )}.`,
       )

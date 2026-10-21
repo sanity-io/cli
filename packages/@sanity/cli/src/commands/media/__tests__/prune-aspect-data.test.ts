@@ -160,7 +160,7 @@ describe('#media:prune-aspect-data', () => {
       },
     ])
 
-    expect(stdout).toContain('2 assets in media library test-library-id carry')
+    expect(stdout).toContain('2 documents in media library test-library-id carry')
     expect(stdout).toContain('aspects.legacyAspect')
     expect(stdout).toContain('asset-1')
     expect(stdout).toContain('Re-run with --yes to execute')
@@ -244,7 +244,7 @@ describe('#media:prune-aspect-data', () => {
     })
     expect(stdout).toContain('pruned 100/150')
     expect(stdout).toContain('pruned 150/150')
-    expect(stdout).toContain('aspects.legacyAspect removed from 150 assets')
+    expect(stdout).toContain('aspects.legacyAspect removed from 150 documents')
   })
 
   test('a mid-run batch failure reports the progress made and that a re-run is safe', async () => {
@@ -269,7 +269,7 @@ describe('#media:prune-aspect-data', () => {
 
     expect(mutateBodies).toHaveLength(1)
     expect(error?.message).toContain(
-      'Removed aspects.legacyAspect from 100 of 150 assets before a batch failed',
+      'Removed aspects.legacyAspect from 100 of 150 documents before a batch failed',
     )
     expect(error?.message).toContain('Re-running the command with --yes is safe')
     expect(error?.message).toContain('only the remaining 50 will be mutated')
