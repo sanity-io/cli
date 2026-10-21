@@ -159,7 +159,7 @@ export async function updateApplication(
 
 /**
  * Deploy a new active version to an existing application. `mfManifest` is the
- * build's `mf-manifest.json`; `tarball` is omitted for an external application,
+ * build's federation manifest; `tarball` is omitted for an external application,
  * whose build the customer serves themselves.
  */
 export async function createDeployment(options: {
@@ -167,7 +167,7 @@ export async function createDeployment(options: {
   applicationId: string
   interfaces: readonly BrettInterface[]
   isAutoUpdating: boolean
-  mfManifest: unknown
+  mfManifest: Record<string, unknown>
   tarball?: Gzip
   version: string
   workspaces?: readonly BrettWorkspace[]
@@ -210,7 +210,7 @@ function appendDeploymentParts(
   }: {
     access?: readonly BrettAccess[]
     interfaces: readonly BrettInterface[]
-    mfManifest: unknown
+    mfManifest: Record<string, unknown>
     tarball?: Gzip
     version: string
     workspaces?: readonly BrettWorkspace[]

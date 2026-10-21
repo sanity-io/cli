@@ -13,11 +13,15 @@ import {USER_APPLICATIONS_API_VERSION} from '../../../src/services/userApplicati
 const mockGetLocalPackageVersion = vi.hoisted(() => vi.fn())
 const mockCreateStudio = vi.hoisted(() => vi.fn())
 const mockDeployWorkbenchApp = vi.hoisted(() => vi.fn())
-const mockCheckBuiltOutput = vi.hoisted(() => vi.fn())
+const mockReadBuiltManifest = vi.hoisted(() => vi.fn())
+
+vi.mock(import('@sanity/workbench-cli/build'), async (importOriginal) => ({
+  ...(await importOriginal()),
+  readBuiltManifest: mockReadBuiltManifest,
+}))
 
 vi.mock(import('@sanity/workbench-cli/deploy'), async (importOriginal) => ({
   ...(await importOriginal()),
-  checkBuiltOutput: mockCheckBuiltOutput,
   createStudio: mockCreateStudio,
   deployWorkbenchApp: mockDeployWorkbenchApp,
   listApplications: vi.fn(async () => []),
@@ -853,7 +857,7 @@ describe('#deploy studio (external)', () => {
       )
       expect(mockBuildStudio).not.toHaveBeenCalled()
       expect(mockCheckDir).not.toHaveBeenCalled()
-      expect(mockCheckBuiltOutput).not.toHaveBeenCalled()
+      expect(mockReadBuiltManifest).not.toHaveBeenCalled()
     })
   })
 
@@ -879,6 +883,8 @@ describe('#deploy studio (external)', () => {
           type: 'studio',
         },
       })
+      const mfManifest = {id: 'built'}
+      mockBuildStudio.mockResolvedValueOnce({mfManifest})
 
       const {error} = await testCommand(
         DeployCommand,
@@ -894,9 +900,9 @@ describe('#deploy studio (external)', () => {
         expect.objectContaining({externalUrl: 'https://studio.example.com'}),
       )
       expect(mockDeployWorkbenchApp).toHaveBeenCalledWith(
-        expect.objectContaining({isExternal: true}),
+        expect.objectContaining({isExternal: true, mfManifest}),
       )
-      expect(mockCheckBuiltOutput).toHaveBeenCalled()
+      expect(mockReadBuiltManifest).not.toHaveBeenCalled()
     })
   })
 })

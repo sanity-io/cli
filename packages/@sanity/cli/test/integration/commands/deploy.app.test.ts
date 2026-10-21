@@ -15,7 +15,7 @@ import {USER_APPLICATIONS_API_VERSION} from '../../../src/services/userApplicati
 import {dirIsEmptyOrNonExistent} from '../../../src/util/dirIsEmptyOrNonExistent.js'
 
 const mockGetLocalPackageVersion = vi.hoisted(() => vi.fn())
-const mockCheckBuiltOutput = vi.hoisted(() => vi.fn())
+const mockReadBuiltManifest = vi.hoisted(() => vi.fn())
 const mockCreateCoreApp = vi.hoisted(() => vi.fn())
 const mockDeployWorkbenchApp = vi.hoisted(() => vi.fn())
 const mockListApplications = vi.hoisted(() => vi.fn())
@@ -41,9 +41,13 @@ vi.mock('../../../src/actions/deploy/checkDir.js', () => ({
   checkDir: vi.fn(),
 }))
 
+vi.mock(import('@sanity/workbench-cli/build'), async (importOriginal) => ({
+  ...(await importOriginal()),
+  readBuiltManifest: mockReadBuiltManifest,
+}))
+
 vi.mock(import('@sanity/workbench-cli/deploy'), async (importOriginal) => ({
   ...(await importOriginal()),
-  checkBuiltOutput: mockCheckBuiltOutput,
   createCoreApp: mockCreateCoreApp,
   deployWorkbenchApp: mockDeployWorkbenchApp,
   listApplications: mockListApplications,
@@ -103,7 +107,7 @@ describe('#deploy app', () => {
       return null
     })
     mockCheckDir.mockResolvedValue()
-    mockCheckBuiltOutput.mockResolvedValue(undefined)
+    mockReadBuiltManifest.mockResolvedValue({id: 'prebuilt'})
     // No existing app at the app's slug, so a first deploy creates one.
     mockListApplications.mockResolvedValue([])
     // Default to empty manifest for app deployments
@@ -552,7 +556,7 @@ describe('#deploy app', () => {
     expect(error?.message).toContain('declares no entry, views or web workers')
     expect(error?.oclif?.exit).toBe(2)
     // fails before any directory check or API call
-    expect(mockCheckBuiltOutput).not.toHaveBeenCalled()
+    expect(mockReadBuiltManifest).not.toHaveBeenCalled()
     expect(mockCheckDir).not.toHaveBeenCalled()
   })
 
@@ -782,6 +786,40 @@ describe('#deploy app', () => {
     const dryRun = await deploy(['--dry-run', '--json'])
     if (dryRun.error) throw dryRun.error
     expect(JSON.parse(dryRun.stdout).url).toBe(`https://${organizationId}.sanity.run`)
+  })
+
+  test.each([
+    {args: [], label: "the build's", source: 'build'},
+    {args: ['--no-build'], label: "the output directory's", source: 'directory'},
+  ])('a redeploy ships $label federation manifest', async ({args, source}) => {
+    const cwd = await testFixture('basic-app')
+    process.cwd = () => cwd
+
+    mockApi({apiVersion: 'vX', uri: '/applications/app_existing'}).reply(200, {
+      id: 'app_existing',
+      organizationId,
+      slug: 'drop-desk-host',
+      title: 'Workbench App',
+      type: 'coreApp',
+    })
+    const mfManifest = {id: source}
+    if (source === 'build') mockBuildApp.mockResolvedValueOnce({mfManifest})
+    else mockReadBuiltManifest.mockResolvedValueOnce(mfManifest)
+
+    const app = defineApplication({
+      entry: './src/App.tsx',
+      organizationId,
+      slug: 'drop-desk-host',
+      title: 'Workbench App',
+    })
+
+    const {error} = await testCommand(DeployCommand, args, {
+      config: {root: cwd},
+      mocks: {cliConfig: {app, deployment: {appId: 'app_existing'}}},
+    })
+
+    if (error) throw error
+    expect(mockDeployWorkbenchApp).toHaveBeenCalledWith(expect.objectContaining({mfManifest}))
   })
 
   test('ships the sanitized workbench app icon straight to Brett', async () => {

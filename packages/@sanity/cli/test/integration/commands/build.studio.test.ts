@@ -3,7 +3,7 @@ import {platform} from 'node:os'
 import {join} from 'node:path'
 
 import {testCommand, testFixture} from '@sanity/cli-test'
-import {checkBuiltOutput} from '@sanity/workbench-cli/deploy'
+import {readBuiltManifest} from '@sanity/workbench-cli/build'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
 import {BuildCommand} from '../../../src/commands/build.js'
@@ -142,14 +142,14 @@ describe('#build studio', {timeout: (platform() === 'win32' ? 120 : 60) * 1000},
       expect(distFiles).not.toContain('sanity-resource-bindings.js')
 
       // The build output must satisfy the deploy gate: `sanity deploy` runs
-      // `checkBuiltOutput` (not the static-SPA check) and ships only if it finds
+      // `readBuiltManifest` (not the static-SPA check) and ships only if it finds
       // the federation manifest. Asserting it against the real dist here closes
       // the build→deploy seam that deploy.studio.test.ts can't — it mocks the
       // build away.
-      await expect(checkBuiltOutput(join(cwd, 'dist'))).resolves.toBeUndefined()
+      await expect(readBuiltManifest(join(cwd, 'dist'))).resolves.toEqual(manifest)
       // And the gate actually gates — a directory without the federation manifest
-      // is rejected, so the pass above isn't `checkBuiltOutput` silently no-opping.
-      await expect(checkBuiltOutput(cwd)).rejects.toThrow(/mf-manifest|federation/i)
+      // is rejected, so the pass above isn't `readBuiltManifest` silently no-opping.
+      await expect(readBuiltManifest(cwd)).rejects.toThrow(/mf-manifest|federation/i)
     },
   )
 

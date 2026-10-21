@@ -1,4 +1,3 @@
-export {checkBuiltOutput} from '../actions/deploy/checkBuiltOutput.js'
 export {
   deployConfig,
   resolveInstallationId,

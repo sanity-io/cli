@@ -174,7 +174,7 @@ async function runStudioDeployment(
   // A record created above is stranded at its slug (and blocks retries) if any
   // step before it fully deploys fails, so undo the creation on failure.
   try {
-    await checkBuild(reporter, {
+    const built = await checkBuild(reporter, {
       build: () =>
         buildStudio({
           applicationId: workbench ? applicationId : undefined,
@@ -190,8 +190,10 @@ async function runStudioDeployment(
       successMessage: 'Studio built',
     })
 
-    if (!isLegacyExternal) {
-      await verifyOutputDir({isWorkbenchApp, reporter, sourceDir})
+    let mfManifest = built?.mfManifest
+    // A federated build has already read its manifest; anything else verifies the directory.
+    if (mfManifest === undefined && !isLegacyExternal) {
+      mfManifest = await verifyOutputDir({isWorkbenchApp, reporter, sourceDir})
     }
 
     const interfaces = workbench ? reportInterfaces(reporter, workbench) : null
@@ -220,6 +222,7 @@ async function runStudioDeployment(
     // The studio was created (or resolved from `deployment.appId`) before the
     // build, so this only ships the deployment; plain studios use user-applications.
     if (workbench && organizationId && applicationId) {
+      if (!mfManifest) throw new Error('The federated build produced no manifest.')
       await deployWorkbenchApp({
         access: toAccess(studioManifest),
         app: cliConfig.app,
@@ -229,6 +232,7 @@ async function runStudioDeployment(
         isAutoUpdating,
         isExternal: isExternallyHosted,
         label: 'Deploying studio',
+        mfManifest,
         // Once the deployment is live, a metadata-sync failure must not delete
         // the studio.
         onDeployed: () => {

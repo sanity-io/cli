@@ -1,8 +1,8 @@
 import {findBlueprintFile, readBlueprint} from '@sanity/blueprints/resolve'
 import {SchemaExtractionError} from '@sanity/cli-build/_internal/extract'
 import {type CliConfig, exitCodes, type Output} from '@sanity/cli-core'
+import {readBuiltManifest} from '@sanity/workbench-cli/build'
 import {
-  checkBuiltOutput,
   createStudio,
   deployWorkbenchApp,
   getApplication,
@@ -20,9 +20,12 @@ vi.mock(import('@sanity/blueprints/resolve'), async () => ({
   findBlueprintFile: vi.fn(),
   readBlueprint: vi.fn(),
 }))
+vi.mock(import('@sanity/workbench-cli/build'), async (importOriginal) => ({
+  ...(await importOriginal()),
+  readBuiltManifest: vi.fn(),
+}))
 vi.mock(import('@sanity/workbench-cli/deploy'), async (importOriginal) => ({
   ...(await importOriginal()),
-  checkBuiltOutput: vi.fn(),
   createStudio: vi.fn(),
   deployWorkbenchApp: vi.fn(),
   getApplication: vi.fn(),
@@ -91,6 +94,8 @@ beforeEach(() => {
   mockFindBlueprintFile.mockReset().mockReturnValue(undefined)
   mockReadBlueprint.mockReset()
   mockListApplications.mockResolvedValue([])
+  mockBuildStudio.mockResolvedValue({mfManifest: {id: 'my-studio'}})
+  vi.mocked(readBuiltManifest).mockResolvedValue({id: 'my-studio'})
   mockCreateStudio.mockResolvedValue({
     application: {
       id: 'studio-1',
@@ -134,6 +139,27 @@ describe('deployStudio (federated studio)', () => {
     expect(mockDeployWorkbenchApp).toHaveBeenCalledWith(
       expect.objectContaining({isAutoUpdating: false}),
     )
+  })
+
+  test("ships the build's federation manifest without re-reading the directory", async () => {
+    const mfManifest = {id: 'built'}
+    mockBuildStudio.mockResolvedValueOnce({mfManifest})
+
+    await deployStudio(deployOptions())
+
+    expect(mockDeployWorkbenchApp).toHaveBeenCalledWith(expect.objectContaining({mfManifest}))
+    expect(vi.mocked(readBuiltManifest)).not.toHaveBeenCalled()
+  })
+
+  test('--no-build ships the federation manifest read from the output directory', async () => {
+    const mfManifest = {id: 'prebuilt'}
+    vi.mocked(readBuiltManifest).mockResolvedValueOnce(mfManifest)
+
+    await deployStudio(deployOptions({flags: {build: false}}))
+
+    expect(mockBuildStudio).not.toHaveBeenCalled()
+    expect(vi.mocked(readBuiltManifest)).toHaveBeenCalledWith('/root/dist')
+    expect(mockDeployWorkbenchApp).toHaveBeenCalledWith(expect.objectContaining({mfManifest}))
   })
 
   test('a declared visibility reaches both the create and the deployment', async () => {
@@ -334,6 +360,8 @@ describe('deployStudio --external (federated studio)', () => {
 
   test('registers the studio at the --url origin and ships a manifest-only deployment', async () => {
     const options = deployOptions({flags: externalFlags})
+    const mfManifest = {id: 'built'}
+    mockBuildStudio.mockResolvedValueOnce({mfManifest})
 
     await deployStudio(options)
 
@@ -341,14 +369,14 @@ describe('deployStudio --external (federated studio)', () => {
       expect.objectContaining({externalUrl: 'https://studio.example.com', slug: 'my-studio'}),
     )
     expect(mockDeployWorkbenchApp).toHaveBeenCalledWith(
-      expect.objectContaining({applicationId: 'studio-1', isExternal: true}),
+      expect.objectContaining({applicationId: 'studio-1', isExternal: true, mfManifest}),
     )
     // Brett needs a schema descriptor per workspace, so the schema still deploys.
     expect(vi.mocked(deployStudioSchemasAndManifests).mock.calls[0][0]).toEqual(
       expect.objectContaining({applicationId: 'studio-1', isExternal: false}),
     )
     expect(mockBuildStudio).toHaveBeenCalled()
-    expect(vi.mocked(checkBuiltOutput)).toHaveBeenCalledWith('/root/dist')
+    expect(vi.mocked(readBuiltManifest)).not.toHaveBeenCalled()
   })
 
   test('prints what the host must serve, and that the fresh build needs copying', async () => {

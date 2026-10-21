@@ -1,3 +1,7 @@
+import {mkdir, mkdtemp, rm, writeFile} from 'node:fs/promises'
+import {tmpdir} from 'node:os'
+import {join} from 'node:path'
+
 import {type Output} from '@sanity/cli-core/types'
 import {DefinedTelemetryTrace} from '@sanity/telemetry'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
@@ -489,5 +493,54 @@ describe('#buildStudio', () => {
     await buildStudio(buildOptions({autoUpdatesEnabled: true, checkAppId: mockCheckAppId, output}))
 
     expect(mockCheckAppId).toHaveBeenCalled()
+  })
+  describe('federation manifest', () => {
+    let outDir: string
+    beforeEach(async () => {
+      outDir = await mkdtemp(join(tmpdir(), 'build-studio-'))
+    })
+    afterEach(async () => {
+      await rm(outDir, {force: true, recursive: true})
+    })
+
+    test('resolves to the mf-manifest.json a federated build writes', async () => {
+      const output = createMockOutput()
+      mockedBuildStaticFiles.mockImplementation(async ({outputDir}) => {
+        await mkdir(outputDir, {recursive: true})
+        await writeFile(join(outputDir, 'mf-manifest.json'), '{"id":"my-studio"}')
+        return {chunks: []}
+      })
+
+      await expect(
+        buildStudio(buildOptions({isWorkbenchApp: true, outDir, output, unattendedMode: true})),
+      ).resolves.toEqual({mfManifest: {id: 'my-studio'}})
+    })
+
+    test('resolves to no manifest for a build that is not federated', async () => {
+      const output = createMockOutput()
+      const onBuildFail = vi.fn()
+
+      await expect(
+        buildStudio(buildOptions({outDir, output, unattendedMode: true}, {onBuildFail})),
+      ).resolves.toEqual({mfManifest: undefined})
+      expect(onBuildFail).not.toHaveBeenCalled()
+    })
+
+    test('fails a federated build whose output lacks mf-manifest.json, naming the file', async () => {
+      const output = createMockOutput()
+      mockedBuildStaticFiles.mockImplementation(async ({outputDir}) => {
+        await mkdir(outputDir, {recursive: true})
+        return {chunks: []}
+      })
+      const onBuildFail = vi.fn()
+
+      await buildStudio(
+        buildOptions({isWorkbenchApp: true, outDir, output, unattendedMode: true}, {onBuildFail}),
+      )
+
+      expect(onBuildFail).toHaveBeenCalledWith({
+        message: `Failed to build Sanity Studio: "${join(outDir, 'mf-manifest.json')}" does not exist; a federation build created with "sanity build" writes it.`,
+      })
+    })
   })
 })
