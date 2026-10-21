@@ -166,11 +166,16 @@ export async function bootstrapLocalTemplate(
     type: template.type,
   })
 
-  // ...and a studio config (`sanity.config.[ts|js]`)
-  const studioConfig = createStudioConfig({
-    template: template.configTemplate,
-    variables,
-  })
+  // ...and a studio config (`sanity.config.[ts|js]`) — only for studio
+  // templates. App and media-library scaffolds don't write one, and building
+  // it anyway would demand studio variables (projectId) they don't carry.
+  const studioConfig =
+    isAppTemplate || isMediaLibraryTemplate
+      ? null
+      : createStudioConfig({
+          template: template.configTemplate,
+          variables,
+        })
 
   // ...and a CLI config (`sanity.cli.[ts|js]`)
   // oxlint-disable-next-line no-nested-ternary -- three scaffold shapes share one write path
@@ -198,7 +203,7 @@ export async function bootstrapLocalTemplate(
   const codeExt = useTypeScript ? 'ts' : 'js'
   await Promise.all(
     [
-      isAppTemplate || isMediaLibraryTemplate
+      studioConfig === null
         ? Promise.resolve(null)
         : writeFileIfNotExists(`sanity.config.${codeExt}`, studioConfig),
       writeFileIfNotExists(`sanity.cli.${codeExt}`, cliConfig),

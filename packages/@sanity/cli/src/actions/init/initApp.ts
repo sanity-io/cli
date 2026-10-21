@@ -154,7 +154,10 @@ export async function initApp({
  * API errors (offline, no access to the org, timeout) are swallowed: this is
  * a hint, not a gate.
  */
-async function warnIfNoActiveMediaLibrary(organizationId: string, output: Output): Promise<void> {
+export async function warnIfNoActiveMediaLibrary(
+  organizationId: string,
+  output: Output,
+): Promise<void> {
   try {
     const libraries = await getMediaLibrariesForOrganization(organizationId)
     if (libraries.length > 0) return
@@ -163,8 +166,9 @@ async function warnIfNoActiveMediaLibrary(organizationId: string, output: Output
   }
 
   const manageUrl = `${isStaging() ? 'https://sanity.work' : 'https://www.sanity.io'}/manage`
+  // No symbol or leading newline: output.warn already prefixes `Warning:`.
   output.warn(
-    `\n${logSymbols.warning} Organization ${organizationId} has no active Media Library, ` +
+    `Organization ${organizationId} has no active Media Library, ` +
       `so the dashboard's media area will be empty. Media Library is provisioned per ` +
       `organization — enable it in Manage (${manageUrl}) or learn more at ` +
       `https://www.sanity.io/docs/media-library.`,

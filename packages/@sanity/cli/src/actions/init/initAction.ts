@@ -105,6 +105,13 @@ export async function initAction(options: InitOptions, context: InitContext): Pr
     ? determineAppTemplate(options.template) || determineMediaLibraryTemplate(options.template)
     : false
 
+  // A config app persists to the org's installation, not to a dashboard
+  // workbench, so `createMediaLibraryCliConfig` has no slot for --dashboard.
+  // Warned rather than silently dropped (same courtesy as remote templates).
+  if (options.dashboard && options.template && determineMediaLibraryTemplate(options.template)) {
+    output.warn('--dashboard is ignored for the media-library-config template')
+  }
+
   if (options.unattended) {
     checkFlagsInUnattendedMode(options, {isAppTemplate, isNextJs})
   }
