@@ -5,9 +5,11 @@ on:
   release:
     types: [published]
 
+# Single group (not per-ref): each release tag is its own ref, and parallel runs
+# would race to create separate content releases instead of reusing one.
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  group: ${{ github.workflow }}
+  cancel-in-progress: false
 
 jobs:
   upload-docs:

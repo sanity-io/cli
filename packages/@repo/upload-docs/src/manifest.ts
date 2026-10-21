@@ -11,7 +11,7 @@
  */
 
 import {createClient, type SanityClient, type SanityDocument} from '@sanity/client'
-import {createPublishedId, createVersionId} from '@sanity/id-utils'
+import {createPublishedId, createVersionId, getPublishedId, type VersionId} from '@sanity/id-utils'
 import isEqual from 'lodash-es/isEqual.js'
 
 import {type CommandInfo, generateCommands} from './generateCommands.js'
@@ -42,6 +42,7 @@ const PROJECT_ID = process.env.SANITY_PROJECT_ID || '3do82whm'
 const DATASET = process.env.SANITY_DATASET || 'next'
 const API_VERSION = '2026-02-25'
 const PRIMARY_SECTION_REF = '607f752e-c269-45f4-8250-068a499a888f'
+const RELEASE_PREFIX = 'cli-reference-update-'
 
 // ── Helpers ────────────────────────────────────────────────────────────
 
@@ -468,6 +469,37 @@ function buildNewDocument(group: CommandGroup, slug: string): Record<string, unk
   }
 }
 
+// ── Release Lookup ────────────────────────────────────────────────────
+
+/**
+ * Find the most recent active release previously created by this script.
+ * Release names are immutable (unlike titles), so the name prefix reliably
+ * identifies our releases. Only `active` releases are reused; scheduled,
+ * published or archived releases are left alone.
+ */
+async function findActiveRelease(client: SanityClient): Promise<string | null> {
+  const RELEASE_QUERY = /* groq */ `releases::all()[
+    state == "active" && string::startsWith(name, $prefix)
+  ] | order(_createdAt desc)[0].name`
+  return client.fetch<string | null>(RELEASE_QUERY, {prefix: RELEASE_PREFIX})
+}
+
+/**
+ * Fetch the version documents already in a release, keyed by automationId.
+ */
+async function fetchReleaseVersions(
+  client: SanityClient,
+  releaseId: string,
+): Promise<Map<string, VersionId>> {
+  const VERSIONS_QUERY = /* groq */ `*[sanity::partOfRelease($releaseId) && defined(automationId)]{_id, automationId}`
+  const versions = await client.fetch<Array<{_id: VersionId; automationId: string}>>(
+    VERSIONS_QUERY,
+    {releaseId},
+    {perspective: 'raw'},
+  )
+  return new Map(versions.map((v) => [v.automationId, v._id]))
+}
+
 // ── Main ──────────────────────────────────────────────────────────────
 
 async function main() {
@@ -492,15 +524,26 @@ async function main() {
     useCdn: false,
   })
 
+  // Reuse an active release from a previous run so multiple CLI releases
+  // don't each produce their own content release.
+  const existingReleaseId = token ? await findActiveRelease(client) : null
   const timestamp = new Date().toISOString().replaceAll(/[:.]/g, '-').slice(0, 19)
-  const releaseId = `cli-reference-update-${timestamp}`
+  const releaseId = existingReleaseId ?? `${RELEASE_PREFIX}${timestamp}`
+  const releaseVersions = existingReleaseId
+    ? await fetchReleaseVersions(client, existingReleaseId)
+    : new Map<string, VersionId>()
 
-  console.log(`\nRelease ID: ${releaseId}`)
+  console.log(
+    existingReleaseId
+      ? `\nReusing active release: ${releaseId} (${releaseVersions.size} existing versions)`
+      : `\nRelease ID: ${releaseId}`,
+  )
 
   let updated = 0
   let created = 0
   let skipped = 0
   let unchanged = 0
+  let discarded = 0
 
   const CLI_DOCS_QUERY = /* groq */ `*[_type == "article" && defined(automationId)]`
   const existingDocs = await client.fetch(CLI_DOCS_QUERY)
@@ -517,7 +560,9 @@ async function main() {
       continue
     }
 
-    const existingDoc = existingDocMap.get(`cli-${group.command}-reference`) as SanityDocument
+    const automationId = `cli-${group.command}-reference`
+    const existingDoc = existingDocMap.get(automationId) as SanityDocument
+    const existingVersionId = releaseVersions.get(automationId)
 
     if (existingDoc) {
       const existingContent = (existingDoc.content as Record<string, unknown>[]) || []
@@ -528,6 +573,14 @@ async function main() {
       )
 
       if (isEqual(stripKeys(mergedContent), stripKeys(existingContent))) {
+        // A reused release may hold a now-stale version of a doc that matches
+        // published again; remove it so the release only contains real changes.
+        if (existingVersionId) {
+          if (!dryRun) tx.delete(existingVersionId)
+          console.log(`  DISCARD ${group.command} → ${existingVersionId} (matches published)`)
+          discarded++
+          continue
+        }
         console.log(`  UNCHANGED ${group.command} → ${existingDoc._id}`)
         unchanged++
         continue
@@ -540,10 +593,11 @@ async function main() {
       } else {
         const vId = createVersionId(releaseId, existingDoc._id)
         const {_createdAt, _rev, _updatedAt, ...docWithoutSystemFields} = existingDoc
-        tx.create({...docWithoutSystemFields, _id: vId})
+        // createOrReplace overwrites any version left by a previous run.
+        tx.createOrReplace({...docWithoutSystemFields, _id: vId})
         tx.patch(vId, {
           set: {
-            automationId: `cli-${group.command}-reference`,
+            automationId,
             content: mergedContent,
           },
         })
@@ -553,17 +607,18 @@ async function main() {
       }
       updated++
     } else {
-      const docId = createPublishedId()
+      // Reuse the ID from a previous run's version so we don't create duplicates.
+      const docId = existingVersionId ? getPublishedId(existingVersionId) : createPublishedId()
       const newDoc = buildNewDocument(group, `cli-${group.command}`)
 
       if (dryRun) {
         console.log(`  CREATE ${group.command} → ${docId} (${newBlocks.length} blocks)`)
       } else {
         const vId = createVersionId(releaseId, docId)
-        tx.create({
+        tx.createOrReplace({
           _id: vId,
           _type: 'article',
-          automationId: `cli-${group.command}-reference`,
+          automationId,
           ...newDoc,
         })
         console.log(`  CREATE ${group.command} → ${docId} (${newBlocks.length} blocks)`)
@@ -572,16 +627,18 @@ async function main() {
     }
   }
 
-  const hasChanges = updated + created > 0
+  const hasChanges = updated + created + discarded > 0
 
   if (hasChanges && !dryRun) {
     try {
-      console.log(`\nCreating release: ${releaseId}`)
-      await client.releases.create({
-        metadata: {releaseType: 'undecided', title: releaseId},
-        releaseId,
-      })
-      console.log('Release created.')
+      if (!existingReleaseId) {
+        console.log(`\nCreating release: ${releaseId}`)
+        await client.releases.create({
+          metadata: {releaseType: 'undecided', title: releaseId},
+          releaseId,
+        })
+        console.log('Release created.')
+      }
 
       console.log('Committing transaction...')
       await tx.commit({autoGenerateArrayKeys: true})
@@ -596,14 +653,15 @@ async function main() {
   console.log(`Updated:   ${updated} existing documents`)
   console.log(`Created:   ${created} new documents`)
   console.log(`Unchanged: ${unchanged} documents`)
+  console.log(`Discarded: ${discarded} stale versions`)
   console.log(`Skipped:   ${skipped}`)
-  console.log(`Total:     ${updated + created + unchanged + skipped}`)
+  console.log(`Total:     ${updated + created + unchanged + discarded + skipped}`)
   if (dryRun) {
     console.log('\n[DRY RUN] No changes were made to Sanity.')
   } else if (hasChanges) {
     console.log(`\nAll changes are in release "${releaseId}". Review and publish in Sanity Studio.`)
   } else {
-    console.log('\nNo changes detected. No release was created.')
+    console.log('\nNo changes detected. No release was created or modified.')
   }
 }
 
