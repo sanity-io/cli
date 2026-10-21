@@ -3,10 +3,16 @@ import {exitCodes} from '@sanity/cli-core/ExitCodes'
 import {convertToSystemPath, createTestToken, mockApi, testCommand} from '@sanity/cli-test'
 import {unstable_defineMediaLibrary} from '@sanity/workbench-cli'
 import {cleanAll, pendingMocks} from 'nock'
-import {afterEach, describe, expect, test} from 'vitest'
+import {afterEach, describe, expect, test, vi} from 'vitest'
 
 import {MEDIA_LIBRARY_API_VERSION} from '../../../services/mediaLibraries.js'
 import {MediaPruneAspectDataCommand} from '../prune-aspect-data.js'
+
+const mockPromptForMediaLibrary = vi.hoisted(() => vi.fn())
+
+vi.mock('../../../prompts/promptForMediaLibrary.js', () => ({
+  promptForMediaLibrary: mockPromptForMediaLibrary,
+}))
 
 const defaultMocks = {
   cliConfig: {
@@ -83,6 +89,7 @@ function mockMutate(libraryId: string, capture: unknown[]) {
 
 describe('#media:prune-aspect-data', () => {
   afterEach(() => {
+    vi.clearAllMocks()
     const pending = pendingMocks()
     cleanAll()
     expect(pending, 'pending mocks').toEqual([])
@@ -135,13 +142,23 @@ describe('#media:prune-aspect-data', () => {
     })
 
     // The GROQ that selects what gets pruned, asserted so a filter change
-    // cannot slip past these tests unnoticed.
-    expect(carrierQueryBodies[0]).toEqual({
-      params: {lastId: ''},
-      query:
-        '*[_type == "sanity.asset" && defined(aspects["legacyAspect"]) && _id > $lastId]' +
-        ' | order(_id) [0...1000]{_id}',
-    })
+    // cannot slip past these tests unnoticed — including the follow-up
+    // request advancing the cursor past the page's last id (a loop that
+    // stopped advancing would re-request lastId '' forever).
+    expect(carrierQueryBodies).toEqual([
+      {
+        params: {lastId: ''},
+        query:
+          '*[_type == "sanity.asset" && defined(aspects["legacyAspect"]) && _id > $lastId]' +
+          ' | order(_id) [0...1000]{_id}',
+      },
+      {
+        params: {lastId: 'asset-2'},
+        query:
+          '*[_type == "sanity.asset" && defined(aspects["legacyAspect"]) && _id > $lastId]' +
+          ' | order(_id) [0...1000]{_id}',
+      },
+    ])
 
     expect(stdout).toContain('2 assets in media library test-library-id carry')
     expect(stdout).toContain('aspects.legacyAspect')
@@ -256,6 +273,24 @@ describe('#media:prune-aspect-data', () => {
     )
     expect(error?.message).toContain('Re-running the command with --yes is safe')
     expect(error?.message).toContain('only the remaining 50 will be mutated')
+  })
+
+  test('exits with the SIGINT code when the library prompt is cancelled', async () => {
+    createTestToken('test-token')
+    mockLibraryList(['library-one', 'library-two'])
+    mockPromptForMediaLibrary.mockRejectedValue(
+      Object.assign(new Error('SIGINT'), {name: 'ExitPromptError'}),
+    )
+
+    const {error, stderr} = await testCommand(MediaPruneAspectDataCommand, ['legacyAspect'], {
+      mocks: defaultMocks,
+    })
+
+    expect(mockPromptForMediaLibrary).toHaveBeenCalledTimes(1)
+    expect(error?.oclif?.exit).toBe(exitCodes.SIGINT)
+    expect(stderr).toContain('Aborted by user')
+    // The catch-all must not rebrand the cancellation as a prune failure.
+    expect(stderr).not.toContain('Failed to prune')
   })
 
   test('with an explicit --media-library-id not active in the organization, fails clearly', async () => {
