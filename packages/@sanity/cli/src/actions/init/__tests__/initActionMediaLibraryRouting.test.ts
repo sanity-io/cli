@@ -10,6 +10,15 @@ import {initAction} from '../initAction.js'
 import {InitError} from '../initError.js'
 import {type InitContext, type InitOptions} from '../types.js'
 
+const mockGetProjectDetails = vi.hoisted(() =>
+  vi.fn().mockResolvedValue({
+    datasetName: '',
+    displayName: '',
+    isFirstProject: false,
+    organizationId: 'org-1',
+    projectId: '',
+  }),
+)
 const mockInitApp = vi.hoisted(() => vi.fn())
 const mockInitStudio = vi.hoisted(() => vi.fn())
 const mockValidateSession = vi.hoisted(() => vi.fn())
@@ -41,13 +50,7 @@ vi.mock('../initApp.js', () => ({initApp: mockInitApp}))
 vi.mock('../initStudio.js', () => ({initStudio: mockInitStudio}))
 vi.mock('../plan/getPlan.js', () => ({getPlan: vi.fn().mockResolvedValue(undefined)}))
 vi.mock('../project/getProjectDetails.js', () => ({
-  getProjectDetails: vi.fn().mockResolvedValue({
-    datasetName: 'production',
-    displayName: '',
-    isFirstProject: false,
-    organizationId: 'org-1',
-    projectId: 'proj-1',
-  }),
+  getProjectDetails: mockGetProjectDetails,
 }))
 vi.mock('../project/getProjectOutputPath.js', () => ({
   getProjectOutputPath: vi.fn().mockResolvedValue('/tmp/test-output'),
@@ -111,11 +114,27 @@ describe('initAction routing for media-library-config', () => {
     )
   })
 
-  test('gets the app unattended-flag rules: organization or project is required', async () => {
+  test('passes isMediaLibraryTemplate to getProjectDetails so the project prompt is skipped', async () => {
+    await initAction(
+      {...baseOptions, organization: 'org-1', outputPath: '/tmp/test-output', unattended: true},
+      createTestContext(),
+    )
+
+    expect(mockGetProjectDetails).toHaveBeenCalledWith(
+      expect.objectContaining({isAppTemplate: true, isMediaLibraryTemplate: true}),
+    )
+  })
+
+  test('gets the unattended-flag rules: organization is required (project flags do not count)', async () => {
     let caughtError: unknown
     try {
       await initAction(
-        {...baseOptions, outputPath: '/tmp/test-output', unattended: true},
+        {
+          ...baseOptions,
+          outputPath: '/tmp/test-output',
+          project: 'proj-1',
+          unattended: true,
+        },
         createTestContext(),
       )
     } catch (error) {
@@ -124,7 +143,7 @@ describe('initAction routing for media-library-config', () => {
 
     expect(caughtError).toBeInstanceOf(InitError)
     expect((caughtError as InitError).message).toContain(
-      'Project or organization is required for app templates',
+      'Organization is required for the media-library-config template',
     )
     expect(mockInitApp).not.toHaveBeenCalled()
   })

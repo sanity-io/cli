@@ -101,19 +101,22 @@ export async function initAction(options: InitOptions, context: InitContext): Pr
   // organization-only project details, app unattended-flag rules, `initApp`.
   // Template-shape differences are handled downstream (bootstrapLocalTemplate
   // and initApp check `determineMediaLibraryTemplate` themselves).
+  const isMediaLibraryTemplate = options.template
+    ? determineMediaLibraryTemplate(options.template)
+    : false
   const isAppTemplate = options.template
-    ? determineAppTemplate(options.template) || determineMediaLibraryTemplate(options.template)
+    ? determineAppTemplate(options.template) || isMediaLibraryTemplate
     : false
 
   // A config app persists to the org's installation, not to a dashboard
   // workbench, so `createMediaLibraryCliConfig` has no slot for --dashboard.
   // Warned rather than silently dropped (same courtesy as remote templates).
-  if (options.dashboard && options.template && determineMediaLibraryTemplate(options.template)) {
+  if (options.dashboard && isMediaLibraryTemplate) {
     output.warn('--dashboard is ignored for the media-library-config template')
   }
 
   if (options.unattended) {
-    checkFlagsInUnattendedMode(options, {isAppTemplate, isNextJs})
+    checkFlagsInUnattendedMode(options, {isAppTemplate, isMediaLibraryTemplate, isNextJs})
   }
 
   trace.start()
@@ -146,7 +149,14 @@ export async function initAction(options: InitOptions, context: InitContext): Pr
   }
 
   let newProject: string | undefined
-  if (options.projectName) {
+  // A media-library config records only the organization; creating a project
+  // from --project-name here would be a throwaway side effect.
+  if (options.projectName && isMediaLibraryTemplate) {
+    output.warn(
+      '--project-name is ignored for the media-library-config template — it only records the organization.',
+    )
+  }
+  if (options.projectName && !isMediaLibraryTemplate) {
     newProject = await createProjectFromName({
       coupon: options.coupon,
       createProjectName: options.projectName,
@@ -164,6 +174,7 @@ export async function initAction(options: InitOptions, context: InitContext): Pr
       dataset: options.dataset,
       datasetDefault: options.datasetDefault,
       isAppTemplate,
+      isMediaLibraryTemplate,
       newProject,
       organization: options.organization,
       output,
@@ -355,7 +366,11 @@ export async function initAction(options: InitOptions, context: InitContext): Pr
 
 function checkFlagsInUnattendedMode(
   options: InitOptions,
-  {isAppTemplate, isNextJs}: {isAppTemplate: boolean; isNextJs: boolean},
+  {
+    isAppTemplate,
+    isMediaLibraryTemplate,
+    isNextJs,
+  }: {isAppTemplate: boolean; isMediaLibraryTemplate: boolean; isNextJs: boolean},
 ): void {
   debug('Unattended mode, validating required options')
 
@@ -368,7 +383,14 @@ function checkFlagsInUnattendedMode(
       )
     }
 
-    if (options.projectName && !options.organization) {
+    // The media-library config is organization-only, so project flags can't
+    // stand in for --organization the way they can for other app templates.
+    if (isMediaLibraryTemplate && !options.organization) {
+      errors.push(
+        'Organization is required for the media-library-config template in unattended mode. ' +
+          'Pass it with `--organization <id>`.',
+      )
+    } else if (options.projectName && !options.organization) {
       errors.push(
         'Organization is required when creating a project in unattended mode. Pass it with `--organization <id>`.',
       )
