@@ -280,6 +280,46 @@ describe('#media:pull-aspects', () => {
     expect(stdout).not.toContain(`{name: 'notes'`)
   })
 
+  test('with --overwrite, an extensionless declared src resolves to the module file on disk', async () => {
+    createTestToken('test-token')
+    mockLibraryList([{id: 'test-library-id'}])
+    mockAspectQuery('test-library-id', [
+      {
+        _id: 'notes',
+        _type: 'sanity.asset.aspect',
+        definition: {name: 'notes', title: 'Notes', type: 'text'},
+      },
+    ])
+    // The declared `./aspects/notes` exists on disk as notes.tsx only.
+    mockFsAccess.mockImplementation((filePath: string) =>
+      String(filePath).endsWith(`${path.sep}notes.tsx`) || String(filePath).endsWith('/notes.tsx')
+        ? Promise.resolve()
+        : Promise.reject(new Error('ENOENT')),
+    )
+    mockFsMkdir.mockResolvedValue(undefined)
+    mockFsWriteFile.mockResolvedValue(undefined)
+
+    await testCommand(MediaPullAspectsCommand, ['--overwrite'], {
+      mocks: {
+        ...defaultMocks,
+        cliConfig: {
+          app: unstable_defineMediaLibrary({
+            // Extensionless src is valid for the bundler and jiti; writing it
+            // literally would create a file named `notes` next to notes.tsx.
+            fields: [{name: 'notes', src: './aspects/notes', title: 'Notes'}],
+            organizationId: 'test-org-id',
+          }),
+        },
+      },
+    })
+
+    expect(mockFsWriteFile).toHaveBeenCalledTimes(1)
+    expect(mockFsWriteFile).toHaveBeenCalledWith(
+      convertToSystemPath('/test/project/aspects/notes.tsx'),
+      expect.stringContaining(`export default defineField({`),
+    )
+  })
+
   test('with --overwrite, an undeclared field replaces the existing .tsx file it found', async () => {
     createTestToken('test-token')
     mockLibraryList([{id: 'test-library-id'}])
@@ -363,6 +403,65 @@ describe('#media:pull-aspects', () => {
 
     expect(error?.message).toContain('--out-dir must stay inside the project root')
     expect(error?.oclif?.exit).toBe(exitCodes.USAGE_ERROR)
+  })
+
+  test('rejects --out-dir .. (the project root parent itself)', async () => {
+    const {error} = await testCommand(MediaPullAspectsCommand, ['--out-dir', '..'], {
+      mocks: defaultMocks,
+    })
+
+    expect(error?.message).toContain('--out-dir must stay inside the project root')
+    expect(error?.oclif?.exit).toBe(exitCodes.USAGE_ERROR)
+  })
+
+  test('accepts a directory that merely starts with .. (e.g. ..foo)', async () => {
+    createTestToken('test-token')
+    mockLibraryList([{id: 'test-library-id'}])
+    mockAspectQuery('test-library-id', [
+      {
+        _id: 'caption',
+        _type: 'sanity.asset.aspect',
+        definition: {name: 'caption', title: 'Caption', type: 'string'},
+      },
+    ])
+    mockFsAccess.mockRejectedValue(new Error('ENOENT'))
+    mockFsMkdir.mockResolvedValue(undefined)
+    mockFsWriteFile.mockResolvedValue(undefined)
+
+    const {error} = await testCommand(MediaPullAspectsCommand, ['--out-dir', '..foo'], {
+      mocks: defaultMocks,
+    })
+
+    expect(error).toBeUndefined()
+    expect(mockFsWriteFile).toHaveBeenCalledWith(
+      convertToSystemPath('/test/project/..foo/caption.ts'),
+      expect.stringContaining('export default defineField({'),
+    )
+  })
+
+  test('an absolute --out-dir inside the root prints clean relative src entries', async () => {
+    createTestToken('test-token')
+    mockLibraryList([{id: 'test-library-id'}])
+    mockAspectQuery('test-library-id', [
+      {
+        _id: 'caption',
+        _type: 'sanity.asset.aspect',
+        definition: {name: 'caption', title: 'Caption', type: 'string'},
+      },
+    ])
+    mockFsAccess.mockRejectedValue(new Error('ENOENT'))
+    mockFsMkdir.mockResolvedValue(undefined)
+    mockFsWriteFile.mockResolvedValue(undefined)
+
+    const {stdout} = await testCommand(
+      MediaPullAspectsCommand,
+      ['--out-dir', convertToSystemPath('/test/project/custom')],
+      {mocks: defaultMocks},
+    )
+
+    // The report derives entries from the root-relative path, not the raw flag.
+    expect(stdout).toContain(`{name: 'caption', src: './custom/caption.ts', title: 'Caption'},`)
+    expect(stdout).not.toContain(`src: './/`)
   })
 
   test('redacts the local --out-dir path from telemetry', () => {

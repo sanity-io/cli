@@ -119,8 +119,13 @@ export class MediaPullAspectsCommand extends SanityCommand<typeof MediaPullAspec
       )
 
       const spin = spinner('Fetching stored aspect documents').start()
-      const documents = await getAspects(mediaLibraryId)
-      spin.stop()
+      let documents: Awaited<ReturnType<typeof getAspects>>
+      try {
+        documents = await getAspects(mediaLibraryId)
+      } finally {
+        // Also on failure — a spinner left running garbles the error output.
+        spin.stop()
+      }
 
       if (documents.length === 0) {
         this.log(
@@ -214,7 +219,7 @@ export class MediaPullAspectsCommand extends SanityCommand<typeof MediaPullAspec
         // be the .tsx variant), and only then fall back to the default.
         const declaredSrc = overwrite ? configuredSrcByName.get(module.name) : undefined
         const destination = declaredSrc
-          ? path.resolve(root.directory, declaredSrc)
+          ? await resolveDeclaredSrc(path.resolve(root.directory, declaredSrc), module.filename)
           : (existing ?? defaultDestination)
 
         await mkdir(path.dirname(destination), {recursive: true})
@@ -343,6 +348,19 @@ export class MediaPullAspectsCommand extends SanityCommand<typeof MediaPullAspec
     }
     return promptForMediaLibrary({mediaLibraries: libraries})
   }
+}
+
+/**
+ * The write target for a declared `src` path. A declared path may omit the
+ * extension — the bundler and jiti both resolve `./src/fields/notes` to
+ * `notes.ts(x)` — so writing it literally would create an extensionless file
+ * next to the module deploy actually evaluates. Resolve to the existing
+ * module file; if none exists, append the generated module's extension.
+ */
+async function resolveDeclaredSrc(declaredPath: string, moduleFilename: string): Promise<string> {
+  if (path.extname(declaredPath) !== '') return declaredPath
+  const existing = await firstExisting([`${declaredPath}.ts`, `${declaredPath}.tsx`])
+  return existing ?? `${declaredPath}${path.extname(moduleFilename)}`
 }
 
 /** The first path in `paths` that exists, or `undefined`. */
