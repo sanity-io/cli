@@ -481,7 +481,9 @@ async function findActiveRelease(client: SanityClient): Promise<string | null> {
   const RELEASE_QUERY = /* groq */ `releases::all()[
     state == "active" && string::startsWith(name, $prefix)
   ] | order(_createdAt desc)[0].name`
-  return client.fetch<string | null>(RELEASE_QUERY, {prefix: RELEASE_PREFIX})
+  // releases::all() isn't filtered by perspective today, but use raw to match
+  // fetchReleaseVersions and guard against future default-perspective changes.
+  return client.fetch<string | null>(RELEASE_QUERY, {prefix: RELEASE_PREFIX}, {perspective: 'raw'})
 }
 
 /**
