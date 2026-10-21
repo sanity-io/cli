@@ -42,15 +42,19 @@ function mockLibraryList(libraries: string[]) {
 
 /**
  * One interceptor per page, consumed in order; the production id-cursor loop
- * only stops on an empty page, so the last page is always `[]`. The stored-id
- * query (sync tag, published) and the carrier query (prune tag, raw) hit the
- * same URI but carry distinct query params, which is how nock tells the two
- * paginated reads apart.
+ * only stops on an empty page, so the last page is always `[]`. Both reads
+ * carry the prune tag; nock tells them apart by perspective — stored-id query
+ * `published`, carrier query `raw`.
  */
-function mockIdPages(libraryId: string, kind: 'carriers' | 'stored', pages: string[][]) {
+function mockIdPages(
+  libraryId: string,
+  kind: 'carriers' | 'stored',
+  pages: string[][],
+  capture?: unknown[],
+) {
   const query =
     kind === 'stored'
-      ? {perspective: 'published', tag: 'sanity.cli.aspect-sync'}
+      ? {perspective: 'published', tag: 'sanity.cli.prune-aspect-data'}
       : {perspective: 'raw', tag: 'sanity.cli.prune-aspect-data'}
   for (const page of [...pages, []]) {
     mockApi({
@@ -58,7 +62,10 @@ function mockIdPages(libraryId: string, kind: 'carriers' | 'stored', pages: stri
       method: 'post',
       query,
       uri: `/media-libraries/${libraryId}/query`,
-    }).reply(200, {result: page.map((_id) => ({_id}))})
+    }).reply(200, (_uri, body) => {
+      capture?.push(body)
+      return {result: page.map((_id) => ({_id}))}
+    })
   }
 }
 
@@ -118,12 +125,22 @@ describe('#media:prune-aspect-data', () => {
     createTestToken('test-token')
     mockLibraryList(['test-library-id'])
     mockIdPages('test-library-id', 'stored', [])
-    mockIdPages('test-library-id', 'carriers', [['asset-1', 'asset-2']])
+    const carrierQueryBodies: unknown[] = []
+    mockIdPages('test-library-id', 'carriers', [['asset-1', 'asset-2']], carrierQueryBodies)
     // No mutate interceptor: a mutation attempt would fail the request and
     // the pending-mocks check.
 
     const {stdout} = await testCommand(MediaPruneAspectDataCommand, ['legacyAspect'], {
       mocks: defaultMocks,
+    })
+
+    // The GROQ that selects what gets pruned, asserted so a filter change
+    // cannot slip past these tests unnoticed.
+    expect(carrierQueryBodies[0]).toEqual({
+      params: {lastId: ''},
+      query:
+        '*[_type == "sanity.asset" && defined(aspects["legacyAspect"]) && _id > $lastId]' +
+        ' | order(_id) [0...1000]{_id}',
     })
 
     expect(stdout).toContain('2 assets in media library test-library-id carry')
@@ -213,6 +230,34 @@ describe('#media:prune-aspect-data', () => {
     expect(stdout).toContain('aspects.legacyAspect removed from 150 assets')
   })
 
+  test('a mid-run batch failure reports the progress made and that a re-run is safe', async () => {
+    createTestToken('test-token')
+    const carrierIds = Array.from({length: 150}, (_, index) => `asset-${index}`)
+    mockLibraryList(['test-library-id'])
+    mockIdPages('test-library-id', 'stored', [])
+    mockIdPages('test-library-id', 'carriers', [carrierIds])
+    const mutateBodies: unknown[] = []
+    mockMutate('test-library-id', mutateBodies)
+    mockApi({
+      apiVersion: MEDIA_LIBRARY_API_VERSION,
+      method: 'post',
+      query: {tag: 'sanity.cli.prune-aspect-data'},
+      uri: '/media-libraries/test-library-id/mutate',
+    }).reply(500, {message: 'mutation quota exceeded'})
+
+    // Short -y alias, covered here so both spellings stay wired.
+    const {error} = await testCommand(MediaPruneAspectDataCommand, ['legacyAspect', '-y'], {
+      mocks: defaultMocks,
+    })
+
+    expect(mutateBodies).toHaveLength(1)
+    expect(error?.message).toContain(
+      'Removed aspects.legacyAspect from 100 of 150 assets before a batch failed',
+    )
+    expect(error?.message).toContain('Re-running the command with --yes is safe')
+    expect(error?.message).toContain('only the remaining 50 will be mutated')
+  })
+
   test('with an explicit --media-library-id not active in the organization, fails clearly', async () => {
     createTestToken('test-token')
     mockLibraryList(['library-a'])
@@ -225,5 +270,6 @@ describe('#media:prune-aspect-data', () => {
 
     expect(error?.message).toContain('library-z is not an active library')
     expect(error?.message).toContain('library-a')
+    expect(error?.oclif?.exit).toBe(exitCodes.USAGE_ERROR)
   })
 })

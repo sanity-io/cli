@@ -8,10 +8,11 @@ import {
   SanityCommand,
   subdebug,
 } from '@sanity/cli-core'
+import {getErrorMessage} from '@sanity/cli-core/errors'
 import {spinner} from '@sanity/cli-core/ux'
 import {resolveWorkbenchConfig} from '@sanity/workbench-cli/deploy'
 
-import {VALID_ASPECT_NAME} from '../../actions/media/aspectSync/contract.js'
+import {VALID_ASPECT_NAME} from '../../actions/media/aspectName.js'
 import {resolveMediaLibraryId} from '../../actions/media/resolveMediaLibraryId.js'
 import {
   getAspectDataCarrierIds,
@@ -68,6 +69,7 @@ export class MediaPruneAspectDataCommand extends SanityCommand<typeof MediaPrune
         'The id of the media library to prune (defaults to the single active library of the configured organization)',
     }),
     yes: Flags.boolean({
+      char: 'y',
       description:
         'Execute the prune. Without this flag the command only reports what would change',
     }),
@@ -115,7 +117,7 @@ export class MediaPruneAspectDataCommand extends SanityCommand<typeof MediaPrune
       })
 
       const spin = spinner('Finding assets that carry the aspect').start()
-      const storedIds = await getStoredAspectIds(mediaLibraryId)
+      const storedIds = await getStoredAspectIds(mediaLibraryId, 'prune-aspect-data')
       const carriers = await getAspectDataCarrierIds(mediaLibraryId, aspectName)
       spin.stop()
 
@@ -175,7 +177,22 @@ export class MediaPruneAspectDataCommand extends SanityCommand<typeof MediaPrune
       let pruned = 0
       for (let offset = 0; offset < carriers.length; offset += BATCH_SIZE) {
         const batch = carriers.slice(offset, offset + BATCH_SIZE)
-        await unsetAspectData({aspectName, assetIds: batch, mediaLibraryId})
+        try {
+          await unsetAspectData({aspectName, assetIds: batch, mediaLibraryId})
+        } catch (batchError) {
+          // The progress made so far must survive into the error: re-running
+          // is safe (pruned assets no longer match the carrier query), so the
+          // message says how far it got and that a retry finishes the rest.
+          throw new Error(
+            `Removed aspects.${aspectName} from ${pruned} of ${carriers.length} ${pluralize(
+              'asset',
+              carriers.length,
+            )} before a batch failed: ${getErrorMessage(batchError)}\n` +
+              `Re-running the command with --yes is safe — already-pruned assets no longer ` +
+              `match and only the remaining ${carriers.length - pruned} will be mutated.`,
+            {cause: batchError},
+          )
+        }
         pruned += batch.length
         this.log(styleText('dim', `  pruned ${pruned}/${carriers.length}`))
       }
@@ -189,6 +206,12 @@ export class MediaPruneAspectDataCommand extends SanityCommand<typeof MediaPrune
       )
     } catch (error) {
       const err = error as Error
+      // Ctrl+C in the library prompt and errors that already carry their exit
+      // story (`this.error`, CLIError from the resolver) pass through to
+      // `SanityCommand.catch` instead of being re-wrapped here.
+      if (err.name === 'ExitPromptError' || 'oclif' in err) {
+        throw err
+      }
       pruneAspectDataDebug('Failed to prune aspect data', {
         aspectName,
         error: err,

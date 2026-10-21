@@ -7,6 +7,7 @@ import {
   type SanityDocument,
 } from '@sanity/types'
 
+import {VALID_ASPECT_NAME} from '../actions/media/aspectName.js'
 import {ASSET_UPLOAD_REQUEST_TAG_PREFIX, URL_INGEST_TIMEOUT_MS} from './assets.js'
 
 export const MEDIA_LIBRARY_API_VERSION = 'v2025-02-19'
@@ -208,15 +209,21 @@ export function getAspects(mediaLibraryId: string): Promise<StoredAspectDocument
  * default-perspective read could flag a `drafts.*` id as stale and target it
  * for deletion.
  *
+ * `tag` names the calling operation in request logs; it defaults to the
+ * deploy-time sync, the original consumer.
+ *
  * @internal
  */
-export async function getStoredAspectIds(mediaLibraryId: string): Promise<string[]> {
+export async function getStoredAspectIds(
+  mediaLibraryId: string,
+  tag = 'aspect-sync',
+): Promise<string[]> {
   const documents = await queryAllPages<{_id: string}>({
     filter: '_type == $type',
     mediaLibraryId,
     params: {type: MEDIA_LIBRARY_ASSET_ASPECT_TYPE_NAME},
     projection: '{_id}',
-    tag: 'aspect-sync',
+    tag,
   })
   return documents.map((doc) => doc._id)
 }
@@ -237,7 +244,7 @@ export async function getAspectDataCarrierIds(
 ): Promise<string[]> {
   // Defense in depth: callers validate the name against the aspect-name rule,
   // but this string is interpolated into GROQ, so re-guard here.
-  if (!/^[a-zA-Z][a-zA-Z0-9_]*$/.test(aspectName)) {
+  if (!VALID_ASPECT_NAME.test(aspectName)) {
     throw new Error(`"${aspectName}" is not a valid aspect name`)
   }
   const documents = await queryAllPages<{_id: string}>({
