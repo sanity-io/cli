@@ -98,7 +98,7 @@
     "@sanity/id-utils": "^1.1.0",
     "@sanity/import": "^7.1.0",
     "@sanity/migrate": "^8.0.5",
-    "@sanity/runtime-cli": "^17.21.0",
+    "@sanity/runtime-cli": "17.16.0",
     "@sanity/schema": "catalog:",
     "@sanity/schema-descriptor-utils": "^1.4.0",
     "@sanity/telemetry": "catalog:",

@@ -15,5 +15,6 @@ export interface BuildOptions {
 
   applicationId?: string
   calledFromDeploy?: boolean
+  functionStackId?: string
   outDir?: string
 }
