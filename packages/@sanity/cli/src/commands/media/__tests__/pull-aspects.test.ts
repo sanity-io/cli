@@ -1,3 +1,5 @@
+import path from 'node:path'
+
 import {ProjectRootNotFoundError} from '@sanity/cli-core'
 import {exitCodes} from '@sanity/cli-core/ExitCodes'
 import {convertToSystemPath, createTestToken, mockApi, testCommand} from '@sanity/cli-test'
@@ -50,12 +52,16 @@ function mockLibraryList(libraries: Array<{id: string; status?: string}>) {
   })
 }
 
-function mockAspectQuery(libraryId: string, documents: unknown[]) {
+function mockAspectQuery(libraryId: string, documents: unknown[], capture?: unknown[]) {
   mockApi({
     apiVersion: MEDIA_LIBRARY_API_VERSION,
     method: 'post',
+    query: {perspective: 'published'},
     uri: `/media-libraries/${libraryId}/query`,
-  }).reply(200, {result: documents})
+  }).reply(200, (_uri, body) => {
+    capture?.push(body)
+    return {result: documents}
+  })
 }
 
 describe('#media:pull-aspects', () => {
@@ -91,24 +97,38 @@ describe('#media:pull-aspects', () => {
   test('generates field modules and prints the sanity.cli.ts entries', async () => {
     createTestToken('test-token')
     mockLibraryList([{id: 'test-library-id'}])
-    mockAspectQuery('test-library-id', [
-      {
-        _id: 'caption',
-        _type: 'sanity.asset.aspect',
-        definition: {name: 'caption', title: 'Caption', type: 'string'},
-      },
-      {
-        _id: 'credit',
-        _type: 'sanity.asset.aspect',
-        definition: {name: 'credit', title: 'Credit', type: 'string'},
-        public: true,
-      },
-    ])
+    const queryBodies: unknown[] = []
+    mockAspectQuery(
+      'test-library-id',
+      [
+        {
+          _id: 'caption',
+          _type: 'sanity.asset.aspect',
+          definition: {name: 'caption', title: 'Caption', type: 'string'},
+        },
+        {
+          _id: 'credit',
+          _type: 'sanity.asset.aspect',
+          definition: {name: 'credit', title: 'Credit', type: 'string'},
+          public: true,
+        },
+      ],
+      queryBodies,
+    )
     mockFsAccess.mockRejectedValue(new Error('ENOENT'))
     mockFsMkdir.mockResolvedValue(undefined)
     mockFsWriteFile.mockResolvedValue(undefined)
 
     const {stdout} = await testCommand(MediaPullAspectsCommand, [], {mocks: defaultMocks})
+
+    // The GROQ that selects what gets pulled, asserted so a filter change
+    // cannot slip past these tests unnoticed.
+    expect(queryBodies).toEqual([
+      {
+        params: {type: 'sanity.asset.aspect'},
+        query: '*[_type == $type] | order(_id asc)',
+      },
+    ])
 
     expect(mockFsWriteFile).toHaveBeenCalledTimes(2)
     expect(mockFsWriteFile).toHaveBeenCalledWith(
@@ -160,6 +180,62 @@ describe('#media:pull-aspects', () => {
     expect(stdout).toContain('No field modules generated.')
   })
 
+  test('generates one module when two stored docs resolve to the same name — the doc whose _id matches wins', async () => {
+    createTestToken('test-token')
+    mockLibraryList([{id: 'test-library-id'}])
+    mockAspectQuery('test-library-id', [
+      // Ordered by _id: the stale legacy doc comes first, and must still lose.
+      {
+        _id: 'aLegacyCaption',
+        _type: 'sanity.asset.aspect',
+        definition: {name: 'caption', title: 'Legacy Caption', type: 'string'},
+      },
+      {
+        _id: 'caption',
+        _type: 'sanity.asset.aspect',
+        definition: {name: 'caption', title: 'Caption', type: 'string'},
+      },
+    ])
+    mockFsAccess.mockRejectedValue(new Error('ENOENT'))
+    mockFsMkdir.mockResolvedValue(undefined)
+    mockFsWriteFile.mockResolvedValue(undefined)
+
+    const {stderr, stdout} = await testCommand(MediaPullAspectsCommand, [], {mocks: defaultMocks})
+
+    expect(mockFsWriteFile).toHaveBeenCalledTimes(1)
+    expect(mockFsWriteFile).toHaveBeenCalledWith(
+      convertToSystemPath('/test/project/src/fields/caption.ts'),
+      expect.stringContaining(`title: 'Caption'`),
+    )
+    expect(stdout).toContain('Generated 1 field module')
+    expect(stderr).toContain('aLegacyCaption')
+    expect(stderr).toContain('Also defines "caption" — generated from "caption" instead')
+  })
+
+  test('detects an existing .tsx module for the same field, not just .ts', async () => {
+    createTestToken('test-token')
+    mockLibraryList([{id: 'test-library-id'}])
+    mockAspectQuery('test-library-id', [
+      {
+        _id: 'caption',
+        _type: 'sanity.asset.aspect',
+        definition: {name: 'caption', title: 'Caption', type: 'string'},
+      },
+    ])
+    // Only the hand-written .tsx variant exists on disk.
+    mockFsAccess.mockImplementation((filePath: string) =>
+      String(filePath).endsWith('.tsx') ? Promise.resolve() : Promise.reject(new Error('ENOENT')),
+    )
+
+    const {stderr, stdout} = await testCommand(MediaPullAspectsCommand, [], {mocks: defaultMocks})
+
+    expect(mockFsWriteFile).not.toHaveBeenCalled()
+    expect(stderr).toContain(
+      `A file already exists at ${path.join('src', 'fields', 'caption.tsx')}`,
+    )
+    expect(stdout).toContain('No field modules generated.')
+  })
+
   test('rejects a --media-library-id that is not an active library of the organization', async () => {
     createTestToken('test-token')
     mockLibraryList([{id: 'other-library'}])
@@ -172,6 +248,7 @@ describe('#media:pull-aspects', () => {
 
     expect(error?.message).toContain('wrong-library is not an active library')
     expect(error?.message).toContain('other-library')
+    expect(error?.oclif?.exit).toBe(exitCodes.USAGE_ERROR)
   })
 
   test('requires --media-library-id unattended when several libraries are active', async () => {
@@ -184,6 +261,22 @@ describe('#media:pull-aspects', () => {
 
     expect(error?.message).toContain('2 active media libraries')
     expect(error?.message).toContain('--media-library-id')
+    expect(error?.oclif?.exit).toBe(exitCodes.USAGE_ERROR)
+  })
+
+  test('rejects an --out-dir that escapes the project root', async () => {
+    const {error} = await testCommand(MediaPullAspectsCommand, ['--out-dir', '../outside'], {
+      mocks: defaultMocks,
+    })
+
+    expect(error?.message).toContain('--out-dir must stay inside the project root')
+    expect(error?.oclif?.exit).toBe(exitCodes.USAGE_ERROR)
+  })
+
+  test('redacts the local --out-dir path from telemetry', () => {
+    expect(MediaPullAspectsCommand.telemetry.redactedFlags).toEqual([
+      {canonical: '--out-dir', flags: ['--out-dir']},
+    ])
   })
 
   test('reports an empty library without writing anything', async () => {

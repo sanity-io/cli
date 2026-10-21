@@ -2,12 +2,7 @@ import {validateMediaLibraryAssetAspect} from '@sanity/schema/_internal'
 import {type SchemaValidationProblem} from '@sanity/types'
 import startCase from 'lodash-es/startCase.js'
 
-/**
- * Mirrors the aspect-name rule of the config contract: names double as the
- * stored document `_id` and as the `aspects.<name>` data key on assets, and
- * get interpolated into GROQ by tooling.
- */
-const VALID_FIELD_NAME = /^[a-zA-Z][a-zA-Z0-9_]*$/
+import {VALID_ASPECT_NAME} from './aspectName.js'
 
 /** Keys whose object members are schema definitions, printed wrapped in a definer call. */
 const DEFINER_BY_PARENT_KEY: Record<string, string> = {
@@ -95,11 +90,11 @@ export function aspectDocumentToFieldModule(doc: PullableAspectDocument): PullAs
   const definitionName = typeof doc.definition.name === 'string' ? doc.definition.name : undefined
   const name = definitionName ?? _id
 
-  if (!VALID_FIELD_NAME.test(name)) {
+  if (!VALID_ASPECT_NAME.test(name)) {
     return {
       id: _id,
       reasons: [
-        `"${name}" is not a valid field name (${VALID_FIELD_NAME}) — it becomes the module name and the aspects.<name> key on assets`,
+        `"${name}" is not a valid field name (${VALID_ASPECT_NAME}) — it becomes the module name and the aspects.<name> key on assets`,
       ],
       status: 'skipped',
       validationErrors: [],

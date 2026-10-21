@@ -129,6 +129,9 @@ export async function getAspects(mediaLibraryId: string): Promise<Array<Record<s
       query: `*[_type == $type] | order(_id asc)`,
     },
     method: 'POST',
+    // `published` is this API version's default; pinned so a future default
+    // change can never surface `drafts.*` duplicates of published documents.
+    query: {perspective: 'published'},
     url: `/media-libraries/${mediaLibraryId}/query`,
   })
 
