@@ -34,6 +34,9 @@ export interface DeployPayload extends Partial<WorkbenchDeployPayload> {
   type: 'coreApp' | 'studio'
   version: string | null
 
+  functions?: {name: string}[]
+  functionStackId?: string
+
   organizationId?: string
   projectId?: string
 }

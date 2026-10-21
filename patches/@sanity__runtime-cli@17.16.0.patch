@@ -1,0 +1,1018 @@
+diff --git a/dist/actions/blueprints/stacks.d.ts b/dist/actions/blueprints/stacks.d.ts
+index 94213372b8ae4dc304b0ec77e344b07350dd6fa8..be914eb6840ff7950ae17f627a6aebf4a9a0ce06 100644
+--- a/dist/actions/blueprints/stacks.d.ts
++++ b/dist/actions/blueprints/stacks.d.ts
+@@ -13,7 +13,11 @@ type ListStacksResponse = {
+     stacks?: unknown;
+     response?: Response;
+ };
+-export declare function listStacks(auth: AuthParams, logger: Logger): Promise<ListStacksResponse>;
++export declare function listStacks(auth: AuthParams, logger: Logger, options?: {
++    fetchFn?: typeof fetch;
++    cursor?: string;
++    limit?: number;
++}): Promise<ListStacksResponse>;
+ type GetStackResponse = {
+     ok: true;
+     error: null;
+@@ -31,10 +35,11 @@ export declare function getStack({ stackId, auth, fetchFn, }: {
+     fetchFn: typeof fetch;
+ }): Promise<GetStackResponse>;
+ type CreateStackResponse = GetStackResponse;
+-export declare function createStack({ stackMutation, auth, logger, }: {
++export declare function createStack({ stackMutation, auth, logger, fetchFn, }: {
+     stackMutation: StackMutation;
+     auth: AuthParams;
+     logger: Logger;
++    fetchFn?: typeof fetch;
+ }): Promise<CreateStackResponse>;
+ export declare function createEmptyStack({ token, scopeType, scopeId, name, logger, }: {
+     token: string;
+diff --git a/dist/actions/blueprints/stacks.js b/dist/actions/blueprints/stacks.js
+index fcb042186405a6afdbec15c0c556c5fdc6ea7be6..8491204a1b14e46f867edc994dff76b1b531f172 100644
+--- a/dist/actions/blueprints/stacks.js
++++ b/dist/actions/blueprints/stacks.js
+@@ -3,10 +3,15 @@ import getHeaders from '../../utils/get-headers.js';
+ import { getRequestId } from '../../utils/request-id.js';
+ import { createTracedFetch } from '../../utils/traced-fetch.js';
+ export const stacksUrl = blueprintsUrl('stacks');
+-export async function listStacks(auth, logger) {
+-    const fetchFn = createTracedFetch(logger);
++export async function listStacks(auth, logger, options = {}) {
++    const fetchFn = options.fetchFn ?? createTracedFetch(logger);
++    const url = new URL(stacksUrl);
++    if (options.cursor)
++        url.searchParams.set('cursor', options.cursor);
++    if (options.limit !== undefined)
++        url.searchParams.set('limit', String(options.limit));
+     try {
+-        const response = await fetchFn(stacksUrl, {
++        const response = await fetchFn(url.toString(), {
+             method: 'GET',
+             headers: getHeaders(auth),
+         });
+@@ -27,7 +32,7 @@ export async function listStacks(auth, logger) {
+ }
+ export async function getStack({ stackId, auth, fetchFn, }) {
+     try {
+-        const response = await fetchFn(`${stacksUrl}/${stackId}`, {
++        const response = await fetchFn(`${stacksUrl}/${encodeURIComponent(stackId)}`, {
+             method: 'GET',
+             headers: getHeaders(auth),
+         });
+@@ -46,9 +51,8 @@ export async function getStack({ stackId, auth, fetchFn, }) {
+         };
+     }
+ }
+-export async function createStack({ stackMutation, auth, logger, }) {
++export async function createStack({ stackMutation, auth, logger, fetchFn = createTracedFetch(logger), }) {
+     try {
+-        const fetchFn = createTracedFetch(logger);
+         const response = await fetchFn(stacksUrl, {
+             method: 'POST',
+             headers: getHeaders(auth),
+diff --git a/dist/actions/blueprints/wait-for-operation.d.ts b/dist/actions/blueprints/wait-for-operation.d.ts
+index f426e620d124f7fb6b9d7054e71928592e87c332..307e90dae4192f070ae090d1f074619663f1a950 100644
+--- a/dist/actions/blueprints/wait-for-operation.d.ts
++++ b/dist/actions/blueprints/wait-for-operation.d.ts
+@@ -8,6 +8,7 @@ export interface WaitForOperationOptions {
+     log: Logger;
+     bin: string;
+     verbose?: boolean;
++    fetchFn?: typeof fetch;
+     /** Keep the operation queryable after the stack is gone (destroy). */
+     includeDestroyed?: boolean;
+     /** Noun for the idle message, e.g. "deployment" or "destruction". */
+diff --git a/dist/actions/blueprints/wait-for-operation.js b/dist/actions/blueprints/wait-for-operation.js
+index 40ba7f8fec49034e840d1b08f6b471c75fb8f451..b8853f2dd0778ea706d4390d5049069f701fbf2e 100644
+--- a/dist/actions/blueprints/wait-for-operation.js
++++ b/dist/actions/blueprints/wait-for-operation.js
+@@ -9,7 +9,7 @@ import { classifyOperationPoll, getOperation } from './operations.js';
+  */
+ export async function waitForOperation(options) {
+     const { stackId, operationId, auth, log, bin, verbose = false, includeDestroyed, progressNoun, } = options;
+-    const fetchFn = createTracedFetch(log);
++    const fetchFn = options.fetchFn ?? createTracedFetch(log);
+     const waitFor = createWaitFor({
+         bin,
+         log,
+diff --git a/dist/cores/blueprints/deploy.d.ts b/dist/cores/blueprints/deploy.d.ts
+index 1c3ac5628be19623df6b8db63df1878d54e5e459..bc3cbde68d7373a149a4199cb183010ade9ea74c 100644
+--- a/dist/cores/blueprints/deploy.d.ts
++++ b/dist/cores/blueprints/deploy.d.ts
+@@ -1,3 +1,4 @@
++import type { BlueprintResource } from '@sanity/blueprints';
+ import type { ReadBlueprintResult } from '../../actions/blueprints/blueprint.js';
+ import type { AuthParams, ScopeType, Stack } from '../../utils/types.js';
+ import type { CoreConfig, CoreResult } from '../index.js';
+@@ -19,3 +20,10 @@ export interface BlueprintDeployOptions extends CoreConfig {
+     };
+ }
+ export declare function blueprintDeployCore(options: BlueprintDeployOptions): Promise<CoreResult>;
++export interface ResourceDeployOptions extends Omit<BlueprintDeployOptions, 'blueprint'> {
++    resources: BlueprintResource[];
++    workDir: string;
++    fetchFn?: typeof fetch;
++}
++/** Deploy an in-memory resource list using the same pipeline as a Blueprint file. */
++export declare function deployResourcesCore(options: ResourceDeployOptions): Promise<CoreResult>;
+diff --git a/dist/cores/blueprints/deploy.js b/dist/cores/blueprints/deploy.js
+index 593ed1172d6db30f492af951422f6f30eb942ab4..f2dfd9c5fb829bf8b589ddb2307ddb3f49863a34 100644
+--- a/dist/cores/blueprints/deploy.js
++++ b/dist/cores/blueprints/deploy.js
+@@ -14,16 +14,23 @@ import { styleText } from '../../utils/style-text.js';
+ import { createTracedFetch } from '../../utils/traced-fetch.js';
+ import { getWarnings } from '../../utils/warnings.js';
+ export async function blueprintDeployCore(options) {
+-    const { bin = 'sanity', log: logger, auth, stackId, scopeType, scopeId, deployedStack, blueprint, cliVersion, flags, } = options;
++    return deployResourcesCore({
++        ...options,
++        resources: options.blueprint.resources,
++        workDir: dirname(options.blueprint.fileInfo.blueprintFilePath),
++    });
++}
++/** Deploy an in-memory resource list using the same pipeline as a Blueprint file. */
++export async function deployResourcesCore(options) {
++    const { bin = 'sanity', log: logger, auth, stackId, scopeType, scopeId, deployedStack, workDir: blueprintFileDir, cliVersion, flags, } = options;
+     const { verbose } = flags;
+     const noWait = flags['no-wait'] || false;
+     const stackName = flags['new-stack-name'] ?? deployedStack.name;
+     const installer = flags['fn-installer'] || undefined;
+-    const blueprintFileDir = dirname(blueprint.fileInfo.blueprintFilePath);
+     const workspaceWarnings = getWarnings({ dir: blueprintFileDir });
+     logger(`Deploying "${stackName}" ${niceId(deployedStack.id)}...`);
+     try {
+-        const fetchFn = createTracedFetch(logger);
++        const fetchFn = options.fetchFn ?? createTracedFetch(logger);
+         const { ok: checkOk, stack: currentStack } = await getStack({ stackId, auth, fetchFn });
+         if (!checkOk) {
+             return { success: false, error: 'Failed to check current Stack status' };
+@@ -39,7 +46,7 @@ export async function blueprintDeployCore(options) {
+                 ],
+             };
+         }
+-        const resources = [...blueprint.resources];
++        const resources = [...options.resources];
+         let spinner;
+         const preDeployResult = await preDeploy({
+             scopeType,
+@@ -143,6 +150,7 @@ export async function blueprintDeployCore(options) {
+             bin,
+             verbose,
+             progressNoun: 'deployment',
++            fetchFn,
+         });
+         if (outcome.type === 'completed') {
+             logger(styleText(['bold', 'green'], 'Stack deployment completed!'));
+diff --git a/dist/functions/artifacts.d.ts b/dist/functions/artifacts.d.ts
+new file mode 100644
+index 0000000000000000000000000000000000000000..77f0ff4af9c555f116437bb13688eb5ba666788a
+--- /dev/null
++++ b/dist/functions/artifacts.d.ts
+@@ -0,0 +1,13 @@
++export declare const functionOutputFileName = "index.js";
++/** Metadata for a compiled function, resolved without loading its handler. */
++export interface FunctionBuild {
++    name: string;
++    src: string;
++    entryPoint: string;
++}
++/** Validate artifacts produced by buildFunction before packaging or deployment. */
++export declare function readFunctionBuild(options: {
++    name: string;
++    src: string;
++    workDir: string;
++}): Promise<FunctionBuild>;
+diff --git a/dist/functions/artifacts.js b/dist/functions/artifacts.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..fb36822e386b4ee5775fd296b553614d6717897f
+--- /dev/null
++++ b/dist/functions/artifacts.js
+@@ -0,0 +1,26 @@
++import { readFile } from 'node:fs/promises';
++import path from 'node:path';
++import { findFunctionEntryPoint } from '../utils/functions/find-entry-point.js';
++export const functionOutputFileName = 'index.js';
++/** Validate artifacts produced by buildFunction before packaging or deployment. */
++export async function readFunctionBuild(options) {
++    const { name, workDir } = options;
++    const src = path.resolve(workDir, options.src);
++    try {
++        const pkg = JSON.parse(await readFile(path.join(src, 'package.json'), 'utf8'));
++        if (!pkg ||
++            typeof pkg !== 'object' ||
++            !('main' in pkg) ||
++            pkg.main !== functionOutputFileName ||
++            !('type' in pkg) ||
++            pkg.type !== 'module')
++            throw new Error('The function package metadata does not match its build format.');
++        const entryPoint = await findFunctionEntryPoint(src, name);
++        if (entryPoint !== path.join(src, functionOutputFileName))
++            throw new Error(`The compiled entry ${functionOutputFileName} is missing.`);
++        return { name, src, entryPoint };
++    }
++    catch (error) {
++        throw new Error(`Function "${name}" is not built. Run sanity build first.`, { cause: error });
++    }
++}
+diff --git a/dist/functions/build.d.ts b/dist/functions/build.d.ts
+new file mode 100644
+index 0000000000000000000000000000000000000000..ac358a85a0a12983ab50174768ffa57b4fa19f4a
+--- /dev/null
++++ b/dist/functions/build.d.ts
+@@ -0,0 +1,15 @@
++import { type FunctionContract } from './contracts.js';
++export interface BuildFunctionOptions {
++    name: string;
++    contract?: FunctionContract;
++    /** Function directory or entry file, relative to workDir. */
++    src: string;
++    workDir: string;
++    /** Build output directory, relative to workDir. Its contents are replaced. */
++    outDir: string;
++}
++/** Build a standalone ESM function bundle without a blueprint, stack, or ZIP. */
++export declare function buildFunction({ name, src, workDir, outDir, contract, }: BuildFunctionOptions): Promise<{
++    outputDir: string;
++}>;
++export { type FunctionBuild, readFunctionBuild } from './artifacts.js';
+diff --git a/dist/functions/build.js b/dist/functions/build.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..c7aa76e52d980852a26fc0f46628b0f6f97e0de9
+--- /dev/null
++++ b/dist/functions/build.js
+@@ -0,0 +1,27 @@
++import path from 'node:path';
++import { findFunctionEntryPoint } from '../utils/functions/find-entry-point.js';
++import { transpileFunction } from '../utils/functions/transpile/function.js';
++import { functionOutputFileName } from './artifacts.js';
++import { functionContractPlugin } from './contractPlugin.js';
++import { generateFunctionContracts } from './contracts.js';
++/** Build a standalone ESM function bundle without a blueprint, stack, or ZIP. */
++export async function buildFunction({ name, src, workDir, outDir, contract, }) {
++    const functionPath = path.resolve(workDir, src);
++    const entryPoint = await findFunctionEntryPoint(functionPath, name);
++    const resolvedContract = contract ?? (await generateFunctionContracts({ workDir, functions: [{ name, src }] }))[0];
++    if (resolvedContract.entryPoint !== entryPoint || resolvedContract.name !== name)
++        throw new Error(`Function contract does not match "${name}".`);
++    const validation = functionContractPlugin(resolvedContract);
++    const result = await transpileFunction({
++        resource: { name, src, type: 'sanity.function.pubsub' },
++        functionPath,
++        entryPoint: validation.entryPoint,
++        plugins: [validation.plugin],
++        workDir,
++        outDir: path.resolve(workDir, outDir),
++        outputFileName: functionOutputFileName,
++        bundle: true,
++    });
++    return { outputDir: result.outputDir };
++}
++export { readFunctionBuild } from './artifacts.js';
+diff --git a/dist/functions/contractPlugin.d.ts b/dist/functions/contractPlugin.d.ts
+new file mode 100644
+index 0000000000000000000000000000000000000000..08c2a33bd79f9055af85dc1c8e1f93717bee30de
+--- /dev/null
++++ b/dist/functions/contractPlugin.d.ts
+@@ -0,0 +1,7 @@
++import type { Plugin } from 'vite';
++import type { FunctionContract } from './contracts.js';
++/** Build a validating PubSub entry around the original handler. */
++export declare function functionContractPlugin(contract: FunctionContract): {
++    entryPoint: string;
++    plugin: Plugin;
++};
+diff --git a/dist/functions/contractPlugin.js b/dist/functions/contractPlugin.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..a5f9a455479f5b2361c1bab2eab86b51dae5966b
+--- /dev/null
++++ b/dist/functions/contractPlugin.js
+@@ -0,0 +1,32 @@
++import { jsonGuard, validatorSource } from './contracts/validation.js';
++/** Build a validating PubSub entry around the original handler. */
++export function functionContractPlugin(contract) {
++    const entryPoint = `virtual:sanity-function-contract:${contract.name}`;
++    const resolvedId = `\0${entryPoint}`;
++    const source = `import {handler as implementation} from ${JSON.stringify(contract.entryPoint.replaceAll('\\', '/'))}
++${jsonGuard}
++const validateInput = ${validatorSource(contract.input)}
++const validateOutput = ${validatorSource(contract.output)}
++export async function handler(envelope) {
++  let input = envelope?.event?.data
++  ${contract.input.kind === 'void' ? "if (input !== null && typeof input === 'object' && !Array.isArray(input) && Object.keys(input).length === 0) input = undefined" : ''}
++  if (!validateInput(input)) throw new TypeError(${JSON.stringify(`Invalid input for function "${contract.name}". Match its declared input type.`)})
++  const result = await implementation(envelope)
++  if (!validateOutput(result)) throw new TypeError(${JSON.stringify(`Function "${contract.name}" returned data that does not match its declared return type.`)})
++  return result
++}`;
++    return {
++        entryPoint,
++        plugin: {
++            name: 'sanity/function-contract',
++            resolveId(id) {
++                if (id === entryPoint)
++                    return resolvedId;
++            },
++            load(id) {
++                if (id === resolvedId)
++                    return source;
++            },
++        },
++    };
++}
+diff --git a/dist/functions/contracts/schema.d.ts b/dist/functions/contracts/schema.d.ts
+new file mode 100644
+index 0000000000000000000000000000000000000000..a8a9f095d4c472d866422dda19c6a89f8e88f906
+--- /dev/null
++++ b/dist/functions/contracts/schema.d.ts
+@@ -0,0 +1,22 @@
++import ts from 'typescript-compiler';
++export type ContractSchema = {
++    kind: 'string' | 'number' | 'boolean' | 'null' | 'void' | 'never';
++} | {
++    kind: 'literal';
++    value: string | number | boolean;
++} | {
++    kind: 'array';
++    items: ContractSchema;
++} | {
++    kind: 'union';
++    variants: ContractSchema[];
++} | {
++    kind: 'object';
++    properties: Record<string, {
++        optional: boolean;
++        schema: ContractSchema;
++    }>;
++    additional?: ContractSchema;
++};
++export declare function schemaFromType(checker: ts.TypeChecker, type: ts.Type, location: string, allowVoid?: boolean, parents?: Set<ts.Type>): ContractSchema;
++export declare function contractType(schema: ContractSchema): string;
+diff --git a/dist/functions/contracts/schema.js b/dist/functions/contracts/schema.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..ee7210016934c8ec5d633ecaab933f2bec496b68
+--- /dev/null
++++ b/dist/functions/contracts/schema.js
+@@ -0,0 +1,99 @@
++import ts from 'typescript-compiler';
++export function schemaFromType(checker, type, location, allowVoid = false, parents = new Set()) {
++    const fail = (reason) => {
++        throw new Error(`${location}: ${reason} (${checker.typeToString(type)}). Use a concrete JSON-compatible type.`);
++    };
++    const flags = type.flags;
++    if (flags & (ts.TypeFlags.Any | ts.TypeFlags.Unknown | ts.TypeFlags.TypeParameter))
++        return fail('Unresolved or untyped contract');
++    if (flags & ts.TypeFlags.Never)
++        return { kind: 'never' };
++    if (flags & (ts.TypeFlags.Void | ts.TypeFlags.Undefined)) {
++        if (!allowVoid)
++            return fail('Undefined is only supported for optional object fields or a void result');
++        return { kind: 'void' };
++    }
++    if (flags & ts.TypeFlags.Null)
++        return { kind: 'null' };
++    if (flags & ts.TypeFlags.StringLiteral)
++        return { kind: 'literal', value: type.value };
++    if (flags & ts.TypeFlags.NumberLiteral)
++        return { kind: 'literal', value: type.value };
++    if (flags & ts.TypeFlags.BooleanLiteral)
++        return { kind: 'literal', value: checker.typeToString(type) === 'true' };
++    if (flags & ts.TypeFlags.String)
++        return { kind: 'string' };
++    if (flags & ts.TypeFlags.Number)
++        return { kind: 'number' };
++    if (flags & ts.TypeFlags.Boolean)
++        return { kind: 'boolean' };
++    if (parents.has(type) || parents.size > 64)
++        return fail('Recursive or excessively nested contract');
++    const next = new Set(parents).add(type);
++    if (type.isUnion())
++        return {
++            kind: 'union',
++            variants: type.types.map((item) => schemaFromType(checker, item, location, allowVoid, next)),
++        };
++    if (checker.isTupleType(type))
++        return fail('Tuple contracts are not supported; use an array');
++    if (checker.isArrayType(type)) {
++        const element = checker.getTypeArguments(type)[0];
++        return { kind: 'array', items: schemaFromType(checker, element, `${location}[]`, false, next) };
++    }
++    if (!(flags & (ts.TypeFlags.Object | ts.TypeFlags.Intersection)))
++        return fail('Unsupported contract');
++    if (type.getCallSignatures().length || type.getConstructSignatures().length)
++        return fail('Functions and constructors cannot cross the function boundary');
++    if (type
++        .getSymbol()
++        ?.getDeclarations()
++        ?.some((declaration) => ts.isClassDeclaration(declaration) || ts.isClassExpression(declaration)))
++        return fail('Class instances cannot cross the function boundary');
++    if (checker.getIndexTypeOfType(type, ts.IndexKind.Number))
++        return fail('Numeric index signatures are not supported; use an array or string-keyed record');
++    const properties = Object.create(null);
++    for (const property of checker.getPropertiesOfType(type)) {
++        const name = property.getName();
++        if (name.startsWith('__@'))
++            return fail('Symbol properties cannot cross the function boundary');
++        const declaration = property.valueDeclaration ?? property.declarations?.[0];
++        if (!declaration)
++            return fail(`Cannot resolve property ${name}`);
++        const propertyType = checker.getTypeOfSymbolAtLocation(property, declaration);
++        const optional = !!(property.flags & ts.SymbolFlags.Optional);
++        const members = optional
++            ? (propertyType.isUnion() ? propertyType.types : [propertyType]).filter((member) => !(member.flags & ts.TypeFlags.Undefined))
++            : [propertyType];
++        const schemas = members.map((member) => schemaFromType(checker, member, `${location}.${name}`, false, next));
++        properties[name] = {
++            optional,
++            schema: schemas.length === 0
++                ? { kind: 'never' }
++                : schemas.length === 1
++                    ? schemas[0]
++                    : { kind: 'union', variants: schemas },
++        };
++    }
++    const indexType = checker.getIndexTypeOfType(type, ts.IndexKind.String);
++    const additional = indexType
++        ? schemaFromType(checker, indexType, `${location}[key]`, false, next)
++        : undefined;
++    return { kind: 'object', properties, ...(additional ? { additional } : {}) };
++}
++export function contractType(schema) {
++    switch (schema.kind) {
++        case 'literal':
++            return JSON.stringify(schema.value);
++        case 'array':
++            return `(${contractType(schema.items)})[]`;
++        case 'union':
++            return schema.variants.map(contractType).join(' | ');
++        case 'object':
++            return `{${Object.entries(schema.properties)
++                .map(([name, property]) => `${JSON.stringify(name)}${property.optional ? '?' : ''}: ${contractType(property.schema)};`)
++                .join(' ')}${schema.additional ? `[key: string]: ${contractType(schema.additional)};` : ''}}`;
++        default:
++            return schema.kind;
++    }
++}
+diff --git a/dist/functions/contracts/validation.d.ts b/dist/functions/contracts/validation.d.ts
+new file mode 100644
+index 0000000000000000000000000000000000000000..ef7c62ace1b29705eaad0d726cdd05802ef5a21e
+--- /dev/null
++++ b/dist/functions/contracts/validation.d.ts
+@@ -0,0 +1,3 @@
++import type { ContractSchema } from './schema.js';
++export declare const jsonGuard = "function isJson(value, seen = new WeakSet(), depth = 0) {\n  if (depth > 100) return false\n  if (value === undefined || value === null) return true\n  if (typeof value === 'string' || typeof value === 'boolean') return true\n  if (typeof value === 'number') return Number.isFinite(value)\n  if (typeof value !== 'object' || seen.has(value) || Object.getOwnPropertySymbols(value).length) return false\n  seen.add(value)\n  try {\n    if (Array.isArray(value)) {\n      if (Object.keys(value).length !== value.length) return false\n      for (let index = 0; index < value.length; index++) {\n        if (!Object.hasOwn(value, index) || value[index] === undefined || !isJson(value[index], seen, depth + 1)) return false\n      }\n      return true\n    }\n    const prototype = Object.getPrototypeOf(value)\n    return (prototype === Object.prototype || prototype === null) && Object.values(value).every(item => isJson(item, seen, depth + 1))\n  } finally { seen.delete(value) }\n}";
++export declare function validatorSource(schema: ContractSchema): string;
+diff --git a/dist/functions/contracts/validation.js b/dist/functions/contracts/validation.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..8b209cb3a59aebb780070c9025d3c221881b4eb4
+--- /dev/null
++++ b/dist/functions/contracts/validation.js
+@@ -0,0 +1,66 @@
++// Self-contained code emitted into browser contracts and function bundles.
++export const jsonGuard = `function isJson(value, seen = new WeakSet(), depth = 0) {
++  if (depth > 100) return false
++  if (value === undefined || value === null) return true
++  if (typeof value === 'string' || typeof value === 'boolean') return true
++  if (typeof value === 'number') return Number.isFinite(value)
++  if (typeof value !== 'object' || seen.has(value) || Object.getOwnPropertySymbols(value).length) return false
++  seen.add(value)
++  try {
++    if (Array.isArray(value)) {
++      if (Object.keys(value).length !== value.length) return false
++      for (let index = 0; index < value.length; index++) {
++        if (!Object.hasOwn(value, index) || value[index] === undefined || !isJson(value[index], seen, depth + 1)) return false
++      }
++      return true
++    }
++    const prototype = Object.getPrototypeOf(value)
++    return (prototype === Object.prototype || prototype === null) && Object.values(value).every(item => isJson(item, seen, depth + 1))
++  } finally { seen.delete(value) }
++}`;
++export function validatorSource(schema) {
++    return `(value) => isJson(value) && (${validationExpression(schema, 'value')})`;
++}
++function validationExpression(schema, value, depth = 0) {
++    switch (schema.kind) {
++        case 'void':
++            return `${value} === undefined`;
++        case 'never':
++            return 'false';
++        case 'null':
++            return `${value} === null`;
++        case 'literal':
++            return `${value} === ${JSON.stringify(schema.value)}`;
++        case 'number':
++            return `(typeof ${value} === 'number' && Number.isFinite(${value}))`;
++        case 'string':
++        case 'boolean':
++            return `typeof ${value} === '${schema.kind}'`;
++        case 'union':
++            return `(${schema.variants.map((item) => `(${validationExpression(item, value, depth + 1)})`).join(' || ')})`;
++        case 'array': {
++            const item = `item${depth}`;
++            return `(Array.isArray(${value}) && ${value}.every(${item} => ${validationExpression(schema.items, item, depth + 1)}))`;
++        }
++        case 'object': {
++            const checks = [
++                `${value} !== null`,
++                `typeof ${value} === 'object'`,
++                `!Array.isArray(${value})`,
++            ];
++            for (const [name, property] of Object.entries(schema.properties)) {
++                const member = `${value}[${JSON.stringify(name)}]`;
++                const present = `Object.hasOwn(${value}, ${JSON.stringify(name)})`;
++                const check = validationExpression(property.schema, member, depth + 1);
++                checks.push(property.optional
++                    ? `(!${present} || ${member} === undefined || (${check}))`
++                    : `(${present} && (${check}))`);
++            }
++            if (schema.additional) {
++                const key = `key${depth}`;
++                checks.push(`Object.keys(${value}).every(${key} => ${JSON.stringify(Object.keys(schema.properties))}.includes(${key}) || (${validationExpression(schema.additional, `${value}[${key}]`, depth + 1)}))`);
++            }
++            return `(${checks.join(' && ')})`;
++        }
++    }
++}
+diff --git a/dist/functions/contracts.d.ts b/dist/functions/contracts.d.ts
+new file mode 100644
+index 0000000000000000000000000000000000000000..f8766aff4ba6551a9402472250ef5980d9dadb38
+--- /dev/null
++++ b/dist/functions/contracts.d.ts
+@@ -0,0 +1,20 @@
++import { type ContractSchema } from './contracts/schema.js';
++export interface FunctionContract {
++    name: string;
++    src: string;
++    entryPoint: string;
++    input: ContractSchema;
++    output: ContractSchema;
++}
++/** Discover input and output types without loading or executing function code. */
++export declare function generateFunctionContracts(options: {
++    workDir: string;
++    functions: {
++        name: string;
++        src: string;
++    }[];
++}): Promise<FunctionContract[]>;
++/** Check app consumers after regenerating their function registry. */
++export declare function checkFunctionTypes(workDir: string): void;
++/** Emit a standalone declaration registry and browser-safe validators. */
++export declare function writeFunctionContracts(workDir: string, contracts: FunctionContract[]): Promise<void>;
+diff --git a/dist/functions/contracts.js b/dist/functions/contracts.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..646df1a43fb201ea59509ac9b118be19b4ec0a88
+--- /dev/null
++++ b/dist/functions/contracts.js
+@@ -0,0 +1,119 @@
++import { mkdir, readFile, writeFile } from 'node:fs/promises';
++import path from 'node:path';
++import ts from 'typescript-compiler';
++import { findFunctionEntryPoint } from '../utils/functions/find-entry-point.js';
++import { contractType, schemaFromType } from './contracts/schema.js';
++import { jsonGuard, validatorSource } from './contracts/validation.js';
++/** Discover input and output types without loading or executing function code. */
++export async function generateFunctionContracts(options) {
++    const entries = await Promise.all(options.functions.map(async (fn) => ({
++        ...fn,
++        entryPoint: await findFunctionEntryPoint(path.resolve(options.workDir, fn.src), fn.name),
++    })));
++    const config = readProjectConfig(options.workDir);
++    const program = ts.createProgram(entries.map((fn) => fn.entryPoint), {
++        target: ts.ScriptTarget.ESNext,
++        module: ts.ModuleKind.ESNext,
++        moduleResolution: ts.ModuleResolutionKind.Bundler,
++        ...config?.options,
++        allowJs: true,
++        checkJs: true,
++        noEmit: true,
++        strict: true,
++        strictNullChecks: true,
++        skipLibCheck: true,
++        composite: false,
++        incremental: false,
++        declaration: false,
++        declarationMap: false,
++        tsBuildInfoFile: undefined,
++    });
++    assertDiagnostics(ts.getPreEmitDiagnostics(program), options.workDir);
++    const checker = program.getTypeChecker();
++    return entries.map((fn) => readContract(checker, program, fn));
++}
++/** Check app consumers after regenerating their function registry. */
++export function checkFunctionTypes(workDir) {
++    const config = readProjectConfig(workDir);
++    if (!config)
++        return;
++    const program = ts.createProgram({
++        rootNames: config.fileNames,
++        options: { ...config.options, noEmit: true, incremental: false, tsBuildInfoFile: undefined },
++        projectReferences: config.projectReferences,
++    });
++    assertDiagnostics(ts.getPreEmitDiagnostics(program), workDir);
++}
++function readProjectConfig(workDir) {
++    const configPath = ts.findConfigFile(workDir, ts.sys.fileExists);
++    if (!configPath)
++        return undefined;
++    const config = ts.readConfigFile(configPath, ts.sys.readFile);
++    if (config.error)
++        assertDiagnostics([config.error], workDir);
++    const parsed = ts.parseJsonConfigFileContent(config.config, ts.sys, path.dirname(configPath));
++    assertDiagnostics(parsed.errors, workDir);
++    return parsed;
++}
++function assertDiagnostics(diagnostics, workDir) {
++    const errors = diagnostics.filter((diagnostic) => diagnostic.category === ts.DiagnosticCategory.Error);
++    if (errors.length)
++        throw new Error(ts.formatDiagnostics(errors, {
++            getCanonicalFileName: (file) => file,
++            getCurrentDirectory: () => workDir,
++            getNewLine: () => '\n',
++        }));
++}
++function readContract(checker, program, fn) {
++    const source = program.getSourceFile(fn.entryPoint);
++    const module = source && checker.getSymbolAtLocation(source);
++    const exported = module && checker.getExportsOfModule(module).find((item) => item.getName() === 'handler');
++    if (!source || !exported)
++        throw new Error(`Function "${fn.name}" must export handler.`);
++    const signatures = checker.getTypeOfSymbolAtLocation(exported, source).getCallSignatures();
++    if (signatures.length !== 1)
++        throw new Error(`Function "${fn.name}" must have one handler signature.`);
++    const signature = signatures[0];
++    if (signature.parameters.length > 1)
++        throw new Error(`Function "${fn.name}" must accept a single FunctionArgs envelope.`);
++    let input = { kind: 'void' };
++    const parameter = signature.parameters[0];
++    if (parameter) {
++        const args = checker.getTypeOfSymbolAtLocation(parameter, source);
++        const event = args.getProperty('event');
++        const eventType = event && checker.getTypeOfSymbolAtLocation(event, source);
++        const data = eventType?.getProperty('data');
++        if (!data)
++            throw new Error(`Function "${fn.name}" must annotate its input with FunctionArgs<Input>.`);
++        input = schemaFromType(checker, checker.getTypeOfSymbolAtLocation(data, source), `${fn.name} input`, true);
++    }
++    const isObjectInput = (schema) => schema.kind === 'object' || (schema.kind === 'union' && schema.variants.every(isObjectInput));
++    if (input.kind !== 'void' && !isObjectInput(input))
++        throw new Error(`Function "${fn.name}" input must be a JSON object or omitted. Put scalar values inside an input object.`);
++    const returnType = checker.getReturnTypeOfSignature(signature);
++    const output = schemaFromType(checker, checker.getAwaitedType(returnType) ?? returnType, `${fn.name} output`, true);
++    return { ...fn, input, output };
++}
++const generatedHeader = '// Generated by Sanity CLI. Do not edit.\n';
++/** Emit a standalone declaration registry and browser-safe validators. */
++export async function writeFunctionContracts(workDir, contracts) {
++    const declarations = `${generatedHeader}import '@sanity/sdk'\n\ndeclare module '@sanity/sdk' {\n  interface AppFunctionRegistry {\n${contracts.map((fn) => `    ${JSON.stringify(fn.name)}: {input: ${contractType(fn.input)}; output: ${contractType(fn.output)}}`).join('\n')}\n  }\n}\n`;
++    const client = `${generatedHeader}${jsonGuard}\nexport const functionContracts = Object.fromEntries([\n${contracts.map((fn) => `[${JSON.stringify(fn.name)}, {hasInput: ${fn.input.kind !== 'void'}, validateInput: ${validatorSource(fn.input)}, validateOutput: ${validatorSource(fn.output)}}]`).join(',\n')}\n])\n`;
++    await writeGenerated(path.join(workDir, 'sanity.functions.d.ts'), declarations);
++    await writeGenerated(path.join(workDir, '.sanity', 'function-contracts.js'), client);
++}
++async function writeGenerated(file, content) {
++    try {
++        const previous = await readFile(file, 'utf8');
++        if (!previous.startsWith(generatedHeader))
++            throw new Error(`Refusing to overwrite non-generated file ${file}. Move it before generating function contracts.`);
++        if (previous === content)
++            return;
++    }
++    catch (error) {
++        if (!(error instanceof Error && 'code' in error && error.code === 'ENOENT'))
++            throw error;
++    }
++    await mkdir(path.dirname(file), { recursive: true });
++    await writeFile(file, content);
++}
+diff --git a/dist/functions/deploy.d.ts b/dist/functions/deploy.d.ts
+new file mode 100644
+index 0000000000000000000000000000000000000000..c2b82933764901b8181a5c2ca6e516342efccf15
+--- /dev/null
++++ b/dist/functions/deploy.d.ts
+@@ -0,0 +1,15 @@
++import type { CoreResult } from '../cores/index.js';
++/** Deploy already-built PubSub functions to an app-owned organization stack. */
++export declare function deployFunctions(options: {
++    appId: string;
++    organizationId: string;
++    stackId: string;
++    workDir: string;
++    functions: {
++        name: string;
++        src: string;
++    }[];
++    token: string;
++    fetchFn: typeof fetch;
++    log: (message: string) => void;
++}): Promise<CoreResult>;
+diff --git a/dist/functions/deploy.js b/dist/functions/deploy.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..4b8f4f9f8df7ba681405f9f35e587788f4247c0d
+--- /dev/null
++++ b/dist/functions/deploy.js
+@@ -0,0 +1,60 @@
++import { getStack } from '../actions/blueprints/stacks.js';
++import { deployResourcesCore } from '../cores/blueprints/deploy.js';
++import { Logger } from '../utils/logger.js';
++import { readFunctionBuild } from './artifacts.js';
++import { assertAppFunctionStack } from './stack.js';
++/** Deploy already-built PubSub functions to an app-owned organization stack. */
++export async function deployFunctions(options) {
++    const { organizationId, stackId, workDir, fetchFn } = options;
++    const auth = {
++        token: options.token,
++        scopeType: 'organization',
++        scopeId: organizationId,
++    };
++    const result = await getStack({ stackId, auth, fetchFn });
++    if (!result.ok)
++        return { success: false, error: result.error || 'Could not read app function stack' };
++    const stack = result.stack;
++    try {
++        assertAppFunctionStack(stack, options);
++    }
++    catch (error) {
++        return { success: false, error: error instanceof Error ? error.message : String(error) };
++    }
++    if (stack.resources.some((resource) => resource.type !== 'sanity.function.pubsub')) {
++        return {
++            success: false,
++            error: 'The app function stack contains other resource types. Use a dedicated app function stack.',
++        };
++    }
++    const resources = [];
++    for (const fn of options.functions) {
++        let src;
++        try {
++            src = (await readFunctionBuild({ ...fn, workDir })).src;
++        }
++        catch (error) {
++            return { success: false, error: error instanceof Error ? error.message : String(error) };
++        }
++        resources.push({
++            name: fn.name,
++            type: 'sanity.function.pubsub',
++            src,
++            transpile: false,
++            autoResolveDeps: false,
++        });
++    }
++    return deployResourcesCore({
++        auth,
++        stackId,
++        scopeType: 'organization',
++        scopeId: organizationId,
++        deployedStack: stack,
++        resources,
++        workDir,
++        fetchFn,
++        bin: 'sanity',
++        flags: {},
++        log: Logger(options.log, { json: true }),
++    });
++}
+diff --git a/dist/functions/stack.d.ts b/dist/functions/stack.d.ts
+new file mode 100644
+index 0000000000000000000000000000000000000000..db0b68b1c94d383a2a65f0589acb0f7ec810706d
+--- /dev/null
++++ b/dist/functions/stack.d.ts
+@@ -0,0 +1,18 @@
++import type { Stack, StackSummary } from '../utils/types.js';
++interface AppFunctionIdentity {
++    appId: string;
++    organizationId: string;
++}
++/** Shared ownership check for provisioning and deploying an app's function stack. */
++export declare function assertAppFunctionStack(stack: Stack | StackSummary, { appId, organizationId }: AppFunctionIdentity): void;
++/** Resolve or create a dedicated app stack using the Blueprint stack operations. */
++export declare function ensureFunctionStack(options: AppFunctionIdentity & {
++    token: string;
++    fetchFn: typeof fetch;
++    stackId?: string;
++    dryRun?: boolean;
++}): Promise<{
++    created: boolean;
++    id: string;
++} | null>;
++export { BLUEPRINTS_API_VERSION } from '../config.js';
+diff --git a/dist/functions/stack.js b/dist/functions/stack.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..41739676d84941b51b040cda33979f66c9c0829a
+--- /dev/null
++++ b/dist/functions/stack.js
+@@ -0,0 +1,84 @@
++import { createStack, getStack, listStacks } from '../actions/blueprints/stacks.js';
++import { Logger } from '../utils/logger.js';
++/** Shared ownership check for provisioning and deploying an app's function stack. */
++export function assertAppFunctionStack(stack, { appId, organizationId }) {
++    if (!stack ||
++        typeof stack.id !== 'string' ||
++        !stack.id ||
++        stack.name !== appFunctionStackName(appId) ||
++        stack.scopeType !== 'organization' ||
++        stack.scopeId !== organizationId) {
++        throw new Error(`The function stack does not belong to app "${appId}" in organization "${organizationId}". Check .sanity/app-functions.json.`);
++    }
++}
++/** Resolve or create a dedicated app stack using the Blueprint stack operations. */
++export async function ensureFunctionStack(options) {
++    const { appId, organizationId, token, fetchFn, stackId, dryRun = false } = options;
++    const auth = { token, scopeType: 'organization', scopeId: organizationId };
++    const name = appFunctionStackName(appId);
++    const logger = Logger(() => { }, { json: true });
++    const resolved = (stack, created) => {
++        assertAppFunctionStack(stack, options);
++        return { created, id: stack.id };
++    };
++    if (stackId) {
++        const result = await getStack({ stackId, auth, fetchFn });
++        if (result.ok)
++            return resolved(result.stack, false);
++        if (result.response?.status !== 404)
++            throw stackRequestError(result);
++    }
++    async function findStack() {
++        let cursor;
++        const cursors = new Set();
++        do {
++            const result = await listStacks(auth, logger, { fetchFn, cursor, limit: 500 });
++            if (!result.ok)
++                throw stackRequestError(result);
++            if (!Array.isArray(result.stacks))
++                throw new Error('Invalid Blueprint stack list response.');
++            const stack = result.stacks.find((item) => item?.name === name);
++            if (stack)
++                return stack;
++            if (result.response?.headers.get('x-has-more') !== 'true')
++                return undefined;
++            cursor = result.response.headers.get('x-cursor') ?? undefined;
++            if (!cursor || cursors.has(cursor))
++                throw new Error('Cannot read the next page of Blueprint stacks. Try again.');
++            cursors.add(cursor);
++        } while (cursor);
++        return undefined;
++    }
++    const existing = await findStack();
++    if (existing)
++        return resolved(existing, false);
++    if (dryRun)
++        return null;
++    const result = await createStack({
++        auth,
++        logger,
++        fetchFn,
++        stackMutation: {
++            name,
++            scopeType: auth.scopeType,
++            scopeId: auth.scopeId,
++            document: { resources: [] },
++        },
++    });
++    if (result.ok)
++        return resolved(result.stack, true);
++    if (result.response?.status === 409) {
++        const concurrent = await findStack();
++        if (concurrent)
++            return resolved(concurrent, false);
++    }
++    throw stackRequestError(result);
++}
++function appFunctionStackName(appId) {
++    return `app-${appId}`;
++}
++function stackRequestError(result) {
++    const status = result.response ? ` (${result.response.status})` : '';
++    return new Error(`Blueprint stack request failed${status}: ${result.error || result.response?.statusText || 'Unknown error'}`);
++}
++export { BLUEPRINTS_API_VERSION } from '../config.js';
+diff --git a/dist/utils/functions/transpile/function.d.ts b/dist/utils/functions/transpile/function.d.ts
+index f52760e9c98e88ec81864d33ce3837cd0f7ef67d..cf751d8c5c4e3baf6407e3f446fe853f3e43f5ec 100644
+--- a/dist/utils/functions/transpile/function.d.ts
++++ b/dist/utils/functions/transpile/function.d.ts
+@@ -1,10 +1,16 @@
++import type { Plugin } from 'vite';
+ import type { FunctionResource, InstallerType } from '../../types.js';
+ export declare const resolveViteRoot: (entry: string) => string;
+-export declare function transpileFunction({ resource, functionPath, entryPoint, installer, }: {
++export declare function transpileFunction({ resource, functionPath, entryPoint, installer, workDir, outDir, outputFileName, bundle: bundleDependencies, plugins: extraPlugins, }: {
+     resource: FunctionResource;
+     functionPath: string;
+     entryPoint: string;
+     installer?: InstallerType;
++    workDir?: string;
++    outDir?: string;
++    outputFileName?: string;
++    bundle?: boolean;
++    plugins?: Plugin[];
+ }): Promise<{
+     type: string;
+     outputDir: string;
+diff --git a/dist/utils/functions/transpile/function.js b/dist/utils/functions/transpile/function.js
+index b43c6c93c526200875c92a4b41dfff13c2d93d15..09dcaec8e2b28fafb27295c6407f0c79eeebbb39 100644
+--- a/dist/utils/functions/transpile/function.js
++++ b/dist/utils/functions/transpile/function.js
+@@ -13,7 +13,7 @@ export const resolveViteRoot = (entry) => {
+     const nodeModulesDir = find.dir('node_modules', { cwd: entry });
+     return nodeModulesDir ? path.dirname(nodeModulesDir) : entry;
+ };
+-export async function transpileFunction({ resource, functionPath, entryPoint, installer, }) {
++export async function transpileFunction({ resource, functionPath, entryPoint, installer, workDir = cwd(), outDir, outputFileName = getOutputFilename(entryPoint), bundle: bundleDependencies, plugins: extraPlugins = [], }) {
+     if (!resource.src)
+         throw new Error('Resource src is required');
+     if (!resource.name)
+@@ -23,8 +23,8 @@ export async function transpileFunction({ resource, functionPath, entryPoint, in
+     const stats = await stat(functionPath);
+     const entryDir = stats.isFile() ? path.dirname(functionPath) : functionPath;
+     const outputPathStart = performance.now();
+-    const outputDir = await getTranspileOutputPath(entryDir, resource.name);
+-    const outputFile = path.join(outputDir, getOutputFilename(entryPoint));
++    const outputDir = await getTranspileOutputPath(entryDir, resource.name, outDir);
++    const outputFile = path.join(outputDir, outputFileName);
+     const fnRootDir = resolveViteRoot(entryDir);
+     timings['transpile:setupOutput'] = performance.now() - outputPathStart;
+     async function cleanupTmpDir() {
+@@ -34,7 +34,8 @@ export async function transpileFunction({ resource, functionPath, entryPoint, in
+     try {
+         const viteStart = performance.now();
+         // Always bundle the code if pnpm usage is detected or specified by the user
+-        const bundle = !!find.file('pnpm-workspace.yaml') || installer === 'pnpm';
++        const bundle = bundleDependencies ??
++            (!!find.file('pnpm-workspace.yaml', { cwd: workDir }) || installer === 'pnpm');
+         const result = await viteBuild({
+             root: fnRootDir,
+             logLevel: 'silent',
+@@ -49,7 +50,7 @@ export async function transpileFunction({ resource, functionPath, entryPoint, in
+                     input: entryPoint,
+                     output: {
+                         format: 'esm',
+-                        entryFileNames: getOutputFilename(entryPoint),
++                        entryFileNames: outputFileName,
+                         ...(bundle
+                             ? {}
+                             : {
+@@ -71,7 +72,10 @@ export async function transpileFunction({ resource, functionPath, entryPoint, in
+                     conditions: ['node'],
+                 },
+             },
+-            plugins: bundle ? [detectNativeModulesPlugin(), pnpmResolvePlugin(cwd())] : [],
++            plugins: [
++                ...(bundle ? [detectNativeModulesPlugin(), pnpmResolvePlugin(workDir)] : []),
++                ...extraPlugins,
++            ],
+         });
+         timings['transpile:build'] = performance.now() - viteStart;
+         const verifyStart = performance.now();
+@@ -81,7 +85,7 @@ export async function transpileFunction({ resource, functionPath, entryPoint, in
+         await writeTranspiledPackageJson(entryDir, outputFile);
+         timings['transpile:writePackage'] = performance.now() - pkgStart;
+         const cleanupStart = performance.now();
+-        await cleanupSourceMaps(functionPath, outputDir);
++        await cleanupSourceMaps(entryDir, outputDir);
+         timings['transpile:cleanupMaps'] = performance.now() - cleanupStart;
+         timings.bundle = performance.now() - transpileStart;
+         return {
+@@ -148,8 +152,10 @@ async function writeTranspiledPackageJson(inputDir, outputFilePath) {
+     const pkgJsonOutputPath = path.join(path.dirname(outputFilePath), 'package.json');
+     await writeFile(pkgJsonOutputPath, JSON.stringify(bundled, null, 2));
+ }
+-async function getTranspileOutputPath(entryDir, fnName) {
+-    const tmpPath = path.resolve(entryDir, '.build', `function-${fnName}`);
++async function getTranspileOutputPath(entryDir, fnName, outDir) {
++    const tmpPath = outDir
++        ? path.resolve(outDir)
++        : path.resolve(entryDir, '.build', `function-${fnName}`);
+     await rm(tmpPath, { recursive: true, force: true }).catch(logCleanupFailure);
+     await mkdir(tmpPath, { recursive: true });
+     return tmpPath;
+diff --git a/package.json b/package.json
+index 95c47cb6cf35cf9f418360ba98c657fc112f70b2..5f5a5f84ff1db6d4a5a26b3dc2238af0fa4bc560 100644
+--- a/package.json
++++ b/package.json
+@@ -18,6 +18,26 @@
+       "types": "./dist/index.d.ts",
+       "import": "./dist/index.js",
+       "require": "./dist/index.js"
++    },
++    "./functions/build": {
++      "types": "./dist/functions/build.d.ts",
++      "import": "./dist/functions/build.js",
++      "require": "./dist/functions/build.js"
++    },
++    "./functions/contracts": {
++      "types": "./dist/functions/contracts.d.ts",
++      "import": "./dist/functions/contracts.js",
++      "require": "./dist/functions/contracts.js"
++    },
++    "./functions/deploy": {
++      "types": "./dist/functions/deploy.d.ts",
++      "import": "./dist/functions/deploy.js",
++      "require": "./dist/functions/deploy.js"
++    },
++    "./functions/stack": {
++      "types": "./dist/functions/stack.d.ts",
++      "import": "./dist/functions/stack.js",
++      "require": "./dist/functions/stack.js"
+     }
+   },
+   "engines": {
