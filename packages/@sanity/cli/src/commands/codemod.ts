@@ -90,6 +90,12 @@ export class CodemodCommand extends SanityCommand<typeof CodemodCommand> {
     // We use npx to run jscodeshift, so verify that it exists and works before using it
     this.ensureNpx()
 
+    const prepared = await mod.prepare?.({output: this.output, workDir})
+    // jscodeshift JSON-parses option values, so encode them to keep strings like "2024" as strings
+    const transformOptions = Object.entries(prepared?.options ?? {}).map(
+      ([key, value]) => `--${key}=${JSON.stringify(value)}`,
+    )
+
     // If there is a gitignore in the target folder, we want to use that to know
     // which folders to ignore - eg `dist`, `coverage` or whatever
     const hasGitIgnore = existsSync(path.join(workDir, '.gitignore'))
@@ -110,7 +116,8 @@ export class CodemodCommand extends SanityCommand<typeof CodemodCommand> {
       '--extensions',
       exts.join(','),
       dryRun && '--dry',
-      workDir,
+      ...transformOptions,
+      ...(prepared?.paths ?? [workDir]),
     ].filter((item): item is string => typeof item === 'string')
 
     const child = spawn('npx', cmdArgs, {
