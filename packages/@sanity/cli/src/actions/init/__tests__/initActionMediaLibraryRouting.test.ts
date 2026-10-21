@@ -19,6 +19,7 @@ const mockGetProjectDetails = vi.hoisted(() =>
     projectId: '',
   }),
 )
+const mockCreateProjectFromName = vi.hoisted(() => vi.fn())
 const mockInitApp = vi.hoisted(() => vi.fn())
 const mockInitStudio = vi.hoisted(() => vi.fn())
 const mockValidateSession = vi.hoisted(() => vi.fn())
@@ -47,6 +48,9 @@ vi.mock('../../mcp/setupMCP.js', () => ({
   }),
 }))
 vi.mock('../initApp.js', () => ({initApp: mockInitApp}))
+vi.mock('../project/createProjectFromName.js', () => ({
+  createProjectFromName: mockCreateProjectFromName,
+}))
 vi.mock('../initStudio.js', () => ({initStudio: mockInitStudio}))
 vi.mock('../plan/getPlan.js', () => ({getPlan: vi.fn().mockResolvedValue(undefined)}))
 vi.mock('../project/getProjectDetails.js', () => ({
@@ -146,6 +150,27 @@ describe('initAction routing for media-library-config', () => {
       'Organization is required for the media-library-config template',
     )
     expect(mockInitApp).not.toHaveBeenCalled()
+  })
+
+  test('warns that --project-name is ignored and creates no throwaway project', async () => {
+    const context = createTestContext()
+
+    await initAction(
+      {
+        ...baseOptions,
+        organization: 'org-1',
+        outputPath: '/tmp/test-output',
+        projectName: 'My Throwaway',
+        unattended: true,
+      },
+      context,
+    )
+
+    expect(context.output.warn).toHaveBeenCalledWith(
+      '--project-name is ignored for the media-library-config template — it only records the organization.',
+    )
+    expect(mockCreateProjectFromName).not.toHaveBeenCalled()
+    expect(mockInitApp).toHaveBeenCalledTimes(1)
   })
 
   test('warns that --dashboard is ignored for the template', async () => {

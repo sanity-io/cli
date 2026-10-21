@@ -99,6 +99,7 @@ export async function initApp({
     )
     output.log('\nRefer to our documentation for a walkthrough:')
     output.log(styleText(['blue', 'underline'], 'https://www.sanity.io/docs/media-library'))
+    await logMcpConfirmation(mcpConfigured, output)
     output.log('\n')
     output.log(`Other helpful commands:`)
     output.log(`npx sanity docs browse     to open the documentation in a browser`)
@@ -132,19 +133,27 @@ export async function initApp({
   output.log(
     styleText(['blue', 'underline'], 'https://www.sanity.io/docs/app-sdk/sdk-configuration'),
   )
-  if (mcpConfigured && mcpConfigured.length > 0) {
-    const message = await getPostInitMCPPrompt(mcpConfigured)
-    output.log(`\n${message}`)
-    output.log(`\nLearn more: ${styleText('cyan', 'https://mcp.sanity.io')}`)
-    output.log(
-      `\nHave feedback? Tell us in the community: ${styleText('cyan', 'https://www.sanity.io/community/join')}`,
-    )
-  }
+  await logMcpConfirmation(mcpConfigured, output)
   output.log('\n')
   output.log(`Other helpful commands:`)
   output.log(`npx sanity docs browse     to open the documentation in a browser`)
   output.log(`npx sanity dev             to start the development server for your app`)
   output.log(`npx sanity deploy          to deploy your app`)
+}
+
+/**
+ * The post-init MCP confirmation shown by every template branch: which
+ * editors were configured during init and where to learn more. No-op when
+ * MCP setup was skipped or configured nothing.
+ */
+async function logMcpConfirmation(mcpConfigured: EditorName[], output: Output): Promise<void> {
+  if (!mcpConfigured || mcpConfigured.length === 0) return
+  const message = await getPostInitMCPPrompt(mcpConfigured)
+  output.log(`\n${message}`)
+  output.log(`\nLearn more: ${styleText('cyan', 'https://mcp.sanity.io')}`)
+  output.log(
+    `\nHave feedback? Tell us in the community: ${styleText('cyan', 'https://www.sanity.io/community/join')}`,
+  )
 }
 
 /**
