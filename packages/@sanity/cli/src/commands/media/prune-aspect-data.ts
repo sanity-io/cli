@@ -110,10 +110,15 @@ export class MediaPruneAspectDataCommand extends SanityCommand<typeof MediaPrune
     }
 
     try {
+      // Not `isUnattended()`: that treats `--yes` as unattended, but here
+      // `--yes` consents to the prune, not to skipping prompts — the report
+      // path literally instructs "Re-run with --yes", and that run must still
+      // offer the library picker in a multi-library organization. Only a
+      // genuinely non-interactive run (CI, piped stdin) must not prompt.
       const mediaLibraryId = await resolveMediaLibraryId({
         mediaLibraryIdFlag,
         organizationId: config.organizationId,
-        unattended: this.isUnattended(),
+        unattended: !this.resolveIsInteractive(),
       })
 
       const spin = spinner('Finding assets that carry the aspect').start()

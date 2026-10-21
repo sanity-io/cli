@@ -293,6 +293,29 @@ describe('#media:prune-aspect-data', () => {
     expect(stderr).not.toContain('Failed to prune')
   })
 
+  test('an interactive --yes run with several libraries still prompts for the target', async () => {
+    createTestToken('test-token')
+    mockLibraryList(['library-one', 'library-two'])
+    mockPromptForMediaLibrary.mockResolvedValue('library-two')
+    mockIdPages('library-two', 'stored', [])
+    mockIdPages('library-two', 'carriers', [['asset-1']])
+    const mutateBodies: unknown[] = []
+    mockMutate('library-two', mutateBodies)
+
+    const {error, stdout} = await testCommand(
+      MediaPruneAspectDataCommand,
+      ['legacyAspect', '--yes'],
+      {mocks: defaultMocks},
+    )
+
+    // `--yes` consents to the prune; it must not suppress the library picker —
+    // the report run literally instructs "Re-run with --yes to execute."
+    expect(error).toBeUndefined()
+    expect(mockPromptForMediaLibrary).toHaveBeenCalledTimes(1)
+    expect(mutateBodies).toHaveLength(1)
+    expect(stdout).toContain('removed from 1 document')
+  })
+
   test('with an explicit --media-library-id not active in the organization, fails clearly', async () => {
     createTestToken('test-token')
     mockLibraryList(['library-a'])
