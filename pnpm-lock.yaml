@@ -326,15 +326,9 @@ catalogs:
 
 overrides:
   '@sanity/cli': workspace:*
-  '@sanity/runtime-cli': 17.16.0
   '@sanity/sdk': 3.10.0-app-functions.20261021170453
   '@sanity/sdk-react': 3.10.0-app-functions.20261021170453
   '@types/node': ^22.20.0
-
-packageExtensionsChecksum: sha256-2gAomgMIWioqzHU+8ZG8gbD2SwjZrhXmnuTx0FKcUv4=
-
-patchedDependencies:
-  '@sanity/runtime-cli@17.16.0': b2b599c9e034e859baba4e2a65be0dc3bd478814093f922163774a8a0445d645
 
 importers:
 
@@ -776,8 +770,8 @@ importers:
         specifier: ^8.0.5
         version: 8.0.5(@types/react@19.3.0)(vitest@4.1.11)(xstate@5.33.2)
       '@sanity/runtime-cli':
-        specifier: 17.16.0
-        version: 17.16.0(patch_hash=b2b599c9e034e859baba4e2a65be0dc3bd478814093f922163774a8a0445d645)(@babel/core@7.29.7(supports-color@8.1.1))(@babel/runtime@7.29.7)(@noble/hashes@2.4.0)(@types/node@22.20.1)(@types/react@19.3.0)(babel-plugin-react-compiler@1.0.0)(esbuild@0.28.2)(oxc-transform-react@0.153.0)(rolldown@1.2.12)(sanity@6.17.0(@aws-lite/client@0.24.1)(@aws-lite/dynamodb@0.3.9)(@aws-lite/lambda@0.1.5)(@aws-lite/sns@0.0.8)(@aws-lite/sqs@0.2.4)(@noble/hashes@2.4.0)(@types/react-dom@19.2.5(@types/react@19.3.0))(@types/react@19.3.0)(immer@11.1.18)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(styled-components@6.5.3(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(supports-color@8.1.1)(typescript@6.0.3)(vitest@4.1.11))(tsx@4.23.13)(typescript@6.0.3)(vitest@4.1.11)(yaml@2.9.0)
+        specifier: 17.16.0-app-functions.ge0a25ea
+        version: 17.16.0-app-functions.ge0a25ea(@babel/core@7.29.7(supports-color@8.1.1))(@babel/runtime@7.29.7)(@noble/hashes@2.4.0)(@types/node@22.20.1)(@types/react@19.3.0)(babel-plugin-react-compiler@1.0.0)(esbuild@0.28.2)(oxc-transform-react@0.153.0)(rolldown@1.2.12)(sanity@6.17.0(@aws-lite/client@0.24.1)(@aws-lite/dynamodb@0.3.9)(@aws-lite/lambda@0.1.5)(@aws-lite/sns@0.0.8)(@aws-lite/sqs@0.2.4)(@noble/hashes@2.4.0)(@types/react-dom@19.2.5(@types/react@19.3.0))(@types/react@19.3.0)(immer@11.1.18)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(styled-components@6.5.3(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(supports-color@8.1.1)(typescript@6.0.3)(vitest@4.1.11))(tsx@4.23.13)(typescript@6.0.3)(vitest@4.1.11)(yaml@2.9.0)
       '@sanity/schema':
         specifier: 'catalog:'
         version: 6.17.0(@types/react@19.3.0)(vitest@4.1.11)
@@ -4803,8 +4797,8 @@ packages:
       prismjs:
         optional: true
 
-  '@sanity/runtime-cli@17.16.0':
-    resolution: {integrity: sha512-LAFY7+ezTCLQ89KDKyZgFU4cVhGr8EYKARWm1B4/pm8ssFKRgHLD0mx/hpLP6B6yih2j/pHJAFGwJiSoBqRcYg==}
+  '@sanity/runtime-cli@17.16.0-app-functions.ge0a25ea':
+    resolution: {integrity: sha512-9NoBlNhKp1kX9ZEl7Xs86RJlBltNrCSGLj36CUUp9qYwq9SW62Vvn8KYuKxcZhOVP8gg8WlUNK61RPesOW93pw==}
     engines: {node: '>=22.12'}
     hasBin: true
 
@@ -13743,7 +13737,7 @@ snapshots:
 
   '@sanity/prism-groq@1.1.2': {}
 
-  '@sanity/runtime-cli@17.16.0(patch_hash=b2b599c9e034e859baba4e2a65be0dc3bd478814093f922163774a8a0445d645)(@babel/core@7.29.7(supports-color@8.1.1))(@babel/runtime@7.29.7)(@noble/hashes@2.4.0)(@types/node@22.20.1)(@types/react@19.3.0)(babel-plugin-react-compiler@1.0.0)(esbuild@0.28.2)(oxc-transform-react@0.153.0)(rolldown@1.2.12)(sanity@6.17.0(@aws-lite/client@0.24.1)(@aws-lite/dynamodb@0.3.9)(@aws-lite/lambda@0.1.5)(@aws-lite/sns@0.0.8)(@aws-lite/sqs@0.2.4)(@noble/hashes@2.4.0)(@types/react-dom@19.2.5(@types/react@19.3.0))(@types/react@19.3.0)(immer@11.1.18)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(styled-components@6.5.3(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(supports-color@8.1.1)(typescript@6.0.3)(vitest@4.1.11))(tsx@4.23.13)(typescript@6.0.3)(vitest@4.1.11)(yaml@2.9.0)':
+  '@sanity/runtime-cli@17.16.0-app-functions.ge0a25ea(@babel/core@7.29.7(supports-color@8.1.1))(@babel/runtime@7.29.7)(@noble/hashes@2.4.0)(@types/node@22.20.1)(@types/react@19.3.0)(babel-plugin-react-compiler@1.0.0)(esbuild@0.28.2)(oxc-transform-react@0.153.0)(rolldown@1.2.12)(sanity@6.17.0(@aws-lite/client@0.24.1)(@aws-lite/dynamodb@0.3.9)(@aws-lite/lambda@0.1.5)(@aws-lite/sns@0.0.8)(@aws-lite/sqs@0.2.4)(@noble/hashes@2.4.0)(@types/react-dom@19.2.5(@types/react@19.3.0))(@types/react@19.3.0)(immer@11.1.18)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(styled-components@6.5.3(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(supports-color@8.1.1)(typescript@6.0.3)(vitest@4.1.11))(tsx@4.23.13)(typescript@6.0.3)(vitest@4.1.11)(yaml@2.9.0)':
     dependencies:
       '@architect/hydrate': 6.0.2
       '@architect/inventory': 6.1.0
