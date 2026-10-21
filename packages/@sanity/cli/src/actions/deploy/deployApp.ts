@@ -196,7 +196,7 @@ async function runAppDeployment(
   // A record created above is stranded at its slug (and blocks retries) if any
   // step before it fully deploys fails, so undo the creation on failure.
   try {
-    await checkBuild(reporter, {
+    const built = await checkBuild(reporter, {
       build: () =>
         buildApp({
           applicationId: workbench ? applicationId : undefined,
@@ -214,11 +214,14 @@ async function runAppDeployment(
       successMessage: 'App built',
     })
 
-    await verifyOutputDir({
-      isWorkbenchApp: workbench !== null || config !== null,
-      reporter,
-      sourceDir,
-    })
+    // A federated build has already read its manifest; anything else verifies the directory.
+    const mfManifest =
+      built?.mfManifest ??
+      (await verifyOutputDir({
+        isWorkbenchApp: workbench !== null || config !== null,
+        reporter,
+        sourceDir,
+      }))
 
     // Workbench apps and configs ship a federation remote and don't read the
     // core-app manifest; only plain core-apps do. Manifests aren't strictly
@@ -302,12 +305,14 @@ async function runAppDeployment(
     // The app was created (or resolved from `deployment.appId`) before the build,
     // so this only ships the deployment; plain coreApps use user-applications below.
     if (workbench && organizationId && applicationId) {
+      if (!mfManifest) throw new Error('The federated build produced no manifest.')
       await deployWorkbenchApp({
         app: cliConfig.app,
         applicationId,
         icon: appIcon,
         isApp: true,
         isAutoUpdating,
+        mfManifest,
         // Once the deployment is live, a metadata-sync or later config failure
         // must not delete the app.
         onDeployed: () => {

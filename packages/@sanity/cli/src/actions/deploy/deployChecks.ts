@@ -2,7 +2,7 @@ import {type CliConfig, exitCodes, getLocalPackageVersion} from '@sanity/cli-cor
 import {getErrorMessage} from '@sanity/cli-core/errors'
 import {getCoreAppUrl} from '@sanity/cli-core/util'
 import {spinner} from '@sanity/cli-core/ux'
-import {checkBuiltOutput} from '@sanity/workbench-cli/deploy'
+import {readBuiltManifest} from '@sanity/workbench-cli/build'
 
 import {resolveAppIdIssue} from '../../util/appId.js'
 import {type Check, type CheckReporter, runStep} from '../../util/checks.js'
@@ -171,29 +171,31 @@ export function checkExternalUrl(
   return origin
 }
 
-export async function checkBuild(
+export async function checkBuild<T>(
   reporter: DeployCheckReporter,
   {
     build,
     skipReason,
     successMessage,
-  }: {build: () => Promise<void>; skipReason: string | undefined; successMessage: string},
-): Promise<void> {
+  }: {build: () => Promise<T>; skipReason: string | undefined; successMessage: string},
+): Promise<T | undefined> {
   if (skipReason) {
     reporter.report({message: skipReason, status: 'skip'})
-    return
+    return undefined
   }
 
-  await runStep(reporter, {
+  const result = await runStep(reporter, {
     debug: deployDebug,
     formatError: (err) => `Build failed: ${getErrorMessage(err)}`,
     name: 'build',
     solution: 'Fix the build error above, then retry',
     work: async () => {
-      await build()
+      const result = await build()
       reporter.report({message: successMessage, status: 'pass'})
+      return result
     },
   })
+  return result ?? undefined
 }
 
 /**
@@ -208,11 +210,12 @@ export async function verifyOutputDir({
   isWorkbenchApp: boolean
   reporter: DeployCheckReporter
   sourceDir: string
-}): Promise<void> {
+}): Promise<Record<string, unknown> | undefined> {
   const spin = spinner('Verifying local content...').start()
-  const verifyBuild = isWorkbenchApp ? checkBuiltOutput : checkDir
+  let mfManifest: Record<string, unknown> | undefined
   try {
-    await verifyBuild(sourceDir)
+    if (isWorkbenchApp) mfManifest = await readBuiltManifest(sourceDir)
+    else await checkDir(sourceDir)
     spin.succeed()
   } catch (err) {
     spin.fail()
@@ -223,6 +226,7 @@ export async function verifyOutputDir({
       status: 'fail',
     })
   }
+  return mfManifest
 }
 
 /**

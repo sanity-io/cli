@@ -1,7 +1,7 @@
 import {subdebug} from '@sanity/cli-core'
 import {type InlineConfig, preview} from 'vite'
 
-import {checkBuiltOutput} from '../deploy/checkBuiltOutput.js'
+import {readBuiltManifest} from '../build/readBuiltManifest.js'
 
 const previewDebug = subdebug('preview')
 
@@ -19,7 +19,7 @@ export interface BuiltApplicationServer {
  * a live `sanity dev` remote would be — the workbench then federates it in.
  *
  * A missing federation build surfaces as `BUILD_NOT_FOUND` (from
- * `checkBuiltOutput`) so the command shows the same "run sanity build" hint the
+ * `readBuiltManifest`) so the command shows the same "run sanity build" hint the
  * studio preview path does; real I/O errors surface as themselves.
  */
 export async function serveBuiltApplication(options: {
@@ -31,7 +31,7 @@ export async function serveBuiltApplication(options: {
 }): Promise<BuiltApplicationServer> {
   const {cacheDir, httpHost, httpPort, outDir, workDir} = options
 
-  await checkBuiltOutput(outDir)
+  await readBuiltManifest(outDir)
 
   const config: InlineConfig = {
     // Serve at the root so `mf-manifest.json` and its `publicPath: 'auto'` chunks

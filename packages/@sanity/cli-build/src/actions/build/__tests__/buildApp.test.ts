@@ -1,3 +1,7 @@
+import {mkdir, mkdtemp, rm, writeFile} from 'node:fs/promises'
+import {tmpdir} from 'node:os'
+import {join} from 'node:path'
+
 import {exitCodes} from '@sanity/cli-core/ExitCodes'
 import {type Output} from '@sanity/cli-core/types'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
@@ -398,5 +402,51 @@ describe('#buildApp', () => {
     await buildApp(buildOptions({checkAppId: mockCheckAppId, output}))
 
     expect(mockCheckAppId).not.toHaveBeenCalled()
+  })
+  describe('federation manifest', () => {
+    let outDir: string
+    beforeEach(async () => {
+      outDir = await mkdtemp(join(tmpdir(), 'build-app-'))
+    })
+    afterEach(async () => {
+      await rm(outDir, {force: true, recursive: true})
+    })
+
+    test('resolves to the mf-manifest.json a federated build writes', async () => {
+      const output = createMockOutput()
+      mockedBuildStaticFiles.mockImplementation(async ({outputDir}) => {
+        await mkdir(outputDir, {recursive: true})
+        await writeFile(join(outputDir, 'mf-manifest.json'), '{"id":"my-app"}')
+        return {chunks: []}
+      })
+
+      await expect(
+        buildApp(buildOptions({isWorkbenchApp: true, outDir, output, unattendedMode: true})),
+      ).resolves.toEqual({mfManifest: {id: 'my-app'}})
+    })
+
+    test('resolves to no manifest for a build that is not federated', async () => {
+      const output = createMockOutput()
+
+      await expect(buildApp(buildOptions({outDir, output, unattendedMode: true}))).resolves.toEqual(
+        {mfManifest: undefined},
+      )
+      expect(output.error).not.toHaveBeenCalled()
+    })
+
+    test('fails a federated build whose output lacks mf-manifest.json, naming the file', async () => {
+      const output = createMockOutput()
+      mockedBuildStaticFiles.mockImplementation(async ({outputDir}) => {
+        await mkdir(outputDir, {recursive: true})
+        return {chunks: []}
+      })
+
+      await buildApp(buildOptions({isWorkbenchApp: true, outDir, output, unattendedMode: true}))
+
+      expect(output.error).toHaveBeenCalledWith(
+        `Failed to build Sanity application: "${join(outDir, 'mf-manifest.json')}" does not exist; a federation build created with "sanity build" writes it.`,
+        {exit: exitCodes.RUNTIME_ERROR},
+      )
+    })
   })
 })
