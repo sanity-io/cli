@@ -11,7 +11,7 @@ import {
 import {type AppVisibility, exitCodes} from '@sanity/cli-core'
 import {getErrorMessage} from '@sanity/cli-core/errors'
 import {getCoreAppUrl} from '@sanity/cli-core/util'
-import {spinner} from '@sanity/cli-core/ux'
+import {confirm, spinner} from '@sanity/cli-core/ux'
 import {resolveAppEntry} from '@sanity/workbench-cli/build'
 import {
   createCoreApp,
@@ -34,6 +34,7 @@ import {
   type UserApplicationResolved,
 } from '../../services/userApplications.js'
 import {getAppId} from '../../util/appId.js'
+import {runStep} from '../../util/checks.js'
 import {EXTERNAL_APP_NOT_SUPPORTED, NO_ORGANIZATION_ID} from '../../util/errorMessages.js'
 import {pluralize} from '../../util/pluralize.js'
 import {buildApp} from '../build/buildApp.js'
@@ -276,19 +277,28 @@ async function runAppDeployment(
     // the config as undeployable.
     let aspectSyncPlan: AspectSyncPlan | undefined
     if (deployConfigOnly && organizationId && config && installationId) {
-      const planned = await planAspectSync({
-        fields: config.fields,
-        mediaLibraryId: flags['media-library-id'],
-        organizationId,
-        workDir,
+      // runStep so an unexpected throw (network, API) becomes a fail check:
+      // a real run exits, a dry run records it and keeps reporting.
+      const planned = await runStep(reporter, {
+        debug: deployDebug,
+        formatError: (err) => `Planning the aspect-document sync failed: ${getErrorMessage(err)}`,
+        name: 'aspect sync plan',
+        work: () =>
+          planAspectSync({
+            fields: config.fields,
+            mediaLibraryId: flags['media-library-id'],
+            organizationId,
+            workDir,
+          }),
       })
-      if ('failure' in planned) {
+      if (planned && 'failure' in planned) {
         reporter.report({
+          exitCode: planned.failure.exitCode,
           message: planned.failure.message,
           solution: planned.failure.solution,
           status: 'fail',
         })
-      } else {
+      } else if (planned) {
         aspectSyncPlan = planned.plan
         reportAspectSyncPlan(reporter, aspectSyncPlan)
       }
@@ -332,6 +342,25 @@ async function runAppDeployment(
 
     // Dry run stops here — everything below mutates.
     if (dryRun) return {application: null, payload}
+
+    // Deleting stored definitions is the destructive part of a config deploy,
+    // so an interactive run confirms it before anything mutates. Unattended
+    // runs (--yes; forced in CI) proceed — the config is the source of truth
+    // and the dry-run report lists the deletions.
+    if (aspectSyncPlan && aspectSyncPlan.staleIds.length > 0 && !flags.yes) {
+      const staleCount = aspectSyncPlan.staleIds.length
+      const proceed = await confirm({
+        default: false,
+        message:
+          `Delete ${staleCount} stored aspect ${pluralize('definition', staleCount)} with no ` +
+          `matching config field (${aspectSyncPlan.staleIds.join(', ')})?`,
+      })
+      if (!proceed) {
+        output.error('Deploy cancelled — the stored aspect definitions are unchanged.', {
+          exit: exitCodes.USER_ABORT,
+        })
+      }
+    }
 
     // A config-only singleton ships no application, only its config.
     if (!deployApplication) {

@@ -91,9 +91,11 @@ describe('planAspectSync', () => {
     expect(result.plan.strippedByField).toEqual({
       notes: ['definition.components', 'definition.validation'],
     })
-    // Field modules are resolved against the project root, not the cwd.
+    // Field modules are resolved against the project root, not the cwd, and
+    // evaluated with JSX enabled so .tsx inputs parse.
     expect(mockImportModule).toHaveBeenCalledWith(
       convertToSystemPath('/test/project/src/fields/caption.ts'),
+      {jsx: true},
     )
   })
 

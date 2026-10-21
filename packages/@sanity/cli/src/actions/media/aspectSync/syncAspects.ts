@@ -16,7 +16,7 @@
 
 import path from 'node:path'
 
-import {importModule} from '@sanity/cli-core'
+import {exitCodes, importModule} from '@sanity/cli-core'
 import {validateMediaLibraryAssetAspect} from '@sanity/schema/_internal'
 
 import {
@@ -46,6 +46,8 @@ export interface AspectSyncPlan {
 interface AspectSyncFailure {
   message: string
 
+  /** Exit code a real deploy uses for this failure; defaults to 1. */
+  exitCode?: number
   solution?: string
 }
 
@@ -72,7 +74,9 @@ export async function planAspectSync(options: {
 
   for (const entry of fields) {
     try {
-      const definition = await importModule(path.resolve(workDir, entry.src))
+      // jsx: fields may be .tsx modules (custom input components) — the
+      // template ships one — and jiti does not parse JSX by default.
+      const definition = await importModule(path.resolve(workDir, entry.src), {jsx: true})
       const {document, stripped} = serializeField(entry, definition)
 
       const [valid, validationErrors] = validateMediaLibraryAssetAspect(document.definition)
@@ -92,6 +96,7 @@ export async function planAspectSync(options: {
   if (failures.length > 0) {
     return {
       failure: {
+        exitCode: exitCodes.USAGE_ERROR,
         message: `${failures.length === 1 ? 'A config field' : `${failures.length} config fields`} cannot sync to stored aspect documents:\n${failures.map((failure) => `  - ${failure}`).join('\n')}`,
         solution: 'Fix the field modules listed above, then deploy again',
       },
@@ -136,6 +141,7 @@ async function resolveTargetMediaLibrary(
     if (!libraryIds.includes(explicitMediaLibraryId)) {
       return {
         failure: {
+          exitCode: exitCodes.USAGE_ERROR,
           message:
             `Media library ${explicitMediaLibraryId} is not an active library of organization ` +
             `${organizationId} (found: ${libraryIds.join(', ') || 'none'})`,
@@ -157,6 +163,7 @@ async function resolveTargetMediaLibrary(
   if (libraries.length > 1) {
     return {
       failure: {
+        exitCode: exitCodes.USAGE_ERROR,
         message:
           `Organization ${organizationId} has ${libraries.length} active media libraries ` +
           `(${libraryIds.join(', ')}) — the sync needs an explicit target`,

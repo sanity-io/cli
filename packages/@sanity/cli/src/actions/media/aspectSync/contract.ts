@@ -29,15 +29,10 @@
  * in `./syncAspects.ts`.
  */
 
+import {VALID_ASPECT_NAME} from '../aspectName.js'
+
 /** The document type stored aspect definitions use. */
 export const ASPECT_TYPE = 'sanity.asset.aspect'
-
-/**
- * The shape an aspect name must have. Names double as document `_id`s and as
- * the `aspects.<name>` key on asset documents, and get interpolated into
- * GROQ by tooling, so the same rule guards all three.
- */
-const VALID_ASPECT_NAME = /^[a-zA-Z][a-zA-Z0-9_]*$/
 
 /**
  * A field entry as declared in a media-library config app's `sanity.cli.ts`.

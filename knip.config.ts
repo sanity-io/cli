@@ -64,6 +64,9 @@ const baseConfig = {
         'src/**/*.worker.ts',
         'package.config.ts',
       ],
+      // Resolved at test runtime by the media-library-config template's field
+      // modules, which syncAspectsTemplateFields.test.ts evaluates unmocked.
+      ignoreDependencies: ['@sanity/ui'],
       oclif: {
         config: ['oclif.config.js'],
       },
