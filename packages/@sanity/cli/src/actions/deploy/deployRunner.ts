@@ -45,6 +45,9 @@ export interface DeployPayload extends Partial<WorkbenchDeployPayload> {
     mediaLibraryId: string
     upsertIds: string[]
   }
+  functions?: {name: string}[]
+  functionStackId?: string
+
   organizationId?: string
   projectId?: string
 }

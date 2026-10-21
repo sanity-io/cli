@@ -1,7 +1,15 @@
 linkWorkspacePackages: true
 overrides:
   '@sanity/cli': 'workspace:*'
+  '@sanity/runtime-cli': 17.16.0
+  '@sanity/sdk': 3.10.0-app-functions.20261021170453
+  '@sanity/sdk-react': 3.10.0-app-functions.20261021170453
   '@types/node': 'catalog:'
+
+packageExtensions:
+  '@sanity/runtime-cli@17.16.0':
+    dependencies:
+      typescript-compiler: npm:typescript@6.0.3
 
 packages:
   - 'packages/@repo/*'
@@ -144,3 +152,5 @@ allowBuilds:
   node-pty: true
   sharp: false
   unrs-resolver: false
+patchedDependencies:
+  '@sanity/runtime-cli@17.16.0': patches/@sanity__runtime-cli@17.16.0.patch
