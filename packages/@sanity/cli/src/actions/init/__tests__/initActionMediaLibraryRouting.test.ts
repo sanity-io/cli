@@ -20,6 +20,7 @@ const mockGetProjectDetails = vi.hoisted(() =>
   }),
 )
 const mockCreateProjectFromName = vi.hoisted(() => vi.fn())
+const mockGetProjectOutputPath = vi.hoisted(() => vi.fn().mockResolvedValue('/tmp/test-output'))
 const mockInitApp = vi.hoisted(() => vi.fn())
 const mockInitStudio = vi.hoisted(() => vi.fn())
 const mockValidateSession = vi.hoisted(() => vi.fn())
@@ -57,7 +58,7 @@ vi.mock('../project/getProjectDetails.js', () => ({
   getProjectDetails: mockGetProjectDetails,
 }))
 vi.mock('../project/getProjectOutputPath.js', () => ({
-  getProjectOutputPath: vi.fn().mockResolvedValue('/tmp/test-output'),
+  getProjectOutputPath: mockGetProjectOutputPath,
 }))
 
 function createTestContext(): InitContext {
@@ -150,6 +151,20 @@ describe('initAction routing for media-library-config', () => {
       'Organization is required for the media-library-config template',
     )
     expect(mockInitApp).not.toHaveBeenCalled()
+  })
+
+  test('defaults the output-path slug to the template name (no project to slug)', async () => {
+    // The template skips project selection, so displayName is '' — without a
+    // fallback slug the output-path prompt would default to the bare cwd,
+    // which validateEmptyPath refuses whenever the cwd is non-empty.
+    await initAction(
+      {...baseOptions, organization: 'org-1', outputPath: '/tmp/test-output', unattended: true},
+      createTestContext(),
+    )
+
+    expect(mockGetProjectOutputPath).toHaveBeenCalledWith(
+      expect.objectContaining({sluggedName: 'media-library-config'}),
+    )
   })
 
   test('warns that --project-name is ignored and creates no throwaway project', async () => {

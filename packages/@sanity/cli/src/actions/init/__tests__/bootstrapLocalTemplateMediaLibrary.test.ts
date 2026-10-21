@@ -85,7 +85,7 @@ describe('bootstrapLocalTemplate (media-library-config)', () => {
     // leaking in (`sanity` would also appear in a studio base, so assert a
     // marker from each base instead).
     expect(Object.keys(manifest.dependencies)).toEqual(
-      expect.arrayContaining(['sanity', 'react', 'react-dom', '@sanity/ui']),
+      expect.arrayContaining(['sanity', 'react', 'react-dom', '@sanity/ui', 'styled-components']),
     )
     expect(manifest.dependencies['@sanity/vision']).toBeUndefined()
     expect(manifest.dependencies['@sanity/sdk-react']).toBeUndefined()

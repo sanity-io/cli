@@ -271,9 +271,14 @@ export async function initAction(options: InitOptions, context: InitContext): Pr
     step: 'useDetectedFramework',
   })
 
-  const sluggedName = deburr(displayName.toLowerCase())
-    .replaceAll(/\s+/g, '-')
-    .replaceAll(/[^a-z0-9-]/g, '')
+  // The media-library config template skips project selection, so
+  // `displayName` is empty and the slug would be too — which would default the
+  // output-path prompt to the (usually non-empty) cwd, a default
+  // `validateEmptyPath` then refuses. Fall back to the template's own name.
+  const sluggedName =
+    deburr(displayName.toLowerCase())
+      .replaceAll(/\s+/g, '-')
+      .replaceAll(/[^a-z0-9-]/g, '') || (isMediaLibraryTemplate ? 'media-library-config' : '')
 
   const initFramework = initNext
 

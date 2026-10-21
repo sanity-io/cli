@@ -13,10 +13,20 @@ import {type ProjectTemplate} from '../types.js'
  */
 const mediaLibraryConfigTemplate: ProjectTemplate = {
   dependencies: {
-    '@sanity/ui': '^3',
-    react: '^19',
-    'react-dom': '^19',
+    // Matches the @sanity/ui major `sanity` itself depends on, so one copy
+    // serves both the field modules and the studio dependency tree.
+    '@sanity/ui': '^4.4.10',
+    // The react floor @sanity/ui 4 and sanity 6.20 peer-require.
+    react: '^19.2.2',
+    'react-dom': '^19.2.2',
     sanity: '^6.20.0',
+    // Peer of both `sanity` and `@sanity/ui`, imported by @sanity/ui at
+    // runtime and bundled into the island build — declared explicitly because
+    // installs without auto-installed peers would fail at runtime. (Sanity's
+    // own monorepos swap it for the `@sanity/css-in-js` fork via a pnpm
+    // override; a scaffolded project has no override, so it needs the real
+    // package.)
+    'styled-components': '^6.1.18',
   },
   devDependencies: {
     '@sanity/eslint-config-studio': '^7',
