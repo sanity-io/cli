@@ -36,13 +36,16 @@ function mockLibraryList(libraries: string[]) {
 }
 
 /** The library stores no aspects: the id query returns one empty page. */
-function mockNoStoredIds(libraryId: string) {
+function mockNoStoredIds(libraryId: string, capture?: unknown[]) {
   mockApi({
     apiVersion: MEDIA_LIBRARY_API_VERSION,
     method: 'post',
     query: {perspective: 'published', tag: 'sanity.cli.aspect-sync'},
     uri: `/media-libraries/${libraryId}/query`,
-  }).reply(200, {result: []})
+  }).reply(200, (_uri, body) => {
+    capture?.push(body)
+    return {result: []}
+  })
 }
 
 // jiti's cold transform of the real template takes ~1s on Linux but can
@@ -58,7 +61,8 @@ describe('planAspectSync against the real media-library-config template', {timeo
   test('evaluates every shipped field module, including .tsx inputs', async () => {
     createTestToken('test-token')
     mockLibraryList(['test-library-id'])
-    mockNoStoredIds('test-library-id')
+    const storedIdBodies: unknown[] = []
+    mockNoStoredIds('test-library-id', storedIdBodies)
 
     const fieldFiles = await readdir(path.join(TEMPLATE_DIR, 'src', 'fields'))
     expect(fieldFiles.length).toBeGreaterThan(0)
@@ -85,5 +89,12 @@ describe('planAspectSync against the real media-library-config template', {timeo
     // The template's custom-input field keeps its component in the live
     // config but the stored mirror strips it.
     expect(result.plan.strippedByField.notes).toContain('definition.components')
+    // The stored-id query feeds mirror deletes — assert it exactly.
+    expect(storedIdBodies).toEqual([
+      {
+        params: {lastId: '', type: 'sanity.asset.aspect'},
+        query: '*[_type == $type && _id > $lastId] | order(_id) [0...1000]{_id}',
+      },
+    ])
   })
 })

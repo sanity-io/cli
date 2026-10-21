@@ -42,15 +42,27 @@ function mockLibraryList(libraries: string[]) {
 /**
  * The paginated stored-id query: one interceptor per page, consumed in order.
  * The production loop only stops on an empty page, so the last page is `[]`.
+ * Pass `capture` to collect the request bodies for flip-check assertions.
  */
-function mockStoredIdPages(libraryId: string, pages: string[][]) {
+function mockStoredIdPages(libraryId: string, pages: string[][], capture?: unknown[]) {
   for (const page of [...pages, []]) {
     mockApi({
       apiVersion: MEDIA_LIBRARY_API_VERSION,
       method: 'post',
       query: {perspective: 'published', tag: 'sanity.cli.aspect-sync'},
       uri: `/media-libraries/${libraryId}/query`,
-    }).reply(200, {result: page.map((_id) => ({_id}))})
+    }).reply(200, (_uri, body) => {
+      capture?.push(body)
+      return {result: page.map((_id) => ({_id}))}
+    })
+  }
+}
+
+/** The exact stored-id page request, so a filter or cursor change cannot slip past the tests. */
+function storedIdQueryBody(lastId: string) {
+  return {
+    params: {lastId, type: 'sanity.asset.aspect'},
+    query: '*[_type == $type && _id > $lastId] | order(_id) [0...1000]{_id}',
   }
 }
 
@@ -69,7 +81,8 @@ describe('planAspectSync', () => {
       modulePath.endsWith('caption.ts') ? captionDefinition : notesDefinition,
     )
     mockLibraryList(['test-library-id'])
-    mockStoredIdPages('test-library-id', [['caption', 'legacyAspect']])
+    const storedIdBodies: unknown[] = []
+    mockStoredIdPages('test-library-id', [['caption', 'legacyAspect']], storedIdBodies)
 
     const result = await planAspectSync({
       fields: [captionEntry, notesEntry],
@@ -88,6 +101,9 @@ describe('planAspectSync', () => {
       },
     ])
     expect(result.plan.staleIds).toEqual(['legacyAspect'])
+    // Stale ids feed mirror *deletes*, so the selecting GROQ is asserted
+    // exactly: dropping the type filter or the cursor must fail here.
+    expect(storedIdBodies).toEqual([storedIdQueryBody(''), storedIdQueryBody('legacyAspect')])
     expect(result.plan.strippedByField).toEqual({
       notes: ['definition.components', 'definition.validation'],
     })
@@ -208,7 +224,8 @@ describe('planAspectSync', () => {
     mockImportModule.mockResolvedValue(captionDefinition)
     mockLibraryList(['test-library-id'])
     // Two short pages: the loop must keep requesting until the empty page.
-    mockStoredIdPages('test-library-id', [['aardvark'], ['zebra']])
+    const storedIdBodies: unknown[] = []
+    mockStoredIdPages('test-library-id', [['aardvark'], ['zebra']], storedIdBodies)
 
     const result = await planAspectSync({
       fields: [captionEntry],
@@ -218,6 +235,13 @@ describe('planAspectSync', () => {
 
     if ('failure' in result) throw new Error(`unexpected failure: ${result.failure.message}`)
     expect(result.plan.staleIds).toEqual(['aardvark', 'zebra'])
+    // Each request advances the cursor past the previous page's last id; a
+    // loop that stopped advancing would re-request lastId '' forever.
+    expect(storedIdBodies).toEqual([
+      storedIdQueryBody(''),
+      storedIdQueryBody('aardvark'),
+      storedIdQueryBody('zebra'),
+    ])
   })
 })
 
