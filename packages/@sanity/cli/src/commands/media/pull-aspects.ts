@@ -272,7 +272,8 @@ export class MediaPullAspectsCommand extends SanityCommand<typeof MediaPullAspec
     this.log(
       'Once declared in sanity.cli.ts, the config app owns these definitions — deploying the',
     )
-    this.log('config overwrites the stored documents this pull read from.')
+    this.log('config overwrites the stored documents this pull read from. Stored definitions')
+    this.log('not declared in sanity.cli.ts are deleted on deploy.')
   }
 }
 

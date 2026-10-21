@@ -148,7 +148,7 @@ describe('aspectDocumentToFieldModule', () => {
     expect(outcome.filename).toBe('caption.tsx')
     expect(outcome.warnings).toHaveLength(1)
     expect(outcome.warnings[0]).toContain('"legacyCaption" and definition name "caption" differ')
-    expect(outcome.warnings[0]).toContain('sanity media delete-aspect legacyCaption')
+    expect(outcome.warnings[0]).toContain('deletes the old "legacyCaption" document')
   })
 
   test('falls back to the document _id when the definition has no name', () => {

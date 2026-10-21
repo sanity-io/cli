@@ -157,8 +157,7 @@ export function aspectDocumentToFieldModule(doc: PullableAspectDocument): PullAs
       `Stored _id "${_id}" and definition name "${definitionName}" differ. Generated as ` +
         `"${definitionName}" — the aspects.<name> key existing asset data lives under; using ` +
         `"${_id}" would orphan that data. Deploying the config creates "${definitionName}" ` +
-        `and leaves the old "${_id}" document behind — remove it with ` +
-        `\`sanity media delete-aspect ${_id}\` once migrated.`,
+        `and deletes the old "${_id}" document.`,
     )
   }
 

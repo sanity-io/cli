@@ -135,6 +135,16 @@ export class DeployCommand extends SanityCommand<typeof DeployCommand> {
 
     const isApp = determineIsApp(cliConfig)
 
+    // `--media-library-id` only steers the aspect-document sync of a Media
+    // Library config deploy (see deployApp); studio and app deploys never read
+    // it. Warned rather than silently dropped (same courtesy init gives
+    // --dashboard on the media template).
+    if (flags['media-library-id'] && !resolveWorkbenchConfig(cliConfig)) {
+      this.output.warn(
+        '--media-library-id is ignored — it only applies when deploying a Media Library config',
+      )
+    }
+
     if (flags.create) {
       if (!isApp) {
         return this.output.error(
