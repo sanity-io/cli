@@ -250,6 +250,20 @@ describe('#codemod', () => {
   })
 
   describe('process management', () => {
+    test.each([0, 1])(
+      'exits with code %i once jscodeshift closes asynchronously',
+      async (exitCode) => {
+        const {childProcess} = setupBasicMocks()
+        childProcess.on.mockImplementation((event, cb) => {
+          if (event === 'close') setImmediate(() => cb(exitCode))
+        })
+
+        const {error} = await testCommand(CodemodCommand, ['partsTypeDirective'])
+
+        expect(error?.oclif?.exit ?? 0).toBe(exitCode)
+      },
+    )
+
     test('handles child process exit with non-zero code', async () => {
       setupBasicMocks({exitCode: 1})
 

@@ -130,10 +130,12 @@ export class CodemodCommand extends SanityCommand<typeof CodemodCommand> {
 
     process.on('SIGINT', handleSigint)
 
-    child.on('close', (code) => {
-      process.removeListener('SIGINT', handleSigint)
-      this.exit(code || undefined)
+    // Wait inside run() so oclif handles the exit, rather than throwing from an event callback
+    const code = await new Promise<number | null>((resolve) => {
+      child.on('close', resolve)
     })
+    process.removeListener('SIGINT', handleSigint)
+    this.exit(code || undefined)
   }
 
   private ensureNpx(): void {
