@@ -1,5 +1,22 @@
 # Changelog
 
+## 6.5.0
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-build-v6.4.5...cli-build-v6.5.0)
+
+_2026-10-21_
+
+### Features
+
+- **build:** return the module federation manifest from buildStudio and buildApp ([#2026](https://github.com/sanity-io/cli/pull/2026)) ([ee487dd](https://github.com/sanity-io/cli/commit/ee487ddb261dbd0d8936d1918a58263fa0a5f712))
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/cli-core bumped to 3.11.0
+    - @sanity/workbench-cli bumped to 2.12.0
+
 ## 6.4.5
 
 [Compare changes](https://github.com/sanity-io/cli/compare/cli-build-v6.4.4...cli-build-v6.4.5)
