@@ -114,8 +114,13 @@ export async function startDevServerRegistration(
       : undefined
 
   // Separate namespaces mean a shared id is a genuine duplicate, so the gate is
-  // a plain id match — no config-vs-app role left to reconcile.
-  const devServer = id ? getRegisteredServers().find((server) => server.id === id) : undefined
+  // an id match within the org — no config-vs-app role left to reconcile.
+  const organizationId = cliConfig.app?.organizationId
+  const devServer = id
+    ? getRegisteredServers().find(
+        (server) => server.id === id && server.organizationId === organizationId,
+      )
+    : undefined
 
   if (id && devServer) {
     output.error(
@@ -132,7 +137,7 @@ export async function startDevServerRegistration(
     id,
     interfaces,
     name,
-    organizationId: workbenchApp?.organizationId,
+    organizationId,
     port: appPort,
     projectId: cliConfig?.api?.projectId,
     reference,
