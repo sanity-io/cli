@@ -322,7 +322,12 @@ describe('checkAppTarget (workbench backend)', () => {
     mockGetApplication.mockResolvedValue(workbenchApp({title: 'Drop Desk'}))
     const reporter = createCollectingReporter<DeployCheck>()
 
-    await checkAppTarget(reporter, {appId: 'app-1', isWorkbenchApp: true, title: 'ignored'})
+    await checkAppTarget(reporter, {
+      appId: 'app-1',
+      hasAppView: true,
+      isWorkbenchApp: true,
+      title: 'ignored',
+    })
 
     expect(reporter.results[0]).toMatchObject({status: 'pass'})
     expect(reporter.results[0]?.message).toContain('Deploys to existing application "Drop Desk"')
@@ -330,11 +335,28 @@ describe('checkAppTarget (workbench backend)', () => {
     expect(reporter.results[0]?.target?.url).toBe('https://org-1.sanity.run/applications/app')
   })
 
+  test('existing appId without an app view → links the organization workbench', async () => {
+    mockGetApplication.mockResolvedValue(workbenchApp({title: 'Drop Desk'}))
+    const reporter = createCollectingReporter<DeployCheck>()
+
+    await checkAppTarget(reporter, {appId: 'app-1', hasAppView: false, isWorkbenchApp: true})
+
+    expect(reporter.results[0]?.message).toBe(
+      'Deploys to existing application "Drop Desk" at https://org-1.sanity.run',
+    )
+    expect(reporter.results[0]?.target?.url).toBe('https://org-1.sanity.run')
+  })
+
   test('unknown appId → fail check pointing to deployment.appId', async () => {
     mockGetApplication.mockResolvedValue(null)
     const reporter = createCollectingReporter<DeployCheck>()
 
-    await checkAppTarget(reporter, {appId: 'nope', isWorkbenchApp: true, title: 'ignored'})
+    await checkAppTarget(reporter, {
+      appId: 'nope',
+      hasAppView: true,
+      isWorkbenchApp: true,
+      title: 'ignored',
+    })
 
     expect(reporter.results[0]?.status).toBe('fail')
     expect(reporter.results[0]?.solution).toContain('deployment.appId')
@@ -343,7 +365,12 @@ describe('checkAppTarget (workbench backend)', () => {
   test('no appId → pass check for the application that would be created', async () => {
     const reporter = createCollectingReporter<DeployCheck>()
 
-    await checkAppTarget(reporter, {appId: undefined, isWorkbenchApp: true, title: 'New App'})
+    await checkAppTarget(reporter, {
+      appId: undefined,
+      hasAppView: true,
+      isWorkbenchApp: true,
+      title: 'New App',
+    })
 
     expect(reporter.results[0]).toMatchObject({status: 'pass'})
     expect(reporter.results[0]?.message).toContain('Would create a new application "New App"')
@@ -355,6 +382,7 @@ describe('checkAppTarget (workbench backend)', () => {
 
     await checkAppTarget(reporter, {
       appId: undefined,
+      hasAppView: true,
       isWorkbenchApp: true,
       slug: 'drop-desk',
       title: 'New App',

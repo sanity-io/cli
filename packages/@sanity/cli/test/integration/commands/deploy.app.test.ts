@@ -4,7 +4,7 @@ import {join} from 'node:path'
 import {extractCoreAppManifest} from '@sanity/cli-build/_internal/manifest'
 import {confirm, input, select} from '@sanity/cli-core/ux'
 import {mockApi, testCommand, testFixture} from '@sanity/cli-test'
-import {defineApplication} from '@sanity/workbench-cli'
+import {defineApplication, definePanelView} from '@sanity/workbench-cli'
 import {cleanAll, pendingMocks} from 'nock'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
@@ -743,6 +743,45 @@ describe('#deploy app', () => {
     expect(stdout).toContain(
       `Success! Application deployed to https://${organizationId}.sanity.run/applications/drop-desk-host`,
     )
+  })
+
+  test('a panel-only app links the organization workbench in human and --json output', async () => {
+    const cwd = await testFixture('basic-app')
+    process.cwd = () => cwd
+
+    const app = defineApplication({
+      organizationId,
+      slug: 'drop-desk-host',
+      title: 'Workbench App',
+      views: [definePanelView({name: 'feed', src: './src/App.tsx', title: 'Feed'})],
+    })
+    const deploy = (args: string[]) => {
+      mockApi({apiVersion: 'vX', uri: '/applications/app_existing'}).reply(200, {
+        id: 'app_existing',
+        organizationId,
+        slug: 'drop-desk-host',
+        title: 'Workbench App',
+        type: 'coreApp',
+      })
+      return testCommand(DeployCommand, args, {
+        config: {root: cwd},
+        mocks: {cliConfig: {app, deployment: {appId: 'app_existing'}}},
+      })
+    }
+
+    const human = await deploy([])
+    if (human.error) throw human.error
+    expect(human.stdout).toContain(
+      `Success! Application deployed to https://${organizationId}.sanity.run —`,
+    )
+
+    const json = await deploy(['--json'])
+    if (json.error) throw json.error
+    expect(JSON.parse(json.stdout).url).toBe(`https://${organizationId}.sanity.run`)
+
+    const dryRun = await deploy(['--dry-run', '--json'])
+    if (dryRun.error) throw dryRun.error
+    expect(JSON.parse(dryRun.stdout).url).toBe(`https://${organizationId}.sanity.run`)
   })
 
   test('ships the sanitized workbench app icon straight to Brett', async () => {

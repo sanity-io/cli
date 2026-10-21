@@ -12,12 +12,14 @@ import {type AppVisibility, exitCodes} from '@sanity/cli-core'
 import {getErrorMessage} from '@sanity/cli-core/errors'
 import {getCoreAppUrl} from '@sanity/cli-core/util'
 import {spinner} from '@sanity/cli-core/ux'
+import {resolveAppEntry} from '@sanity/workbench-cli/build'
 import {
   createCoreApp,
   deployConfig,
   deployWorkbenchApp,
   getApplicationUrl,
   getWorkbench,
+  getWorkbenchUrl,
   resolveInstallationId,
   resolveWorkbenchConfig,
   summarizeConfig,
@@ -77,6 +79,7 @@ async function runAppDeployment(
 
   const deployConfigOnly = !!config
   const deployApplication = !config && (!workbench || workbench.hasInterfaces)
+  const hasAppView = resolveAppEntry(cliConfig.app) !== undefined
 
   const appTitle = workbench
     ? flags.title?.trim() || cliConfig.app?.title?.trim() || workbench.slug
@@ -144,6 +147,7 @@ async function runAppDeployment(
     workbenchApp = (
       await checkAppTarget(reporter, {
         appId,
+        hasAppView,
         isWorkbenchApp: true,
         organizationId,
         slug: workbench.slug,
@@ -316,12 +320,14 @@ async function runAppDeployment(
         visibility: workbench.visibility,
       })
       await deployApplicationConfig()
-      const url = getApplicationUrl({
-        id: applicationId,
-        organizationId,
-        slug: workbench.slug,
-        type: 'coreApp',
-      })
+      const url = hasAppView
+        ? getApplicationUrl({
+            id: applicationId,
+            organizationId,
+            slug: workbench.slug,
+            type: 'coreApp',
+          })
+        : getWorkbenchUrl(organizationId)
       logAppDeployed({
         applicationId,
         cliConfig,

@@ -240,6 +240,19 @@ describe('resolveWorkbenchApp', () => {
     })
   })
 
+  test('slug already taken by an app without an app view → links the organization workbench', async () => {
+    mockListApplications.mockResolvedValue([app])
+
+    const result = await resolveWorkbenchApp({
+      appId: undefined,
+      hasAppView: false,
+      organizationId: 'org-1',
+      slug: 'agent',
+    })
+
+    expect(result.type === 'slug-taken' && result.existing.url).toBe('https://org-1.sanity.run')
+  })
+
   test('no appId and no org → would-create without listing', async () => {
     const result = await resolveWorkbenchApp({appId: undefined, slug: 'agent'})
 

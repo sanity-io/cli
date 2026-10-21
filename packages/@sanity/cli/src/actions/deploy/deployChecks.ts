@@ -349,6 +349,7 @@ export async function checkAppTarget(
       }
     | {
         appId: string | undefined
+        hasAppView: boolean
         isWorkbenchApp: true
         organizationId?: string
         slug?: string
@@ -357,12 +358,12 @@ export async function checkAppTarget(
 ): Promise<DeployCheck | null> {
   const {title} = options
   if (options.isWorkbenchApp) {
-    const {appId, organizationId, slug} = options
+    const {appId, hasAppView, organizationId, slug} = options
     return runStep(reporter, {
       debug: deployDebug,
       name: 'target',
       work: async () => {
-        const resolution = await resolveWorkbenchApp({appId, organizationId, slug})
+        const resolution = await resolveWorkbenchApp({appId, hasAppView, organizationId, slug})
         const check = describeAppTarget(resolution, {title})
         reporter.report(check)
         return check
