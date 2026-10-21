@@ -1,4 +1,3 @@
-import {Flags} from '@oclif/core'
 import {exitCodes, getCliTokenInfo, SanityCommand} from '@sanity/cli-core'
 import {isHttpError} from '@sanity/client'
 
@@ -14,6 +13,8 @@ import {getCliUser} from '../services/user.js'
 export class WhoamiCommand extends SanityCommand<typeof WhoamiCommand> {
   static override description = 'Show the user or API token the CLI is authenticated as'
 
+  static override enableJsonFlag = true
+
   static override examples = [
     {
       command: '<%= config.bin %> <%= command.id %>',
@@ -25,15 +26,8 @@ export class WhoamiCommand extends SanityCommand<typeof WhoamiCommand> {
     },
   ]
 
-  static override flags = {
-    json: Flags.boolean({
-      default: false,
-      description: 'Output as JSON',
-    }),
-  }
-
   public async run(): Promise<void> {
-    const {flags} = await this.parse(WhoamiCommand)
+    const {json} = this.flags
 
     const tokenInfo = await getCliTokenInfo()
     if (!tokenInfo?.token) {
@@ -55,21 +49,15 @@ export class WhoamiCommand extends SanityCommand<typeof WhoamiCommand> {
     const samlProviderId = getSamlProviderId(user.provider)
     const sso = samlProviderId ? await resolveSSOProvider(samlProviderId) : undefined
 
-    if (flags.json) {
-      this.log(
-        JSON.stringify(
-          {
-            email: user.email ?? null,
-            id: user.id,
-            name: user.name,
-            provider: user.provider,
-            ...(samlProviderId ? {sso: sso ?? null} : {}),
-            tokenSource: tokenInfo.source,
-          },
-          null,
-          2,
-        ),
-      )
+    if (json) {
+      this.logJson({
+        email: user.email ?? null,
+        id: user.id,
+        name: user.name,
+        provider: user.provider,
+        ...(samlProviderId ? {sso: sso ?? null} : {}),
+        tokenSource: tokenInfo.source,
+      })
       return
     }
 

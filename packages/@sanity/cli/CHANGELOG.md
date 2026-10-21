@@ -1,5 +1,34 @@
 # Change Log
 
+## 8.22.0
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-v8.21.0...cli-v8.22.0)
+
+_2026-10-21_
+
+### Features
+
+- **typegen:** support --watch with typegen.resources (beta) ([#1985](https://github.com/sanity-io/cli/pull/1985)) ([c48e02e](https://github.com/sanity-io/cli/commit/c48e02ef68ac9a995c01c6a491bfebddaa28b646))
+- **codemod:** add dashboard codemod to move a project onto the Dashboard ([#2023](https://github.com/sanity-io/cli/pull/2023)) ([ac7b258](https://github.com/sanity-io/cli/commit/ac7b25811153047374e2db0688823c4072ee7d03))
+
+### Bug Fixes
+
+- **cli:** standardize json output and errors ([#1994](https://github.com/sanity-io/cli/pull/1994)) ([69ef7f7](https://github.com/sanity-io/cli/commit/69ef7f7a9713f0dc85fb15627a341732d833b848))
+- Added validation to detect if a studio is managed by a blueprint and returns an error if a user tries to deploy via the deploy command ([#1988](https://github.com/sanity-io/cli/pull/1988)) ([fd8db14](https://github.com/sanity-io/cli/commit/fd8db14315565768446f046c473af6023fe7e5fd))
+- **init:** track dataset selection and skips during app init ([#1998](https://github.com/sanity-io/cli/pull/1998)) ([8ea1b33](https://github.com/sanity-io/cli/commit/8ea1b33033144053199eabc945eb2c3100046e68))
+- **deploy:** link workbench apps and studios by slug ([#2020](https://github.com/sanity-io/cli/pull/2020)) ([1ff8e2b](https://github.com/sanity-io/cli/commit/1ff8e2b2623d786af83f79c61deb327609181fc5))
+- **deploy:** stop linking panel-only apps to an application route ([#2021](https://github.com/sanity-io/cli/pull/2021)) ([936bc3f](https://github.com/sanity-io/cli/commit/936bc3ffb6c7f68ff81522acac7ee2762a6ea8bb))
+- **codemod:** exit cleanly once jscodeshift finishes ([#2025](https://github.com/sanity-io/cli/pull/2025)) ([f33c260](https://github.com/sanity-io/cli/commit/f33c260c19a5a3caf2233d46a401d233ca780b3f))
+- **build:** return the module federation manifest from buildStudio and buildApp ([#2026](https://github.com/sanity-io/cli/pull/2026)) ([ee487dd](https://github.com/sanity-io/cli/commit/ee487ddb261dbd0d8936d1918a58263fa0a5f712))
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/cli-core bumped to 3.11.0
+    - @sanity/workbench-cli bumped to 2.12.0
+    - @sanity/cli-build bumped to 6.5.0
+
 ## 8.21.0
 
 [Compare changes](https://github.com/sanity-io/cli/compare/cli-v8.20.0...cli-v8.21.0)

@@ -1,5 +1,27 @@
 # @sanity/workbench-cli
 
+## 2.12.0
+
+[Compare changes](https://github.com/sanity-io/cli/compare/workbench-cli-v2.11.0...workbench-cli-v2.12.0)
+
+_2026-10-21_
+
+### Features
+
+- **build:** return the module federation manifest from buildStudio and buildApp ([#2026](https://github.com/sanity-io/cli/pull/2026)) ([ee487dd](https://github.com/sanity-io/cli/commit/ee487ddb261dbd0d8936d1918a58263fa0a5f712))
+
+### Bug Fixes
+
+- **deps:** update dependency @module-federation/vite to v1.23.5 ([#2002](https://github.com/sanity-io/cli/pull/2002)) ([353c5fa](https://github.com/sanity-io/cli/commit/353c5fa0423c7e4047f599b743978698d58f5b62))
+- **deploy:** link workbench apps and studios by slug ([#2020](https://github.com/sanity-io/cli/pull/2020)) ([1ff8e2b](https://github.com/sanity-io/cli/commit/1ff8e2b2623d786af83f79c61deb327609181fc5))
+- **dev:** run one workbench per organization ([#2024](https://github.com/sanity-io/cli/pull/2024)) ([b588035](https://github.com/sanity-io/cli/commit/b588035332d518222d98fa06107f4bea6355c6c1))
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/cli-core bumped to 3.11.0
+
 ## 2.11.0
 
 [Compare changes](https://github.com/sanity-io/cli/compare/workbench-cli-v2.10.0...workbench-cli-v2.11.0)

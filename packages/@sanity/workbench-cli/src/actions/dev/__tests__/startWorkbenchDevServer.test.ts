@@ -161,6 +161,7 @@ describe('startWorkbenchDevServer', () => {
           createDevOptions({cliConfig: {app: workbenchApp({organizationId: undefined})}}),
         ),
       ).rejects.toThrow(/Pass "organizationId" to defineApplication/)
+      expect(mockAcquireWorkbenchLock).not.toHaveBeenCalled()
     })
   })
 
@@ -442,8 +443,20 @@ describe('startWorkbenchDevServer', () => {
 
       const watchCallback = mockWatchRegistry.mock.calls[0][0]
       watchCallback([
-        aDevServerManifest({id: 'app-1', manifest: studioManifest, port: 3334, type: 'studio'}),
-        aDevServerManifest({id: 'app-2', manifest: appManifest, port: 3335, type: 'coreApp'}),
+        aDevServerManifest({
+          id: 'app-1',
+          manifest: studioManifest,
+          organizationId: 'org-test',
+          port: 3334,
+          type: 'studio',
+        }),
+        aDevServerManifest({
+          id: 'app-2',
+          manifest: appManifest,
+          organizationId: 'org-test',
+          port: 3335,
+          type: 'coreApp',
+        }),
       ])
 
       expect(mockServer.ws.send).toHaveBeenCalledWith('sanity:workbench:local-applications', {
@@ -467,6 +480,24 @@ describe('startWorkbenchDevServer', () => {
       })
     })
 
+    test("leaves another organization's servers out of the broadcast", async () => {
+      const mockServer = createMockViteServer()
+      mockCreateServer.mockResolvedValue(mockServer)
+
+      await startWorkbenchDevServer(createDevOptions({cliConfig: federationConfig}))
+
+      const watchCallback = mockWatchRegistry.mock.calls[0][0]
+      watchCallback([
+        aDevServerManifest({id: 'own', organizationId: 'org-test', port: 3334}),
+        aDevServerManifest({id: 'foreign', organizationId: 'org-other', port: 3335}),
+      ])
+
+      expect(mockServer.ws.send).toHaveBeenCalledWith('sanity:workbench:local-applications', {
+        applications: [expect.objectContaining({id: 'own'})],
+        configs: [],
+      })
+    })
+
     test('includes undefined manifest when a registered server has not yet extracted one', async () => {
       const mockServer = createMockViteServer()
       mockCreateServer.mockResolvedValue(mockServer)
@@ -474,7 +505,7 @@ describe('startWorkbenchDevServer', () => {
       await startWorkbenchDevServer(createDevOptions({cliConfig: federationConfig}))
 
       const watchCallback = mockWatchRegistry.mock.calls[0][0]
-      watchCallback([aDevServerManifest({port: 3334, type: 'studio'})])
+      watchCallback([aDevServerManifest({organizationId: 'org-test', port: 3334, type: 'studio'})])
 
       expect(mockServer.ws.send).toHaveBeenCalledWith('sanity:workbench:local-applications', {
         applications: [
@@ -503,7 +534,7 @@ describe('startWorkbenchDevServer', () => {
         aDevServerManifest({
           id: 'app-1',
           name: 'studio',
-          organizationId: 'org-1',
+          organizationId: 'org-test',
           port: 3334,
           projectId: 'x1g7jygt',
           reference: 'org-1/studio',
@@ -519,7 +550,7 @@ describe('startWorkbenchDevServer', () => {
             host: 'localhost',
             id: 'app-1',
             name: 'studio',
-            organizationId: 'org-1',
+            organizationId: 'org-test',
             port: 3334,
             projectId: 'x1g7jygt',
             reference: 'org-1/studio',
@@ -546,9 +577,10 @@ describe('startWorkbenchDevServer', () => {
       }
       const watchCallback = mockWatchRegistry.mock.calls[0][0]
       watchCallback([
-        aDevServerManifest({id: 'app-1', port: 3334, type: 'studio'}),
+        aDevServerManifest({id: 'app-1', organizationId: 'org-test', port: 3334, type: 'studio'}),
         aDevServerManifest({
           configs: [{...config, id: 'cfg-hash', moduleName: 'media-library', version: '1'}],
+          organizationId: 'org-test',
           port: 3337,
           type: 'coreApp',
         }),
@@ -589,7 +621,13 @@ describe('startWorkbenchDevServer', () => {
 
       const watchCallback = mockWatchRegistry.mock.calls[0][0]
       watchCallback([
-        aDevServerManifest({id: 'app-1', interfaces: [panel('feed')], port: 3337, type: 'coreApp'}),
+        aDevServerManifest({
+          id: 'app-1',
+          interfaces: [panel('feed')],
+          organizationId: 'org-test',
+          port: 3337,
+          type: 'coreApp',
+        }),
       ])
 
       const payload = mockServer.ws.send.mock.calls.at(-1)?.[1]
@@ -626,6 +664,7 @@ describe('startWorkbenchDevServer', () => {
           ],
           id: 'app-1',
           interfaces: [panel('feed')],
+          organizationId: 'org-test',
           port: 3337,
           type: 'coreApp',
         }),
@@ -638,6 +677,25 @@ describe('startWorkbenchDevServer', () => {
       expect(payload.configs).toEqual([
         expect.objectContaining({appType: 'media-library', moduleName: 'media-library'}),
       ])
+    })
+
+    test("does not reload when another organization's app changes its interfaces", async () => {
+      const mockServer = createMockViteServer()
+      mockCreateServer.mockResolvedValue(mockServer)
+
+      await startWorkbenchDevServer(createDevOptions({cliConfig: federationConfig}))
+      const watchCallback = mockWatchRegistry.mock.calls[0][0]
+
+      const own = aDevServerManifest({id: 'own', organizationId: 'org-test', port: 3334})
+      const foreign = {id: 'foreign', organizationId: 'org-other', port: 3335}
+
+      watchCallback([own, aDevServerManifest({...foreign, interfaces: [panel('feed')]})])
+      watchCallback([
+        own,
+        aDevServerManifest({...foreign, interfaces: [panel('feed'), panel('alerts')]}),
+      ])
+
+      expect(mockServer.ws.send).not.toHaveBeenCalledWith({type: 'full-reload'})
     })
 
     test('full-reloads the page when a running app gains or drops an interface', async () => {
@@ -655,7 +713,13 @@ describe('startWorkbenchDevServer', () => {
 
       // First sighting of the app — reconcile softly, don't reload.
       watchCallback([
-        aDevServerManifest({id: 'app-1', interfaces: [feed], port: 3335, type: 'coreApp'}),
+        aDevServerManifest({
+          id: 'app-1',
+          interfaces: [feed],
+          organizationId: 'org-test',
+          port: 3335,
+          type: 'coreApp',
+        }),
       ])
       expect(mockServer.ws.send).toHaveBeenLastCalledWith(
         'sanity:workbench:local-applications',
@@ -664,7 +728,13 @@ describe('startWorkbenchDevServer', () => {
 
       // A second panel is declared — the remote was rebuilt, reload the page.
       watchCallback([
-        aDevServerManifest({id: 'app-1', interfaces: [feed, alerts], port: 3335, type: 'coreApp'}),
+        aDevServerManifest({
+          id: 'app-1',
+          interfaces: [feed, alerts],
+          organizationId: 'org-test',
+          port: 3335,
+          type: 'coreApp',
+        }),
       ])
       expect(mockServer.ws.send).toHaveBeenLastCalledWith({type: 'full-reload'})
     })
@@ -683,6 +753,7 @@ describe('startWorkbenchDevServer', () => {
           id: 'app-1',
           interfaces: [feed],
           manifest: {title: 'V1', version: '1'},
+          organizationId: 'org-test',
           port: 3335,
           type: 'coreApp',
         }),
@@ -693,6 +764,7 @@ describe('startWorkbenchDevServer', () => {
           id: 'app-1',
           interfaces: [feed],
           manifest: {title: 'V2', version: '1'},
+          organizationId: 'org-test',
           port: 3335,
           type: 'coreApp',
         }),
@@ -710,7 +782,14 @@ describe('startWorkbenchDevServer', () => {
       mockCreateServer.mockResolvedValue(mockServer)
       const inlined = {icon: '<svg>inline</svg>', title: 'Title', version: '1'}
       mockGetRegisteredServers.mockReturnValue([
-        aDevServerManifest({id: 'app-1', manifest: inlined, port: 3334, type: 'coreApp'}),
+        aDevServerManifest({
+          id: 'app-1',
+          manifest: inlined,
+          organizationId: 'org-test',
+          port: 3334,
+          type: 'coreApp',
+        }),
+        aDevServerManifest({id: 'foreign', organizationId: 'org-other', port: 3335}),
       ])
 
       await startWorkbenchDevServer(createDevOptions({cliConfig: federationConfig}))

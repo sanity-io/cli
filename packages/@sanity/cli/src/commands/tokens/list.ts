@@ -1,4 +1,3 @@
-import {Flags} from '@oclif/core'
 import {exitCodes, SanityCommand, subdebug} from '@sanity/cli-core'
 import {getErrorMessage} from '@sanity/cli-core/errors'
 
@@ -13,6 +12,8 @@ const listTokenDebug = subdebug('tokens:list')
 
 export class TokensListCommand extends SanityCommand<typeof TokensListCommand> {
   static override description = 'List API tokens for a project or organization'
+  static override enableJsonFlag = true
+
   static override examples = [
     {
       command: '<%= config.bin %> <%= command.id %> --organization org123',
@@ -41,10 +42,6 @@ export class TokensListCommand extends SanityCommand<typeof TokensListCommand> {
       description: 'Project ID to list tokens for',
       semantics: 'override',
     }),
-    json: Flags.boolean({
-      default: false,
-      description: 'Output tokens in JSON format',
-    }),
   }
 
   static override hiddenAliases: string[] = ['token:list']
@@ -70,7 +67,7 @@ export class TokensListCommand extends SanityCommand<typeof TokensListCommand> {
     }
 
     if (outputJson) {
-      this.log(JSON.stringify(tokens, null, 2))
+      this.logJson(tokens)
       return
     }
 

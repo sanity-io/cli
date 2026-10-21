@@ -13,6 +13,8 @@ const listOpenapiDebug = subdebug('openapi:list')
 export class ListOpenApiCommand extends SanityCommand<typeof ListOpenApiCommand> {
   static override description = 'List all available OpenAPI specifications'
 
+  static override enableJsonFlag = true
+
   static override examples = [
     {
       command: '<%= config.bin %> <%= command.id %>',
@@ -29,9 +31,6 @@ export class ListOpenApiCommand extends SanityCommand<typeof ListOpenApiCommand>
   ]
 
   static override flags = {
-    json: Flags.boolean({
-      description: 'Output JSON',
-    }),
     web: Flags.boolean({
       char: 'w',
       description: 'Open HTTP Reference in web browser',
@@ -61,7 +60,7 @@ export class ListOpenApiCommand extends SanityCommand<typeof ListOpenApiCommand>
     }
 
     if (json) {
-      this.log(JSON.stringify(specs, null, 2))
+      this.logJson(specs)
       return
     }
 

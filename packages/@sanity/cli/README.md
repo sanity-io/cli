@@ -139,6 +139,7 @@ Code for sanity cli
 - [`sanity users invite [EMAIL]`](#sanity-users-invite-email)
 - [`sanity users list`](#sanity-users-list)
 - [`sanity versions`](#sanity-versions)
+- [`sanity whoami`](#sanity-whoami)
 - [`sanity workflows abort INSTANCEID`](#sanity-workflows-abort-instanceid)
 - [`sanity workflows blueprint generate`](#sanity-workflows-blueprint-generate)
 - [`sanity workflows definition delete NAME`](#sanity-workflows-definition-delete-name)
@@ -1070,8 +1071,8 @@ USAGE
 ARGUMENTS
   KNOWLEDGEBASEID  Knowledge base ID
 
-FLAGS
-  --json  Output the knowledge base in JSON format
+GLOBAL FLAGS
+  --json  Format output as json.
 
 DESCRIPTION
   Get details of a knowledge base
@@ -1171,8 +1172,8 @@ ARGUMENTS
   KNOWLEDGEBASEID  Knowledge base ID
   IMPORTID         Import ID
 
-FLAGS
-  --json  Output the download URL in JSON format
+GLOBAL FLAGS
+  --json  Format output as json.
 
 DESCRIPTION
   Get a short-lived signed URL for the original uploaded bytes of a file import
@@ -1195,8 +1196,8 @@ ARGUMENTS
   KNOWLEDGEBASEID  Knowledge base ID
   IMPORTID         Import ID
 
-FLAGS
-  --json  Output the import in JSON format
+GLOBAL FLAGS
+  --json  Format output as json.
 
 DESCRIPTION
   Get details of an import
@@ -1222,8 +1223,8 @@ USAGE
 ARGUMENTS
   KNOWLEDGEBASEID  Knowledge base ID
 
-FLAGS
-  --json  Output imports in JSON format
+GLOBAL FLAGS
+  --json  Format output as json.
 
 DESCRIPTION
   List imports for a knowledge base
@@ -1251,8 +1252,10 @@ ARGUMENTS
   JOBID            Job ID
 
 FLAGS
-  --json   Output the job in JSON format
   --watch  Poll until the job reaches a terminal state
+
+GLOBAL FLAGS
+  --json  Format output as json.
 
 DESCRIPTION
   Get the status of a knowledge base job
@@ -1273,10 +1276,10 @@ List knowledge bases in an organization
 
 ```
 USAGE
-  $ sanity context list [--organization <id>] [--json]
+  $ sanity context list [--json] [--organization <id>]
 
-FLAGS
-  --json  Output knowledge bases in JSON format
+GLOBAL FLAGS
+  --json  Format output as json.
 
 OVERRIDE FLAGS
   --organization=<id>  Organization to list knowledge bases for (overrides CLI configuration)
@@ -2009,8 +2012,8 @@ Builds and deploys Sanity Studio or application to Sanity hosting
 
 ```
 USAGE
-  $ sanity deploy [SOURCEDIR] [--auto-updates] [--build] [--create | --external | --url <value>] [--dry-run]
-    [-j] [--minify] [--schema-required] [--source-maps] [--title <value>] [--verbose] [-y]
+  $ sanity deploy [SOURCEDIR] [-j] [--auto-updates] [--build] [--create | --external | --url <value>]
+    [--dry-run] [--minify] [--schema-required] [--source-maps] [--title <value>] [--verbose] [-y]
 
 ARGUMENTS
   [SOURCEDIR]  Source directory
@@ -3574,8 +3577,10 @@ USAGE
   $ sanity openapi list [--json] [-w]
 
 FLAGS
-  -w, --web   Open HTTP Reference in web browser
-      --json  Output JSON
+  -w, --web  Open HTTP Reference in web browser
+
+GLOBAL FLAGS
+  --json  Format output as json.
 
 DESCRIPTION
   List all available OpenAPI specifications
@@ -3752,7 +3757,7 @@ Create a new Sanity project
 
 ```
 USAGE
-  $ sanity projects create [PROJECTNAME] [--dataset <value>] [--dataset-visibility private|public] [--json]
+  $ sanity projects create [PROJECTNAME] [--json] [--dataset <value>] [--dataset-visibility private|public]
     [--organization <slug|id>] [-y]
 
 ARGUMENTS
@@ -3764,8 +3769,10 @@ FLAGS
       --dataset=<value>              Create a dataset. Prompts for visibility unless specified or --yes used
       --dataset-visibility=<option>  Dataset visibility: public or private
                                      <options: private|public>
-      --json                         Output in JSON format
       --organization=<slug|id>       Organization to create the project in
+
+GLOBAL FLAGS
+  --json  Format output as json.
 
 DESCRIPTION
   Create a new Sanity project
@@ -3950,11 +3957,13 @@ List all schemas in the current dataset.
 
 ```
 USAGE
-  $ sanity schemas list [--id <schema_id>] [--json]
+  $ sanity schemas list [--json] [--id <schema_id>]
 
 FLAGS
   --id=<schema_id>  Fetch a single schema by id
-  --json            Get schema as json
+
+GLOBAL FLAGS
+  --json  Format output as json.
 
 DESCRIPTION
   List all schemas in the current dataset.
@@ -4093,37 +4102,48 @@ EXAMPLES
 
 ## `sanity tokens create [LABEL]`
 
-Create a new API token for the project
+Create a new API token with access to an organization and its projects
 
 ```
 USAGE
-  $ sanity tokens create [LABEL] [-p <id>] [--expires-at 2027-01-01] [--json] [--role viewer] [-y]
+  $ sanity tokens create [LABEL] [--json] [-p <id>] [--organization <id>] [--expires-at 2027-01-01] [--grant
+    context=editor...] [--role viewer] [-y]
 
 ARGUMENTS
   [LABEL]  Label for the new token
 
 FLAGS
-  -y, --yes                    Skip prompts and use defaults (unattended mode)
-      --expires-at=2027-01-01  Date or timestamp the token expires (ISO 8601; tokens never expire by default)
-      --json                   Output as JSON
-      --role=viewer            Role to assign to the token (defaults to viewer in unattended mode)
+  -y, --yes                      Skip prompts and use defaults (unattended mode)
+      --expires-at=2027-01-01    Date or timestamp the token expires (ISO 8601; tokens never expire by default)
+      --grant=context=editor...  Access to grant, as <permission>[=<role>] or project:<projectId>=<role>[,<role>].
+                                 Permissions: context, blueprints, media-library, canvas, sdk-apps, access,
+                                 deploy-studios. Repeatable
+      --role=viewer              Role to assign on the project (defaults to viewer in unattended mode)
 
 OVERRIDE FLAGS
-  -p, --project-id=<id>  Project ID to create token in (overrides CLI configuration)
+  -p, --project-id=<id>    Project ID to create token in (overrides CLI configuration)
+      --organization=<id>  Organization to create an organization token in (overrides CLI configuration)
+
+GLOBAL FLAGS
+  --json  Format output as json.
 
 DESCRIPTION
-  Create a new API token for the project
+  Create a new API token with access to an organization and its projects
 
 EXAMPLES
-  Create a token with a label
+  Create a token, choosing its access interactively
 
     $ sanity tokens create "My API Token"
 
-  Create a token with editor role
+  Create an organization token with Context, Blueprints and project access
 
-    $ sanity tokens create "My API Token" --role=editor
+    $ sanity tokens create "CI Token" --grant context=developer --grant blueprints --grant project:abc123=editor
 
-  Create a token in unattended mode
+  Create a project token with editor role
+
+    $ sanity tokens create "My Token" --project-id abc123 --role=editor
+
+  Create a project token in unattended mode
 
     $ sanity tokens create "CI Token" --role=editor --yes
 
@@ -4134,33 +4154,38 @@ EXAMPLES
   Output token information as JSON
 
     $ sanity tokens create "API Token" --json
-
-  Create a token for a specific project
-
-    $ sanity tokens create "My Token" --project-id abc123 --role=editor
 ```
 
 ## `sanity tokens delete [TOKENID]`
 
-Delete an API token from the project
+Delete an API token from a project or organization
 
 ```
 USAGE
-  $ sanity tokens delete [TOKENID] [-p <id>] [-y]
+  $ sanity tokens delete [TOKENID] [--organization <id> | -p <id>] [-y]
 
 ARGUMENTS
   [TOKENID]  Token ID to delete (will prompt if not provided)
 
 FLAGS
-  -y, --yes  Skip confirmation prompt (unattended mode)
+  -y, --yes                Skip confirmation prompt (unattended mode)
+      --organization=<id>  Delete a token managed by this organization
 
 OVERRIDE FLAGS
   -p, --project-id=<id>  Project ID to delete token from (overrides CLI configuration)
 
 DESCRIPTION
-  Delete an API token from the project
+  Delete an API token from a project or organization
 
 EXAMPLES
+  Interactively select and delete an organization token
+
+    $ sanity tokens delete --organization org123
+
+  Delete an organization token without confirmation
+
+    $ sanity tokens delete silJ2lFmK6dONB --organization org123 --yes
+
   Interactively select and delete a token
 
     $ sanity tokens delete
@@ -4180,22 +4205,29 @@ EXAMPLES
 
 ## `sanity tokens list`
 
-List API tokens for the project
+List API tokens for a project or organization
 
 ```
 USAGE
-  $ sanity tokens list [-p <id>] [--json]
+  $ sanity tokens list [--json] [--organization <id> | -p <id>]
 
 FLAGS
-  --json  Output tokens in JSON format
+  --organization=<id>  List tokens managed by this organization
 
 OVERRIDE FLAGS
   -p, --project-id=<id>  Project ID to list tokens for (overrides CLI configuration)
 
+GLOBAL FLAGS
+  --json  Format output as json.
+
 DESCRIPTION
-  List API tokens for the project
+  List API tokens for a project or organization
 
 EXAMPLES
+  List tokens managed by an organization
+
+    $ sanity tokens list --organization org123
+
   List tokens for the project
 
     $ sanity tokens list
@@ -4219,7 +4251,9 @@ USAGE
 
 FLAGS
   -t, --token=<token>  Token to rotate (prefer standard input to keep it out of shell history)
-      --json           Output as JSON
+
+GLOBAL FLAGS
+  --json  Format output as json.
 
 DESCRIPTION
   Rotate an API token, replacing its secret with a new one
@@ -4275,7 +4309,8 @@ DESCRIPTION
   - The `sanity schema extract` command is a prerequisite for extracting your Sanity Studio schema into a `schema.json`
   file, which is then used by the `sanity typegen generate` command to generate type definitions.
   - To generate types for several datasets, list them in `typegen.resources` in `sanity.cli.ts` (beta). Each resource
-  uses its own `schema` file, or the schema bound to its dataset when `schema` is omitted.
+  uses its own `schema` file, or the schema bound to its dataset when `schema` is omitted. With `--watch`, a schema
+  bound to a dataset is fetched once, when the watcher starts. Restart it after deploying a schema.
 
 EXAMPLES
   Generate TypeScript type definitions from a Sanity Studio schema extracted using the `sanity schema extract`
@@ -4290,7 +4325,7 @@ Removes the deployed Sanity Studio/App from Sanity hosting
 
 ```
 USAGE
-  $ sanity undeploy [APPID] [--dry-run] [-j] [-y]
+  $ sanity undeploy [APPID] [-j] [--dry-run] [-y]
 
 ARGUMENTS
   [APPID]  ID of the application to undeploy. Overrides `deployment.appId` in sanity.cli.ts
@@ -4412,6 +4447,30 @@ DESCRIPTION
 
 EXAMPLES
   $ sanity versions
+```
+
+## `sanity whoami`
+
+Show the user or API token the CLI is authenticated as
+
+```
+USAGE
+  $ sanity whoami [--json]
+
+GLOBAL FLAGS
+  --json  Format output as json.
+
+DESCRIPTION
+  Show the user or API token the CLI is authenticated as
+
+EXAMPLES
+  Show the currently authenticated user
+
+    $ sanity whoami
+
+  Output the current user as JSON, for scripts and agents
+
+    $ sanity whoami --json
 ```
 
 ## `sanity workflows abort INSTANCEID`

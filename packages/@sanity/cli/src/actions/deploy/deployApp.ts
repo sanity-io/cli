@@ -12,12 +12,14 @@ import {type AppVisibility, exitCodes} from '@sanity/cli-core'
 import {getErrorMessage} from '@sanity/cli-core/errors'
 import {getCoreAppUrl} from '@sanity/cli-core/util'
 import {spinner} from '@sanity/cli-core/ux'
+import {resolveAppEntry} from '@sanity/workbench-cli/build'
 import {
   createCoreApp,
   deployConfig,
   deployWorkbenchApp,
   getApplicationUrl,
   getWorkbench,
+  getWorkbenchUrl,
   resolveInstallationId,
   resolveWorkbenchConfig,
   summarizeConfig,
@@ -77,6 +79,7 @@ async function runAppDeployment(
 
   const deployConfigOnly = !!config
   const deployApplication = !config && (!workbench || workbench.hasInterfaces)
+  const hasAppView = resolveAppEntry(cliConfig.app) !== undefined
 
   const appTitle = workbench
     ? flags.title?.trim() || cliConfig.app?.title?.trim() || workbench.slug
@@ -144,6 +147,7 @@ async function runAppDeployment(
     workbenchApp = (
       await checkAppTarget(reporter, {
         appId,
+        hasAppView,
         isWorkbenchApp: true,
         organizationId,
         slug: workbench.slug,
@@ -192,7 +196,7 @@ async function runAppDeployment(
   // A record created above is stranded at its slug (and blocks retries) if any
   // step before it fully deploys fails, so undo the creation on failure.
   try {
-    await checkBuild(reporter, {
+    const built = await checkBuild(reporter, {
       build: () =>
         buildApp({
           applicationId: workbench ? applicationId : undefined,
@@ -210,11 +214,14 @@ async function runAppDeployment(
       successMessage: 'App built',
     })
 
-    await verifyOutputDir({
-      isWorkbenchApp: workbench !== null || config !== null,
-      reporter,
-      sourceDir,
-    })
+    // A federated build has already read its manifest; anything else verifies the directory.
+    const mfManifest =
+      built?.mfManifest ??
+      (await verifyOutputDir({
+        isWorkbenchApp: workbench !== null || config !== null,
+        reporter,
+        sourceDir,
+      }))
 
     // Workbench apps and configs ship a federation remote and don't read the
     // core-app manifest; only plain core-apps do. Manifests aren't strictly
@@ -298,12 +305,14 @@ async function runAppDeployment(
     // The app was created (or resolved from `deployment.appId`) before the build,
     // so this only ships the deployment; plain coreApps use user-applications below.
     if (workbench && organizationId && applicationId) {
+      if (!mfManifest) throw new Error('The federated build produced no manifest.')
       await deployWorkbenchApp({
         app: cliConfig.app,
         applicationId,
         icon: appIcon,
         isApp: true,
         isAutoUpdating,
+        mfManifest,
         // Once the deployment is live, a metadata-sync or later config failure
         // must not delete the app.
         onDeployed: () => {
@@ -316,7 +325,14 @@ async function runAppDeployment(
         visibility: workbench.visibility,
       })
       await deployApplicationConfig()
-      const url = getApplicationUrl({id: applicationId, organizationId, type: 'coreApp'})
+      const url = hasAppView
+        ? getApplicationUrl({
+            id: applicationId,
+            organizationId,
+            slug: workbench.slug,
+            type: 'coreApp',
+          })
+        : getWorkbenchUrl(organizationId)
       logAppDeployed({
         applicationId,
         cliConfig,
@@ -460,7 +476,7 @@ export async function syncApplicationMetadata({
     spin.fail()
     const message = getErrorMessage(err)
     deployDebug('Error updating application metadata', {message})
-    output.warn(`Error updating application metadata: ${message}`)
+    output.logDiagnostic(`Warning: Error updating application metadata: ${message}`)
     return application
   }
 }

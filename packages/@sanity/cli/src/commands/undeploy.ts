@@ -22,6 +22,8 @@ export class UndeployCommand extends SanityCommand<typeof UndeployCommand> {
 
   static override description = 'Removes the deployed Sanity Studio/App from Sanity hosting'
 
+  static override enableJsonFlag = true
+
   static override examples = [
     {
       command: '<%= config.bin %> <%= command.id %>',

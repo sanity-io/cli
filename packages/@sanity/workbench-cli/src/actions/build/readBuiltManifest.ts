@@ -14,13 +14,11 @@ function buildNotFound(message: string): Error {
 }
 
 /**
- * Throws unless `sourceDir` is a directory holding a federation build.
- * A workbench build always emits a module-federation remote, and may
- * additionally emit a standalone `index.html` SPA (workbench remotes). Either
- * way `mf-manifest.json` is the reliable marker that `sanity build` produced a
- * federation build, so that — not `index.html` — is what we check for.
+ * Resolves to the parsed federation manifest in `sourceDir`. A workbench build
+ * may also emit a standalone `index.html`, so the manifest, not `index.html`,
+ * is the marker that `sanity build` produced a federation build.
  */
-export async function checkBuiltOutput(sourceDir: string): Promise<void> {
+export async function readBuiltManifest(sourceDir: string): Promise<Record<string, unknown>> {
   try {
     const stats = await stat(sourceDir)
     if (!stats.isDirectory()) {
@@ -38,8 +36,7 @@ export async function checkBuiltOutput(sourceDir: string): Promise<void> {
   } catch (err) {
     if (err.code === 'ENOENT') {
       throw buildNotFound(
-        `"${manifestPath}" does not exist. ` +
-          'The deploy directory must contain a federation build created with "sanity build".',
+        `"${manifestPath}" does not exist; a federation build created with "sanity build" writes it.`,
       )
     }
     throw err
@@ -47,11 +44,18 @@ export async function checkBuiltOutput(sourceDir: string): Promise<void> {
 
   // Every deploy sends this file to the API, so a corrupt one must fail here
   // rather than after the application is created.
+  let parsed: unknown
   try {
-    JSON.parse(manifest)
+    parsed = JSON.parse(manifest)
   } catch {
     throw new Error(
       `"${manifestPath}" is not valid JSON. Run "sanity build" again to regenerate it.`,
     )
   }
+  if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) {
+    throw new Error(
+      `"${manifestPath}" is not a JSON object. Run "sanity build" again to regenerate it.`,
+    )
+  }
+  return parsed as Record<string, unknown>
 }

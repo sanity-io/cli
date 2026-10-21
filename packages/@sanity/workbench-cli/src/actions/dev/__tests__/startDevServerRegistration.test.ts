@@ -128,6 +128,7 @@ describe('startDevServerRegistration', () => {
     // so it and the app it configures don't collide on one id.
     const manifest = readManifest()
     expect(manifest.id).toBe('config:media-library')
+    expect(manifest.organizationId).toBe('org-1')
     expect(manifest.configs).toEqual([expect.objectContaining({appType: 'media-library'})])
   })
 
@@ -144,6 +145,7 @@ describe('startDevServerRegistration', () => {
       JSON.stringify({
         host: 'localhost',
         id: 'test-app',
+        organizationId: 'org-123',
         pid: process.pid,
         port: 3334,
         startedAt: new Date().toISOString(),
@@ -192,6 +194,29 @@ describe('startDevServerRegistration', () => {
 
     expect(output.error).not.toHaveBeenCalled()
     expect(readManifest().id).toBe('test-app')
+  })
+
+  test('registers when another organization serves the same id', async () => {
+    fsMock.files.set(
+      join(REGISTRY_DIR, '4242.json'),
+      JSON.stringify({
+        host: 'localhost',
+        id: 'test-app',
+        organizationId: 'org-other',
+        pid: process.pid,
+        port: 3334,
+        startedAt: new Date().toISOString(),
+        type: 'studio',
+        version: 2,
+        workDir: '/tmp/other',
+      }),
+    )
+    const output = createMockOutput()
+
+    await register({output})
+
+    expect(output.error).not.toHaveBeenCalled()
+    expect(readManifest()).toMatchObject({id: 'test-app', organizationId: 'org-123'})
   })
 
   test('forwards api.projectId to the registry', async () => {
@@ -514,6 +539,7 @@ describe('startDevServerRegistration', () => {
         JSON.stringify({
           host: 'localhost',
           id: 'test-app',
+          organizationId: 'org-123',
           pid: process.pid,
           port: 3334,
           startedAt: new Date().toISOString(),

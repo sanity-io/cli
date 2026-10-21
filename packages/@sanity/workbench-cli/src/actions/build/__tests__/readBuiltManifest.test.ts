@@ -3,7 +3,7 @@ import {join} from 'node:path'
 
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
-import {checkBuiltOutput} from '../checkBuiltOutput.js'
+import {readBuiltManifest} from '../readBuiltManifest.js'
 
 vi.mock('node:fs/promises', () => ({
   readFile: vi.fn(),
@@ -23,7 +23,7 @@ const mockSourceDirExists = () => {
   mockStat.mockResolvedValueOnce({isDirectory: () => true} as never)
 }
 
-describe('checkBuiltOutput', () => {
+describe('readBuiltManifest', () => {
   const testDir = '/test/directory'
   const manifestPath = join(testDir, 'mf-manifest.json')
 
@@ -31,11 +31,11 @@ describe('checkBuiltOutput', () => {
     vi.clearAllMocks()
   })
 
-  test('passes when the directory contains mf-manifest.json', async () => {
+  test('resolves to the parsed mf-manifest.json in the directory', async () => {
     mockSourceDirExists()
     mockReadFile.mockResolvedValueOnce('{"id":"my-studio"}')
 
-    await expect(checkBuiltOutput(testDir)).resolves.toBeUndefined()
+    await expect(readBuiltManifest(testDir)).resolves.toEqual({id: 'my-studio'})
 
     expect(mockStat).toHaveBeenCalledTimes(1)
     expect(mockStat).toHaveBeenCalledWith(testDir)
@@ -47,7 +47,7 @@ describe('checkBuiltOutput', () => {
   test('tags a missing directory as BUILD_NOT_FOUND', async () => {
     mockStat.mockRejectedValueOnce(enoent())
 
-    const err = await checkBuiltOutput(testDir).catch((e) => e)
+    const err = (await readBuiltManifest(testDir).catch((e) => e)) as Error
 
     expect(err.message).toContain(`Directory "${testDir}" does not exist`)
     expect(err.name).toBe('BUILD_NOT_FOUND')
@@ -57,7 +57,7 @@ describe('checkBuiltOutput', () => {
   test('throws when the path exists but is not a directory', async () => {
     mockStat.mockResolvedValueOnce({isDirectory: () => false} as never)
 
-    await expect(checkBuiltOutput(testDir)).rejects.toThrow(`"${testDir}" is not a directory`)
+    await expect(readBuiltManifest(testDir)).rejects.toThrow(`"${testDir}" is not a directory`)
 
     expect(mockStat).toHaveBeenCalledTimes(1)
   })
@@ -67,7 +67,7 @@ describe('checkBuiltOutput', () => {
     permissionError.code = 'EACCES'
     mockStat.mockRejectedValueOnce(permissionError)
 
-    const err = await checkBuiltOutput(testDir).catch((e) => e)
+    const err = (await readBuiltManifest(testDir).catch((e) => e)) as Error
 
     expect(err).toBe(permissionError)
     expect(err.name).not.toBe('BUILD_NOT_FOUND')
@@ -77,9 +77,11 @@ describe('checkBuiltOutput', () => {
     mockSourceDirExists()
     mockReadFile.mockRejectedValueOnce(enoent())
 
-    const err = await checkBuiltOutput(testDir).catch((e) => e)
+    const err = (await readBuiltManifest(testDir).catch((e) => e)) as Error
 
-    expect(err.message).toContain(`"${manifestPath}" does not exist`)
+    expect(err.message).toBe(
+      `"${manifestPath}" does not exist; a federation build created with "sanity build" writes it.`,
+    )
     expect(err.name).toBe('BUILD_NOT_FOUND')
   })
 
@@ -87,8 +89,17 @@ describe('checkBuiltOutput', () => {
     mockSourceDirExists()
     mockReadFile.mockResolvedValueOnce('{"id": "my-studio"')
 
-    await expect(checkBuiltOutput(testDir)).rejects.toThrow(
+    await expect(readBuiltManifest(testDir)).rejects.toThrow(
       `"${manifestPath}" is not valid JSON. Run "sanity build" again to regenerate it.`,
+    )
+  })
+
+  test('rejects an mf-manifest.json that is not a JSON object, naming the file and the fix', async () => {
+    mockSourceDirExists()
+    mockReadFile.mockResolvedValueOnce('[]')
+
+    await expect(readBuiltManifest(testDir)).rejects.toThrow(
+      `"${manifestPath}" is not a JSON object. Run "sanity build" again to regenerate it.`,
     )
   })
 
@@ -99,7 +110,7 @@ describe('checkBuiltOutput', () => {
     permissionError.code = 'EACCES'
     mockReadFile.mockRejectedValueOnce(permissionError)
 
-    const err = await checkBuiltOutput(testDir).catch((e) => e)
+    const err = (await readBuiltManifest(testDir).catch((e) => e)) as Error
 
     expect(err).toBe(permissionError)
     expect(err.name).not.toBe('BUILD_NOT_FOUND')

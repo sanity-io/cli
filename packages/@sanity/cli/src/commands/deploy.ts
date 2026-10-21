@@ -21,6 +21,8 @@ export class DeployCommand extends SanityCommand<typeof DeployCommand> {
 
   static override description = 'Builds and deploys Sanity Studio or application to Sanity hosting'
 
+  static override enableJsonFlag = true
+
   static override examples = [
     {
       command: '<%= config.bin %> <%= command.id %>',

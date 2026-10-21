@@ -224,6 +224,18 @@ describe('#whoami', () => {
     expect(error?.oclif?.exit).toBe(1)
   })
 
+  test('reports runtime failures as JSON with --json', async () => {
+    const previousExitCode = process.exitCode
+    mockedGetCliTokenInfo.mockResolvedValue(undefined)
+
+    const {stdout} = await testCommand(WhoamiCommand, ['--json'], {mocks: {token: undefined}})
+
+    expect(JSON.parse(stdout)).toMatchObject({
+      error: {message: expect.stringContaining('Not logged in'), oclif: {exit: 1}},
+    })
+    process.exitCode = previousExitCode
+  })
+
   test('fails when the token is rejected', async () => {
     mockMe({message: 'Unauthorized', statusCode: 401}, 401)
 

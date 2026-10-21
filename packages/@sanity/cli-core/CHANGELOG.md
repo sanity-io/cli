@@ -1,5 +1,15 @@
 # Changelog
 
+## 3.11.0
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-core-v3.10.0...cli-core-v3.11.0)
+
+_2026-10-21_
+
+### Features
+
+- **cli:** standardize json output and errors ([#1994](https://github.com/sanity-io/cli/pull/1994)) ([69ef7f7](https://github.com/sanity-io/cli/commit/69ef7f7a9713f0dc85fb15627a341732d833b848))
+
 ## 3.10.0
 
 [Compare changes](https://github.com/sanity-io/cli/compare/cli-core-v3.9.2...cli-core-v3.10.0)
