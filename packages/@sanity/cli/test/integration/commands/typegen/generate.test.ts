@@ -184,15 +184,23 @@ async function fileIncludes(path: string, text: string): Promise<boolean> {
 
 /**
  * Runs the command with `--watch`. `stop` calls the SIGINT handler the command registered, and
- * none registered by anything else.
+ * none registered by anything else. `stderrSoFar` returns what the still-running command has
+ * written to stderr, for sequencing on messages from the watcher.
  */
 function startWatching() {
   const otherListeners = new Set(process.listeners('SIGINT'))
-  const promise = testCommand(TypegenGenerateCommand, ['--watch'])
+  let liveStderr = ''
+  const promise = testCommand(TypegenGenerateCommand, ['--watch'], {
+    capture: {
+      onStderr: (chunk) => {
+        liveStderr += chunk
+      },
+    },
+  })
   const stop = () => {
     process.listeners('SIGINT').find((listener) => !otherListeners.has(listener))?.('SIGINT')
   }
-  return {promise, stop}
+  return {promise, stderrSoFar: () => liveStderr, stop}
 }
 
 describe('#typegen:generate --watch with typegen.resources', {timeout: 60 * 1000}, () => {
@@ -269,9 +277,16 @@ describe('#typegen:generate --watch with typegen.resources', {timeout: 60 * 1000
     await rm(join(cwd, 'staging.schema.json'))
     const output = join(cwd, 'src', 'staging.types.ts')
 
-    const {promise, stop} = startWatching()
+    const {promise, stderrSoFar, stop} = startWatching()
     try {
-      await new Promise((resolve) => setTimeout(resolve, 1500))
+      // Wait for the initial run to fail on the missing file before restoring it — a fixed
+      // sleep raced slow CI runners, where the restored file arrived before the initial run
+      // read it and generation succeeded straight away.
+      await waitUntil(async () =>
+        stderrSoFar().includes(
+          'Failed to generate types for "abc123.staging": Schema file not found',
+        ),
+      )
       expect(existsSync(output)).toBe(false)
 
       await writeFile(join(cwd, 'staging.schema.json'), schema)

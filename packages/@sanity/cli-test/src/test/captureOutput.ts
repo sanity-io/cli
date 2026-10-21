@@ -4,6 +4,13 @@ import ansis from 'ansis'
 /** @public */
 export interface CaptureOptions {
   /**
+   * Called with each chunk written to stderr while the command is still
+   * running (ANSI escape codes stripped when `stripAnsi` is on). Lets a test
+   * sequence its next step on output from a long-running command — a watcher,
+   * say — without waiting for the command to finish.
+   */
+  onStderr?: (chunk: string) => void
+  /**
    * Whether to print the output to the console
    */
   print?: boolean
@@ -70,6 +77,7 @@ export async function captureOutput<T>(
       cb?: (err?: Error | null) => void,
     ) => {
       output[std].push(chunk.toString())
+      if (std === 'stderr') opts?.onStderr?.(toString(chunk))
 
       if (print) {
         let callback: ((err?: Error | null) => void) | undefined = cb
