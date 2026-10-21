@@ -129,17 +129,89 @@ describe('appendFieldEntries', () => {
   test('bails when the fields value is not an array literal', () => {
     const source = SCAFFOLD.replace(/fields: \[[^]*?\],/, 'fields: sharedFields,')
     const result = appendFieldEntries(source, ['{}'])
-    expect(result).toEqual({ok: false, reason: 'no `fields: [...]` array literal found'})
+    expect(result).toEqual({
+      ok: false,
+      reason:
+        'no `fields: [...]` array literal found in the `unstable_defineMediaLibrary(...)` call',
+    })
   })
 
-  test('bails on multiple fields arrays rather than guessing', () => {
-    const source = `${SCAFFOLD}\nconst other = {fields: []}\n`
+  test('a commented-out fields array next to a computed value is not edited', () => {
+    // The dangerous shape: a regex that is not comment-aware would "edit" the
+    // comment, report success, and deploy would still delete the stored aspects.
+    const source = SCAFFOLD.replace(
+      /fields: \[[^]*?\],/,
+      '// fields: [{name: "old", src: "./old.tsx"}],\n    fields: computedFields,',
+    )
     const result = appendFieldEntries(source, ['{}'])
-    expect(result).toEqual({ok: false, reason: 'more than one `fields: [...]` array found'})
+    expect(result).toEqual({
+      ok: false,
+      reason:
+        'no `fields: [...]` array literal found in the `unstable_defineMediaLibrary(...)` call',
+    })
+  })
+
+  test('a fields array outside the call does not shadow or block the real one', () => {
+    const source = `const preset = {fields: []}\n${SCAFFOLD}`
+    const updated = unwrap(
+      appendFieldEntries(source, [`{name: 'x', src: './src/fields/x.tsx', title: 'X'},`]),
+    )
+
+    // The helper's array is untouched; the entry lands in the call's array.
+    expect(updated).toContain('const preset = {fields: []}')
+    expect(updated).toContain(
+      `title: 'Notes'},\n      {name: 'x', src: './src/fields/x.tsx', title: 'X'},`,
+    )
+  })
+
+  test('the call name inside comments or strings does not count as a second call site', () => {
+    const source = SCAFFOLD.replace(
+      `organizationId: 'org-1',`,
+      `// also used by unstable_defineMediaLibrary(legacy)\n    note: 'see unstable_defineMediaLibrary(docs)',\n    organizationId: 'org-1',`,
+    )
+    const updated = unwrap(
+      appendFieldEntries(source, [`{name: 'x', src: './src/fields/x.tsx', title: 'X'},`]),
+    )
+    expect(updated).toContain(`{name: 'x', src: './src/fields/x.tsx', title: 'X'},`)
+  })
+
+  test('a fields: [ inside a string literal does not count as an array', () => {
+    const source = SCAFFOLD.replace(
+      `organizationId: 'org-1',`,
+      `note: 'legacy fields: [a, b] syntax',\n    organizationId: 'org-1',`,
+    )
+    const updated = unwrap(
+      appendFieldEntries(source, [`{name: 'x', src: './src/fields/x.tsx', title: 'X'},`]),
+    )
+    expect(updated).toContain(
+      `title: 'Notes'},\n      {name: 'x', src: './src/fields/x.tsx', title: 'X'},`,
+    )
+  })
+
+  test('bails on multiple fields arrays inside the call rather than guessing', () => {
+    const source = SCAFFOLD.replace(
+      `organizationId: 'org-1',`,
+      `extra: {fields: []},\n    organizationId: 'org-1',`,
+    )
+    const result = appendFieldEntries(source, ['{}'])
+    expect(result).toEqual({
+      ok: false,
+      reason:
+        'more than one `fields: [...]` array found in the `unstable_defineMediaLibrary(...)` call',
+    })
+  })
+
+  test('bails when the call never closes', () => {
+    const source = `export default unstable_defineMediaLibrary({fields: [`
+    const result = appendFieldEntries(source, ['{}'])
+    expect(result).toEqual({
+      ok: false,
+      reason: 'the `unstable_defineMediaLibrary(...)` call never closes',
+    })
   })
 
   test('bails when the array never closes', () => {
-    const source = `export default unstable_defineMediaLibrary({fields: [`
+    const source = `export default unstable_defineMediaLibrary({fields: [})`
     const result = appendFieldEntries(source, ['{}'])
     expect(result).toEqual({ok: false, reason: 'the `fields` array never closes'})
   })
