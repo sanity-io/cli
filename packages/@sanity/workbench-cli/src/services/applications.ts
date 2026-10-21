@@ -69,10 +69,10 @@ export function getWorkbenchUrl(organizationId: string): string {
 
 /** Where a deployed application is served on its organization's workbench. */
 export function getApplicationUrl(
-  application: Pick<Application, 'id' | 'organizationId' | 'type'>,
+  application: Pick<Application, 'id' | 'organizationId' | 'slug' | 'type'>,
 ): string {
   const segment = application.type === 'studio' ? 'studios' : 'applications'
-  return `${getWorkbenchUrl(application.organizationId)}/${segment}/${application.id}`
+  return `${getWorkbenchUrl(application.organizationId)}/${segment}/${application.slug ?? application.id}`
 }
 
 async function getClient() {

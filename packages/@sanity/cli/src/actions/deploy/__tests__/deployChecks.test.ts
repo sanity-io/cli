@@ -327,7 +327,7 @@ describe('checkAppTarget (workbench backend)', () => {
     expect(reporter.results[0]).toMatchObject({status: 'pass'})
     expect(reporter.results[0]?.message).toContain('Deploys to existing application "Drop Desk"')
     expect(reporter.results[0]?.target?.action).toBe('update')
-    expect(reporter.results[0]?.target?.url).toBe('https://org-1.sanity.run/applications/app-1')
+    expect(reporter.results[0]?.target?.url).toBe('https://org-1.sanity.run/applications/app')
   })
 
   test('unknown appId → fail check pointing to deployment.appId', async () => {
@@ -449,10 +449,10 @@ describe('checkStudioTarget (workbench backend)', () => {
 
     expect(reporter.results[0]).toMatchObject({status: 'pass'})
     expect(reporter.results[0]?.message).toContain(
-      'Deploys to existing studio https://org-1.sanity.run/studios/app-1',
+      'Deploys to existing studio https://org-1.sanity.run/studios/my-studio',
     )
     expect(check?.target?.action).toBe('update')
-    expect(check?.target?.url).toBe('https://org-1.sanity.run/studios/app-1')
+    expect(check?.target?.url).toBe('https://org-1.sanity.run/studios/my-studio')
   })
 
   test('no appId → pass check naming the slug the studio would be created at', async () => {

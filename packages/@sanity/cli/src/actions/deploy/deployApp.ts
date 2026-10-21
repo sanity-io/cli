@@ -316,7 +316,12 @@ async function runAppDeployment(
         visibility: workbench.visibility,
       })
       await deployApplicationConfig()
-      const url = getApplicationUrl({id: applicationId, organizationId, type: 'coreApp'})
+      const url = getApplicationUrl({
+        id: applicationId,
+        organizationId,
+        slug: workbench.slug,
+        type: 'coreApp',
+      })
       logAppDeployed({
         applicationId,
         cliConfig,
