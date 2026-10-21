@@ -596,7 +596,7 @@ describe('#deploy app', () => {
     const result = JSON.parse(stdout)
     expect(result.deployed).toBe(true)
     expect(result.action).toBe('create')
-    expect(result.url).toBe(`https://${organizationId}.sanity.run/applications/app_new`)
+    expect(result.url).toBe(`https://${organizationId}.sanity.run/applications/drop-desk-host`)
     expect(result.payload).toMatchObject({appId: null, slug: 'drop-desk-host', type: 'coreApp'})
     expect(result.application).toMatchObject({id: 'app_new', slug: 'drop-desk-host'})
   })
@@ -718,7 +718,7 @@ describe('#deploy app', () => {
     mockApi({apiVersion: 'vX', uri: '/applications/app_existing'}).reply(200, {
       id: 'app_existing',
       organizationId,
-      slug: 'drop-desk-host',
+      slug: 'drop-desk-old',
       title: 'Workbench App',
       type: 'coreApp',
     })
@@ -730,7 +730,7 @@ describe('#deploy app', () => {
       title: 'Workbench App',
     })
 
-    const {error} = await testCommand(DeployCommand, [], {
+    const {error, stdout} = await testCommand(DeployCommand, [], {
       config: {root: cwd},
       mocks: {cliConfig: {app, deployment: {appId: 'app_existing'}}},
     })
@@ -739,6 +739,9 @@ describe('#deploy app', () => {
     expect(mockCreateCoreApp).not.toHaveBeenCalled()
     expect(mockDeployWorkbenchApp).toHaveBeenCalledWith(
       expect.objectContaining({applicationId: 'app_existing'}),
+    )
+    expect(stdout).toContain(
+      `Success! Application deployed to https://${organizationId}.sanity.run/applications/drop-desk-host`,
     )
   })
 

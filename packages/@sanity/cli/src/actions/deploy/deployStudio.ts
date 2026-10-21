@@ -241,7 +241,12 @@ async function runStudioDeployment(
         visibility: workbench.visibility,
         workspaces: toWorkspaces(studioManifest),
       })
-      const url = getApplicationUrl({id: applicationId, organizationId, type: 'studio'})
+      const url = getApplicationUrl({
+        id: applicationId,
+        organizationId,
+        slug: workbench.slug,
+        type: 'studio',
+      })
       logWorkbenchStudioDeployed({applicationId, cliConfig, output, url})
       if (isExternallyHosted)
         logExternalHost({built: flags.build, organizationId, output, sourceDir})

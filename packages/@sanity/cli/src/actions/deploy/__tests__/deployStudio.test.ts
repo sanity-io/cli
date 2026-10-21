@@ -79,6 +79,7 @@ function deployedPayload(output: Output) {
     action: string
     application: Record<string, unknown>
     payload: Record<string, unknown>
+    url: string
   }
 }
 
@@ -154,10 +155,22 @@ describe('deployStudio (federated studio)', () => {
       application: {id: 'studio-1', slug: 'my-studio'},
       deployed: true,
       payload: {appId: null, slug: 'my-studio', type: 'studio'},
-      url: 'https://org-1.sanity.run/studios/studio-1',
+      url: 'https://org-1.sanity.run/studios/my-studio',
     })
     expect(vi.mocked(deployStudioSchemasAndManifests).mock.calls[0][0]).toEqual(
       expect.objectContaining({applicationId: 'studio-1'}),
+    )
+  })
+
+  test('prints the workbench URL at the configured slug', async () => {
+    const options = deployOptions({flags: {json: false}})
+
+    await deployStudio(options)
+
+    expect(options.output.log).toHaveBeenCalledWith(
+      expect.stringContaining(
+        'Success! Studio deployed to https://org-1.sanity.run/studios/my-studio',
+      ),
     )
   })
 
@@ -165,7 +178,7 @@ describe('deployStudio (federated studio)', () => {
     mockGetApplication.mockResolvedValue({
       id: 'studio-9',
       organizationId: 'org-1',
-      slug: 'my-studio',
+      slug: 'old-slug',
       title: 'My Studio',
       type: 'studio',
     })
@@ -174,10 +187,11 @@ describe('deployStudio (federated studio)', () => {
     await deployStudio(options)
 
     expect(mockCreateStudio).not.toHaveBeenCalled()
-    const {action, application, payload} = deployedPayload(options.output)
+    const {action, application, payload, url} = deployedPayload(options.output)
     expect(action).toBe('update')
     expect(payload.appId).toBe('studio-9')
-    expect(application).toMatchObject({id: 'studio-9', slug: 'my-studio'})
+    expect(application).toMatchObject({id: 'studio-9', slug: 'old-slug'})
+    expect(url).toBe('https://org-1.sanity.run/studios/my-studio')
     expect(vi.mocked(deployStudioSchemasAndManifests).mock.calls[0][0]).toEqual(
       expect.objectContaining({applicationId: 'studio-9'}),
     )
