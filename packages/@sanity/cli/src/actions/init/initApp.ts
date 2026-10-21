@@ -5,13 +5,14 @@ import {isStaging} from '@sanity/cli-core/util'
 import {logSymbols} from '@sanity/cli-core/ux'
 import {type TelemetryTrace} from '@sanity/telemetry'
 
-import {getMediaLibrariesForOrganization} from '../../services/mediaLibraries.js'
+import {getMediaLibrariesForOrganization, type MediaLibrary} from '../../services/mediaLibraries.js'
 import {type InitStepResult} from '../../telemetry/init.telemetry.js'
 import {getInstallCommand} from '../../util/packageManager/installPackages.js'
 import {type EditorName} from '../mcp/editorConfigs.js'
 import {determineMediaLibraryTemplate} from './determineMediaLibraryTemplate.js'
 import {InitError} from './initError.js'
 import {getPostInitMCPPrompt} from './initHelpers.js'
+import {offerAspectPull} from './offerAspectPull.js'
 import {type RepoInfo} from './remoteTemplate.js'
 import {scaffoldAndInstall, selectTemplate} from './scaffoldTemplate.js'
 import {type InitOptions} from './types.js'
@@ -90,15 +91,26 @@ export async function initApp({
         `\nRun ${styleText('cyan', getInstallCommand(pkgManager))} to install dependencies.`,
       )
     }
-    let hasActiveLibrary = false
+    let libraries: MediaLibrary[] = []
     if (organizationId) {
       output.log(`\nConfigured for organization ${styleText('cyan', organizationId)}.`)
-      hasActiveLibrary = await warnIfNoActiveMediaLibrary(organizationId, output)
+      libraries = await warnIfNoActiveMediaLibrary(organizationId, output)
     }
+
+    // The deploy mirrors config into the library and deletes stored aspects
+    // the config does not declare, so an org that already defines aspects is
+    // offered a pull now — while init is interactive and authenticated. Only
+    // with exactly one active library; picking one is pull-aspects territory.
+    let pulledAspects = false
+    if (libraries.length === 1 && !options.unattended) {
+      output.log('')
+      pulledAspects = await offerAspectPull({library: libraries[0], output, outputPath})
+    }
+
     output.log(
       '\nField definitions live in `src/fields/` and are registered in `sanity.cli.ts` — see the README for the authoring rules.',
     )
-    if (hasActiveLibrary) {
+    if (libraries.length > 0 && !pulledAspects) {
       output.log(
         `\nAlready defining aspects in your Media Library? Generate field modules from them with ${styleText('cyan', 'npx sanity media pull-aspects')}.`,
       )
@@ -169,18 +181,18 @@ async function logMcpConfirmation(mcpConfigured: EditorName[], output: Output): 
  * API errors (offline, no access to the org, timeout) are swallowed: this is
  * a hint, not a gate.
  *
- * @returns whether the organization has an active library — `false` also on
- * lookup failure, so follow-up suggestions stay silent in the unknown case.
+ * @returns the organization's active libraries — empty also on lookup
+ * failure, so follow-up suggestions stay silent in the unknown case.
  */
 export async function warnIfNoActiveMediaLibrary(
   organizationId: string,
   output: Output,
-): Promise<boolean> {
+): Promise<MediaLibrary[]> {
   try {
     const libraries = await getMediaLibrariesForOrganization(organizationId)
-    if (libraries.length > 0) return true
+    if (libraries.length > 0) return libraries
   } catch {
-    return false
+    return []
   }
 
   const manageUrl = `${isStaging() ? 'https://sanity.work' : 'https://www.sanity.io'}/manage`
@@ -191,5 +203,5 @@ export async function warnIfNoActiveMediaLibrary(
       `organization — enable it in Manage (${manageUrl}) or learn more at ` +
       `https://www.sanity.io/docs/media-library.`,
   )
-  return false
+  return []
 }

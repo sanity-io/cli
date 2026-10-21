@@ -93,7 +93,9 @@ describe('warnIfNoActiveMediaLibrary', () => {
     ])
     const output = mockOutput()
 
-    await expect(warnIfNoActiveMediaLibrary('org-1', output)).resolves.toBe(true)
+    await expect(warnIfNoActiveMediaLibrary('org-1', output)).resolves.toEqual([
+      {id: 'library-1', organizationId: 'org-1', status: 'active'},
+    ])
 
     expect(output.warn).not.toHaveBeenCalled()
   })
@@ -102,7 +104,7 @@ describe('warnIfNoActiveMediaLibrary', () => {
     mockGetMediaLibrariesForOrganization.mockResolvedValue([])
     const output = mockOutput()
 
-    await expect(warnIfNoActiveMediaLibrary('org-1', output)).resolves.toBe(false)
+    await expect(warnIfNoActiveMediaLibrary('org-1', output)).resolves.toEqual([])
 
     expect(output.warn).toHaveBeenCalledTimes(1)
     const message = vi.mocked(output.warn).mock.calls[0][0]
@@ -118,9 +120,10 @@ describe('warnIfNoActiveMediaLibrary', () => {
     mockGetMediaLibrariesForOrganization.mockRejectedValue(new Error('offline'))
     const output = mockOutput()
 
-    // `false` rather than a throw: follow-up suggestions (the pull-aspects
-    // hint) must stay silent in the unknown case, and init must not block.
-    await expect(warnIfNoActiveMediaLibrary('org-1', output)).resolves.toBe(false)
+    // Empty rather than a throw: follow-up suggestions (the pull-aspects
+    // hint and pull offer) must stay silent in the unknown case, and init
+    // must not block.
+    await expect(warnIfNoActiveMediaLibrary('org-1', output)).resolves.toEqual([])
 
     expect(output.warn).not.toHaveBeenCalled()
   })
