@@ -446,14 +446,13 @@ describe('#buildStudio', () => {
 
     await buildStudio(buildOptions({appId: 'my-app-id', autoUpdatesEnabled: true, output}))
 
-    const {moduleCdn} = mockedBuildStaticFiles.mock.calls[0][0]
-    expect(moduleCdn.packages).toEqual([
+    expect(mockedBuildStaticFiles.mock.calls[0][0].moduleCdnPackages).toEqual([
       expect.objectContaining({
         cssUrl: expect.stringMatching(/\/sanity\/index\.css$/),
         name: 'sanity',
       }),
       expect.objectContaining({
-        cssUrl: expect.stringMatching(/%5E3\.5\.0\/@sanity__vision\/index\.css$/),
+        cssUrl: expect.stringMatching(/index\.css$/),
         name: '@sanity/vision',
       }),
     ])

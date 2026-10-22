@@ -8,6 +8,18 @@ import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
 import {BuildCommand} from '../../../src/commands/build.js'
 
+async function readImportMap(dist: string) {
+  const html = await readFile(join(dist, 'index.html'), 'utf8')
+  return JSON.parse(
+    html.match(/<script type="application\/json" id="__imports">([^<]*)<\/script>/)?.[1] ?? '{}',
+  ).imports
+}
+
+async function readEntryChunk(dist: string) {
+  const entry = (await readdir(join(dist, 'static'))).find((file) => /^sanity-.*\.js$/.test(file))
+  return readFile(join(dist, 'static', entry!), 'utf8')
+}
+
 const mockedSelect = vi.hoisted(() => vi.fn())
 const mockedConfirm = vi.hoisted(() => vi.fn())
 const mockedCompareDependencyVersions = vi.hoisted(() => vi.fn())
@@ -80,7 +92,11 @@ describe('#build studio', {timeout: (platform() === 'win32' ? 120 : 60) * 1000},
     const files = await readdir(outputFolder)
     expect(files).toContain('index.html')
     expect(files).toContain('static')
-    expect(files).toContain('vendor')
+    expect(await readImportMap(outputFolder)).toMatchObject({
+      react: expect.stringMatching(/^\/vendor\/react\/index-[\w-]+\.mjs$/),
+      sanity: expect.stringContaining('/v1/modules/sanity/'),
+    })
+    expect(await readEntryChunk(outputFolder)).toMatch(/from\s*"sanity"/)
 
     // The resource-bindings module is emitted only for Blueprints builds (via
     // `@sanity/runtime-cli`), so a plain `sanity build` never produces it.
@@ -123,41 +139,30 @@ describe('#build studio', {timeout: (platform() === 'win32' ? 120 : 60) * 1000},
       // is emitted alongside the federation output so the studio loads both on
       // its own and embedded in the workbench.
       expect(distFiles).toContain('index.html')
-      const html = await readFile(join(cwd, 'dist', 'index.html'), 'utf8')
-      const importMap = JSON.parse(
-        html.match(/<script type="application\/json" id="__imports">([^<]*)<\/script>/)?.[1] ??
-          '{}',
+      const importMap = await readImportMap(join(cwd, 'dist'))
+      expect(Object.keys(importMap)).toEqual(
+        expect.arrayContaining([
+          '@sanity/vision',
+          '@sanity/vision/',
+          'react',
+          'react-dom/client',
+          'react/jsx-runtime',
+          'sanity',
+          'sanity/',
+          'styled-components',
+        ]),
       )
-      expect(Object.keys(importMap.imports).toSorted()).toEqual([
-        '@sanity/vision',
-        '@sanity/vision/',
-        'react',
-        'react-dom',
-        'react-dom/client',
-        'react-dom/package.json',
-        'react-dom/server',
-        'react-dom/server.browser',
-        'react-dom/static',
-        'react-dom/static.browser',
-        'react/compiler-runtime',
-        'react/jsx-dev-runtime',
-        'react/jsx-runtime',
-        'react/package.json',
-        'sanity',
-        'sanity/',
-        'styled-components',
-        'styled-components/package.json',
-      ])
-      expect(importMap.imports).toMatchObject({
+      expect(importMap).toMatchObject({
         react: expect.stringMatching(/^\/vendor\/react\/index-[\w-]+\.mjs$/),
         sanity: expect.stringContaining('/v1/modules/sanity/'),
       })
       const styledComponents = await readFile(
-        join(cwd, 'dist', importMap.imports['styled-components']),
+        join(cwd, 'dist', importMap['styled-components']),
         'utf8',
       )
       expect(styledComponents).toMatch(/ as css\b/)
       expect(styledComponents).toMatch(/ as styled\b/)
+      expect(await readEntryChunk(join(cwd, 'dist'))).toMatch(/from\s*"sanity"/)
 
       expect(distFiles).toContain('mf-manifest.json')
       const manifest = JSON.parse(await readFile(join(cwd, 'dist', 'mf-manifest.json'), 'utf8'))

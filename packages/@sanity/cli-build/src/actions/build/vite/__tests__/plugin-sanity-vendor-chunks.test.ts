@@ -1,26 +1,21 @@
 import {type Environment, type Plugin, type Rolldown} from 'vite'
-import {expect, it, vi} from 'vitest'
+import {expect, test, vi} from 'vitest'
 
-import {sanityStandaloneVendor} from './plugin-sanity-standalone-vendor.js'
+import {sanityVendorChunks} from '../plugin-sanity-vendor-chunks.js'
 
-const vendorPlugin = {name: 'vendor-named-exports'}
-const plugin = sanityStandaloneVendor({
-  entries: {'react/index': '/pkg/react/index.js'},
-  fileName: 'vendor/[name]-[hash].mjs',
-  plugins: [vendorPlugin],
+const plugin = sanityVendorChunks({
+  imports: {sanity: 'https://sanity-cdn.example/sanity'},
+  vendor: {
+    entries: {'react/index': '/pkg/react/index.js'},
+    namesByChunkName: {'react/index': ['useState']},
+    specifiersByChunkName: {'react/index': 'react'},
+  },
 })
 const applyToEnvironment = plugin.applyToEnvironment as (environment: Environment) => unknown
 
-it('applies only to the standalone client environment', () => {
+test('emits the vendor entries into the vendor directory of the client environment, keeping other chunk names', () => {
   expect(applyToEnvironment({name: 'federation'} as Environment)).toBe(false)
-  expect(applyToEnvironment({name: 'client'} as Environment)).toEqual([
-    vendorPlugin,
-    expect.objectContaining({name: 'sanity/standalone-vendor-entries'}),
-  ])
-})
-
-it('emits the vendor entries and names them, keeping other chunks named as configured', () => {
-  const [, entries] = applyToEnvironment({name: 'client'} as Environment) as Plugin[]
+  const entries = (applyToEnvironment({name: 'client'} as Environment) as Plugin[])[2]
 
   const emitFile = vi.fn()
   ;(entries.buildStart as (this: unknown) => void).call({emitFile})

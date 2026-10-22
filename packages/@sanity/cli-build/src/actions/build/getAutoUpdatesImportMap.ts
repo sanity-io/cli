@@ -1,6 +1,6 @@
 import {isStaging} from '@sanity/cli-core/util'
 
-import {type ModuleCdnPlan} from './autoUpdates.js'
+import {type ModuleCdnPackage} from './autoUpdates.js'
 
 function getModulesHost() {
   return (
@@ -19,26 +19,25 @@ type PackageWithCss = Package & {cssFile?: string}
 /**
  * @internal
  */
-export function getModuleCdnPlan(
+export function getModuleCdnPackages(
   packages: PackageWithCss[],
   options: {appId?: string; baseUrl?: string; timestamp?: number} = {},
-): ModuleCdnPlan {
-  return {
-    packages: packages.map((pkg) => {
-      const url = getModuleUrl(pkg, options)
-      return pkg.cssFile
-        ? {cssUrl: `${url}/${pkg.cssFile}`, name: pkg.name, url}
-        : {name: pkg.name, url}
-    }),
-  }
+): ModuleCdnPackage[] {
+  return packages.map((pkg) => {
+    const url = getModuleUrl(pkg, options)
+
+    return pkg.cssFile
+      ? {cssUrl: `${url}/${pkg.cssFile}`, name: pkg.name, url}
+      : {name: pkg.name, url}
+  })
 }
 
 /**
  * @internal
  */
-export function getAutoUpdatesImportMap(plan: ModuleCdnPlan): Record<string, string> {
+export function getAutoUpdatesImportMap(packages: ModuleCdnPackage[] = []): Record<string, string> {
   return Object.fromEntries(
-    plan.packages.flatMap(({name, url}) => [
+    packages.flatMap(({name, url}) => [
       [name, url],
       [`${name}/`, `${url}/`],
     ]),
@@ -86,6 +85,6 @@ function rewriteScopedPackage(pkgName: string) {
 /**
  * @internal
  */
-export function getAutoUpdatesCssUrls(plan: ModuleCdnPlan): string[] {
-  return plan.packages.flatMap(({cssUrl}) => (cssUrl ? [cssUrl] : []))
+export function getAutoUpdatesCssUrls(packages: ModuleCdnPackage[] = []): string[] {
+  return packages.flatMap(({cssUrl}) => (cssUrl ? [cssUrl] : []))
 }

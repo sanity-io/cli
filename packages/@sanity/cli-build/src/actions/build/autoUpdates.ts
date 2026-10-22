@@ -19,6 +19,9 @@ export interface AutoUpdatesBuildConfig {
   cssUrls?: string[]
 }
 
-export interface ModuleCdnPlan {
-  packages: {cssUrl?: string; name: string; url: string}[]
+export interface ModuleCdnPackage {
+  name: string
+  url: string
+
+  cssUrl?: string
 }
