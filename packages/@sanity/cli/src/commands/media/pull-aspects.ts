@@ -19,8 +19,8 @@ import {
   type GeneratedFieldModule,
   type SkippedAspect,
 } from '../../actions/media/pullAspects.js'
-import {promptForMediaLibrary} from '../../prompts/promptForMediaLibrary.js'
-import {getAspects, getMediaLibrariesForOrganization} from '../../services/mediaLibraries.js'
+import {resolveMediaLibraryId} from '../../actions/media/resolveMediaLibraryId.js'
+import {getAspects} from '../../services/mediaLibraries.js'
 import {pluralize} from '../../util/pluralize.js'
 import {defineCommandTelemetry} from '../../util/telemetry/commandTelemetry.js'
 
@@ -118,10 +118,11 @@ export class MediaPullAspectsCommand extends SanityCommand<typeof MediaPullAspec
     }
 
     try {
-      const mediaLibraryId = await this.resolveMediaLibraryId(
-        config.organizationId,
+      const mediaLibraryId = await resolveMediaLibraryId({
         mediaLibraryIdFlag,
-      )
+        organizationId: config.organizationId,
+        unattended: this.isUnattended(),
+      })
 
       const spin = spinner('Fetching stored aspect documents').start()
       let documents: Awaited<ReturnType<typeof getAspects>>
@@ -313,45 +314,6 @@ export class MediaPullAspectsCommand extends SanityCommand<typeof MediaPullAspec
       'Once declared in sanity.cli.ts, the config app owns these definitions — deploying the',
     )
     this.log('config overwrites the stored documents this pull read from.')
-  }
-
-  /**
-   * The flag wins; otherwise a single active library of the configured
-   * organization is unambiguous, and multiple actives prompt (or, unattended,
-   * demand the flag). Misuse (a bad flag value, a missing required flag)
-   * exits with the usage code.
-   */
-  private async resolveMediaLibraryId(
-    organizationId: string,
-    mediaLibraryIdFlag: string | undefined,
-  ): Promise<string> {
-    const libraries = await getMediaLibrariesForOrganization(organizationId)
-
-    if (mediaLibraryIdFlag) {
-      if (!libraries.some((library) => library.id === mediaLibraryIdFlag)) {
-        this.error(
-          `Media library ${mediaLibraryIdFlag} is not an active library of organization ` +
-            `${organizationId} (found: ${libraries.map((library) => library.id).join(', ') || 'none'})`,
-          {exit: exitCodes.USAGE_ERROR},
-        )
-      }
-      return mediaLibraryIdFlag
-    }
-
-    if (libraries.length === 0) {
-      throw new Error(`Organization ${organizationId} has no active media library`)
-    }
-    if (libraries.length === 1) {
-      return libraries[0].id
-    }
-    if (this.isUnattended()) {
-      this.error(
-        `Organization ${organizationId} has ${libraries.length} active media libraries ` +
-          `(${libraries.map((library) => library.id).join(', ')}). Pass \`--media-library-id\`.`,
-        {exit: exitCodes.USAGE_ERROR},
-      )
-    }
-    return promptForMediaLibrary({mediaLibraries: libraries})
   }
 }
 
