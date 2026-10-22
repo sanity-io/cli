@@ -1,5 +1,15 @@
 # Changelog
 
+## 3.11.1
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-core-v3.11.0...cli-core-v3.11.1)
+
+_2026-10-22_
+
+### Bug Fixes
+
+- **cli-core:** preserve source map comments inside dependency strings ([#1973](https://github.com/sanity-io/cli/pull/1973)) ([05902fc](https://github.com/sanity-io/cli/commit/05902fc50e2f90bed0f230d8a180607573257456))
+
 ## 3.11.0
 
 [Compare changes](https://github.com/sanity-io/cli/compare/cli-core-v3.10.0...cli-core-v3.11.0)
