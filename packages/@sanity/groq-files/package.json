@@ -95,6 +95,15 @@
     "vite": "catalog:",
     "vitest": "catalog:"
   },
+  "typescript": {
+    "contentMapper": {
+      "dynamicConfig": true,
+      "exec": [
+        "node",
+        "dist/bin/contentMapper.js"
+      ]
+    }
+  },
   "engines": {
     "node": ">=22.12"
   }

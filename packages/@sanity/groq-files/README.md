@@ -94,7 +94,60 @@ await generateGroqDeclarations({directory: process.cwd(), schemaPath: 'schema.js
 }
 ```
 
-`bundler` resolution works too. Add `*.d.groq.ts` to `.gitignore` and run the generator before `tsc`. Updating the declarations on save, and skipping the files altogether with TypeScript 7.1's content mappers, are follow-ups on top of this package.
+`bundler` resolution works too. Add `*.d.groq.ts` to `.gitignore` and run the generator before `tsc`. Updating the declarations on save is a follow-up on top of this package.
+
+## TypeScript 7.1 content mapper
+
+TypeScript 7.1 can ask a package to turn a non-TypeScript file into a virtual TypeScript module. Nothing is written to disk, and the language service sends the current buffer, so the types follow the query as it is edited. Register the mapper at the top level of `tsconfig.json`, next to `compilerOptions`, and run `tsc` with `--runExternalCode`:
+
+```json
+{
+  "contentMappers": [
+    {
+      "package": "@sanity/groq-files",
+      "extensions": [".groq"],
+      "options": {"schema": "./schema.json"}
+    }
+  ],
+  "compilerOptions": {"module": "NodeNext", "moduleResolution": "NodeNext"}
+}
+```
+
+Do not also generate `*.d.groq.ts` in a project that uses the content mapper. Use one or the other.
+
+### Several projects or datasets
+
+`sanity typegen` has `resources` for a workspace that queries more than one project or dataset. The mapper has the same option: one schema per folder. A `.groq` file is typed against the schema of the deepest `path` that contains it, and against `schema` (default `./schema.json`) when no `path` does. `path` is a directory or an array of directories, relative to `tsconfig.json`, like `schema`.
+
+```json
+{
+  "contentMappers": [
+    {
+      "package": "@sanity/groq-files",
+      "extensions": [".groq"],
+      "options": {
+        "resources": [
+          {"path": "src/blog", "schema": "schemas/blog.json"},
+          {"path": ["src/shop", "src/checkout"], "schema": "schemas/shop.json"}
+        ]
+      }
+    }
+  ]
+}
+```
+
+The folders sit inside one mapper entry rather than one entry per folder because TypeScript 7.1 registers a mapper by file extension only. An entry has `package`, `extensions`, and `options`, with no `include`, and two entries for `.groq` are rejected with `TS18067: Content mapper file extension '.groq' is registered by more than one content mapper`. Separate entries do work with separate extensions, for example `.groq` for the blog schema and `.shop.groq` for the shop schema; the runtime plugins and the generator treat any file ending in `.groq` the same way. `src/__tests__/contentMapper.ts71.test.ts` covers both shapes.
+
+### Protocol
+
+The protocol is the one published with TypeScript 7.1 ([Announcing TypeScript 7.1 Beta](https://devblogs.microsoft.com/typescript/announcing-typescript-7-1-beta/), [microsoft/typescript-go#4712](https://github.com/microsoft/typescript-go/pull/4712)). TypeScript reads `typescript.contentMapper` from this package's `package.json`, starts `dist/bin/contentMapper.js`, and speaks JSON-RPC 2.0 over stdio with `Content-Length` framing: `initialize`, `openProject`, `transform`, and `closeProject`. The mapper answers with `positionEncoding: "utf-16"` and `diagnosticSource: "sanity-groq"`. `dynamicConfig` is set because the schemas live outside the query, so `openProject` returns a hash over every schema file as `configIdentity` and their absolute paths in `watchedFiles`. A query that fails to parse still returns a module, plus a diagnostic at the `.groq` file, so a typo does not get the mapper disabled. Malformed options are reported as option diagnostics and the well-formed rest still applies. A project without a tsconfig has to pass absolute paths.
+
+`src/__tests__/contentMapper.ts71.test.ts` type-checks the example through a real `tsc --runExternalCode`. It is opt-in because the repo pins TypeScript 6:
+
+```sh
+pnpm --filter @sanity/groq-files build
+GROQ_FILES_TSC71=/path/to/typescript@7.1/node_modules/.bin/tsc pnpm test:unit contentMapper.ts71
+```
 
 ## Bundlers
 
@@ -120,5 +173,6 @@ One entry per bundler: `@sanity/groq-files/vite`, `/rollup`, `/webpack`, `/esbui
 - `client.fetch(query)` returns `any` and types its params as `QueryParams` until `@sanity/client` reads the brand. Pass `GroqResult<typeof query>` as its type argument in the meantime.
 - Params inside `anywhere()` selectors and comparisons against `@` or `^` are `unknown`.
 - `sanity typegen generate` does not emit `.d.groq.ts` yet. Call `generateGroqDeclarations` yourself for CI.
+- The content mapper reports utf-16 offsets. A host that only offers utf-8 is refused.
 
 The `example/` directory has a schema, four queries, and a `main.ts`. `src/__tests__/declarations.test.ts` generates its declarations in a temporary directory and type-checks it with `tsc`, including the assertions about what the brand does and does not do.
