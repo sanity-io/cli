@@ -1,0 +1,1 @@
+*[_type == "post" && tags == $tags]{title, tags}

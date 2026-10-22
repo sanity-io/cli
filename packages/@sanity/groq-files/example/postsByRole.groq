@@ -1,0 +1,1 @@
+*[_type == "post" && role == $role]{title, views}

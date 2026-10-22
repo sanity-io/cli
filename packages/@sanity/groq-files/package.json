@@ -1,0 +1,101 @@
+{
+  "name": "@sanity/groq-files",
+  "version": "0.0.0",
+  "description": "Experimental typed imports for .groq files",
+  "keywords": [
+    "groq",
+    "sanity",
+    "typegen",
+    "typescript"
+  ],
+  "homepage": "https://github.com/sanity-io/cli",
+  "bugs": "https://github.com/sanity-io/cli/issues",
+  "license": "MIT",
+  "author": "Sanity.io <hello@sanity.io>",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/sanity-io/cli.git",
+    "directory": "packages/@sanity/groq-files"
+  },
+  "files": [
+    "dist",
+    "!./dist/**/__tests__",
+    "README.md"
+  ],
+  "type": "module",
+  "sideEffects": false,
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "source": "./src/index.ts",
+      "default": "./dist/index.js"
+    },
+    "./vite": {
+      "source": "./src/vite.ts",
+      "default": "./dist/vite.js"
+    },
+    "./rollup": {
+      "source": "./src/rollup.ts",
+      "default": "./dist/rollup.js"
+    },
+    "./webpack": {
+      "source": "./src/webpack.ts",
+      "default": "./dist/webpack.js"
+    },
+    "./esbuild": {
+      "source": "./src/esbuild.ts",
+      "default": "./dist/esbuild.js"
+    },
+    "./rspack": {
+      "source": "./src/rspack.ts",
+      "default": "./dist/rspack.js"
+    },
+    "./declarations": {
+      "source": "./src/declarations.ts",
+      "default": "./dist/declarations.js"
+    },
+    "./types": {
+      "source": "./src/types.ts",
+      "default": "./dist/types.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "swc --delete-dir-on-start --strip-leading-paths --out-dir dist/ src",
+    "build:types": "pkg-utils build --emitDeclarationOnly",
+    "check:types": "tsc --noEmit",
+    "lint": "eslint .",
+    "publint": "publint",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@sanity/codegen": "catalog:",
+    "@sanity/worker-channels": "^2.0.0",
+    "groq-js": "catalog:",
+    "unplugin": "^3.4.0"
+  },
+  "devDependencies": {
+    "@eslint/compat": "catalog:",
+    "@repo/package.config": "workspace:*",
+    "@repo/tsconfig": "workspace:*",
+    "@sanity/client": "catalog:",
+    "@sanity/eslint-config-cli": "workspace:*",
+    "@sanity/pkg-utils": "catalog:",
+    "@swc/cli": "catalog:",
+    "@swc/core": "catalog:",
+    "@types/node": "catalog:",
+    "esbuild": "^0.28.2",
+    "eslint": "catalog:",
+    "publint": "catalog:",
+    "typescript": "catalog:",
+    "vite": "catalog:",
+    "vitest": "catalog:"
+  },
+  "engines": {
+    "node": ">=22.12"
+  }
+}

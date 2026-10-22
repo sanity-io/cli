@@ -1,0 +1,58 @@
+[
+  {
+    "name": "author",
+    "type": "document",
+    "attributes": {
+      "_id": {"type": "objectAttribute", "value": {"type": "string"}},
+      "_type": {"type": "objectAttribute", "value": {"type": "string", "value": "author"}},
+      "name": {"type": "objectAttribute", "value": {"type": "string"}}
+    }
+  },
+  {
+    "name": "post",
+    "type": "document",
+    "attributes": {
+      "_id": {"type": "objectAttribute", "value": {"type": "string"}},
+      "_type": {"type": "objectAttribute", "value": {"type": "string", "value": "post"}},
+      "title": {"type": "objectAttribute", "value": {"type": "string"}},
+      "views": {"type": "objectAttribute", "value": {"type": "number"}},
+      "role": {
+        "type": "objectAttribute",
+        "value": {
+          "type": "union",
+          "of": [
+            {"type": "string", "value": "admin"},
+            {"type": "string", "value": "member"}
+          ]
+        }
+      },
+      "slug": {
+        "type": "objectAttribute",
+        "value": {
+          "type": "object",
+          "attributes": {
+            "_type": {"type": "objectAttribute", "value": {"type": "string", "value": "slug"}},
+            "current": {"type": "objectAttribute", "value": {"type": "string"}}
+          }
+        }
+      },
+      "tags": {
+        "type": "objectAttribute",
+        "optional": true,
+        "value": {"type": "array", "of": {"type": "string"}}
+      },
+      "author": {
+        "type": "objectAttribute",
+        "value": {
+          "type": "object",
+          "dereferencesTo": "author",
+          "attributes": {
+            "_ref": {"type": "objectAttribute", "value": {"type": "string"}},
+            "_type": {"type": "objectAttribute", "value": {"type": "string", "value": "reference"}},
+            "_weak": {"type": "objectAttribute", "optional": true, "value": {"type": "boolean"}}
+          }
+        }
+      }
+    }
+  }
+]

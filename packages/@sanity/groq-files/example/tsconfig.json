@@ -1,0 +1,14 @@
+{
+  "extends": "@repo/tsconfig/base.json",
+  "compilerOptions": {
+    "allowArbitraryExtensions": true,
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "noEmit": true,
+    "rootDir": "..",
+    "paths": {
+      "@sanity/groq-files/types": ["../src/types.ts"]
+    }
+  },
+  "files": ["main.ts"]
+}

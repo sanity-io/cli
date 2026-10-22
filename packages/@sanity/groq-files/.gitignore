@@ -1,0 +1,10 @@
+*-debug.log
+*-error.log
+**/.DS_Store
+/.idea
+/dist
+/tmp
+/.tmp
+/node_modules
+coverage
+*.d.groq.ts

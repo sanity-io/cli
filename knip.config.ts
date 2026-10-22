@@ -97,6 +97,10 @@ const baseConfig = {
       entry: ['package.config.ts'],
       project,
     },
+    'packages/@sanity/groq-files': {
+      entry: ['package.config.ts'],
+      project,
+    },
     'packages/@sanity/workbench-cli': {
       entry: ['package.config.ts'],
       // System `ps` binary used to read process start times on Unix

@@ -11,6 +11,7 @@ packages:
   - 'packages/@sanity/cli-e2e'
   - 'packages/@sanity/cli-test'
   - 'packages/@sanity/eslint-config-cli'
+  - 'packages/@sanity/groq-files'
   - 'packages/@sanity/workbench-cli'
   - 'packages/create-sanity'
   - 'fixtures/*'
