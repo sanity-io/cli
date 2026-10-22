@@ -141,7 +141,12 @@ export const federation = (options: FederationPluginOptions): PluginOption => {
 
   const runtimeOptions: FederationRuntimeOptions = options.isApp
     ? {appEntry: options.appEntry, isApp: true, isBlueprints}
-    : {isApp: false, isBlueprints, studioConfigPath: options.studioConfigPath}
+    : {
+        autoUpdates: Boolean(autoUpdates),
+        isApp: false,
+        isBlueprints,
+        studioConfigPath: options.studioConfigPath,
+      }
 
   // Every federated app and studio also serves itself standalone. Whenever there's
   // an `./App` to mount (never for a dock-only app), build the SPA client

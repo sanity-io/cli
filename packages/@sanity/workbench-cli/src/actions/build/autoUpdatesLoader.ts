@@ -29,8 +29,11 @@ export function createAutoUpdatesLoader({importModule, packages, react}: AutoUpd
     url: pkg.url.replace(/\/t\d+/, timestamp),
   }))
   let ready: Promise<boolean> | undefined
+  const loadedFrom = new Map<string, string>()
 
-  return async function load(specifier: string, bundled: () => Promise<Module>): Promise<Module> {
+  return {load, moduleUrl: (name: string) => loadedFrom.get(name)}
+
+  async function load(specifier: string, bundled: () => Promise<Module>): Promise<Module> {
     const pkg = fresh.find(({name}) => specifier === name || specifier.startsWith(`${name}/`))
     ready ??= prepare()
 
@@ -39,7 +42,10 @@ export function createAutoUpdatesLoader({importModule, packages, react}: AutoUpd
     }
 
     try {
-      return await importModule(pkg.url + specifier.slice(pkg.name.length))
+      const module = await importModule(pkg.url + specifier.slice(pkg.name.length))
+      loadedFrom.set(pkg.name, pkg.url)
+
+      return module
     } catch (error) {
       // eslint-disable-next-line no-console -- the app keeps working, but no longer auto-updates
       console.warn(`Failed to load ${specifier} from the module CDN, using the bundled copy`, error)

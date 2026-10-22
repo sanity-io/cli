@@ -6,6 +6,7 @@ import {type ResolvedConfig} from 'vite'
 import {afterEach, expect, test} from 'vitest'
 
 import {FEDERATION_FILE_NAME, RUNTIME_DIR} from '../constants.js'
+import {AUTO_UPDATES_LOADER_ID} from './plugin-sanity-auto-updates.js'
 import {sanityFederationRuntime} from './plugin-sanity-federation-runtime.js'
 
 const roots: string[] = []
@@ -45,6 +46,7 @@ function evaluateEntry(source: string) {
   const deps = {
     config: {projectId: 'abc123'},
     createRoot: () => ({render: (element: Element) => rendered.push(element), unmount: () => {}}),
+    moduleUrl: (name: string) => `https://sanity-cdn.com/v1/modules/${name}`,
     React,
     Studio: 'Studio',
   }
@@ -53,6 +55,7 @@ function evaluateEntry(source: string) {
     .replace(/^import \{ createRoot \} from 'react-dom\/client'$/m, 'const {createRoot} = deps')
     .replace(/^import \{ Studio \} from 'sanity'$/m, 'const {Studio} = deps')
     .replace(/^import config from .*$/m, 'const config = deps.config')
+    .replace(`import { moduleUrl } from '${AUTO_UPDATES_LOADER_ID}'`, 'const {moduleUrl} = deps')
     .replaceAll(/^export /gm, '')
     .replaceAll('import.meta.hot', 'undefined')
   const mod = new Function('deps', `${body}\nreturn {render}`)(deps) as {
@@ -74,6 +77,7 @@ function providerOf(element: Element): Element {
 
 test('the studio entry renders Studio with the config and forwarded props', () => {
   const source = emitEntry({isApp: false, studioConfigPath: '/studio/sanity.config.ts'})
+  expect(source).not.toContain(AUTO_UPDATES_LOADER_ID)
   const mod = evaluateEntry(source)
 
   // Regression: the studio `app` expression once called a bare `createElement`
@@ -88,6 +92,25 @@ test('the studio entry renders Studio with the config and forwarded props', () =
   const studio = (app.type as (props: unknown) => Element)(app.props)
   expect(studio.type).toBe('Studio')
   expect(studio.props).toEqual({config: {projectId: 'abc123'}, scheme: 'dark'})
+})
+
+test('an auto-updating studio entry passes the module URL sanity was loaded from', () => {
+  const source = emitEntry({
+    autoUpdates: true,
+    isApp: false,
+    studioConfigPath: '/studio/sanity.config.ts',
+  })
+  const mod = evaluateEntry(source)
+
+  mod.render({}, {scheme: 'dark'})
+
+  const [app] = providerOf(mod.rendered[0]).children as Element[]
+  const studio = (app.type as (props: unknown) => Element)(app.props)
+  expect(studio.props).toEqual({
+    config: {projectId: 'abc123'},
+    scheme: 'dark',
+    unstable_sanityModuleUrl: 'https://sanity-cdn.com/v1/modules/sanity',
+  })
 })
 
 test('the app entry renders the imported App with forwarded props', () => {

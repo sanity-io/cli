@@ -7,9 +7,14 @@ import {federation} from '../plugin.js'
 const mockEnvironmentPlugin = vi.hoisted(() => vi.fn(() => ({name: 'sanity/environment'})))
 const mockModuleFederation = vi.hoisted(() => vi.fn(() => ({name: 'sanity/module-federation'})))
 const mockHasIslandRuntime = vi.hoisted(() => vi.fn(() => true))
+const mockFederationRuntime = vi.hoisted(() => vi.fn(() => ({name: 'sanity/federation-runtime'})))
 
 vi.mock('../plugins/plugin-sanity-environment.js', () => ({
   sanityEnvironmentPlugin: mockEnvironmentPlugin,
+}))
+
+vi.mock('../plugins/plugin-sanity-federation-runtime.js', () => ({
+  sanityFederationRuntime: mockFederationRuntime,
 }))
 
 vi.mock('../plugins/plugin-module-federation.js', () => ({
@@ -128,6 +133,7 @@ describe('federation auto-updates', () => {
       workDir,
     })
     expect(hasAutoUpdatesPlugin(plugins)).toBe(true)
+    expect(mockFederationRuntime).toHaveBeenCalledWith(expect.objectContaining({autoUpdates: true}))
   })
 
   test('adds no auto-updates plugin otherwise', () => {
@@ -138,5 +144,8 @@ describe('federation auto-updates', () => {
       workDir,
     })
     expect(hasAutoUpdatesPlugin(plugins)).toBe(false)
+    expect(mockFederationRuntime).toHaveBeenCalledWith(
+      expect.objectContaining({autoUpdates: false}),
+    )
   })
 })

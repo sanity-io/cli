@@ -7,7 +7,7 @@ import {type Plugin, type Rolldown} from 'vite'
 import {FEDERATION_DIR_NAME} from '../constants.js'
 
 const LOADER_ENTRY = '@sanity/workbench-cli/_internal_auto_updates'
-const LOADER_ID = 'virtual:sanity/auto-updates-loader'
+export const AUTO_UPDATES_LOADER_ID = 'virtual:sanity/auto-updates-loader'
 const WRAPPER_PREFIX = '\0sanity/auto-updates:'
 
 const loaderPath = fileURLToPath(
@@ -40,10 +40,10 @@ export function sanityAutoUpdates({cssUrls = [], imports}: AutoUpdatesOptions): 
     // Ahead of Vite's resolver, which would resolve the installed package.
     enforce: 'pre',
     async load(id) {
-      if (id === `\0${LOADER_ID}`) {
+      if (id === `\0${AUTO_UPDATES_LOADER_ID}`) {
         return `import {createAutoUpdatesLoader} from ${JSON.stringify(LOADER_ENTRY)}
 import * as React from 'react'
-export const load = createAutoUpdatesLoader({
+export const {load, moduleUrl} = createAutoUpdatesLoader({
   importModule: (specifier) => import(/* @vite-ignore */ specifier),
   packages: ${JSON.stringify(packages)},
   react: React,
@@ -61,7 +61,7 @@ export const load = createAutoUpdatesLoader({
 
       const names = [...(await collectExports(this, resolved.id, new Set()))]
 
-      return `import {load} from ${JSON.stringify(LOADER_ID)}
+      return `import {load} from ${JSON.stringify(AUTO_UPDATES_LOADER_ID)}
 const m = await load(${JSON.stringify(specifier)}, () => import(${JSON.stringify(specifier)}))
 ${names.map((name, index) => `const e${index} = m[${JSON.stringify(name)}]`).join('\n')}
 export {${names.map((name, index) => `e${index} as ${JSON.stringify(name)}`).join(', ')}}
@@ -69,7 +69,7 @@ export {${names.map((name, index) => `e${index} as ${JSON.stringify(name)}`).joi
     },
     name: 'sanity/auto-updates-loader',
     resolveId(source, importer) {
-      if (source === LOADER_ID) return `\0${LOADER_ID}`
+      if (source === AUTO_UPDATES_LOADER_ID) return `\0${AUTO_UPDATES_LOADER_ID}`
       if (!importer || importer.startsWith(WRAPPER_PREFIX)) return
 
       // The installed copies import themselves, and must keep doing so in the fallback.

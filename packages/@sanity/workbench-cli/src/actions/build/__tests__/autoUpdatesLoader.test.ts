@@ -17,7 +17,7 @@ function setup({documentReact = react, imports = {} as Record<string, unknown>} 
 
     throw new TypeError(`Failed to resolve module specifier "${specifier}"`)
   })
-  const load = createAutoUpdatesLoader({
+  const loader = createAutoUpdatesLoader({
     importModule,
     packages: [
       {css: [`${SANITY_URL}/index.css`], name: 'sanity', url: SANITY_URL},
@@ -26,7 +26,11 @@ function setup({documentReact = react, imports = {} as Record<string, unknown>} 
     react,
   })
 
-  return {importModule, load: (specifier: string) => load(specifier, async () => bundled)}
+  return {
+    importModule,
+    load: (specifier: string) => loader.load(specifier, async () => bundled),
+    moduleUrl: loader.moduleUrl,
+  }
 }
 
 const freshUrl = (url: string) => url.replace('/t100', `/t${NOW}`)
@@ -84,6 +88,21 @@ describe('createAutoUpdatesLoader', () => {
     expect([...document.querySelectorAll('link')].map((link) => link.href)).toEqual([
       `${freshUrl(SANITY_URL)}/index.css`,
     ])
+  })
+
+  test('reports the module CDN URL a package was loaded from', async () => {
+    const {load, moduleUrl} = setup({
+      imports: {
+        [`${freshUrl(SANITY_URL)}/structure`]: {},
+        'sanity-auto-updates-import-map-probe': {},
+      },
+    })
+
+    await load('sanity/structure')
+    await load('@sanity/vision')
+
+    expect(moduleUrl('sanity')).toBe(freshUrl(SANITY_URL))
+    expect(moduleUrl('@sanity/vision')).toBeUndefined()
   })
 
   test('prepares the module CDN once for every package', async () => {
