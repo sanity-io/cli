@@ -124,6 +124,11 @@ describe('#build studio', {timeout: (platform() === 'win32' ? 120 : 60) * 1000},
       expect(distFiles).toContain('index.html')
       await expectAutoUpdatingPage(join(cwd, 'dist'))
 
+      // The fixture sets no `deployment.appId`, so the bus identity is the slug.
+      expect(await readFile(join(cwd, 'dist', 'sanity-app-id.txt'), 'utf8')).toBe(
+        'federated-studio',
+      )
+
       expect(distFiles).toContain('mf-manifest.json')
       const manifest = JSON.parse(await readFile(join(cwd, 'dist', 'mf-manifest.json'), 'utf8'))
       expect(manifest).toHaveProperty('id')

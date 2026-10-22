@@ -42,7 +42,7 @@ export const DefineAppInputSchema = z
     isSingleton: z.optional(z.boolean()),
     /**
      * Stable identity, distinct from the `slug` address. Defaults to `slug` when
-     * omitted. Identity keys — the build id and derived interface ids — are built
+     * omitted. Identity keys — the derived interface ids — are built
      * from this, so renaming the slug no longer changes identity.
      */
     name: z.optional(

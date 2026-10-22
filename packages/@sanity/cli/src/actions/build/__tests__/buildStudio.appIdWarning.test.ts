@@ -1,4 +1,5 @@
-import {type Output} from '@sanity/cli-core'
+import {type CliConfig, type Output} from '@sanity/cli-core'
+import {defineApplication} from '@sanity/workbench-cli'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
 const mockWarnAboutMissingAppId = vi.hoisted(() => vi.fn())
@@ -105,5 +106,52 @@ describe('buildStudio appId warning', () => {
     })
 
     expect(mockWarnAboutMissingAppId).not.toHaveBeenCalled()
+  })
+})
+
+describe('buildStudio workbench app id', () => {
+  const app = defineApplication({
+    organizationId: 'oSyH1iET5',
+    slug: 'drop-desk',
+    title: 'Drop Desk',
+  })
+
+  afterEach(() => {
+    vi.clearAllMocks()
+  })
+
+  test.each([
+    {
+      applicationId: 'k8f2xq9wz1c4m7v0n3b6h5j2',
+      deployment: {appId: 'v27rvqtlp3lmdvcln6ey3lro'},
+      expected: 'k8f2xq9wz1c4m7v0n3b6h5j2',
+      rule: "the deploy's application id over the configured one",
+    },
+    {
+      applicationId: undefined,
+      deployment: {appId: 'v27rvqtlp3lmdvcln6ey3lro'},
+      expected: 'v27rvqtlp3lmdvcln6ey3lro',
+      rule: 'the configured deployment app id',
+    },
+    {
+      applicationId: undefined,
+      deployment: undefined,
+      expected: 'drop-desk',
+      rule: 'the slug without an app id',
+    },
+  ])('inlines $rule', async ({applicationId, deployment, expected}) => {
+    await buildStudio({
+      applicationId,
+      autoUpdatesEnabled: false,
+      cliConfig: {app, deployment} as CliConfig,
+      flags: FLAGS,
+      outDir: '/tmp/dist',
+      output: createMockOutput(),
+      workDir: '/tmp',
+    })
+
+    expect(mockBuildStudio).toHaveBeenCalledWith(
+      expect.objectContaining({workbenchAppId: expected}),
+    )
   })
 })

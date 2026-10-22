@@ -48,7 +48,7 @@ const toApplicationsPayload = (servers: DevServerManifest[]) => ({
         visibility,
       }) => ({
         host,
-        id,
+        id: id ?? null,
         // Views cross to the remote keyed on `type`, never the internal `surface`.
         interfaces: interfaces?.map((iface) => toWireInterface(iface)),
         manifest,
@@ -56,8 +56,9 @@ const toApplicationsPayload = (servers: DevServerManifest[]) => ({
         port,
         projectId,
         reference,
+        slug,
         type,
-        ...(organizationId && slug && visibility ? {organizationId, slug, visibility} : {}),
+        ...(organizationId && visibility ? {organizationId, visibility} : {}),
       }),
     ),
   configs: servers.flatMap(({configs, host, port}) =>

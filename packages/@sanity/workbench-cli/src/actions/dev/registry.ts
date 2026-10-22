@@ -17,7 +17,9 @@ import {
 } from '@sanity/cli-core'
 import {z} from 'zod/mini'
 
+import {applicationReference} from '../../applicationReference.js'
 import {TileInterfaceMetadataSchema, ViewPlacementMetadataSchema} from '../../contract.js'
+import {type WorkbenchApp} from '../../defineApp.js'
 import {canonicalizeWatchDir} from './canonicalizeWatchDir.js'
 import {getProcessStartTime, isOurProcess} from './processLiveness.js'
 
@@ -127,6 +129,7 @@ export const devServerManifestSchema = z.object({
     ),
   ),
   host: z.string(),
+  // Absent when the app has no app id; the Dashboard then keys it on its slug.
   id: z.optional(z.string()),
   interfaces: z.optional(z.array(devServerInterfaceSchema)),
   /**
@@ -179,18 +182,42 @@ export function isConfigOnlyServer(
 }
 
 /**
- * Where the Dashboard shell opens a registered server: `/local/<id>`, only when
- * it has an id and a `surface: 'window'` interface. That interface is the app
- * view the shell's `/local/:applicationId` route renders (see toWireInterface);
+ * The identity a local app registers, composed the way brett composes a
+ * deployed app's: name defaults to the slug, and the reference follows `isSingleton`.
+ */
+export function localAppIdentity(
+  app: Pick<WorkbenchApp, 'isSingleton' | 'name' | 'organizationId' | 'slug' | 'visibility'>,
+): Pick<DevServerManifest, 'name' | 'organizationId' | 'reference' | 'slug' | 'visibility'> {
+  const name = app.name ?? app.slug
+
+  return {
+    name,
+    organizationId: app.organizationId,
+    reference: applicationReference({
+      isSingleton: app.isSingleton ?? false,
+      name,
+      organizationId: app.organizationId,
+    }),
+    slug: app.slug,
+    visibility: app.visibility ?? 'default',
+  }
+}
+
+/**
+ * Where the Dashboard shell opens a registered server: the route its deployed
+ * counterpart has, only when it has a slug and a `surface: 'window'` interface.
+ * That interface is the app view the route renders (see toWireInterface);
  * studios always get one, configs and panel-only apps don't, so they'd 404.
  */
 export function dashboardPath(
-  server: Pick<DevServerManifest, 'id' | 'interfaces'>,
+  server: Pick<DevServerManifest, 'interfaces' | 'slug' | 'type'>,
 ): string | undefined {
   const hasAppView = (server.interfaces ?? []).some(
     (iface) => 'surface' in iface && iface.surface === 'window',
   )
-  return server.id && hasAppView ? `/local/${encodeURIComponent(server.id)}` : undefined
+  if (!server.slug || !hasAppView) return undefined
+
+  return `/${server.type === 'studio' ? 'studios' : 'applications'}/${encodeURIComponent(server.slug)}`
 }
 
 /**

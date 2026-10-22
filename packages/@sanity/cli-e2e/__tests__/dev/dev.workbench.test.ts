@@ -29,7 +29,7 @@ describe.skipIf(isRegistryMode)('sanity dev (workbench/federation)', {timeout: 1
     // so it proves the real workbench dev orchestration ran — not just a build.
     await session.waitForText(
       new RegExp(
-        String.raw`Dashboard dev server started at http://localhost:${port}/local/federated-studio`,
+        String.raw`Dashboard dev server started at http://localhost:${port}/studios/federated-studio`,
         'i',
       ),
       {timeout: 90_000},
@@ -38,11 +38,11 @@ describe.skipIf(isRegistryMode)('sanity dev (workbench/federation)', {timeout: 1
     // `getOutput()` keeps ANSI codes; the URL isn't split by color escapes, so
     // assert it on the raw buffer too.
     const output = session.getOutput()
-    expect(output).toContain(`http://localhost:${port}/local/federated-studio`)
+    expect(output).toContain(`http://localhost:${port}/studios/federated-studio`)
 
     // The app server carries the app's bus identity (`__SANITY_APP_ID__`) for
-    // `@sanity/runtime` — its slug, so a running app never collides with its
-    // deployed twin. Vite delivers `define` entries through the per-server
+    // `@sanity/runtime` — its slug, since the fixture sets no `deployment.appId`.
+    // Vite delivers `define` entries through the per-server
     // `/@vite/env` module rather than by text replacement, so that module is
     // where the id is observable.
     const env = await fetch(`http://localhost:${port + 1}/@vite/env`)

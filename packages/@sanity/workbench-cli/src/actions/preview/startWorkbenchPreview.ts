@@ -4,12 +4,17 @@ import {styleText} from 'node:util'
 
 import {type CliConfig, findProjectRoot, type Output} from '@sanity/cli-core'
 
-import {buildAppId, SANITY_APP_ID_FILE} from '../../appId.js'
+import {SANITY_APP_ID_FILE} from '../../appId.js'
 import {deriveInterfaces} from '../../deriveInterfaces.js'
 import {resolveWorkbenchApp} from '../../resolveWorkbenchApp.js'
 import {createServerLifecycle, toDisplayHost} from '../../util/serverOrchestration.js'
 import {deriveConfigs} from '../dev/deriveConfigs.js'
-import {dashboardPath, type DevServerManifest, registerDevServer} from '../dev/registry.js'
+import {
+  dashboardPath,
+  type DevServerManifest,
+  localAppIdentity,
+  registerDevServer,
+} from '../dev/registry.js'
 import {startWorkbenchDevServer} from '../dev/startWorkbenchDevServer.js'
 import {serveBuiltApplication} from './serveBuiltApplication.js'
 
@@ -103,27 +108,26 @@ export async function startWorkbenchPreview(
         '`sanity start` was invoked in an application that is not set up for the Dashboard',
       )
     }
-    const inlinedId = await readInlinedAppId(outDir)
     const configs = await deriveConfigs(cliConfig)
-    const id = inlinedId ?? (await buildAppId(workbench))
+    const builtId = await readInlinedAppId(outDir)
+    const type = isApp ? 'coreApp' : 'studio'
     const interfaces = deriveInterfaces(cliConfig.app, {isApp})
     const registration = registerDevServer({
       configs,
       host: remote.host,
-      id,
+      // A build without an app id inlines its slug, which the Dashboard keys on by itself.
+      id: builtId === workbench.slug ? undefined : builtId,
       interfaces,
-      manifest: await extractManifest({applicationId: id, configPath, workDir}),
+      manifest: await extractManifest({applicationId: builtId, configPath, workDir}),
       manifestUpdatedAt: new Date().toISOString(),
-      organizationId: workbench.organizationId,
       port: remote.port,
       projectId: cliConfig?.api?.projectId,
-      slug: workbench.slug,
-      type: isApp ? 'coreApp' : 'studio',
-      visibility: workbench.visibility ?? 'default',
+      ...localAppIdentity(workbench),
+      type,
       workDir,
     })
     closers.push(async () => registration.release())
-    dashboardAppPath = dashboardPath({id, interfaces})
+    dashboardAppPath = dashboardPath({interfaces, slug: workbench.slug, type})
   } catch (err) {
     await close()
     throw err
