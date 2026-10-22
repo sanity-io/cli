@@ -2,6 +2,9 @@
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
 import {createAutoUpdatesLoader} from '../autoUpdatesLoader.js'
+import {importThroughShim} from '../autoUpdatesShim.js'
+
+vi.mock('../autoUpdatesShim.js', () => ({importThroughShim: vi.fn()}))
 
 const SANITY_URL = 'https://sanity-cdn.com/v1/modules/by-app/app1/t100/%5E6.17.0/sanity'
 const VISION_URL = 'https://sanity-cdn.com/v1/modules/by-app/app1/t100/%5E6.17.0/@sanity__vision'
@@ -120,20 +123,41 @@ describe('createAutoUpdatesLoader', () => {
     expect(importMaps()).toHaveLength(2)
   })
 
-  test.each([
-    {
-      name: "the document's react is another instance",
-      options: {documentReact: {createContext() {}}},
-    },
-    {
-      name: 'the browser ignores an added import map',
-      options: {imports: {}},
-    },
-  ])('uses the bundled copy when $name', async ({options}) => {
-    const {load} = setup(options)
+  test("uses the bundled copy when the document's react is another instance", async () => {
+    const {load} = setup({documentReact: {createContext() {}}})
 
     await expect(load('sanity')).resolves.toBe(bundled)
     expect(fetch).not.toHaveBeenCalled()
+  })
+
+  test('loads through the shim when the browser ignores an added import map', async () => {
+    const shimmed = {source: 'shim'}
+    const importShim = vi.fn(async () => shimmed)
+    vi.mocked(importThroughShim).mockResolvedValueOnce(importShim)
+    const {load} = setup()
+
+    await expect(load('sanity')).resolves.toBe(shimmed)
+
+    expect(importShim).toHaveBeenCalledWith(freshUrl(SANITY_URL))
+    const imports = {
+      '@sanity/vision': freshUrl(VISION_URL),
+      '@sanity/vision/': `${freshUrl(VISION_URL)}/`,
+      sanity: freshUrl(SANITY_URL),
+      'sanity/': `${freshUrl(SANITY_URL)}/`,
+    }
+    expect(importThroughShim).toHaveBeenCalledWith({
+      'https://modules.sanity-cdn.com/modules/v1/@sanity__vision/6.20.0/bare/': imports,
+      'https://modules.sanity-cdn.com/modules/v1/sanity/6.20.0/bare/': imports,
+    })
+    // Only the probe: the browser would ignore the scoped map.
+    expect(importMaps()).toHaveLength(1)
+  })
+
+  test('uses the bundled copy when the shim fails to load', async () => {
+    vi.mocked(importThroughShim).mockRejectedValueOnce(new Error('Failed to fetch es-module-shims'))
+    const {load} = setup()
+
+    await expect(load('sanity')).resolves.toBe(bundled)
   })
 
   test('uses the bundled copy when the module CDN cannot be resolved', async () => {

@@ -1,3 +1,5 @@
+import {importThroughShim} from './autoUpdatesShim.js'
+
 type Module = Record<string, unknown>
 
 interface CdnPackage {
@@ -18,7 +20,7 @@ interface AutoUpdatesLoaderOptions {
 const IMPORT_MAP_PROBE = 'sanity-auto-updates-import-map-probe'
 
 /**
- * Loads CDN packages from the module CDN, or the app's bundled copy when the document lacks the app's `react` or a second import map.
+ * Loads CDN packages from the module CDN, or the app's bundled copy when the document lacks the app's `react`.
  * The CDN bundles import each other by bare specifier, so the standalone import map entries are registered scoped to their version directories.
  */
 export function createAutoUpdatesLoader({importModule, packages, react}: AutoUpdatesLoaderOptions) {
@@ -29,6 +31,7 @@ export function createAutoUpdatesLoader({importModule, packages, react}: AutoUpd
     url: pkg.url.replace(/\/t\d+/, timestamp),
   }))
   let ready: Promise<boolean> | undefined
+  let importCdn = importModule
   const loadedFrom = new Map<string, string>()
 
   return {load, moduleUrl: (name: string) => loadedFrom.get(name)}
@@ -42,7 +45,7 @@ export function createAutoUpdatesLoader({importModule, packages, react}: AutoUpd
     }
 
     try {
-      const module = await importModule(pkg.url + specifier.slice(pkg.name.length))
+      const module = await importCdn(pkg.url + specifier.slice(pkg.name.length))
       loadedFrom.set(pkg.name, pkg.url)
 
       return module
@@ -57,12 +60,16 @@ export function createAutoUpdatesLoader({importModule, packages, react}: AutoUpd
   async function prepare(): Promise<boolean> {
     if (typeof document === 'undefined') return false
 
+    let appliesAddedImportMaps: boolean
     try {
       const documentReact = await importModule('react')
       if (documentReact.createContext !== react.createContext) return false
 
       addImportMap({imports: {[IMPORT_MAP_PROBE]: 'data:text/javascript,'}})
-      await importModule(IMPORT_MAP_PROBE)
+      appliesAddedImportMaps = await importModule(IMPORT_MAP_PROBE).then(
+        () => true,
+        () => false,
+      )
     } catch {
       return false
     }
@@ -83,7 +90,13 @@ export function createAutoUpdatesLoader({importModule, packages, react}: AutoUpd
           [`${name}/`, `${url}/`],
         ]),
       )
-      addImportMap({scopes: Object.fromEntries(directories.map((dir) => [dir, imports]))})
+      const scopes = Object.fromEntries(directories.map((dir) => [dir, imports]))
+
+      if (appliesAddedImportMaps) {
+        addImportMap({scopes})
+      } else {
+        importCdn = await importThroughShim(scopes)
+      }
     } catch (error) {
       // eslint-disable-next-line no-console -- the app keeps working, but no longer auto-updates
       console.warn('Failed to resolve the module CDN, using the bundled copy', error)
