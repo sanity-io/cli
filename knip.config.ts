@@ -98,7 +98,7 @@ const baseConfig = {
       project,
     },
     'packages/@sanity/groq-files': {
-      entry: ['package.config.ts', 'src/bin/contentMapper.ts'],
+      entry: ['package.config.ts', 'src/bin/contentMapper.ts', 'src/typescriptPlugin.ts'],
       project,
     },
     'packages/@sanity/workbench-cli': {

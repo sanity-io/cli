@@ -20,6 +20,8 @@
   "files": [
     "dist",
     "!./dist/**/__tests__",
+    "typescript-plugin.cjs",
+    "typescript-plugin.d.cts",
     "README.md"
   ],
   "type": "module",
@@ -58,6 +60,9 @@
     "./types": {
       "source": "./src/types.ts",
       "default": "./dist/types.js"
+    },
+    "./typescript-plugin": {
+      "default": "./typescript-plugin.cjs"
     },
     "./package.json": "./package.json"
   },

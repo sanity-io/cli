@@ -5,6 +5,6 @@ import eslintConfig from '@sanity/eslint-config-cli'
 
 export default [
   includeIgnoreFile(resolve(import.meta.dirname, '.gitignore')),
-  {ignores: ['example/**']},
+  {ignores: ['example/**', 'typescript-plugin.cjs', 'typescript-plugin.d.cts']},
   ...eslintConfig,
 ]

@@ -94,7 +94,39 @@ await generateGroqDeclarations({directory: process.cwd(), schemaPath: 'schema.js
 }
 ```
 
-`bundler` resolution works too. Add `*.d.groq.ts` to `.gitignore` and run the generator before `tsc`. Updating the declarations on save is a follow-up on top of this package.
+`bundler` resolution works too. Add `*.d.groq.ts` to `.gitignore` and run the generator before `tsc`.
+
+For the editor, a language service plugin regenerates those declarations when a `.groq` file or the schema is saved:
+
+```json
+{
+  "compilerOptions": {
+    "allowArbitraryExtensions": true,
+    "plugins": [{"name": "@sanity/groq-files/typescript-plugin", "schema": "./schema.json"}]
+  }
+}
+```
+
+The plugin updates on save, not on each keystroke. It watches the directories that contain `.groq` files, the project root, and the schema's directory, each non-recursively, so `node_modules` is never watched and a watcher error is logged to tsserver instead of thrown. A `.groq` file created in a directory that had none is picked up on the next schema save or editor restart. Each tsconfig gets its own session, which ends when tsserver disposes that project's language service.
+
+For several projects or datasets, give the plugin the same `resources` the content mapper takes. The generator then runs once per resource folder with that folder's schema, `schema` is not used, and `.groq` files outside every `path` get no declarations. Resource folders should not nest, since the outer run would overwrite the inner one. For CI, call `generateGroqDeclarations` once per folder the same way.
+
+```json
+{
+  "compilerOptions": {
+    "allowArbitraryExtensions": true,
+    "plugins": [
+      {
+        "name": "@sanity/groq-files/typescript-plugin",
+        "resources": [
+          {"path": "src/blog", "schema": "schemas/blog.json"},
+          {"path": ["src/shop", "src/checkout"], "schema": "schemas/shop.json"}
+        ]
+      }
+    ]
+  }
+}
+```
 
 ## TypeScript 7.1 content mapper
 
@@ -113,7 +145,7 @@ TypeScript 7.1 can ask a package to turn a non-TypeScript file into a virtual Ty
 }
 ```
 
-Do not also generate `*.d.groq.ts` in a project that uses the content mapper. Use one or the other.
+Do not also generate `*.d.groq.ts` or enable the language service plugin in a project that uses the content mapper. Use one or the other.
 
 ### Several projects or datasets
 
