@@ -239,7 +239,7 @@ export async function buildStudio(
   trace.start()
 
   let autoUpdates
-  if (autoUpdatesEnabled && !options.isWorkbenchApp) {
+  if (autoUpdatesEnabled) {
     autoUpdates = {
       cssUrls: autoUpdatesCssUrls,
       imports: autoUpdatesImports,

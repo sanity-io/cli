@@ -3,7 +3,7 @@ import {join} from 'node:path'
 import * as configMocks from '@sanity/cli-test/mocks/cli-core/config'
 import {convertToSystemPath} from '@sanity/cli-test/paths'
 import {Features} from 'lightningcss'
-import {type ConfigEnv, type InlineConfig} from 'vite'
+import {type ConfigEnv, type InlineConfig, type Plugin, type Rolldown} from 'vite'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
 import {SANITY_CACHE_DIR} from '../../../constants.js'
@@ -50,6 +50,10 @@ vi.mock('@vitejs/plugin-react', () => ({
 vi.mock('vite', () => ({
   esmExternalRequirePlugin: vi.fn(() => ({name: 'esm-external-require'})),
   mergeConfig: vi.fn((base: InlineConfig, override: InlineConfig) => ({...base, ...override})),
+  perEnvironmentPlugin: vi.fn((name: string, applyToEnvironment: unknown) => ({
+    applyToEnvironment,
+    name,
+  })),
 }))
 
 vi.mock('../createExternalFromImportMap.js', () => ({
@@ -527,6 +531,12 @@ describe('#getViteConfig', () => {
     })
     // Vendor entry exports must survive the app-style build.
     expect(config.build?.rolldownOptions?.preserveEntrySignatures).toBe('exports-only')
+    expect(config.build?.rolldownOptions?.experimental).toEqual({nativeMagicString: true})
+    const output = config.build?.rolldownOptions?.output as Rolldown.OutputOptions
+    const entryFileNames = output.entryFileNames as (chunk: {name: string}) => string
+    expect(entryFileNames({name: 'react/index'})).toBe('vendor/[name]-[hash].mjs')
+    expect(entryFileNames({name: 'sanity'})).toBe('static/[name]-[hash].js')
+    expect(output.exports).toBe('named')
 
     // Both the CDN import map specifiers and the vendor specifiers are handed to
     // esmExternalRequirePlugin (so external require() is rewritten to ESM imports),
@@ -537,6 +547,66 @@ describe('#getViteConfig', () => {
     expect(esmExternalRequirePlugin).toHaveBeenCalledWith({external: ['external1', 'external2']})
     expect(config.plugins).toContainEqual({name: 'esm-external-require'})
     expect(config.build?.rolldownOptions).not.toHaveProperty('external')
+  })
+
+  test('applies auto-updates to the client environment of a workbench build', async () => {
+    const autoUpdates = {
+      imports: {sanity: 'https://sanity-cdn.example/sanity'},
+      vendor: {
+        entries: {'react/index': convertToSystemPath('/pkg/react/index.js')},
+        namesByChunkName: {'react/index': ['useState']},
+        specifiersByChunkName: {'react/index': 'react'},
+      },
+    }
+
+    const config = await getViteConfig({
+      autoUpdates,
+      cwd: mockTestCwd,
+      entries: mockEntries,
+      getEnvironmentVariables,
+      isWorkbenchApp: true,
+      mode: 'production' as const,
+      reactCompiler: undefined,
+    })
+
+    const plugin = config.plugins?.find(
+      (p) => p && typeof p === 'object' && 'name' in p && p.name === 'sanity/auto-updates',
+    ) as Plugin
+    const applyToEnvironment = plugin.applyToEnvironment as (env: {name: string}) => unknown
+    expect(applyToEnvironment({name: 'federation'})).toBe(false)
+
+    const clientPlugins = applyToEnvironment({name: 'client'}) as Plugin[]
+    expect(clientPlugins).toContainEqual({name: 'esm-external-require'})
+    const vendorEntries = clientPlugins.find((p) => p.name === 'sanity/workbench-vendor-entries')!
+
+    const emitFile = vi.fn()
+    ;(vendorEntries.buildStart as (this: unknown) => void).call({emitFile})
+    expect(emitFile).toHaveBeenCalledWith({
+      id: convertToSystemPath('/pkg/react/index.js'),
+      name: 'react/index',
+      type: 'chunk',
+    })
+
+    // Non-vendor chunks keep the existing naming, e.g. Blueprints' resource bindings.
+    const outputOptions = vendorEntries.outputOptions as (
+      options: Rolldown.OutputOptions,
+    ) => Rolldown.OutputOptions
+    const output = outputOptions({
+      chunkFileNames: (chunk) =>
+        chunk.name === 'sanity-resource-bindings'
+          ? 'sanity-resource-bindings.js'
+          : 'static/[name]-[hash].js',
+    })
+    const chunkFileNames = output.chunkFileNames as (chunk: {name: string}) => string
+    expect(chunkFileNames({name: 'react/index'})).toBe('vendor/[name]-[hash].mjs')
+    expect(chunkFileNames({name: 'sanity-resource-bindings'})).toBe('sanity-resource-bindings.js')
+    expect(chunkFileNames({name: 'Studio'})).toBe('static/[name]-[hash].js')
+    expect(output.exports).toBe('named')
+
+    expect(config.environments?.client?.build?.rolldownOptions).toEqual({
+      experimental: {nativeMagicString: true},
+      preserveEntrySignatures: 'exports-only',
+    })
   })
 
   test('should not install esmExternalRequirePlugin when auto-updates are disabled', async () => {

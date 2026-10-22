@@ -7,6 +7,7 @@ import {type Output} from '@sanity/cli-core/types'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
 import {buildApp, type BuildAppEventListener, type BuildOptions} from '../buildApp.js'
+import {resolveVendorBuildConfig} from '../resolveVendorBuildConfig.js'
 
 function buildOptions(
   overrides: Partial<BuildOptions> & Pick<BuildOptions, 'output'>,
@@ -403,6 +404,30 @@ describe('#buildApp', () => {
 
     expect(mockCheckAppId).not.toHaveBeenCalled()
   })
+  test.each([
+    {isApp: true, isWorkbenchApp: false, styledComponents: '6.4.0'},
+    {isApp: false, isWorkbenchApp: true, styledComponents: '6.4.0'},
+    {isApp: true, isWorkbenchApp: true, styledComponents: undefined},
+  ])(
+    'resolves vendor packages with isApp: $isApp (workbench: $isWorkbenchApp, styled-components: $styledComponents)',
+    async ({isApp, isWorkbenchApp, styledComponents}) => {
+      mockedGetLocalPackageVersion.mockImplementation(async (name: string) =>
+        name === 'styled-components' ? styledComponents : '1.0.0',
+      )
+
+      await buildApp(
+        buildOptions({
+          autoUpdatesEnabled: true,
+          isWorkbenchApp,
+          output: createMockOutput(),
+          unattendedMode: true,
+        }),
+      )
+
+      expect(resolveVendorBuildConfig).toHaveBeenCalledWith({cwd: '/tmp', isApp})
+    },
+  )
+
   describe('federation manifest', () => {
     let outDir: string
     beforeEach(async () => {
