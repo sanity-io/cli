@@ -111,6 +111,7 @@ export async function buildStaticFiles(
 
     buildDebug('Resolving vite config (federation)')
     let viteConfig = await getViteConfig({
+      autoUpdates,
       basePath,
       cwd,
       entries,
@@ -154,8 +155,9 @@ export async function buildStaticFiles(
 
     buildDebug('Bundling federation environment')
     await buildFederatedApp(viteConfig, {
-      // Custom Vite hooks can resolve different dependencies in the two environments.
-      reuseStandaloneBuild: emitSpa && !extendViteConfig,
+      // Custom Vite hooks can resolve different dependencies in the two environments,
+      // and auto-updates make the shared dependencies external to the standalone build.
+      reuseStandaloneBuild: emitSpa && !extendViteConfig && !autoUpdates,
     })
     buildDebug('Bundling complete')
     // TODO: add stats here

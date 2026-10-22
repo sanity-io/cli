@@ -19,6 +19,7 @@ import {
   esmExternalRequirePlugin,
   type InlineConfig,
   mergeConfig,
+  perEnvironmentPlugin,
   type Plugin,
   type PluginOption,
   type Rolldown,
@@ -238,9 +239,51 @@ export async function getViteConfig(options: ViteOptions): Promise<InlineConfig>
               isBlueprints,
             }),
             {
-              ...sanityBuildEntries({basePath, bridge: false, cwd, isApp}),
+              ...sanityBuildEntries({autoUpdates, basePath, bridge: false, cwd, isApp}),
               applyToEnvironment: (env) => env.name === 'client',
             } satisfies Plugin,
+            ...(autoUpdates
+              ? [
+                  perEnvironmentPlugin(
+                    'sanity/auto-updates',
+                    (env) =>
+                      env.name === 'client' && [
+                        ...getAutoUpdatesPlugins(autoUpdates),
+                        // `@module-federation/vite` bootstraps every client-consumer environment's `input` as an
+                        // app entry and replaces its file names (`addEntry`, `patchHashEntryFileNames`).
+                        {
+                          buildStart() {
+                            for (const [name, id] of Object.entries(autoUpdates.vendor.entries)) {
+                              this.emitFile({id, name, type: 'chunk'})
+                            }
+                          },
+                          name: 'sanity/workbench-vendor-entries',
+                          outputOptions: ({
+                            chunkFileNames = 'static/[name]-[hash].js',
+                            ...rest
+                          }) => {
+                            const {output} = getAutoUpdatesRolldownOptions(autoUpdates)
+
+                            return {
+                              ...rest,
+                              // Rolldown names emitted chunks with `chunkFileNames`.
+                              chunkFileNames: (chunk) => {
+                                if (chunk.name in autoUpdates.vendor.entries) {
+                                  return output.entryFileNames(chunk)
+                                }
+
+                                return typeof chunkFileNames === 'function'
+                                  ? chunkFileNames(chunk)
+                                  : chunkFileNames
+                              },
+                              exports: output.exports,
+                            }
+                          },
+                        } satisfies Plugin,
+                      ],
+                  ),
+                ]
+              : []),
           ]
         : [
             ...sharedPlugins,
@@ -283,6 +326,13 @@ export async function getViteConfig(options: ViteOptions): Promise<InlineConfig>
     },
   }
 
+  if (isWorkbenchApp && autoUpdates) {
+    const {experimental, preserveEntrySignatures} = getAutoUpdatesRolldownOptions(autoUpdates)
+    viteConfig.environments = {
+      client: {build: {rolldownOptions: {experimental, preserveEntrySignatures}}},
+    }
+  }
+
   // Front-load the deps the federation `exposes` reach only via the host's
   // dynamic imports, which Vite's dep scanner (crawling from the HTML entry)
   // otherwise misses — see `workbenchOptimizeDeps`. Dev-server only; Vite
@@ -300,37 +350,10 @@ export async function getViteConfig(options: ViteOptions): Promise<InlineConfig>
   // plugin configures its own environment and build entry point.
   if (mode === 'production' && !isWorkbenchApp) {
     if (autoUpdates) {
-      viteConfig.plugins!.push(
-        // Re-expose CommonJS named exports (react, react-dom) as real ESM exports
-        // on the emitted vendor chunks; Rolldown only emits `export default` for a
-        // CommonJS entry.
-        createVendorNamedExportsPlugin(autoUpdates.vendor.namesByChunkName),
-        // The import map and vendor specifiers are externals of the studio/app
-        // bundle, resolved by the browser at runtime. They are handed to
-        // `esmExternalRequirePlugin` rather than `rolldownOptions.external`: the
-        // plugin both marks them external AND rewrites bundled CommonJS
-        // `require()` calls of an external (e.g. react-dom requiring react) into
-        // ESM imports, while `rolldownOptions.external` would short-circuit that
-        // rewrite and leave a runtime `require` shim that throws in the browser.
-        esmExternalRequirePlugin({
-          external: createExternalFromImportMap({
-            imports: {
-              ...autoUpdates.imports,
-              ...Object.fromEntries(
-                Object.values(autoUpdates.vendor.specifiersByChunkName).map((specifier) => [
-                  specifier,
-                  '',
-                ]),
-              ),
-            },
-          }),
-        }),
-      )
+      viteConfig.plugins!.push(...getAutoUpdatesPlugins(autoUpdates))
     }
 
-    const vendorChunkNames = autoUpdates
-      ? new Set(Object.keys(autoUpdates.vendor.specifiersByChunkName))
-      : null
+    const autoUpdatesOptions = autoUpdates ? getAutoUpdatesRolldownOptions(autoUpdates) : undefined
 
     viteConfig.build = {
       ...viteConfig.build,
@@ -340,12 +363,13 @@ export async function getViteConfig(options: ViteOptions): Promise<InlineConfig>
       minify: minify ? 'oxc' : false,
 
       rolldownOptions: {
+        ...autoUpdatesOptions,
         input: {
           sanity: path.join(cwd, '.sanity', 'runtime', 'app.js'),
-          ...autoUpdates?.vendor.entries,
+          ...autoUpdatesOptions?.input,
         },
         onwarn: onRolldownWarn,
-        ...(isBlueprints || autoUpdates
+        ...(isBlueprints || autoUpdatesOptions
           ? {
               output: {
                 ...(isBlueprints
@@ -362,31 +386,8 @@ export async function getViteConfig(options: ViteOptions): Promise<InlineConfig>
                       },
                     }
                   : {}),
-                ...(autoUpdates
-                  ? {
-                      entryFileNames: (chunk) =>
-                        vendorChunkNames!.has(chunk.name)
-                          ? `${VENDOR_DIR}/[name]-[hash].mjs`
-                          : 'static/[name]-[hash].js',
-                      exports: 'named',
-                    }
-                  : {}),
+                ...autoUpdatesOptions?.output,
               },
-            }
-          : {}),
-        ...(autoUpdates
-          ? {
-              // Expose Rolldown's native MagicString on `renderChunk`'s `meta` so
-              // the vendor named-exports plugin can edit chunks without a JS
-              // dependency.
-              experimental: {nativeMagicString: true},
-              // App-style builds default to `preserveEntrySignatures: false`, which
-              // treeshakes the exports off entry chunks. Vendor chunks are loaded by
-              // the browser via the import map, so their exports must survive (e.g.
-              // styled-components' native ESM exports). `exports-only` keeps exports
-              // for entries that have them, while the export-less `sanity` app entry
-              // still bundles as before.
-              preserveEntrySignatures: 'exports-only',
             }
           : {}),
       },
@@ -394,6 +395,61 @@ export async function getViteConfig(options: ViteOptions): Promise<InlineConfig>
   }
 
   return viteConfig
+}
+
+function getAutoUpdatesPlugins(autoUpdates: AutoUpdatesBuildConfig): Plugin[] {
+  return [
+    // Re-expose CommonJS named exports (react, react-dom) as real ESM exports
+    // on the emitted vendor chunks; Rolldown only emits `export default` for a
+    // CommonJS entry.
+    createVendorNamedExportsPlugin(autoUpdates.vendor.namesByChunkName),
+    // The import map and vendor specifiers are externals of the studio/app
+    // bundle, resolved by the browser at runtime. They are handed to
+    // `esmExternalRequirePlugin` rather than `rolldownOptions.external`: the
+    // plugin both marks them external AND rewrites bundled CommonJS
+    // `require()` calls of an external (e.g. react-dom requiring react) into
+    // ESM imports, while `rolldownOptions.external` would short-circuit that
+    // rewrite and leave a runtime `require` shim that throws in the browser.
+    esmExternalRequirePlugin({
+      external: createExternalFromImportMap({
+        imports: {
+          ...autoUpdates.imports,
+          ...Object.fromEntries(
+            Object.values(autoUpdates.vendor.specifiersByChunkName).map((specifier) => [
+              specifier,
+              '',
+            ]),
+          ),
+        },
+      }),
+    }),
+  ]
+}
+
+function getAutoUpdatesRolldownOptions(autoUpdates: AutoUpdatesBuildConfig) {
+  const vendorChunkNames = new Set(Object.keys(autoUpdates.vendor.specifiersByChunkName))
+
+  return {
+    // Expose Rolldown's native MagicString on `renderChunk`'s `meta` so
+    // the vendor named-exports plugin can edit chunks without a JS
+    // dependency.
+    experimental: {nativeMagicString: true},
+    input: autoUpdates.vendor.entries,
+    output: {
+      entryFileNames: (chunk: Rolldown.PreRenderedChunk) =>
+        vendorChunkNames.has(chunk.name)
+          ? `${VENDOR_DIR}/[name]-[hash].mjs`
+          : 'static/[name]-[hash].js',
+      exports: 'named' as const,
+    },
+    // App-style builds default to `preserveEntrySignatures: false`, which
+    // treeshakes the exports off entry chunks. Vendor chunks are loaded by
+    // the browser via the import map, so their exports must survive (e.g.
+    // styled-components' native ESM exports). `exports-only` keeps exports
+    // for entries that have them, while the export-less `sanity` app entry
+    // still bundles as before.
+    preserveEntrySignatures: 'exports-only' as const,
+  }
 }
 
 /**

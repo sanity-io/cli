@@ -80,6 +80,7 @@ describe('#build studio', {timeout: (platform() === 'win32' ? 120 : 60) * 1000},
     const files = await readdir(outputFolder)
     expect(files).toContain('index.html')
     expect(files).toContain('static')
+    expect(files).toContain('vendor')
 
     // The resource-bindings module is emitted only for Blueprints builds (via
     // `@sanity/runtime-cli`), so a plain `sanity build` never produces it.
@@ -107,27 +108,69 @@ describe('#build studio', {timeout: (platform() === 'win32' ? 120 : 60) * 1000},
       // Opt out of that guard for this in-process build.
       vi.stubEnv('MFE_VITE_NO_TEST_ENV_CHECK', 'true')
 
-      const {error, stderr} = await testCommand(BuildCommand, ['--yes'], {
+      const {error, stderr, stdout} = await testCommand(BuildCommand, ['--yes'], {
+        // Shared-dependency discovery only runs in production builds, which Vite derives from NODE_ENV.
+        capture: {testNodeEnv: 'production'},
         config: {root: cwd},
       })
 
       if (error) throw error
+      expect(stdout).toContain('Building with auto-updates enabled')
       expect(stderr).toContain('✔ Build Sanity Studio')
 
       const distFiles = await readdir(join(cwd, 'dist'))
 
       // A federated studio also serves itself standalone: the SPA `index.html`
       // is emitted alongside the federation output so the studio loads both on
-      // its own and embedded in the workbench.
+      // its own and embedded in the workbench. It auto-updates like a
+      // standalone studio: `sanity` from the module CDN, vendor chunks from this build.
       expect(distFiles).toContain('index.html')
-      expect((await readFile(join(cwd, 'dist', 'index.html'), 'utf8')).length).toBeGreaterThan(0)
-      expect(distFiles).not.toContain('vendor')
+      const html = await readFile(join(cwd, 'dist', 'index.html'), 'utf8')
+      const importMap = JSON.parse(
+        html.match(/<script type="application\/json" id="__imports">([^<]*)<\/script>/)?.[1] ??
+          '{}',
+      )
+      expect(Object.keys(importMap.imports).toSorted()).toEqual([
+        '@sanity/vision',
+        '@sanity/vision/',
+        'react',
+        'react-dom',
+        'react-dom/client',
+        'react-dom/package.json',
+        'react-dom/server',
+        'react-dom/server.browser',
+        'react-dom/static',
+        'react-dom/static.browser',
+        'react/compiler-runtime',
+        'react/jsx-dev-runtime',
+        'react/jsx-runtime',
+        'react/package.json',
+        'sanity',
+        'sanity/',
+        'styled-components',
+        'styled-components/package.json',
+      ])
+      expect(importMap.imports).toMatchObject({
+        react: expect.stringMatching(/^\/vendor\/react\/index-[\w-]+\.mjs$/),
+        sanity: expect.stringContaining('/v1/modules/sanity/'),
+      })
+      // The federation build must not bootstrap the vendor entries, which strips their exports.
+      const styledComponents = await readFile(
+        join(cwd, 'dist', importMap.imports['styled-components']),
+        'utf8',
+      )
+      expect(styledComponents).toMatch(/ as css\b/)
+      expect(styledComponents).toMatch(/ as styled\b/)
 
       expect(distFiles).toContain('mf-manifest.json')
       const manifest = JSON.parse(await readFile(join(cwd, 'dist', 'mf-manifest.json'), 'utf8'))
       expect(manifest).toHaveProperty('id')
       expect(manifest).toHaveProperty('name')
       expect(manifest).toHaveProperty('metaData.remoteEntry.name')
+      // Auto-updates make react external to the standalone build; sharing must still be discovered.
+      expect(manifest.shared.map(({name}: {name: string}) => name)).toEqual(
+        expect.arrayContaining(['react', 'react-dom', 'styled-components']),
+      )
       const remoteEntry = manifest.metaData.remoteEntry.name
       expect(remoteEntry).toMatch(/remoteEntry-[A-Za-z0-9_-]+\.js$/)
       expect((await readFile(join(cwd, 'dist', remoteEntry))).length).toBeGreaterThan(0)
