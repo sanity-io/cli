@@ -45,7 +45,6 @@ const readManifest = () => JSON.parse(fsMock.files.get(manifestPath())!)
 
 const APP_ID = 'v27rvqtlp3lmdvcln6ey3lro'
 
-/** A live server another `sanity dev` registered in the same org. */
 function registerForeignServer(overrides: Partial<DevServerManifest>) {
   fsMock.files.set(
     join(REGISTRY_DIR, '4242.json'),
