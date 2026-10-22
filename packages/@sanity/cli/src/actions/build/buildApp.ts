@@ -11,6 +11,10 @@ import {
 
 import {getAppId} from '../../util/appId.js'
 import {warnAboutMissingAppId} from '../../util/warnAboutMissingAppId.js'
+import {ensureAppFunctionStack} from '../functions/ensureAppFunctionStack.js'
+import {generateAppFunctionContracts} from '../functions/generateAppFunctionContracts.js'
+import {prepareAppFunctionsEntry} from '../functions/prepareAppFunctionsEntry.js'
+import {buildAppFunctions} from './buildAppFunctions.js'
 import {determineBasePath} from './determineBasePath.js'
 import {preReleaseEventListenerFactory} from './eventListenerFactory.js'
 import {type BuildOptions} from './types.js'
@@ -24,6 +28,7 @@ export async function buildApp(
   options: BuildOptions,
 ): Promise<{mfManifest: Record<string, unknown> | undefined}> {
   const {cliConfig, flags, outDir, output, workDir} = options
+  const functionContracts = await generateAppFunctionContracts(workDir, true)
 
   const app = cliConfig && 'app' in cliConfig ? cliConfig.app : undefined
   // `views`/`webWorkers` live on the branded `defineApplication` result, not the
@@ -38,9 +43,20 @@ export async function buildApp(
       : undefined
   const isWorkbench = !!workbench || !!workbenchConfig
 
-  const appId = getAppId(cliConfig)
+  const functionStack = options.calledFromDeploy
+    ? null
+    : await ensureAppFunctionStack({cliConfig, output, unattended: flags.yes, workDir})
+  const appId = options.applicationId ?? functionStack?.appId ?? getAppId(cliConfig)
+  const functionStackId = options.functionStackId ?? functionStack?.stackId
+  const entry = await prepareAppFunctionsEntry({
+    appId,
+    entry: resolveAppEntry(app) ?? (isWorkbench ? undefined : './src/App'),
+    organizationId: app?.organizationId,
+    stackId: functionStackId,
+    workDir,
+  })
 
-  return internalBuildApp({
+  const result = await internalBuildApp({
     appId,
     appTitle: app?.title,
     autoUpdatesEnabled: options.autoUpdatesEnabled,
@@ -54,7 +70,7 @@ export async function buildApp(
     },
     compareDependencyVersions: (packages) => compareDependencyVersions(packages, workDir, {appId}),
     determineBasePath: () => determineBasePath(cliConfig, 'app', output),
-    entry: resolveAppEntry(app),
+    entry,
     exposes,
     isWorkbenchApp: isWorkbench,
     minify: flags.minify,
@@ -66,13 +82,25 @@ export async function buildApp(
     stats: flags.stats,
     unattendedMode: flags.yes,
     vite: cliConfig.vite,
-    // Shared with deploy: it passes the resolved application id (minted by the
-    // API on a first deploy) to inline; a plain build has none, so it hashes the shape.
+    // Apps with functions have a registered identity before either build or deploy.
+    // Other local builds can still use a hash of the application's shape.
     workbenchAppId: workbench
-      ? (options.applicationId ?? (await buildAppId(workbench)))
+      ? (options.applicationId ?? functionStack?.appId ?? (await buildAppId(workbench)))
       : undefined,
     workDir,
 
     eventListener: preReleaseEventListenerFactory(output),
   })
+
+  await buildAppFunctions({
+    appId,
+    contracts: functionContracts,
+    dryRun: 'dry-run' in flags && !!flags['dry-run'],
+    organizationId: app?.organizationId,
+    output,
+    stackId: functionStackId,
+    workDir,
+  })
+
+  return result
 }
