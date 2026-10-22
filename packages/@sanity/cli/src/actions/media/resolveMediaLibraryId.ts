@@ -10,7 +10,7 @@ import {getMediaLibrariesForOrganization, type MediaLibrary} from '../../service
  * active library is unambiguous, anything else is a verdict the caller turns
  * into its own failure shape — a prompt, a usage error, or a deploy check.
  */
-type MediaLibraryResolution =
+export type MediaLibraryResolution =
   | {
       /** The active libraries a prompt would offer. */
       libraries: MediaLibrary[]
@@ -23,7 +23,7 @@ type MediaLibraryResolution =
   | {message: string; solution: string; type: 'none-active'}
 
 /** @see MediaLibraryResolution */
-async function resolveMediaLibrary(options: {
+export async function resolveMediaLibrary(options: {
   mediaLibraryIdFlag: string | undefined
   organizationId: string
 }): Promise<MediaLibraryResolution> {

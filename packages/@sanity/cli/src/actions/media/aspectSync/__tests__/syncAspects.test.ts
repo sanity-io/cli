@@ -167,6 +167,11 @@ describe('planAspectSync', () => {
 
     if ('plan' in result) throw new Error('expected failure')
     expect(result.failure.message).toContain('no active media library')
+    expect(result.failure.solution).toBe(
+      'Install the Media Library for the organization before deploying its config',
+    )
+    // An environment problem, not misuse: no usage code, so the deploy exits 1.
+    expect(result.failure.exitCode).toBeUndefined()
   })
 
   test('fails when the organization has several active libraries and no explicit target', async () => {
@@ -182,6 +187,7 @@ describe('planAspectSync', () => {
 
     if ('plan' in result) throw new Error('expected failure')
     expect(result.failure.message).toContain('library-a, library-b')
+    expect(result.failure.message).toContain('— the sync needs an explicit target')
     expect(result.failure.solution).toContain('--media-library-id')
   })
 

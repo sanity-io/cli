@@ -19,11 +19,8 @@ import path from 'node:path'
 import {exitCodes, importModule} from '@sanity/cli-core'
 import {validateMediaLibraryAssetAspect} from '@sanity/schema/_internal'
 
-import {
-  getMediaLibrariesForOrganization,
-  getStoredAspectIds,
-  mutateAspects,
-} from '../../../services/mediaLibraries.js'
+import {getStoredAspectIds, mutateAspects} from '../../../services/mediaLibraries.js'
+import {resolveMediaLibrary} from '../resolveMediaLibraryId.js'
 import {
   type AspectDocument,
   buildSyncMutations,
@@ -125,51 +122,38 @@ export async function applyAspectSync(plan: AspectSyncPlan): Promise<void> {
 }
 
 /**
- * The flag wins (validated against the organization's active libraries);
- * otherwise a single active library is unambiguous. Multiple actives fail —
+ * Shares the one resolution rule (`resolveMediaLibrary`) with the media
+ * commands, mapped to deploy-check failures. Ambiguity always fails here —
  * deploy can run unattended (CI), so it never prompts, and a sync that
- * guesses the target would mirror the config into the wrong library.
+ * guesses the target would mirror the config into the wrong library. Misuse
+ * (a bad flag value, a missing required flag) carries the usage exit code;
+ * a missing library is an environment problem and keeps the default.
  */
 async function resolveTargetMediaLibrary(
   organizationId: string,
   explicitMediaLibraryId: string | undefined,
 ): Promise<{failure: AspectSyncFailure} | {mediaLibraryId: string}> {
-  const libraries = await getMediaLibrariesForOrganization(organizationId)
-  const libraryIds = libraries.map((library) => library.id)
-
-  if (explicitMediaLibraryId) {
-    if (!libraryIds.includes(explicitMediaLibraryId)) {
-      return {
-        failure: {
-          exitCode: exitCodes.USAGE_ERROR,
-          message:
-            `Media library ${explicitMediaLibraryId} is not an active library of organization ` +
-            `${organizationId} (found: ${libraryIds.join(', ') || 'none'})`,
-          solution: 'Pass --media-library-id with one of the active library ids',
-        },
-      }
-    }
-    return {mediaLibraryId: explicitMediaLibraryId}
+  const resolution = await resolveMediaLibrary({
+    mediaLibraryIdFlag: explicitMediaLibraryId,
+    organizationId,
+  })
+  if (resolution.type === 'resolved') {
+    return {mediaLibraryId: resolution.mediaLibraryId}
   }
-
-  if (libraries.length === 0) {
-    return {
-      failure: {
-        message: `Organization ${organizationId} has no active media library to sync the config's aspect definitions to`,
-        solution: 'Install the Media Library for the organization before deploying its config',
-      },
-    }
+  // Deploy-specific wording over the shared resolution's generic remedies:
+  // the install matters *before deploying the config*, and deploy never
+  // prompts, so the ambiguity message says the sync needs an explicit target.
+  return {
+    failure: {
+      ...(resolution.type === 'none-active' ? {} : {exitCode: exitCodes.USAGE_ERROR}),
+      message:
+        resolution.type === 'ambiguous'
+          ? `${resolution.message} — the sync needs an explicit target`
+          : resolution.message,
+      solution:
+        resolution.type === 'none-active'
+          ? 'Install the Media Library for the organization before deploying its config'
+          : resolution.solution,
+    },
   }
-  if (libraries.length > 1) {
-    return {
-      failure: {
-        exitCode: exitCodes.USAGE_ERROR,
-        message:
-          `Organization ${organizationId} has ${libraries.length} active media libraries ` +
-          `(${libraryIds.join(', ')}) — the sync needs an explicit target`,
-        solution: 'Pass --media-library-id with the library this config belongs to',
-      },
-    }
-  }
-  return {mediaLibraryId: libraries[0].id}
 }
