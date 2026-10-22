@@ -286,57 +286,12 @@ describe('resolveAutoUpdates', () => {
     ).toEqual({enabled: false, issue: {flag: '--no-auto-updates', type: 'deprecated-flag'}})
   })
 
-  describe('on a workbench app', () => {
-    const app = workbenchApp()
-
-    it('reports auto-updates as unsupported instead of enabling them', () => {
-      expect(
-        resolveAutoUpdates({
-          cliConfig: {app, deployment: {autoUpdates: true}},
-          flags: {} as BuildFlags,
-        }),
-      ).toEqual({enabled: false, issue: {type: 'unsupported'}})
-    })
-
-    it('reports it over the flag too, since the flag cannot make them apply', () => {
-      expect(
-        resolveAutoUpdates({cliConfig: {app}, flags: {'auto-updates': true} as BuildFlags}),
-      ).toEqual({enabled: false, issue: {type: 'unsupported'}})
-    })
-
-    it('stays quiet when auto-updates were never asked for', () => {
-      expect(resolveAutoUpdates({cliConfig: {app}, flags: {} as BuildFlags})).toEqual({
-        enabled: false,
-        issue: null,
-      })
-    })
-
-    it.each([true, false])(
-      'keeps the config conflict a fail when deployment.autoUpdates is %s',
-      (autoUpdates) => {
-        expect(
-          resolveAutoUpdates({
-            cliConfig: {app, autoUpdates: true, deployment: {autoUpdates}},
-            flags: {} as BuildFlags,
-          }),
-        ).toEqual({enabled: false, issue: {type: 'conflicting-config'}})
-      },
-    )
-
-    it('warns on the build/dev surface, which prints the issue', () => {
-      const output = createMockOutput()
-
-      expect(
-        shouldAutoUpdate({
-          cliConfig: {app, deployment: {autoUpdates: true}},
-          flags: {} as BuildFlags,
-          output,
-        }),
-      ).toBe(false)
-      expect(output.warn).toHaveBeenCalledWith(
-        "Auto-updates aren't supported yet — using the installed package versions",
-      )
-      expect(output.warn).toHaveBeenCalledTimes(1)
-    })
+  it('enables auto-updates for a workbench app', () => {
+    expect(
+      resolveAutoUpdates({
+        cliConfig: {app: workbenchApp(), deployment: {autoUpdates: true}},
+        flags: {} as BuildFlags,
+      }),
+    ).toEqual({enabled: true, issue: null})
   })
 })

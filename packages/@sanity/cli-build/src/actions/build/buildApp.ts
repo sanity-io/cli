@@ -206,11 +206,14 @@ export async function buildApp(
   trace.start()
 
   let autoUpdates
-  if (autoUpdatesEnabled && !options.isWorkbenchApp) {
+  if (autoUpdatesEnabled) {
+    // A workbench document also hosts federated studios, whose CDN `sanity` imports `styled-components`.
+    const hostsStudios =
+      options.isWorkbenchApp && Boolean(await getLocalPackageVersion('styled-components', workDir))
     autoUpdates = {
       cssUrls: autoUpdatesCssUrls,
       imports: autoUpdatesImports,
-      vendor: await resolveVendorBuildConfig({cwd: workDir, isApp: true}),
+      vendor: await resolveVendorBuildConfig({cwd: workDir, isApp: !hostsStudios}),
     }
   }
 
