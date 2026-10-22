@@ -83,6 +83,7 @@
     "@sanity/sdk": "catalog:",
     "@sanity/types": "catalog:",
     "@vitejs/plugin-react": "catalog:",
+    "es-module-shims": "^2.8.4",
     "form-data": "catalog:",
     "rxjs": "catalog:",
     "semver": "catalog:",

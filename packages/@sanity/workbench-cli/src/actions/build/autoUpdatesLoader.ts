@@ -1,3 +1,5 @@
+import {importThroughShim} from './autoUpdatesShim.js'
+
 type Module = Record<string, unknown>
 
 export interface ModuleCdnPackage {
@@ -34,6 +36,7 @@ export function createAutoUpdatesLoader({
     url: url.replace(/\/t\d+/, timestamp),
   }))
   const loadedFrom = new Map<string, string>()
+  let importCdn = importModule
   let ready: Promise<boolean> | undefined
 
   return {load, moduleUrl: (name: string) => loadedFrom.get(name)}
@@ -47,7 +50,7 @@ export function createAutoUpdatesLoader({
     }
 
     try {
-      const module = await importModule(pkg.url + specifier.slice(pkg.name.length))
+      const module = await importCdn(pkg.url + specifier.slice(pkg.name.length))
       loadedFrom.set(pkg.name, pkg.url)
 
       return module
@@ -62,12 +65,16 @@ export function createAutoUpdatesLoader({
   async function prepare(): Promise<boolean> {
     if (typeof document === 'undefined') return false
 
+    let appliesAddedImportMaps: boolean
     try {
       const documentReact = await importModule('react')
       if (documentReact.createContext !== react.createContext) return false
 
       addImportMap({imports: {[IMPORT_MAP_PROBE]: 'data:text/javascript,'}})
-      await importModule(IMPORT_MAP_PROBE)
+      appliesAddedImportMaps = await importModule(IMPORT_MAP_PROBE).then(
+        () => true,
+        () => false,
+      )
     } catch {
       return false
     }
@@ -88,7 +95,13 @@ export function createAutoUpdatesLoader({
           [`${name}/`, `${url}/`],
         ]),
       )
-      addImportMap({scopes: Object.fromEntries(directories.map((dir) => [dir, imports]))})
+      const scopes = Object.fromEntries(directories.map((dir) => [dir, imports]))
+
+      if (appliesAddedImportMaps) {
+        addImportMap({scopes})
+      } else {
+        importCdn = await importThroughShim(scopes)
+      }
     } catch (error) {
       // eslint-disable-next-line no-console -- the app keeps working, but no longer auto-updates
       console.warn('Failed to resolve the module CDN, using the bundled copy', error)
