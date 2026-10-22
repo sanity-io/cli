@@ -3,6 +3,8 @@ import {styleText} from 'node:util'
 
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
+import {buildAppId} from '../../../appId.js'
+import {resolveWorkbenchApp} from '../../../resolveWorkbenchApp.js'
 import {
   createMockOutput,
   mockWorkbenchServer,
@@ -85,7 +87,7 @@ describe('startWorkbenchPreview', () => {
     })
     mockFindProjectRoot.mockResolvedValue({path: '/tmp/sanity-project/sanity.cli.ts'})
     mockExtractManifest.mockResolvedValue({title: 'Test App'})
-    // Default: no id file in the build output.
+    // Default: no id file in the build output, so start falls back to the hash.
     mockReadFile.mockRejectedValue(Object.assign(new Error('ENOENT'), {code: 'ENOENT'}))
   })
 
@@ -124,27 +126,28 @@ describe('startWorkbenchPreview', () => {
   })
 
   describe('registration', () => {
-    test('checks the deprecated app id, then registers the built remote with its manifest and no id', async () => {
+    test('checks the deprecated app id, then registers the built remote with its manifest', async () => {
       await run()
+
+      const appId = await buildAppId(resolveWorkbenchApp(workbenchCliConfig())!)
 
       expect(mockCheckForDeprecatedAppId).toHaveBeenCalled()
       expect(mockExtractManifest).toHaveBeenCalledWith({
-        applicationId: undefined,
+        applicationId: appId,
         configPath: '/tmp/sanity-project/sanity.cli.ts',
         workDir: '/tmp/sanity-project',
       })
       expect(readManifest()).toMatchObject({
         host: 'localhost',
+        // `start` advertises the build id (matching the bundle), not host-port.
+        id: appId,
         manifest: {title: 'Test App'},
-        name: 'test-app',
         organizationId: 'org-123',
         port: 3334,
-        reference: 'org-123/test-app',
         slug: 'test-app',
         type: 'coreApp',
         visibility: 'default',
       })
-      expect(readManifest()).not.toHaveProperty('id')
     })
 
     test('registers the identity declared in defineApplication, as dev does', async () => {
@@ -162,15 +165,17 @@ describe('startWorkbenchPreview', () => {
       })
     })
 
-    test('registers no id when the build inlined its slug for want of an app id', async () => {
-      mockReadFile.mockResolvedValue('test-app\n')
+    test('registers the deployed application the build stands in for, beside the id the build inlined', async () => {
+      mockReadFile.mockResolvedValue('app_deployed_id\n')
 
-      await run()
+      await run({
+        cliConfig: workbenchCliConfig({deployment: {appId: 'v27rvqtlp3lmdvcln6ey3lro'}}),
+      })
 
-      expect(mockExtractManifest).toHaveBeenCalledWith(
-        expect.objectContaining({applicationId: 'test-app'}),
-      )
-      expect(readManifest()).not.toHaveProperty('id')
+      expect(readManifest()).toMatchObject({
+        applicationId: 'v27rvqtlp3lmdvcln6ey3lro',
+        id: 'app_deployed_id',
+      })
     })
 
     test('registers a studio build as a studio', async () => {
@@ -181,14 +186,14 @@ describe('startWorkbenchPreview', () => {
 
     test('advertises the id the build inlined, so a deploy build (API id) still matches', async () => {
       // A deploy build carries the applications-API id, which start can't recompute.
-      mockReadFile.mockResolvedValue('v27rvqtlp3lmdvcln6ey3lro\n')
+      mockReadFile.mockResolvedValue('app_deployed_id\n')
 
       await run()
 
       expect(mockExtractManifest).toHaveBeenCalledWith(
-        expect.objectContaining({applicationId: 'v27rvqtlp3lmdvcln6ey3lro'}),
+        expect.objectContaining({applicationId: 'app_deployed_id'}),
       )
-      expect(readManifest().id).toBe('v27rvqtlp3lmdvcln6ey3lro')
+      expect(readManifest().id).toBe('app_deployed_id')
     })
   })
 
@@ -251,7 +256,7 @@ describe('startWorkbenchPreview', () => {
   })
 
   describe('URL announcement', () => {
-    test('links to a studio build at its studio route', async () => {
+    test('links straight to a studio build in the Dashboard', async () => {
       const output = createMockOutput()
       await run({isApp: false, output})
 
@@ -261,7 +266,7 @@ describe('startWorkbenchPreview', () => {
     })
 
     test('links to an app build with an app view at its slug, whatever id the build inlined', async () => {
-      mockReadFile.mockResolvedValue('v27rvqtlp3lmdvcln6ey3lro\n')
+      mockReadFile.mockResolvedValue('app_deployed_id\n')
       const output = createMockOutput()
 
       await run({

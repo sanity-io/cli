@@ -6,7 +6,7 @@ import {
 } from '@sanity/cli-build/_internal/build'
 import {exitCodes} from '@sanity/cli-core'
 import {confirm, logSymbols, select, spinner} from '@sanity/cli-core/ux'
-import {resolveWorkbenchApp} from '@sanity/workbench-cli/build'
+import {buildAppId, resolveWorkbenchApp} from '@sanity/workbench-cli/build'
 
 import {getAppId} from '../../util/appId.js'
 import {determineIsApp} from '../../util/determineIsApp.js'
@@ -66,10 +66,9 @@ export async function buildStudio(
     unattendedMode: Boolean(flags.yes),
     vite: cliConfig.vite,
     // Shared with deploy: it passes the resolved application id (minted by the
-    // API on a first deploy) to inline. Without an app id, the bus falls back to
-    // the slug, as in dev.
+    // API on a first deploy) to inline; a plain build has none, so it hashes the shape.
     workbenchAppId: workbench
-      ? (options.applicationId ?? cliConfig?.deployment?.appId ?? workbench.slug)
+      ? (options.applicationId ?? (await buildAppId(workbench)))
       : undefined,
     workDir,
 
