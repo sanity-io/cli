@@ -7,7 +7,7 @@ const importShim = Object.assign(
   vi.fn(async () => ({source: 'shim'})),
   {addImportMap: vi.fn()},
 )
-const globals = globalThis as {esmsInitOptions?: object; importShim?: typeof importShim}
+const globals = globalThis as unknown as {esmsInitOptions?: object; importShim?: typeof importShim}
 // es-module-shims reads its options once, when it evaluates.
 let optionsAtLoad: object | undefined
 

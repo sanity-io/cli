@@ -24,8 +24,8 @@ export async function importThroughShim(scopes: object): Promise<(url: string) =
   // Another app on the page may have loaded it already.
   if (!globals.importShim) {
     globals.esmsInitOptions = {shimMode: true, skip: Object.values(documentImports)}
-    // eslint-disable-next-line no-restricted-syntax -- package import in browser code, not a file path
-    await import('es-module-shims')
+    // @ts-expect-error -- its types declare globals, not a module
+    await import('es-module-shims') // eslint-disable-line no-restricted-syntax -- package import in browser code
   }
 
   const importShim = globals.importShim!
