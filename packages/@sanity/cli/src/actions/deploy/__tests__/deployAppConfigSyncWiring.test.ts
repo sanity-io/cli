@@ -14,6 +14,7 @@
 import {CLIError} from '@oclif/core/errors'
 import {type CliConfig, exitCodes, type Output} from '@sanity/cli-core'
 import {confirm} from '@sanity/cli-core/ux'
+import {type ResolvedMediaLibraryConfig} from '@sanity/workbench-cli/deploy'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
 import {type DeployFlags} from '../types.js'
@@ -75,12 +76,16 @@ function mockOutput() {
   } as unknown as Output
 }
 
-const CONFIG = {
-  appType: 'sanity-media-library-config',
+// Typed against the real resolver contract: the sync is gated on the
+// `appType` discriminator, so a made-up value here would silently test a
+// deploy that never syncs.
+const CONFIG: ResolvedMediaLibraryConfig = {
+  appType: 'media-library',
   fields: [
     {name: 'caption', src: './src/fields/caption.ts', title: 'Caption'},
     {name: 'notes', src: './src/fields/notes.tsx', title: 'Notes'},
   ],
+  organizationId: 'org-1',
 }
 
 const PLAN = {
@@ -126,6 +131,22 @@ describe('deployApp aspect-sync wiring (media-library config)', () => {
     expect(mockApplyAspectSync.mock.invocationCallOrder[0]).toBeGreaterThan(
       mockDeployConfig.mock.invocationCallOrder[0],
     )
+  })
+
+  test('a config of another appType deploys without the media-library aspect sync', async () => {
+    // Forged via cast — the config union has one member today. The sync is
+    // gated on the `appType` discriminator, so a future config type must not
+    // inherit the aspect sync (and its deletions) just by being a config.
+    mockResolveWorkbenchConfig.mockReturnValue({
+      ...CONFIG,
+      appType: 'another-config',
+    } as unknown as ResolvedMediaLibraryConfig)
+
+    await deployApp(deployOptions({}, mockOutput()))
+
+    expect(mockDeployConfig).toHaveBeenCalledTimes(1)
+    expect(mockPlanAspectSync).not.toHaveBeenCalled()
+    expect(mockApplyAspectSync).not.toHaveBeenCalled()
   })
 
   test('a dry run reports the sync in the --json payload but never mutates', async () => {

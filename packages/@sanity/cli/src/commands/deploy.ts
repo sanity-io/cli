@@ -93,6 +93,9 @@ export class DeployCommand extends SanityCommand<typeof DeployCommand> {
     'media-library-id': Flags.string({
       description:
         'For a Media Library config deploy: the media library to sync the aspect definitions to. Defaults to the single active library of the configured organization; required when the organization has several',
+      // Part of the beta config-app flow, like the hidden media commands it
+      // pairs with. A help-listed flag is hard to take back — unhide at GA.
+      hidden: true,
     }),
     minify: Flags.boolean({
       allowNo: true,

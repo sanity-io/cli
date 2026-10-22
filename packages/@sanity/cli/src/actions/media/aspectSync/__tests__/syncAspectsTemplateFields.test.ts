@@ -16,7 +16,9 @@ import {createTestToken, mockApi} from '@sanity/cli-test'
 import {cleanAll, pendingMocks} from 'nock'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
+import cliPackageJson from '../../../../../package.json'
 import {MEDIA_LIBRARY_API_VERSION} from '../../../../services/mediaLibraries.js'
+import mediaLibraryConfigTemplate from '../../../init/templates/mediaLibraryConfig.js'
 import {planAspectSync} from '../syncAspects.js'
 
 const TEMPLATE_DIR = path.resolve(
@@ -56,6 +58,19 @@ describe('planAspectSync against the real media-library-config template', {timeo
     const pending = pendingMocks()
     cleanAll()
     expect(pending, 'all mocked requests should be consumed').toEqual([])
+  })
+
+  test('the devDependencies evaluating the template match what it scaffolds', () => {
+    // The whole point of this file is evaluating exactly what `sanity init`
+    // gives users. These packages resolve from this package's devDependencies
+    // during the test, so a range drifting from the template's (e.g. @sanity/ui
+    // 4 against a scaffolded ^3) would silently evaluate something users never
+    // install.
+    for (const name of ['@sanity/ui', 'styled-components'] as const) {
+      expect(cliPackageJson.devDependencies[name], `devDependency range for ${name}`).toBe(
+        mediaLibraryConfigTemplate.dependencies?.[name],
+      )
+    }
   })
 
   test('evaluates every shipped field module, including .tsx inputs', async () => {

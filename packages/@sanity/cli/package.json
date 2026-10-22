@@ -155,7 +155,7 @@
     "@sanity/cli-test": "workspace:*",
     "@sanity/eslint-config-cli": "workspace:*",
     "@sanity/pkg-utils": "catalog:",
-    "@sanity/ui": "^4.3.1",
+    "@sanity/ui": "^3",
     "@swc/cli": "catalog:",
     "@swc/core": "catalog:",
     "@types/gunzip-maybe": "^1.4.3",
@@ -180,7 +180,7 @@
     "react-dom": "catalog:",
     "rimraf": "catalog:",
     "sanity": "catalog:",
-    "styled-components": "^6.5.3",
+    "styled-components": "^6.1.18",
     "tsx": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:"

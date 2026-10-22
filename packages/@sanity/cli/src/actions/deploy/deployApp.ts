@@ -276,7 +276,11 @@ async function runAppDeployment(
     // that check failed, a real run already exited and a dry run has reported
     // the config as undeployable.
     let aspectSyncPlan: AspectSyncPlan | undefined
-    if (deployConfigOnly && organizationId && config && installationId) {
+    // Gated on the `appType` discriminator, not the mere presence of a config:
+    // `ConfigSchema` is a union built to grow, and a future config type must
+    // not inherit the media-library aspect sync — and its deletions — by
+    // default.
+    if (configAppType === 'media-library' && organizationId && config && installationId) {
       // runStep so an unexpected throw (network, API) becomes a fail check:
       // a real run exits, a dry run records it and keeps reporting.
       const planned = await runStep(reporter, {

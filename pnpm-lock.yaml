@@ -937,8 +937,8 @@ importers:
         specifier: 'catalog:'
         version: 12.3.4(@babel/runtime@7.29.7)(@types/node@22.20.1)(babel-plugin-macros@3.1.0)(babel-plugin-react-compiler@1.0.0)(oxc-resolver@11.24.2)(oxc-transform-react@0.153.0)(rolldown@1.2.12)(supports-color@8.1.1)(typescript@6.0.3)(vite@8.3.3(@types/node@22.20.1)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.13)(yaml@2.9.0))
       '@sanity/ui':
-        specifier: ^4.3.1
-        version: 4.3.1(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(styled-components@6.5.3(react-dom@19.3.0(react@19.3.0))(react@19.3.0))
+        specifier: ^3
+        version: 3.5.4(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(styled-components@6.5.3(react-dom@19.3.0(react@19.3.0))(react@19.3.0))
       '@swc/cli':
         specifier: 'catalog:'
         version: 0.8.1(@swc/core@1.16.1)(chokidar@5.0.0)(supports-color@8.1.1)
@@ -1012,7 +1012,7 @@ importers:
         specifier: 'catalog:'
         version: 6.17.0(@noble/hashes@2.4.0)(@types/react-dom@19.2.5(@types/react@19.3.0))(@types/react@19.3.0)(immer@11.1.18)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(styled-components@6.5.3(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(supports-color@8.1.1)(typescript@6.0.3)(vitest@4.1.11)
       styled-components:
-        specifier: ^6.5.3
+        specifier: ^6.1.18
         version: 6.5.3(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       tsx:
         specifier: 'catalog:'
