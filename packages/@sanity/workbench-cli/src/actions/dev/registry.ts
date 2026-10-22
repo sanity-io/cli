@@ -98,10 +98,6 @@ const devServerInterfaceSchema = z.union([
 // Exported so test fixtures can validate against the same schema the registry
 // parses with — see `aDevServerManifest`. Used internally by `getRegisteredServers`.
 export const devServerManifestSchema = z.object({
-  /**
-   * The deployed application the server stands in for (`deployment.appId`), which
-   * the Dashboard identifies it by.
-   */
   applicationId: z.optional(z.string()),
   /**
    * Field schema *values* load from the federation module; each field's `src`
@@ -190,10 +186,7 @@ export function isConfigOnlyServer(
   return Boolean(server.configs?.length) && !server.interfaces?.length
 }
 
-/**
- * The identity a workbench app registers under, composed the way brett composes
- * a deployed app's: name defaults to the slug, the reference follows `isSingleton`.
- */
+// Composed the way brett composes a deployed app's identity.
 export function localAppIdentity(
   app: Pick<WorkbenchApp, 'isSingleton' | 'name' | 'organizationId' | 'slug' | 'visibility'>,
 ): Pick<DevServerManifest, 'name' | 'organizationId' | 'reference' | 'slug' | 'visibility'> {
