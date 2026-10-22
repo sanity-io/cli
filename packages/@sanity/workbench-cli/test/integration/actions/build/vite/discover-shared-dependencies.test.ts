@@ -275,17 +275,6 @@ export default function App() { return <div>Hello</div> }`,
   expect(warn).not.toHaveBeenCalled()
 }, 60_000)
 
-test('scans for shared dependencies when the standalone page maps its vendor packages', async () => {
-  const app = await createApp()
-  const {hooks, manifest} = await app.build({
-    plugins: [{api: {sanityStandaloneVendor: true}, name: 'test/standalone-vendor'}],
-    reuseStandaloneBuild: true,
-  })
-
-  expect(hooks.closed).toHaveBeenCalledTimes(3)
-  expect(manifest.shared.map(({name}) => name)).toContain('react')
-}, 60_000)
-
 test('keeps dependencies local when an alias may rewrite a shared import', async () => {
   const app = await createApp()
   const {manifest, warn} = await app.build({

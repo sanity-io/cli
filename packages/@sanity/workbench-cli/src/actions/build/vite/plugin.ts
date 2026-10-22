@@ -20,17 +20,12 @@ import {
   type FederationRuntimeOptions,
   sanityFederationRuntime,
 } from './plugins/plugin-sanity-federation-runtime.js'
-import {
-  sanityStandaloneVendor,
-  type StandaloneVendorBuild,
-} from './plugins/plugin-sanity-standalone-vendor.js'
 
 interface FederationPluginOptionsBase extends Omit<Partial<FederationOptions>, 'exposes'> {
   exposes?: WorkbenchExposes
   /** Blueprints build (via `@sanity/runtime-cli`) — emit the resource-bindings module. */
   isBlueprints?: boolean
   pkgJson?: PackageJson
-  standaloneVendor?: StandaloneVendorBuild
   /**
    * Current working directory to read package.json from, defaults to process.cwd()
    */
@@ -149,8 +144,5 @@ export const federation = (options: FederationPluginOptions): PluginOption => {
     sanityExtensionArtifacts({artifacts}),
     sanityModuleFederation({exposes: federationExposes, name}),
     sanityFederationHost(),
-    ...(clientInput && options.standaloneVendor
-      ? [sanityStandaloneVendor(options.standaloneVendor)]
-      : []),
   ]
 }

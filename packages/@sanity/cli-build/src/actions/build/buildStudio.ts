@@ -15,13 +15,13 @@ import {
   CompareDependencyVersionsResult,
 } from '../../util/compareDependencyVersions.js'
 import {formatModuleSizes, sortModulesBySize} from '../../util/moduleFormatUtils.js'
-import {type ModuleCdnPlan} from './autoUpdates.js'
+import {type ModuleCdnPackage} from './autoUpdates.js'
 import {buildDebug} from './buildDebug.js'
 import {buildStaticFiles} from './buildStaticFiles.js'
 import {checkRequiredDependencies} from './checkRequiredDependencies.js'
 import {checkStudioDependencyVersions} from './checkStudioDependencyVersions.js'
 import {type BuildEventListener, type MessageFunc} from './eventListener.js'
-import {getModuleCdnPlan} from './getAutoUpdatesImportMap.js'
+import {getModuleCdnPackages} from './getAutoUpdatesImportMap.js'
 import {getStudioEnvironmentVariables} from './getEnvironmentVariables.js'
 import {handlePrereleaseVersions} from './handlePrereleaseVersions.js'
 
@@ -123,7 +123,7 @@ export async function buildStudio(
 
   let autoUpdatesEnabled = options.autoUpdatesEnabled
 
-  let moduleCdn: ModuleCdnPlan | undefined
+  let moduleCdnPackages: ModuleCdnPackage[] | undefined
 
   if (autoUpdatesEnabled) {
     // Get the clean version without build metadata: https://semver.org/#spec-item-10
@@ -148,7 +148,7 @@ export async function buildStudio(
         ? [{cssFile: 'index.css', name: '@sanity/vision' as const, version: cleanVisionVersion}]
         : [{name: '@sanity/vision' as const, version: cleanSanityVersion}]),
     ]
-    moduleCdn = getModuleCdnPlan(sanityDependencies, {appId})
+    moduleCdnPackages = getModuleCdnPackages(sanityDependencies, {appId})
 
     // Check the versions
     const {mismatched, unresolvedPrerelease} =
@@ -161,7 +161,7 @@ export async function buildStudio(
 
         ...eventListener,
       })
-      moduleCdn = undefined
+      moduleCdnPackages = undefined
       autoUpdatesEnabled = false
     }
 
@@ -244,7 +244,7 @@ export async function buildStudio(
       isBlueprints: options.isBlueprints,
       isWorkbenchApp: options.isWorkbenchApp,
       minify,
-      moduleCdn,
+      moduleCdnPackages,
       outputDir,
       reactCompiler,
       schemaExtraction,
