@@ -38,7 +38,9 @@ describe('workbenchVitePlugins', () => {
       entries: {relativeConfigLocation: '../../sanity.config.ts', relativeEntry: null},
     })
     expect(result).toEqual([{name: 'sanity/federation'}])
-    expect(mockFederation.mock.calls[0][0].autoUpdates).toBeUndefined()
+    expect(mockFederation).not.toHaveBeenCalledWith(
+      expect.objectContaining({autoUpdates: expect.anything()}),
+    )
   })
 
   test('builds a studio remote from its sanity.config path', async () => {
