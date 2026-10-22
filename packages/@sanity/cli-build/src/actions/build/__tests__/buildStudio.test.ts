@@ -7,8 +7,6 @@ import {DefinedTelemetryTrace} from '@sanity/telemetry'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
 import {type BuildOptions, buildStudio, BuildStudioEventListener} from '../buildStudio.js'
-import {getAutoUpdatesCssUrls, getAutoUpdatesImportMap} from '../getAutoUpdatesImportMap.js'
-import {resolveVendorBuildConfig} from '../resolveVendorBuildConfig.js'
 
 function buildOptions(
   overrides: Partial<BuildOptions> & Pick<BuildOptions, 'output'>,
@@ -79,19 +77,6 @@ vi.mock(import('../checkStudioDependencyVersions.js'), () => ({
   checkStudioDependencyVersions: vi.fn().mockResolvedValue(undefined),
 }))
 
-vi.mock(import('../getAutoUpdatesImportMap.js'), () => ({
-  getAutoUpdatesCssUrls: vi.fn(),
-  getAutoUpdatesImportMap: vi.fn(),
-}))
-
-vi.mock(import('../resolveVendorBuildConfig.js'), () => ({
-  resolveVendorBuildConfig: vi.fn().mockResolvedValue({
-    entries: {},
-    namesByChunkName: {},
-    specifiersByChunkName: {},
-  }),
-}))
-
 vi.mock(import('../../../telemetry/build.telemetry.js'), () => ({
   StudioBuildTrace: {} as DefinedTelemetryTrace<
     {
@@ -110,6 +95,7 @@ vi.mock(import('@sanity/cli-core/package-manager'), () => ({
 }))
 vi.mock(import('@sanity/cli-core/util'), () => ({
   isInteractive: mockedIsInteractive,
+  isStaging: () => false,
 }))
 
 function createMockOutput(): Output {
@@ -342,9 +328,6 @@ describe('#buildStudio', () => {
 
     expect(onPreReleaseInInteractiveAutoUpdate).toHaveBeenCalled()
     expect(onBuildStart).toHaveBeenCalledWith({message: 'Build Sanity Studio'})
-    expect(mockedBuildStaticFiles).toHaveBeenCalledWith(
-      expect.objectContaining({autoUpdates: undefined}),
-    )
   })
 
   test('outputs include environment variables', async () => {
@@ -463,20 +446,17 @@ describe('#buildStudio', () => {
 
     await buildStudio(buildOptions({appId: 'my-app-id', autoUpdatesEnabled: true, output}))
 
-    const sanityDependencies = vi.mocked(getAutoUpdatesImportMap).mock.calls[0][0]
-    expect(sanityDependencies).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({cssFile: 'index.css', name: 'sanity'}),
-        expect.objectContaining({
-          cssFile: 'index.css',
-          name: '@sanity/vision',
-          version: '3.5.0',
-        }),
-      ]),
-    )
-
-    // The same dependency array is passed to getAutoUpdatesCssUrls
-    expect(vi.mocked(getAutoUpdatesCssUrls).mock.calls[0][0]).toBe(sanityDependencies)
+    const {moduleCdn} = mockedBuildStaticFiles.mock.calls[0][0]
+    expect(moduleCdn.packages).toEqual([
+      expect.objectContaining({
+        cssUrl: expect.stringMatching(/\/sanity\/index\.css$/),
+        name: 'sanity',
+      }),
+      expect.objectContaining({
+        cssUrl: expect.stringMatching(/%5E3\.5\.0\/@sanity__vision\/index\.css$/),
+        name: '@sanity/vision',
+      }),
+    ])
   })
 
   test('should not check appId when auto-updates are disabled', async () => {
@@ -498,51 +478,6 @@ describe('#buildStudio', () => {
 
     expect(mockCheckAppId).toHaveBeenCalled()
   })
-  test("maps a workbench app's shared dependencies without auto-updates", async () => {
-    const vendor = {entries: {}, namesByChunkName: {}, specifiersByChunkName: {}}
-    vi.mocked(resolveVendorBuildConfig).mockResolvedValueOnce(vendor)
-
-    await buildStudio(
-      buildOptions({isWorkbenchApp: true, output: createMockOutput(), unattendedMode: true}),
-    )
-
-    expect(mockedBuildStaticFiles).toHaveBeenCalledWith(
-      expect.objectContaining({autoUpdates: {cssUrls: [], imports: {}, vendor}}),
-    )
-  })
-
-  test('builds a workbench app without the import map when its shared dependencies are unsupported', async () => {
-    vi.mocked(resolveVendorBuildConfig).mockRejectedValueOnce(
-      new Error("Package 'react' requires at least 19.2.0."),
-    )
-
-    await buildStudio(
-      buildOptions({isWorkbenchApp: true, output: createMockOutput(), unattendedMode: true}),
-    )
-
-    expect(mockedBuildStaticFiles).toHaveBeenCalledWith(
-      expect.objectContaining({autoUpdates: undefined}),
-    )
-  })
-
-  test('fails an auto-updating workbench build whose shared dependencies are unsupported', async () => {
-    vi.mocked(resolveVendorBuildConfig).mockRejectedValueOnce(
-      new Error("Package 'react' requires at least 19.2.0."),
-    )
-
-    await expect(
-      buildStudio(
-        buildOptions({
-          autoUpdatesEnabled: true,
-          isWorkbenchApp: true,
-          output: createMockOutput(),
-          unattendedMode: true,
-        }),
-      ),
-    ).rejects.toThrow("Package 'react' requires at least 19.2.0.")
-    expect(mockedBuildStaticFiles).not.toHaveBeenCalled()
-  })
-
   describe('federation manifest', () => {
     let outDir: string
     beforeEach(async () => {

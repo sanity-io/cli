@@ -5,7 +5,7 @@ import {buildFederatedApp, type WorkbenchExposes} from '@sanity/workbench-cli/bu
 import {build} from 'vite'
 
 import {copyDir} from '../../util/copyDir.js'
-import {type AutoUpdatesBuildConfig} from './autoUpdates.js'
+import {type ModuleCdnPlan} from './autoUpdates.js'
 import {buildDebug} from './buildDebug.js'
 import {
   getAppEnvironmentVariables,
@@ -31,7 +31,6 @@ interface StaticBuildOptions {
   outputDir: string
 
   appTitle?: string
-  autoUpdates?: AutoUpdatesBuildConfig
   entry?: string
   exposes?: WorkbenchExposes
   isApp?: boolean
@@ -40,6 +39,7 @@ interface StaticBuildOptions {
   /** Workbench app (opted in via `defineApplication`) — drives the federation build. */
   isWorkbenchApp?: boolean
   minify?: boolean
+  moduleCdn?: ModuleCdnPlan
   profile?: boolean
   reactCompiler?: CliConfig['reactCompiler']
   schemaExtraction?: CliConfig['schemaExtraction']
@@ -59,7 +59,6 @@ export async function buildStaticFiles(
 ): Promise<{chunks: ChunkStats[]}> {
   const {
     appTitle,
-    autoUpdates,
     basePath,
     cwd,
     entry,
@@ -68,6 +67,7 @@ export async function buildStaticFiles(
     isBlueprints,
     isWorkbenchApp,
     minify = true,
+    moduleCdn,
     outputDir,
     reactCompiler,
     schemaExtraction,
@@ -111,7 +111,6 @@ export async function buildStaticFiles(
 
     buildDebug('Resolving vite config (federation)')
     let viteConfig = await getViteConfig({
-      autoUpdates,
       basePath,
       cwd,
       entries,
@@ -122,6 +121,7 @@ export async function buildStaticFiles(
       isWorkbenchApp,
       minify,
       mode,
+      moduleCdn,
       outputDir,
       reactCompiler,
       // Schema extraction is a build-time artifact, not a client-specific step,
@@ -155,9 +155,8 @@ export async function buildStaticFiles(
 
     buildDebug('Bundling federation environment')
     await buildFederatedApp(viteConfig, {
-      // Custom Vite hooks can resolve different dependencies in the two environments,
-      // and the standalone build maps the shared dependencies through its import map.
-      reuseStandaloneBuild: emitSpa && !extendViteConfig && !autoUpdates,
+      // Custom Vite hooks can resolve different dependencies in the two environments.
+      reuseStandaloneBuild: emitSpa && !extendViteConfig,
     })
     buildDebug('Bundling complete')
     // TODO: add stats here
@@ -185,7 +184,6 @@ export async function buildStaticFiles(
 
   buildDebug('Resolving vite config')
   let viteConfig = await getViteConfig({
-    autoUpdates,
     basePath,
     cwd,
     entries,
@@ -195,6 +193,7 @@ export async function buildStaticFiles(
     isWorkbenchApp,
     minify,
     mode,
+    moduleCdn,
     outputDir,
     reactCompiler,
     schemaExtraction,

@@ -30,6 +30,8 @@ export async function buildFederatedApp(
     return
   }
 
+  reuseStandaloneBuild &&= !plugins.some((plugin) => plugin.api?.sanityStandaloneVendor)
+
   // Loading remote-only exposes in the SPA can emit worker bundles even when their imports are unused.
   reuseStandaloneBuild &&= !federation.hasAdditionalExposes
   const discovery = createSharedDependencyDiscovery(

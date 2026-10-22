@@ -125,21 +125,6 @@ describe('buildStaticFiles', () => {
       })
     })
 
-    test('scans the federation environment for shared dependencies when auto-updates are on', async () => {
-      const autoUpdates = {
-        imports: {},
-        vendor: {entries: {}, namesByChunkName: {}, specifiersByChunkName: {}},
-      }
-
-      await buildStaticFiles({autoUpdates, basePath: '/', cwd, isWorkbenchApp: true, outputDir})
-
-      expect(mockGetViteConfig).toHaveBeenCalledWith(expect.objectContaining({autoUpdates}))
-      // The standalone build resolves shared dependencies as externals, so it can't feed discovery.
-      expect(mockBuildApp).toHaveBeenCalledWith(defaultViteConfig, {
-        reuseStandaloneBuild: false,
-      })
-    })
-
     test('threads schemaExtraction through so a federated studio still extracts its schema', async () => {
       const schemaExtraction = {enabled: true}
 

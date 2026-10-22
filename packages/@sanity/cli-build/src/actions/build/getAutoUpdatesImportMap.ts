@@ -1,5 +1,7 @@
 import {isStaging} from '@sanity/cli-core/util'
 
+import {type ModuleCdnPlan} from './autoUpdates.js'
+
 function getModulesHost() {
   return (
     process.env.SANITY_MODULES_HOST ||
@@ -12,31 +14,35 @@ function currentUnixTime(): number {
 }
 
 type Package = {name: string; version: string}
+type PackageWithCss = Package & {cssFile?: string}
+
 /**
  * @internal
  */
-export function getAutoUpdatesImportMap<const Pkg extends Package>(
-  packages: Pkg[],
+export function getModuleCdnPlan(
+  packages: PackageWithCss[],
   options: {appId?: string; baseUrl?: string; timestamp?: number} = {},
-) {
-  return Object.fromEntries(
-    packages.flatMap((pkg) => getAppAutoUpdateImportMapForPackage(pkg, options)),
-  ) as {[K in `${Pkg['name']}/` | Pkg['name']]: string}
+): ModuleCdnPlan {
+  return {
+    packages: packages.map((pkg) => {
+      const url = getModuleUrl(pkg, options)
+      return pkg.cssFile
+        ? {cssUrl: `${url}/${pkg.cssFile}`, name: pkg.name, url}
+        : {name: pkg.name, url}
+    }),
+  }
 }
 
 /**
  * @internal
  */
-function getAppAutoUpdateImportMapForPackage<const Pkg extends Package>(
-  pkg: Pkg,
-  options: {appId?: string; baseUrl?: string; timestamp?: number} = {},
-): [[Pkg['name'], string], [`${Pkg['name']}/`, string]] {
-  const moduleUrl = getModuleUrl(pkg, options)
-
-  return [
-    [pkg.name, moduleUrl],
-    [`${pkg.name}/`, `${moduleUrl}/`],
-  ]
+export function getAutoUpdatesImportMap(plan: ModuleCdnPlan): Record<string, string> {
+  return Object.fromEntries(
+    plan.packages.flatMap(({name, url}) => [
+      [name, url],
+      [`${name}/`, `${url}/`],
+    ]),
+  )
 }
 
 /**
@@ -77,20 +83,9 @@ function rewriteScopedPackage(pkgName: string) {
   return `${scope}__${pkg.join('')}`
 }
 
-type PackageWithCss = Package & {cssFile?: string}
-
 /**
- * Generate CDN CSS URLs for auto-updated packages.
- * Uses the same URL pattern as JS module URLs so the module server
- * resolves CSS and JS to the same version.
- *
  * @internal
  */
-export function getAutoUpdatesCssUrls<const Pkg extends PackageWithCss>(
-  packages: Pkg[],
-  options: {appId?: string; baseUrl?: string; timestamp?: number} = {},
-): string[] {
-  return packages
-    .filter((pkg) => Boolean(pkg.cssFile))
-    .map((pkg) => `${getModuleUrl(pkg, options)}/${pkg.cssFile}`)
+export function getAutoUpdatesCssUrls(plan: ModuleCdnPlan): string[] {
+  return plan.packages.flatMap(({cssUrl}) => (cssUrl ? [cssUrl] : []))
 }

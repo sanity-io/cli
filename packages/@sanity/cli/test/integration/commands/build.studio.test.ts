@@ -109,7 +109,6 @@ describe('#build studio', {timeout: (platform() === 'win32' ? 120 : 60) * 1000},
       vi.stubEnv('MFE_VITE_NO_TEST_ENV_CHECK', 'true')
 
       const {error, stderr, stdout} = await testCommand(BuildCommand, ['--yes'], {
-        // Shared-dependency discovery only runs in production builds, which Vite derives from NODE_ENV.
         capture: {testNodeEnv: 'production'},
         config: {root: cwd},
       })
@@ -122,8 +121,7 @@ describe('#build studio', {timeout: (platform() === 'win32' ? 120 : 60) * 1000},
 
       // A federated studio also serves itself standalone: the SPA `index.html`
       // is emitted alongside the federation output so the studio loads both on
-      // its own and embedded in the workbench. It auto-updates like a
-      // standalone studio: `sanity` from the module CDN, vendor chunks from this build.
+      // its own and embedded in the workbench.
       expect(distFiles).toContain('index.html')
       const html = await readFile(join(cwd, 'dist', 'index.html'), 'utf8')
       const importMap = JSON.parse(
@@ -154,7 +152,6 @@ describe('#build studio', {timeout: (platform() === 'win32' ? 120 : 60) * 1000},
         react: expect.stringMatching(/^\/vendor\/react\/index-[\w-]+\.mjs$/),
         sanity: expect.stringContaining('/v1/modules/sanity/'),
       })
-      // The federation build must not bootstrap the vendor entries, which strips their exports.
       const styledComponents = await readFile(
         join(cwd, 'dist', importMap.imports['styled-components']),
         'utf8',
@@ -167,7 +164,6 @@ describe('#build studio', {timeout: (platform() === 'win32' ? 120 : 60) * 1000},
       expect(manifest).toHaveProperty('id')
       expect(manifest).toHaveProperty('name')
       expect(manifest).toHaveProperty('metaData.remoteEntry.name')
-      // Auto-updates make react external to the standalone build; sharing must still be discovered.
       expect(manifest.shared.map(({name}: {name: string}) => name)).toEqual(
         expect.arrayContaining(['react', 'react-dom', 'styled-components']),
       )
