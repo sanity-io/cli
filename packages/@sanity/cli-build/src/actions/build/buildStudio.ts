@@ -239,12 +239,14 @@ export async function buildStudio(
   trace.start()
 
   let autoUpdates
-  if (autoUpdatesEnabled) {
-    autoUpdates = {
-      cssUrls: autoUpdatesCssUrls,
-      imports: autoUpdatesImports,
-      vendor: await resolveVendorBuildConfig({cwd: workDir, isApp: false}),
-    }
+  // A workbench document maps the dependencies it shares for the apps it hosts, auto-updating or not.
+  if (autoUpdatesEnabled || options.isWorkbenchApp) {
+    const vendor = await resolveVendorBuildConfig({cwd: workDir, isApp: false}).catch((error) => {
+      if (autoUpdatesEnabled) throw error
+    })
+    autoUpdates = vendor
+      ? {cssUrls: autoUpdatesCssUrls, imports: autoUpdatesImports, vendor}
+      : undefined
   }
 
   try {

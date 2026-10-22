@@ -156,7 +156,7 @@ export async function buildStaticFiles(
     buildDebug('Bundling federation environment')
     await buildFederatedApp(viteConfig, {
       // Custom Vite hooks can resolve different dependencies in the two environments,
-      // and auto-updates make the shared dependencies external to the standalone build.
+      // and the standalone build maps the shared dependencies through its import map.
       reuseStandaloneBuild: emitSpa && !extendViteConfig && !autoUpdates,
     })
     buildDebug('Bundling complete')
