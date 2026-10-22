@@ -263,6 +263,56 @@ describe('#media:pull-aspects', () => {
     expect(stdout).toContain('No field modules generated.')
   })
 
+  test('a module already on disk but missing from the config is still offered for registration', async () => {
+    // Pull once, decline the prompt, run again: the file exists, so nothing is
+    // written — but the field is still undeclared, and deploy deletes
+    // undeclared stored aspects. The re-run must offer the entry again.
+    createTestToken('test-token')
+    mockLibraryList([{id: 'test-library-id'}])
+    mockAspectQuery('test-library-id', [
+      {
+        _id: 'notes',
+        _type: 'sanity.asset.aspect',
+        definition: {name: 'notes', title: 'Notes', type: 'text'},
+      },
+    ])
+    // The module exists on disk (every path resolves).
+    mockFsAccess.mockResolvedValue(undefined)
+    mockConfirm.mockResolvedValue(true)
+
+    const {stderr, stdout} = await testCommand(MediaPullAspectsCommand, [], {mocks: defaultMocks})
+
+    // The module file is not rewritten — only sanity.cli.ts is.
+    expect(mockFsWriteFile).toHaveBeenCalledTimes(1)
+    expect(mockFsWriteFile).toHaveBeenCalledWith(
+      convertToSystemPath('/test/project/sanity.cli.ts'),
+      expect.stringContaining(`{name: 'notes', src: './src/fields/notes.tsx', title: 'Notes'},`),
+    )
+    expect(stderr).toContain('A file already exists')
+    expect(stdout).toContain('Declared 1 field in sanity.cli.ts')
+  })
+
+  test('declining the offer for an existing undeclared module still prints its entry and the deletion warning', async () => {
+    createTestToken('test-token')
+    mockLibraryList([{id: 'test-library-id'}])
+    mockAspectQuery('test-library-id', [
+      {
+        _id: 'notes',
+        _type: 'sanity.asset.aspect',
+        definition: {name: 'notes', title: 'Notes', type: 'text'},
+      },
+    ])
+    mockFsAccess.mockResolvedValue(undefined)
+    // beforeEach declines the prompt.
+
+    const {stdout} = await testCommand(MediaPullAspectsCommand, [], {mocks: defaultMocks})
+
+    expect(mockFsWriteFile).not.toHaveBeenCalled()
+    expect(stdout).toContain('No field modules generated.')
+    expect(stdout).toContain(`{name: 'notes', src: './src/fields/notes.tsx', title: 'Notes'},`)
+    expect(stdout).toContain('not declared in sanity.cli.ts are deleted on deploy')
+  })
+
   test('generates one module when two stored docs resolve to the same name — the doc whose _id matches wins', async () => {
     createTestToken('test-token')
     mockLibraryList([{id: 'test-library-id'}])
@@ -566,7 +616,7 @@ describe('#media:pull-aspects', () => {
 
     expect(mockConfirm).toHaveBeenCalledWith({
       default: true,
-      message: 'Declare the 1 generated field in sanity.cli.ts?',
+      message: 'Declare the 1 pulled field in sanity.cli.ts?',
     })
     expect(mockFsReadFile).toHaveBeenCalledWith(
       convertToSystemPath('/test/project/sanity.cli.ts'),
