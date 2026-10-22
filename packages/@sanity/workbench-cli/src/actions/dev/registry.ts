@@ -99,6 +99,11 @@ const devServerInterfaceSchema = z.union([
 // parses with — see `aDevServerManifest`. Used internally by `getRegisteredServers`.
 export const devServerManifestSchema = z.object({
   /**
+   * The deployed application the server stands in for (`deployment.appId`), which
+   * the Dashboard identifies it by.
+   */
+  applicationId: z.optional(z.string()),
+  /**
    * Field schema *values* load from the federation module; each field's `src`
    * rides along so a repoint bumps the exposes-set id and forces a rebuild.
    * Lenient — the workbench is the authority.
@@ -129,7 +134,11 @@ export const devServerManifestSchema = z.object({
     ),
   ),
   host: z.string(),
-  // Absent when the app has no app id; the Dashboard then keys it on its slug.
+  /**
+   * The id the app runs under on the bus: its slug, also when it has an
+   * `applicationId`, as Dashboards that predate `applicationId` key local apps on
+   * this. Move the bus to `applicationId` once those Dashboards are gone.
+   */
   id: z.optional(z.string()),
   interfaces: z.optional(z.array(devServerInterfaceSchema)),
   /**
@@ -182,8 +191,8 @@ export function isConfigOnlyServer(
 }
 
 /**
- * The identity a local app registers, composed the way brett composes a
- * deployed app's: name defaults to the slug, and the reference follows `isSingleton`.
+ * The identity a workbench app registers under, composed the way brett composes
+ * a deployed app's: name defaults to the slug, the reference follows `isSingleton`.
  */
 export function localAppIdentity(
   app: Pick<WorkbenchApp, 'isSingleton' | 'name' | 'organizationId' | 'slug' | 'visibility'>,
@@ -204,10 +213,10 @@ export function localAppIdentity(
 }
 
 /**
- * Where the Dashboard shell opens a registered server: the route its deployed
- * counterpart has, only when it has a slug and a `surface: 'window'` interface.
- * That interface is the app view the route renders (see toWireInterface);
- * studios always get one, configs and panel-only apps don't, so they'd 404.
+ * Where the Dashboard shell opens a registered server: the route of its deployed
+ * counterpart, only when it has a slug and a `surface: 'window'` interface. That
+ * interface is the app view the route renders (see toWireInterface); studios
+ * always get one, configs and panel-only apps don't, so they'd 404.
  */
 export function dashboardPath(
   server: Pick<DevServerManifest, 'interfaces' | 'slug' | 'type'>,

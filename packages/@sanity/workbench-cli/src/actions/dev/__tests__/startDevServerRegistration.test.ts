@@ -3,7 +3,7 @@ import {join} from 'node:path'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
 import {unstable_defineMediaLibrary} from '../../../defineApp.js'
-import {getRegisteredServers} from '../registry.js'
+import {type DevServerManifest, getRegisteredServers} from '../registry.js'
 import {startDevServerRegistration} from '../startDevServerRegistration.js'
 import {createMockOutput, workbenchApp, workbenchCliConfig} from './devTestHelpers.js'
 
@@ -45,8 +45,8 @@ const readManifest = () => JSON.parse(fsMock.files.get(manifestPath())!)
 
 const APP_ID = 'v27rvqtlp3lmdvcln6ey3lro'
 
-/** A live server another `sanity dev` registered; override only what a test is about. */
-function registerForeignServer(overrides: Record<string, unknown>) {
+/** A live server another `sanity dev` registered in the same org. */
+function registerForeignServer(overrides: Partial<DevServerManifest>) {
   fsMock.files.set(
     join(REGISTRY_DIR, '4242.json'),
     JSON.stringify({
@@ -117,17 +117,28 @@ describe('startDevServerRegistration', () => {
     expect(readManifest().type).toBe('coreApp')
   })
 
-  test('identifies the local app by its deployment app id', async () => {
+  test('registers the deployed application it stands in for, still on the bus under its slug', async () => {
     await register({cliConfig: workbenchCliConfig({deployment: {appId: APP_ID}})})
 
-    expect(readManifest()).toMatchObject({id: APP_ID, slug: 'test-app'})
+    expect(readManifest()).toMatchObject({applicationId: APP_ID, id: 'test-app'})
   })
 
-  test('registers no id without a deployment app id, ignoring the deprecated app.id', async () => {
+  test('registers no application for a config, which stands in for none', async () => {
+    await register({
+      cliConfig: workbenchCliConfig({
+        app: unstable_defineMediaLibrary({organizationId: 'org-1'}),
+        deployment: {appId: APP_ID},
+      }),
+      isApp: true,
+    })
+
+    expect(readManifest()).not.toHaveProperty('applicationId')
+  })
+
+  test('registers no application without a deployment app id, ignoring the deprecated app.id', async () => {
     await register({cliConfig: workbenchCliConfig({app: workbenchApp({id: APP_ID})})})
 
-    expect(readManifest()).not.toHaveProperty('id')
-    expect(readManifest().slug).toBe('test-app')
+    expect(readManifest()).not.toHaveProperty('applicationId')
   })
 
   test('references a singleton under sanity/, like the deployed app', async () => {
@@ -140,7 +151,9 @@ describe('startDevServerRegistration', () => {
     await register()
 
     expect(readManifest()).toMatchObject({
+      name: 'test-app',
       organizationId: 'org-123',
+      reference: 'org-123/test-app',
       slug: 'test-app',
       visibility: 'default',
     })
@@ -166,25 +179,22 @@ describe('startDevServerRegistration', () => {
   })
 
   test('keeps the id when the server binds a port it did not ask for', async () => {
-    await register({
-      cliConfig: workbenchCliConfig({deployment: {appId: APP_ID}}),
-      server: mockServer({boundPort: 3339, port: 3334}) as any,
-    })
+    await register({server: mockServer({boundPort: 3339, port: 3334}) as any})
 
-    expect(readManifest()).toMatchObject({id: APP_ID, port: 3339})
+    expect(readManifest()).toMatchObject({id: 'test-app', port: 3339})
   })
 
   test('logs an error and keeps the dev server up when another server already holds the id', async () => {
-    registerForeignServer({id: APP_ID, slug: 'other-app'})
+    // A live foreign server already advertises `test-app` in the registry.
+    registerForeignServer({id: 'test-app'})
     const output = createMockOutput()
 
-    const handle = await register({
-      cliConfig: workbenchCliConfig({deployment: {appId: APP_ID}}),
-      output,
-    })
+    const handle = await register({output})
 
+    // A plain duplicate-id conflict, phrased generically — a config and its app
+    // no longer share an id, so there is no role to disambiguate.
     expect(output.error).toHaveBeenCalledWith(
-      expect.stringContaining(`"${APP_ID}" is already served`),
+      expect.stringContaining('"test-app" is already served'),
       {exit: false},
     )
     expect(output.error).toHaveBeenCalledWith(expect.stringContaining('Stop that server first.'), {
@@ -197,76 +207,37 @@ describe('startDevServerRegistration', () => {
     await expect(handle.close()).resolves.toBeUndefined()
   })
 
-  test('logs an error when another server already holds the slug on the same route', async () => {
-    registerForeignServer({slug: 'test-app', type: 'studio'})
-    const output = createMockOutput()
-
-    await register({output})
-
-    expect(output.error).toHaveBeenCalledWith(
-      expect.stringContaining('"test-app" is already served'),
-      {exit: false},
-    )
-    expect(fsMock.files.has(manifestPath())).toBe(false)
-  })
-
-  test('logs an error when another server holds the slug on the same route under another id', async () => {
-    registerForeignServer({id: 'k8f2xq9wz1c4m7v0n3b6h5j2', slug: 'test-app', type: 'studio'})
+  test('logs an error when another server stands in for the same application', async () => {
+    registerForeignServer({applicationId: APP_ID, id: 'other-app'})
     const output = createMockOutput()
 
     await register({cliConfig: workbenchCliConfig({deployment: {appId: APP_ID}}), output})
 
     expect(output.error).toHaveBeenCalledWith(
-      expect.stringContaining('"test-app" is already served'),
+      expect.stringContaining(`"${APP_ID}" is already served`),
       {exit: false},
     )
     expect(fsMock.files.has(manifestPath())).toBe(false)
   })
 
-  test('registers a config next to a server without a slug on the same route', async () => {
-    registerForeignServer({type: 'coreApp'})
-    const output = createMockOutput()
-
-    await register({
-      cliConfig: workbenchCliConfig({
-        app: unstable_defineMediaLibrary({organizationId: 'org-123'}),
-      }),
-      isApp: true,
-      output,
-    })
-
-    expect(output.error).not.toHaveBeenCalled()
-    expect(readManifest().id).toBe('config:media-library')
-  })
-
-  test('registers when another server holds the slug on another route', async () => {
-    registerForeignServer({slug: 'test-app', type: 'coreApp'})
+  test('registers when a live dev server holds a different id', async () => {
+    registerForeignServer({id: 'other-app'})
     const output = createMockOutput()
 
     await register({output})
 
     expect(output.error).not.toHaveBeenCalled()
-    expect(readManifest().slug).toBe('test-app')
+    expect(readManifest().id).toBe('test-app')
   })
 
-  test('registers when a live dev server holds a different id and slug', async () => {
-    registerForeignServer({id: 'k8f2xq9wz1c4m7v0n3b6h5j2', slug: 'other-app'})
+  test('registers when another organization serves the same id', async () => {
+    registerForeignServer({id: 'test-app', organizationId: 'org-other'})
     const output = createMockOutput()
 
-    await register({cliConfig: workbenchCliConfig({deployment: {appId: APP_ID}}), output})
+    await register({output})
 
     expect(output.error).not.toHaveBeenCalled()
-    expect(readManifest().id).toBe(APP_ID)
-  })
-
-  test('registers when another organization serves the same id and slug', async () => {
-    registerForeignServer({id: APP_ID, organizationId: 'org-other', slug: 'test-app'})
-    const output = createMockOutput()
-
-    await register({cliConfig: workbenchCliConfig({deployment: {appId: APP_ID}}), output})
-
-    expect(output.error).not.toHaveBeenCalled()
-    expect(readManifest()).toMatchObject({id: APP_ID, organizationId: 'org-123'})
+    expect(readManifest()).toMatchObject({id: 'test-app', organizationId: 'org-123'})
   })
 
   test('forwards api.projectId to the registry', async () => {
@@ -577,14 +548,14 @@ describe('startDevServerRegistration', () => {
       expect(path).toBeUndefined()
     })
 
-    test('has no path for a project without a slug', async () => {
+    test('has no path for a project without an app id', async () => {
       const {path} = await register({cliConfig: workbenchCliConfig({app: undefined}), isApp: false})
 
       expect(path).toBeUndefined()
     })
 
-    test('has no path when another dev server already holds the slug', async () => {
-      registerForeignServer({slug: 'test-app'})
+    test('has no path when another dev server already holds the id', async () => {
+      registerForeignServer({id: 'test-app'})
 
       const {path} = await register()
 
@@ -598,6 +569,6 @@ describe('startDevServerRegistration', () => {
     // End-to-end: what registration persisted is exactly what a workbench
     // reading the registry gets back.
     const [server] = getRegisteredServers()
-    expect(server).toMatchObject({host: 'localhost', port: 3334, slug: 'test-app', type: 'studio'})
+    expect(server).toMatchObject({host: 'localhost', id: 'test-app', port: 3334, type: 'studio'})
   })
 })

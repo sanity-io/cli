@@ -1,6 +1,33 @@
+import {type ResolvedWorkbenchApp} from './resolveWorkbenchApp.js'
+
 /**
  * File the build writes into its output, carrying the id compiled into the
  * bundle. `sanity start` serves a build without recompiling, so it reads this
- * instead of recomputing — a deploy inlines the API id, which the config may lack.
+ * instead of recomputing — a deploy inlines the API id, not the shape hash.
  */
 export const SANITY_APP_ID_FILE = 'sanity-app-id.txt'
+
+/**
+ * The `build`/`start` id — a hash of the app's declared shape (its identity, not
+ * its code), so the bundle inlined by `sanity build` and the registry entry
+ * advertised by `sanity start` resolve to the same id. `sanity deploy` resolves
+ * its own id from the applications API.
+ */
+export async function buildAppId(app: ResolvedWorkbenchApp): Promise<string> {
+  const shape = JSON.stringify({
+    entry: app.entry ?? null,
+    // Identity, not address: the id keys on `name` (which defaults to `slug`). The
+    // address (`slug`) is deliberately absent, so renaming it never shifts the id.
+    name: app.name,
+    organizationId: app.organizationId,
+    services: app.webWorkers
+      .map((webWorker): [string, string, string] => [webWorker.type, webWorker.name, webWorker.src])
+      .toSorted(),
+    views: app.views
+      .map((view): [string, string, string] => [view.surface, view.name, view.src])
+      .toSorted(),
+  })
+  // eslint-disable-next-line n/no-unsupported-features/node-builtins -- the Web Crypto global is available on our Node target and in the browser
+  const digest = await globalThis.crypto.subtle.digest('SHA-256', new TextEncoder().encode(shape))
+  return Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, '0')).join('')
+}

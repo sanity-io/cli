@@ -78,7 +78,6 @@ export function getDevServerConfig({
     reactStrictMode,
     staticPath: path.join(workDir, 'static'),
     typegen: cliConfig?.typegen,
-    // Matches the id the dev-server registry advertises, or the slug the Dashboard falls back to.
-    workbenchAppId: isWorkbenchApp(app) ? (cliConfig?.deployment?.appId ?? app.slug) : undefined,
+    workbenchAppId: isWorkbenchApp(app) ? app.slug : undefined,
   }
 }

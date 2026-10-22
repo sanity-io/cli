@@ -17,7 +17,7 @@ describe('getDevServerConfig', () => {
     vi.unstubAllEnvs()
   })
 
-  test("inlines the workbench app's slug as its id without a deployment app id, and omits it for a plain project", () => {
+  test("inlines the workbench app's slug as its id, and omits it for a plain project", () => {
     const workbench = getDevServerConfig({
       cliConfig: {app: workbenchApp()} as CliConfig,
       flags: FLAGS,
@@ -34,19 +34,6 @@ describe('getDevServerConfig', () => {
       workDir: '/tmp',
     })
     expect(plain.workbenchAppId).toBeUndefined()
-  })
-
-  test("inlines the workbench app's deployment app id as its id when configured", () => {
-    const config = getDevServerConfig({
-      cliConfig: {
-        app: workbenchApp(),
-        deployment: {appId: 'v27rvqtlp3lmdvcln6ey3lro'},
-      } as CliConfig,
-      flags: FLAGS,
-      output: createMockOutput(),
-      workDir: '/tmp',
-    })
-    expect(config.workbenchAppId).toBe('v27rvqtlp3lmdvcln6ey3lro')
   })
 
   test("serves a window view's src as the app entry when `entry` is omitted", () => {

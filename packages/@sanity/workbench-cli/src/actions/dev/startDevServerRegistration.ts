@@ -96,23 +96,26 @@ export async function startDevServerRegistration(
   const workbenchApp = isWorkbenchApp(cliConfig.app) ? cliConfig.app : undefined
   const config = resolveWorkbenchConfig(cliConfig)
   // A config runs alongside the app it configures, so give it its own id
-  // namespace — sharing the app's id would make the two indistinguishable here.
-  const id = config ? `config:${config.appType}` : cliConfig.deployment?.appId
+  // namespace — sharing the app's slug would make the two indistinguishable here.
+  const id = config ? `config:${config.appType}` : workbenchApp?.slug
+  const applicationId = workbenchApp ? cliConfig.deployment?.appId : undefined
+  // Identity is resolved and the reference composed here, so the workbench reads
+  // both off the registry entry instead of recomposing them.
   const identity = workbenchApp ? localAppIdentity(workbenchApp) : undefined
-  const slug = identity?.slug
   const type = isApp ? 'coreApp' : 'studio'
 
-  // The Dashboard keys a local app on its id, or on its slug and route without one.
+  // The Dashboard tells local apps apart by their bus id and by the application
+  // they stand in for.
   const organizationId = cliConfig.app?.organizationId
   const devServer = getRegisteredServers().find(
     (server) =>
       server.organizationId === organizationId &&
-      ((id && server.id === id) || (slug && server.slug === slug && server.type === type)),
+      (server.id === id || (applicationId && server.applicationId === applicationId)),
   )
 
-  if (devServer) {
+  if (id && devServer) {
     output.error(
-      `"${id && devServer.id === id ? id : slug}" is already served by another dev server running on port ${devServer.port}, ` +
+      `"${devServer.id === id ? id : applicationId}" is already served by another dev server running on port ${devServer.port}, ` +
         "so the Dashboard can't tell them apart and this one stays out of it. Stop that server first.",
       {exit: false},
     )
@@ -120,6 +123,7 @@ export async function startDevServerRegistration(
   }
 
   const registration = registerDevServer({
+    applicationId,
     configs,
     host: appHost,
     id,
@@ -143,7 +147,7 @@ export async function startDevServerRegistration(
       return {
         configs: await deriveConfigs(nextConfig),
         interfaces: deriveInterfaces(nextConfig.app, {isApp}),
-        manifest: await extractManifest({...params, applicationId: id ?? slug}),
+        manifest: await extractManifest({...params, applicationId: id}),
       }
     },
     // A studio's root resolves to `sanity.config.*` but its interfaces live in
@@ -179,6 +183,6 @@ export async function startDevServerRegistration(
       registration.release()
       await watcher.close()
     },
-    path: dashboardPath({interfaces, slug, type}),
+    path: dashboardPath({interfaces, slug: identity?.slug, type}),
   }
 }

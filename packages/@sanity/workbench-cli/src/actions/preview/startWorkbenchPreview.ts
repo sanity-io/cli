@@ -4,7 +4,7 @@ import {styleText} from 'node:util'
 
 import {type CliConfig, findProjectRoot, type Output} from '@sanity/cli-core'
 
-import {SANITY_APP_ID_FILE} from '../../appId.js'
+import {buildAppId, SANITY_APP_ID_FILE} from '../../appId.js'
 import {deriveInterfaces} from '../../deriveInterfaces.js'
 import {resolveWorkbenchApp} from '../../resolveWorkbenchApp.js'
 import {createServerLifecycle, toDisplayHost} from '../../util/serverOrchestration.js'
@@ -108,17 +108,18 @@ export async function startWorkbenchPreview(
         '`sanity start` was invoked in an application that is not set up for the Dashboard',
       )
     }
+    const inlinedId = await readInlinedAppId(outDir)
     const configs = await deriveConfigs(cliConfig)
-    const builtId = await readInlinedAppId(outDir)
-    const type = isApp ? 'coreApp' : 'studio'
+    const id = inlinedId ?? (await buildAppId(workbench))
     const interfaces = deriveInterfaces(cliConfig.app, {isApp})
+    const type = isApp ? 'coreApp' : 'studio'
     const registration = registerDevServer({
+      applicationId: cliConfig.deployment?.appId,
       configs,
       host: remote.host,
-      // A build without an app id inlines its slug, which the Dashboard keys on by itself.
-      id: builtId === workbench.slug ? undefined : builtId,
+      id,
       interfaces,
-      manifest: await extractManifest({applicationId: builtId, configPath, workDir}),
+      manifest: await extractManifest({applicationId: id, configPath, workDir}),
       manifestUpdatedAt: new Date().toISOString(),
       port: remote.port,
       projectId: cliConfig?.api?.projectId,
