@@ -153,6 +153,24 @@ describe('initAction routing for media-library-config', () => {
     expect(mockInitApp).not.toHaveBeenCalled()
   })
 
+  test('tolerates --project next to --organization: project flags are ignored, not a contradiction', async () => {
+    // The generic both-flags guard treats --project + --organization as a
+    // "move your project" conflict. This template ignores project flags
+    // altogether (getProjectDetails warns), so the pair must route through.
+    await initAction(
+      {
+        ...baseOptions,
+        organization: 'org-1',
+        outputPath: '/tmp/test-output',
+        project: 'proj-1',
+        unattended: true,
+      },
+      createTestContext(),
+    )
+
+    expect(mockInitApp).toHaveBeenCalledTimes(1)
+  })
+
   test('defaults the output-path slug to the template name (no project to slug)', async () => {
     // The template skips project selection, so displayName is '' — without a
     // fallback slug the output-path prompt would default to the bare cwd,

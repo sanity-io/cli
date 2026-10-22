@@ -60,7 +60,17 @@ export async function initAction(options: InitOptions, context: InitContext): Pr
     throw new InitError('--reconfigure is deprecated - manual configuration is now required', 1)
   }
 
-  if (options.project && options.organization) {
+  // Media Library config templates ride the app init flow end to end:
+  // organization-only project details, app unattended-flag rules, `initApp`.
+  // Template-shape differences are handled downstream (bootstrapLocalTemplate
+  // and initApp check `determineMediaLibraryTemplate` themselves).
+  const isMediaLibraryTemplate = options.template
+    ? determineMediaLibraryTemplate(options.template)
+    : false
+
+  // That template ignores project flags outright (getProjectDetails warns), so
+  // the pair is not the move-a-project contradiction this guard is about.
+  if (options.project && options.organization && !isMediaLibraryTemplate) {
     throw new InitError(
       'You have specified both a project and an organization. To move a project to an organization please visit https://www.sanity.io/manage',
       1,
@@ -97,13 +107,6 @@ export async function initAction(options: InitOptions, context: InitContext): Pr
     )
   }
 
-  // Media Library config templates ride the app init flow end to end:
-  // organization-only project details, app unattended-flag rules, `initApp`.
-  // Template-shape differences are handled downstream (bootstrapLocalTemplate
-  // and initApp check `determineMediaLibraryTemplate` themselves).
-  const isMediaLibraryTemplate = options.template
-    ? determineMediaLibraryTemplate(options.template)
-    : false
   const isAppTemplate = options.template
     ? determineAppTemplate(options.template) || isMediaLibraryTemplate
     : false
