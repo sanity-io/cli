@@ -1,4 +1,5 @@
 import {stat} from 'node:fs/promises'
+import {join, relative} from 'node:path'
 import {styleText} from 'node:util'
 
 import {Flags} from '@oclif/core'
@@ -6,6 +7,8 @@ import {CLIError} from '@oclif/core/errors'
 import {exitCodes, SanityCommand} from '@sanity/cli-core'
 import {spinner, type SpinnerInstance} from '@sanity/cli-core/ux'
 import {
+  generateGroqDeclarations,
+  type GroqDeclaration,
   readConfig,
   runTypegenGenerate,
   runTypegenWatcher,
@@ -17,12 +20,19 @@ import {
 import omit from 'lodash-es/omit.js'
 import once from 'lodash-es/once.js'
 
+import {count} from '../../actions/typegen/count.js'
 import {formatPath} from '../../actions/typegen/formatPath.js'
 import {
   generateResourceTypes,
   type ResolvedResource,
   resolveResourceSchemas,
 } from '../../actions/typegen/generateResourceTypes.js'
+import {
+  createGroqDeclarationsRunner,
+  groqDeclarationOptions,
+  planResourceGroqDeclarations,
+  type ResourceGroqDeclarationsPlan,
+} from '../../actions/typegen/groqDeclarations.js'
 import {parseTypegenConfig} from '../../actions/typegen/parseTypegenConfig.js'
 import {
   parseTypegenResources,
@@ -33,6 +43,7 @@ import {
   type ResourceTypesWatcher,
   watchResourceTypes,
 } from '../../actions/typegen/watchResourceTypes.js'
+import {toForwardSlashes} from '../../util/toForwardSlashes.js'
 
 const description = `Sanity TypeGen
 
@@ -49,6 +60,9 @@ This command can utilize configuration settings defined in a \`sanity-typegen.js
   Default: "./sanity.types.ts"
 
 The default configuration values listed above are used if not overridden in your \`sanity-typegen.json\` configuration file. To customize the behavior of the type generation, adjust these properties in the configuration file according to your project's needs.
+
+${styleText('bold', '.groq files (beta):')}
+A query can also live in its own \`.groq\` file and be imported as a typed query: \`import postsQuery, {type QueryResponse} from './posts.groq'\`. The command writes a \`.d.groq.ts\` next to every \`.groq\` file in the folders \`path\` reads from, which TypeScript resolves with \`allowArbitraryExtensions\`, and \`--watch\` keeps them up to date. With \`typegen.resources\`, each resource types the \`.groq\` files in its own folders against its \`schema\` file; a resource without \`schema\` does not type them yet.
 
 ${styleText('bold', 'Note:')}
 - The \`sanity schema extract\` command is a prerequisite for extracting your Sanity Studio schema into a \`schema.json\` file, which is then used by the \`sanity typegen generate\` command to generate type definitions.
@@ -86,6 +100,22 @@ export class TypegenGenerateCommand extends SanityCommand<typeof TypegenGenerate
     }
 
     await this.runSingle()
+  }
+
+  /**
+   * Writes a `.d.groq.ts` next to every `.groq` file in the query folders, after the usual
+   * types. Prints nothing when there is none, so a project without `.groq` files sees no change.
+   */
+  private async generateResourceGroqDeclarations(
+    plan: ResourceGroqDeclarationsPlan,
+    spin: SpinnerInstance,
+    workDir: string,
+  ): Promise<void> {
+    for (const warning of plan.warnings) {
+      this.output.warn(warning)
+    }
+    if (!plan.options) return
+    reportGroqDeclarations(spin, await generateGroqDeclarations(plan.options), workDir)
   }
 
   private async getConfig(): Promise<{
@@ -256,6 +286,12 @@ export class TypegenGenerateCommand extends SanityCommand<typeof TypegenGenerate
             ...omit(result, 'code', 'duration'),
           })
         }
+
+        await this.generateResourceGroqDeclarations(
+          await planResourceGroqDeclarations({config: typegenConfig, resolved, workDir}),
+          resourceSpin,
+          workDir,
+        )
         trace.complete()
         return
       }
@@ -278,6 +314,12 @@ export class TypegenGenerateCommand extends SanityCommand<typeof TypegenGenerate
         configOverloadClientMethods: typegenConfig.overloadClientMethods,
         ...traceStats,
       })
+
+      reportGroqDeclarations(
+        spin,
+        await generateGroqDeclarations(groqDeclarationOptions(typegenConfig, workDir)),
+        workDir,
+      )
       trace.complete()
     } catch (error) {
       if (spin?.isSpinning) {
@@ -365,14 +407,22 @@ export class TypegenGenerateCommand extends SanityCommand<typeof TypegenGenerate
     const resolved = await this.resolveResources(resources, spin, workDir, {
       checkSchemaFiles: false,
     })
+    const groqDeclarations = await planResourceGroqDeclarations({config, resolved, workDir})
+    for (const warning of groqDeclarations.warnings) {
+      this.output.warn(warning)
+    }
 
     return watchResourceTypes({
       config,
+      groqDeclarations: groqDeclarations.options,
       onChange: (event, relativePath) => {
         this.output.log(`[${new Date().toLocaleTimeString()}] ${event}: ${relativePath}`)
       },
       onError: (error) => {
         spin.fail(error instanceof Error ? error.message : String(error))
+      },
+      onGroqDeclarations: (declarations) => {
+        reportGroqDeclarations(spin, declarations, workDir)
       },
       onProgress: createResourceProgressHandler(spin, config),
       resolved,
@@ -380,6 +430,12 @@ export class TypegenGenerateCommand extends SanityCommand<typeof TypegenGenerate
     })
   }
 
+  /**
+   * Starts codegen's watcher, which generates on each query file or schema change. The `.groq`
+   * declarations are written after each generation, and the `.groq` files are added to what the
+   * watcher watches, so editing one generates as well. The declarations are taken out of it: they
+   * end in `.ts`, so the query patterns match them, and writing one would start another run.
+   */
   private startSchemaWatcher(
     config: TypeGenConfig,
     spin: SpinnerInstance,
@@ -393,7 +449,18 @@ export class TypegenGenerateCommand extends SanityCommand<typeof TypegenGenerate
     }
     let renderProgress = createTypegenProgressRenderer(spin, rendererContext)
 
-    return runTypegenWatcher({
+    const groqDeclarations = groqDeclarationOptions(config, workDir)
+    const generateDeclarations = createGroqDeclarationsRunner({
+      onError: (error) => {
+        spin.fail(error instanceof Error ? error.message : String(error))
+      },
+      onGenerated: (declarations) => {
+        reportGroqDeclarations(spin, declarations, workDir)
+      },
+      options: groqDeclarations,
+    })
+
+    const typegenWatcher = runTypegenWatcher({
       config,
       onProgress: (event) => {
         // 'schemaLoaded' is the first event of every generation cycle; the
@@ -402,9 +469,38 @@ export class TypegenGenerateCommand extends SanityCommand<typeof TypegenGenerate
           renderProgress = createTypegenProgressRenderer(spin, rendererContext)
         }
         renderProgress(event)
+        if (event.type === 'complete') {
+          void generateDeclarations()
+        }
       },
       workDir,
     })
+    const {watcher} = typegenWatcher
+    watcher.add(groqDeclarations.path.map((pattern) => toForwardSlashes(join(workDir, pattern))))
+    // chokidar ignores an unwatched glob from then on.
+    watcher.unwatch(toForwardSlashes(join(workDir, '**/*.d.groq.ts')))
+    return typegenWatcher
+  }
+}
+
+/**
+ * Reports a problem in each `.groq` file that has one, then how many files were typed. A file
+ * with a problem still gets a complete declaration, so this is a warning rather than a failure.
+ */
+function reportGroqDeclarations(
+  spin: SpinnerInstance,
+  declarations: GroqDeclaration[],
+  workDir: string,
+): void {
+  for (const {diagnostics, file} of declarations) {
+    for (const {messageText} of diagnostics) {
+      spin.warn(`${formatPath(relative(workDir, file))}: ${messageText}`)
+    }
+  }
+  if (declarations.length > 0) {
+    spin.succeed(
+      `Generated declarations for ${count(declarations.length, '.groq files', '.groq file')}`,
+    )
   }
 }
 

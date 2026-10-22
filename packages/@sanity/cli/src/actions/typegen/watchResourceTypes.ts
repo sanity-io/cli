@@ -1,7 +1,13 @@
 import {existsSync} from 'node:fs'
 import {basename, relative, resolve, sep} from 'node:path'
 
-import {type TypeGenConfig, type TypegenProgressEvent} from '@sanity/codegen'
+import {
+  generateGroqDeclarations,
+  type GenerateGroqDeclarationsOptions,
+  type GroqDeclaration,
+  type TypeGenConfig,
+  type TypegenProgressEvent,
+} from '@sanity/codegen'
 import {watch} from 'chokidar'
 import debounce from 'lodash-es/debounce.js'
 import mean from 'lodash-es/mean.js'
@@ -35,8 +41,8 @@ export interface ResourceTypesWatcher {
 }
 
 /**
- * Generates types for every resource, then generates them again whenever a query file or a local
- * schema file changes.
+ * Generates types for every resource, then generates them again whenever a query file, a `.groq`
+ * file or a local schema file changes.
  *
  * The caller resolves the schemas, once. A schema fetched from a dataset's binding is used until
  * the watcher stops, so a schema deployed while it runs is not picked up until it restarts. A
@@ -44,26 +50,42 @@ export interface ResourceTypesWatcher {
  * generation until the file appears.
  *
  * Each resource generates on its own, so a broken schema or query in one does not hold back the
- * others. Generated files are not watched: outputs usually sit inside the query pattern, such as
- * `./src/sanity.types.production.ts` under `./src/**`, and writing one would start the next run.
+ * others. The `.groq` declarations are written after the resources, in one go. Generated files
+ * are not watched: outputs usually sit inside the query pattern, such as
+ * `./src/sanity.types.production.ts` or a `.d.groq.ts` under `./src/**`, and writing one would
+ * start the next run.
  */
 export function watchResourceTypes(options: {
   /** Settings shared by every resource. */
   config: TypeGenConfig
+  /** Types the `.groq` files in the query folders after each run, when set. */
+  groqDeclarations?: GenerateGroqDeclarationsOptions
   /** Called for each change that schedules a run, with the path relative to `workDir`. */
   onChange?: (event: string, relativePath: string) => void
   /** Called when a resource's generation or the file watcher fails. The watcher keeps running. */
   onError?: (error: unknown) => void
+  /** Called with the `.groq` declarations each run generated. */
+  onGroqDeclarations?: (declarations: GroqDeclaration[]) => void
   /** Returns the progress handler for one resource's generation. */
   onProgress?: (resolved: ResolvedResource) => ((event: TypegenProgressEvent) => void) | undefined
   resolved: ResolvedResource[]
   workDir: string
 }): ResourceTypesWatcher {
-  const {config, onChange, onError, onProgress, resolved, workDir} = options
+  const {
+    config,
+    groqDeclarations,
+    onChange,
+    onError,
+    onGroqDeclarations,
+    onProgress,
+    resolved,
+    workDir,
+  } = options
 
   const queryMatchers = resolved.map(({resource}) =>
     createQueryMatcher(resource.path ?? config.path, workDir),
   )
+  const isGroqFileToType = createGroqFileMatcher(groqDeclarations)
   const schemaFiles = new Set(
     resolved.flatMap((entry) =>
       'schemaPath' in entry ? [resolve(workDir, entry.schemaPath)] : [],
@@ -95,6 +117,14 @@ export function watchResourceTypes(options: {
         onError?.(error)
       }
     }
+
+    if (isStopped || !groqDeclarations) return
+    try {
+      const declarations = await generateGroqDeclarations(groqDeclarations)
+      onGroqDeclarations?.(declarations)
+    } catch (error) {
+      onError?.(error)
+    }
   }
 
   // Runs one generation at a time. Changes during a run queue a single follow-up run.
@@ -120,11 +150,13 @@ export function watchResourceTypes(options: {
 
   const missingRoots = new Set(roots.filter((root) => !existsSync(root)))
 
+  const isOutput = (absolutePath: string) =>
+    outputFiles.has(absolutePath.toLowerCase()) || isGroqDeclaration(absolutePath)
+
   const watcher = watch(
     roots.filter((root) => !missingRoots.has(root)),
     {
-      ignored: (path) =>
-        IGNORED_DIRECTORIES.has(basename(path)) || outputFiles.has(resolve(path).toLowerCase()),
+      ignored: (path) => IGNORED_DIRECTORIES.has(basename(path)) || isOutput(resolve(path)),
       ignoreInitial: true,
     },
   )
@@ -166,11 +198,12 @@ export function watchResourceTypes(options: {
     }
 
     if (event !== 'add' && event !== 'change' && event !== 'unlink') return
-    if (outputFiles.has(absolutePath.toLowerCase())) return
+    if (isOutput(absolutePath)) return
 
     const relativePath = toForwardSlashes(relative(workDir, absolutePath))
     if (
       !schemaFiles.has(absolutePath) &&
+      !isGroqFileToType(relativePath) &&
       !queryMatchers.some(({isMatch}) => isMatch(relativePath))
     ) {
       return
@@ -250,4 +283,31 @@ function normalizePattern(pattern: string, workDir: string): string[] {
   const normalized = toForwardSlashes(relative(workDir, resolve(workDir, pattern)))
   if (!normalized) return ['**']
   return picomatch.scan(normalized).isGlob ? [normalized] : [normalized, `${normalized}/**`]
+}
+
+/**
+ * Matches paths relative to `workDir` against the globs naming the `.groq` files to type, as
+ * codegen reads them with globby: every `.groq` file unless `path` says otherwise, and none of
+ * those a pattern starting with `!` names. Matches nothing when no `.groq` files are typed.
+ */
+function createGroqFileMatcher(
+  options: GenerateGroqDeclarationsOptions | undefined,
+): (relativePath: string) => boolean {
+  if (!options) return () => false
+  const {path = '**/*.groq'} = options
+  const patterns = Array.isArray(path) ? path : [path]
+  const included = patterns.filter((pattern) => !pattern.startsWith('!'))
+  if (included.length === 0) return () => false
+  const ignore = patterns
+    .filter((pattern) => pattern.startsWith('!'))
+    .map((pattern) => pattern.slice(1))
+  return picomatch(included, {ignore})
+}
+
+/**
+ * The declaration codegen writes next to a `.groq` file: `posts.groq` has `posts.d.groq.ts`.
+ * Compared lowercased, like the outputs.
+ */
+function isGroqDeclaration(path: string): boolean {
+  return path.toLowerCase().endsWith('.d.groq.ts')
 }

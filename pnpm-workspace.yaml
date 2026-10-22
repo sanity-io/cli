@@ -30,7 +30,9 @@ catalog:
   '@sanity/types': ^6.17.0
   '@sanity/schema': ^6.17.0
   '@sanity/client': ^8.9.0
-  '@sanity/codegen': ^8.2.0
+  # Preview build of sanity-io/codegen#176 and #177 (.groq file typing). Replace with the release
+  # that ships them before merging.
+  '@sanity/codegen': https://pkg.pr.new/@sanity/codegen@13204e3
   '@sanity/sdk': ^3.8.0
   '@sanity/telemetry': ^1.1.0
 

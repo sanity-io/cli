@@ -19,6 +19,7 @@ interface FakeWatcher {
 
 const mockWatch = vi.hoisted(() => vi.fn())
 const mockGenerateResourceTypes = vi.hoisted(() => vi.fn())
+const mockGenerateGroqDeclarations = vi.hoisted(() => vi.fn())
 
 vi.mock(import('chokidar'), async (importOriginal) => ({
   ...(await importOriginal()),
@@ -27,6 +28,11 @@ vi.mock(import('chokidar'), async (importOriginal) => ({
 
 vi.mock(import('../generateResourceTypes.js'), () => ({
   generateResourceTypes: mockGenerateResourceTypes,
+}))
+
+vi.mock(import('@sanity/codegen'), async (importOriginal) => ({
+  ...(await importOriginal()),
+  generateGroqDeclarations: mockGenerateGroqDeclarations,
 }))
 
 // A real directory, because the watcher checks that the paths it watches exist.
@@ -63,6 +69,13 @@ const config: TypeGenConfig = {
   overloadClientMethods: false,
   path: './src/**/*.{ts,tsx,js,jsx}',
   schema: './schema.json',
+}
+
+/** How staging's `.groq` files are typed. Production's schema is fetched, so its files are not. */
+const groqDeclarations = {
+  path: ['queries/staging/**/*.groq'],
+  resources: [{path: ['queries/staging'], schema: './schema.staging.json'}],
+  root: workDir,
 }
 
 let watcher: FakeWatcher
@@ -113,6 +126,7 @@ async function start(options: Partial<Parameters<typeof watchResourceTypes>[0]> 
   const started = watchResourceTypes({config, resolved, workDir, ...options})
   await vi.advanceTimersByTimeAsync(0)
   mockGenerateResourceTypes.mockClear()
+  mockGenerateGroqDeclarations.mockClear()
   return started
 }
 
@@ -136,6 +150,7 @@ beforeEach(() => {
   watcher = createFakeWatcher()
   mockWatch.mockReturnValue(watcher)
   mockGenerateResourceTypes.mockResolvedValue([])
+  mockGenerateGroqDeclarations.mockResolvedValue([])
 })
 
 afterEach(() => {
@@ -502,6 +517,137 @@ describe('watchResourceTypes', () => {
       'abc123.production',
       'abc123.staging',
     ])
+  })
+
+  describe('.groq files', () => {
+    const declaration = {
+      declaration: inProject('queries', 'staging', 'books.d.groq.ts'),
+      diagnostics: [],
+      file: inProject('queries', 'staging', 'books.groq'),
+      written: true,
+    }
+
+    test('types them after the resources on each run, when asked to', async () => {
+      mockGenerateGroqDeclarations.mockResolvedValue([declaration])
+      const onGroqDeclarations = vi.fn()
+      watchResourceTypes({config, groqDeclarations, onGroqDeclarations, resolved, workDir})
+      await vi.advanceTimersByTimeAsync(0)
+
+      expect(mockGenerateGroqDeclarations).toHaveBeenCalledExactlyOnceWith(groqDeclarations)
+      expect(mockGenerateGroqDeclarations.mock.invocationCallOrder[0]).toBeGreaterThan(
+        mockGenerateResourceTypes.mock.invocationCallOrder[1],
+      )
+      expect(onGroqDeclarations).toHaveBeenCalledExactlyOnceWith([declaration])
+
+      watcher.emit('change', inProject('src', 'queries.ts'))
+      await vi.advanceTimersByTimeAsync(1000)
+      expect(mockGenerateGroqDeclarations).toHaveBeenCalledTimes(2)
+    })
+
+    test('leaves them alone otherwise', async () => {
+      const onChange = vi.fn()
+      await start({onChange})
+
+      watcher.emit('change', inProject('queries', 'staging', 'books.groq'))
+      await vi.advanceTimersByTimeAsync(1000)
+
+      expect(mockGenerateGroqDeclarations).not.toHaveBeenCalled()
+      expect(onChange).not.toHaveBeenCalled()
+      expect(mockGenerateResourceTypes).not.toHaveBeenCalled()
+    })
+
+    test('generates again when one that is typed changes', async () => {
+      const onChange = vi.fn()
+      await start({
+        groqDeclarations: {
+          ...groqDeclarations,
+          path: ['src/**/*.groq', 'queries/staging/**/*.groq', '!src/legacy/**'],
+        },
+        onChange,
+      })
+
+      // Production's schema is fetched, so its `.groq` files are left alone.
+      watcher.emit('add', inProject('src', 'legacy', 'posts.groq'))
+      watcher.emit('change', inProject('queries', 'production', 'books.groq'))
+      await vi.advanceTimersByTimeAsync(1000)
+      expect(onChange).not.toHaveBeenCalled()
+      expect(mockGenerateResourceTypes).not.toHaveBeenCalled()
+
+      watcher.emit('add', inProject('src', 'posts.groq'))
+      watcher.emit('change', inProject('queries', 'staging', 'books.groq'))
+      await vi.advanceTimersByTimeAsync(1000)
+
+      expect(onChange.mock.calls).toEqual([
+        ['add', 'src/posts.groq'],
+        ['change', 'queries/staging/books.groq'],
+      ])
+      expect(generatedKeys()).toEqual(['abc123.production', 'abc123.staging'])
+      expect(mockGenerateGroqDeclarations).toHaveBeenCalledOnce()
+    })
+
+    test('are all typed without a path, as codegen reads it, and none with exclusions only', async () => {
+      const onChange = vi.fn()
+      const started = await start({groqDeclarations: {root: workDir}, onChange})
+      watcher.emit('change', inProject('src', 'posts.groq'))
+      expect(onChange.mock.calls).toEqual([['change', 'src/posts.groq']])
+
+      await started.stop()
+      onChange.mockClear()
+      await start({groqDeclarations: {path: '!src/**', root: workDir}, onChange})
+      watcher.emit('change', inProject('src', 'posts.groq'))
+      expect(onChange).not.toHaveBeenCalled()
+    })
+
+    test('does not watch the declarations it writes', async () => {
+      const onChange = vi.fn()
+      await start({groqDeclarations, onChange})
+      const ignored: (filePath: string) => boolean = mockWatch.mock.calls[0][1].ignored
+
+      expect(ignored(inProject('queries', 'staging', 'books.d.groq.ts'))).toBe(true)
+      expect(ignored(inProject('queries', 'staging', 'Books.D.GROQ.TS'))).toBe(true)
+      expect(ignored(inProject('queries', 'staging', 'books.groq'))).toBe(false)
+
+      watcher.emit('add', inProject('queries', 'staging', 'books.d.groq.ts'))
+      await vi.advanceTimersByTimeAsync(1000)
+      expect(onChange).not.toHaveBeenCalled()
+      expect(mockGenerateResourceTypes).not.toHaveBeenCalled()
+    })
+
+    test('reports a failure without counting it as a failed generation', async () => {
+      const error = new Error('No schema file at schema.staging.json')
+      mockGenerateGroqDeclarations.mockRejectedValue(error)
+      const onError = vi.fn()
+      const onGroqDeclarations = vi.fn()
+
+      const started = watchResourceTypes({
+        config,
+        groqDeclarations,
+        onError,
+        onGroqDeclarations,
+        resolved,
+        workDir,
+      })
+      await vi.advanceTimersByTimeAsync(0)
+
+      expect(onError).toHaveBeenCalledExactlyOnceWith(error)
+      expect(onGroqDeclarations).not.toHaveBeenCalled()
+      expect(started.getStats()).toMatchObject({
+        generationFailedCount: 0,
+        generationSuccessfulCount: 2,
+      })
+    })
+
+    test('are not typed after stopping during the resources', async () => {
+      const first = createDeferred<[]>()
+      mockGenerateResourceTypes.mockImplementationOnce(() => first.promise)
+      const started = watchResourceTypes({config, groqDeclarations, resolved, workDir})
+
+      const stopping = started.stop()
+      first.resolve([])
+      await stopping
+
+      expect(mockGenerateGroqDeclarations).not.toHaveBeenCalled()
+    })
   })
 
   describe('stop', () => {

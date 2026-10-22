@@ -38,6 +38,9 @@ const query = `import {defineQuery} from 'groq'
 export const bookTitleQuery = defineQuery('*[_type == "book"][0]{title}')
 `
 
+/** The same query as `bookTitleQuery`, in its own file. */
+const groqFile = '*[_type == "book"][0]{title}\n'
+
 async function setUpProject(typegen: Record<string, unknown>): Promise<string> {
   const cwd = await testFixture('basic-app')
   process.chdir(cwd)
@@ -162,6 +165,34 @@ describe('#typegen:generate with typegen.resources', {timeout: 60 * 1000}, () =>
     expect(error?.oclif?.exit).toBe(1)
     expect(existsSync(join(cwd, 'src', 'production.types.ts'))).toBe(false)
     expect(existsSync(join(cwd, 'src', 'staging.types.ts'))).toBe(false)
+  })
+
+  test('types the .groq files in the folders of each resource with a schema file', async () => {
+    const cwd = await setUpProject({resources: [production, staging]})
+    await writeFile(join(cwd, 'src', 'staging', 'bookTitle.groq'), groqFile)
+    await writeFile(join(cwd, 'src', 'production', 'bookTitle.groq'), groqFile)
+    mockBinding('abc123', 'production').reply(200, {
+      _meta: {producer: 'api', schemaVersion: 'uEiB-test', source: null, sourceLabel: null},
+      name: 'schema',
+      types: [],
+    })
+    mockApi({
+      apiVersion: SCHEMA_DESCRIPTOR_API_VERSION,
+      uri: '/descriptors/schemas/uEiB-test',
+    }).reply(200, descriptor)
+
+    const {error, stderr} = await testCommand(TypegenGenerateCommand, [])
+    if (error) throw error
+
+    // Staging's schema is a file, so its `.groq` file is typed against it.
+    const declaration = await readFile(join(cwd, 'src', 'staging', 'bookTitle.d.groq.ts'), 'utf8')
+    expect(declaration).toMatch(/export type QueryResponse = \{\s*title: number \| null;/)
+    expect(declaration).toContain('export default query')
+    expect(stderr).toContain('Generated declarations for 1 .groq file')
+
+    // Production's is fetched, which .groq files cannot be typed against yet.
+    expect(existsSync(join(cwd, 'src', 'production', 'bookTitle.d.groq.ts'))).toBe(false)
+    expect(stderr).toContain('No declarations for the 1 .groq file under "src/production"')
   })
 })
 
@@ -325,9 +356,107 @@ describe('#typegen:generate --watch with typegen.resources', {timeout: 60 * 1000
     // Still the fetched schema, in which `title` is required.
     expect(await readFile(output, 'utf8')).toMatch(/export type Book = \{[^}]*\btitle: string;/)
   })
+
+  test('types a .groq file again when it changes, and not when it writes its declaration', async () => {
+    const cwd = await setUpProject({resources: [staging]})
+    const groq = join(cwd, 'src', 'staging', 'bookTitle.groq')
+    await writeFile(groq, groqFile)
+    const declaration = join(cwd, 'src', 'staging', 'bookTitle.d.groq.ts')
+
+    const {promise, stop} = startWatching()
+    try {
+      await waitUntil(() => fileIncludes(declaration, 'title: number | null'))
+
+      await writeFile(groq, '*[_type == "book"]._id\n')
+      await waitUntil(() => fileIncludes(declaration, 'Array<string>'))
+
+      // A run started by writing the declaration would write it again about a second later.
+      const {mtimeMs} = await stat(declaration)
+      await new Promise((resolve) => setTimeout(resolve, 2500))
+      expect((await stat(declaration)).mtimeMs).toBe(mtimeMs)
+    } finally {
+      stop()
+    }
+
+    const {error, stderr, stdout} = await promise
+    if (error) throw error
+    expect(stdout).toContain('change: src/staging/bookTitle.groq')
+    expect(stdout).not.toContain('bookTitle.d.groq.ts')
+    expect(stderr).toContain('Generated declarations for 1 .groq file')
+  })
 })
 
 describe('#typegen:generate without typegen.resources', {timeout: 60 * 1000}, () => {
+  test('types the .groq files in the query folders against the schema', async () => {
+    const cwd = await setUpProject({
+      generates: './src/sanity.types.ts',
+      path: './src/staging/*.ts',
+      schema: './staging.schema.json',
+    })
+    await writeFile(join(cwd, 'src', 'staging', 'bookTitle.groq'), groqFile)
+    // Outside the folder the queries are read from, so not a query of this project.
+    await writeFile(join(cwd, 'src', 'production', 'bookTitle.groq'), groqFile)
+
+    const {error, stderr} = await testCommand(TypegenGenerateCommand, [])
+    if (error) throw error
+
+    const declaration = await readFile(join(cwd, 'src', 'staging', 'bookTitle.d.groq.ts'), 'utf8')
+    expect(declaration).toMatch(/export type QueryResponse = \{\s*title: number \| null;/)
+    expect(declaration).toContain('export type QueryParams = Record<string, never>')
+    expect(existsSync(join(cwd, 'src', 'production', 'bookTitle.d.groq.ts'))).toBe(false)
+    expect(stderr).toContain('Generated declarations for 1 .groq file')
+  })
+
+  test('reports a .groq file with a syntax error, and still types it', async () => {
+    const cwd = await setUpProject({
+      generates: './src/sanity.types.ts',
+      path: './src/staging/*.ts',
+      schema: './staging.schema.json',
+    })
+    await writeFile(join(cwd, 'src', 'staging', 'broken.groq'), '*[_type == "book" &&\n')
+
+    const {error, stderr} = await testCommand(TypegenGenerateCommand, [])
+    if (error) throw error
+
+    expect(stderr).toContain('src/staging/broken.groq: Syntax error in GROQ query')
+    const declaration = await readFile(join(cwd, 'src', 'staging', 'broken.d.groq.ts'), 'utf8')
+    expect(declaration).toContain('export type QueryResponse = unknown')
+  })
+
+  test('with --watch, types a .groq file again when it changes, and not when it writes its declaration', async () => {
+    const cwd = await setUpProject({
+      generates: './src/sanity.types.ts',
+      path: './src/staging/*.ts',
+      schema: './staging.schema.json',
+    })
+    const groq = join(cwd, 'src', 'staging', 'bookTitle.groq')
+    await writeFile(groq, groqFile)
+    const declaration = join(cwd, 'src', 'staging', 'bookTitle.d.groq.ts')
+    const output = join(cwd, 'src', 'sanity.types.ts')
+
+    const {promise, stop} = startWatching()
+    try {
+      await waitUntil(() => fileIncludes(declaration, 'title: number | null'))
+
+      await writeFile(groq, '*[_type == "book"]._id\n')
+      await waitUntil(() => fileIncludes(declaration, 'Array<string>'))
+
+      // The declaration matches the query pattern. A run started by writing it would write the
+      // types again about a second later.
+      const {mtimeMs} = await stat(output)
+      await new Promise((resolve) => setTimeout(resolve, 2500))
+      expect((await stat(output)).mtimeMs).toBe(mtimeMs)
+    } finally {
+      stop()
+    }
+
+    const {error, stderr, stdout} = await promise
+    if (error) throw error
+    expect(stdout).toContain('bookTitle.groq')
+    expect(stdout).not.toContain('bookTitle.d.groq.ts')
+    expect(stderr).toContain('Generated declarations for 1 .groq file')
+  })
+
   test('generates one file from a single schema, as before resources were added', async () => {
     const cwd = await setUpProject({
       generates: './src/sanity.types.ts',
