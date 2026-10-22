@@ -8,6 +8,7 @@ import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
 import {type BuildOptions, buildStudio, BuildStudioEventListener} from '../buildStudio.js'
 import {getAutoUpdatesCssUrls, getAutoUpdatesImportMap} from '../getAutoUpdatesImportMap.js'
+import {resolveVendorBuildConfig} from '../resolveVendorBuildConfig.js'
 
 function buildOptions(
   overrides: Partial<BuildOptions> & Pick<BuildOptions, 'output'>,
@@ -341,6 +342,9 @@ describe('#buildStudio', () => {
 
     expect(onPreReleaseInInteractiveAutoUpdate).toHaveBeenCalled()
     expect(onBuildStart).toHaveBeenCalledWith({message: 'Build Sanity Studio'})
+    expect(mockedBuildStaticFiles).toHaveBeenCalledWith(
+      expect.objectContaining({autoUpdates: undefined}),
+    )
   })
 
   test('outputs include environment variables', async () => {
@@ -494,6 +498,51 @@ describe('#buildStudio', () => {
 
     expect(mockCheckAppId).toHaveBeenCalled()
   })
+  test("maps a workbench app's shared dependencies without auto-updates", async () => {
+    const vendor = {entries: {}, namesByChunkName: {}, specifiersByChunkName: {}}
+    vi.mocked(resolveVendorBuildConfig).mockResolvedValueOnce(vendor)
+
+    await buildStudio(
+      buildOptions({isWorkbenchApp: true, output: createMockOutput(), unattendedMode: true}),
+    )
+
+    expect(mockedBuildStaticFiles).toHaveBeenCalledWith(
+      expect.objectContaining({autoUpdates: {cssUrls: [], imports: {}, vendor}}),
+    )
+  })
+
+  test('builds a workbench app without the import map when its shared dependencies are unsupported', async () => {
+    vi.mocked(resolveVendorBuildConfig).mockRejectedValueOnce(
+      new Error("Package 'react' requires at least 19.2.0."),
+    )
+
+    await buildStudio(
+      buildOptions({isWorkbenchApp: true, output: createMockOutput(), unattendedMode: true}),
+    )
+
+    expect(mockedBuildStaticFiles).toHaveBeenCalledWith(
+      expect.objectContaining({autoUpdates: undefined}),
+    )
+  })
+
+  test('fails an auto-updating workbench build whose shared dependencies are unsupported', async () => {
+    vi.mocked(resolveVendorBuildConfig).mockRejectedValueOnce(
+      new Error("Package 'react' requires at least 19.2.0."),
+    )
+
+    await expect(
+      buildStudio(
+        buildOptions({
+          autoUpdatesEnabled: true,
+          isWorkbenchApp: true,
+          output: createMockOutput(),
+          unattendedMode: true,
+        }),
+      ),
+    ).rejects.toThrow("Package 'react' requires at least 19.2.0.")
+    expect(mockedBuildStaticFiles).not.toHaveBeenCalled()
+  })
+
   describe('federation manifest', () => {
     let outDir: string
     beforeEach(async () => {

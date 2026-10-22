@@ -192,15 +192,19 @@ export async function buildApp(
   trace.start()
 
   let autoUpdates
-  if (autoUpdatesEnabled) {
-    // A workbench app shares its own styled-components with the apps it hosts.
+  // A workbench document maps the dependencies it shares for the apps it hosts, auto-updating or not.
+  if (autoUpdatesEnabled || options.isWorkbenchApp) {
     const sharesStyledComponents =
       options.isWorkbenchApp && Boolean(await getLocalPackageVersion('styled-components', workDir))
-    autoUpdates = {
-      cssUrls: autoUpdatesCssUrls,
-      imports: autoUpdatesImports,
-      vendor: await resolveVendorBuildConfig({cwd: workDir, isApp: !sharesStyledComponents}),
-    }
+    const vendor = await resolveVendorBuildConfig({
+      cwd: workDir,
+      isApp: !sharesStyledComponents,
+    }).catch((error) => {
+      if (autoUpdatesEnabled) throw error
+    })
+    autoUpdates = vendor
+      ? {cssUrls: autoUpdatesCssUrls, imports: autoUpdatesImports, vendor}
+      : undefined
   }
 
   try {
