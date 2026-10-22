@@ -122,15 +122,10 @@ describe('buildStaticFiles', () => {
       // transforms like vanilla-extract never run on `.css.ts` files.
       const builderConfig = mockBuildApp.mock.calls[0][0]
       expect(builderConfig.plugins).toContainEqual(userPlugin)
-      expect(mockBuildApp).toHaveBeenCalledWith(builderConfig, {
-        reuseStandaloneBuild: false,
-      })
 
       // Federation builds must not call finalizeViteConfig; it forces a
       // Studio-specific entry the federation environment does not use.
       expect(mockFinalizeViteConfig).not.toHaveBeenCalled()
-
-      expect(mockBuildApp).toHaveBeenCalled()
     })
 
     test('never runs the legacy single-environment vite build', async () => {
@@ -213,9 +208,7 @@ describe('buildStaticFiles', () => {
       expect(mockWriteFavicons).not.toHaveBeenCalled()
       expect(mockCopyDir).not.toHaveBeenCalled()
       expect(mockResolveEntries).toHaveBeenCalled()
-      expect(mockBuildApp).toHaveBeenCalledWith(defaultViteConfig, {
-        reuseStandaloneBuild: false,
-      })
+      expect(mockBuildApp).toHaveBeenCalledWith(defaultViteConfig)
     })
   })
 
@@ -238,13 +231,19 @@ describe('buildStaticFiles', () => {
       )
     })
 
-    test('fails an auto-updating build when the vendor packages are unsupported', async () => {
-      mockResolveVendorBuildConfig.mockRejectedValueOnce(new Error('Unsupported react'))
+    test.each([
+      {isWorkbenchApp: false, moduleCdnPackages},
+      {isWorkbenchApp: true, moduleCdnPackages: undefined},
+    ])(
+      'fails the build when the vendor packages are unsupported (workbench app: $isWorkbenchApp)',
+      async (options) => {
+        mockResolveVendorBuildConfig.mockRejectedValueOnce(new Error('Unsupported react'))
 
-      await expect(
-        buildStaticFiles({basePath: '/', cwd, moduleCdnPackages, outputDir}),
-      ).rejects.toThrow('Unsupported react')
-    })
+        await expect(buildStaticFiles({basePath: '/', cwd, outputDir, ...options})).rejects.toThrow(
+          'Unsupported react',
+        )
+      },
+    )
 
     test.each([
       {sharesStyledComponents: true, styledComponents: '6.4.0'},
@@ -271,20 +270,8 @@ describe('buildStaticFiles', () => {
         expect(mockGetViteConfig).toHaveBeenCalledWith(
           expect.objectContaining({autoUpdates: {cssUrls: [], imports: {}, vendor}}),
         )
-        expect(mockBuildApp).toHaveBeenCalledWith(defaultViteConfig, {reuseStandaloneBuild: false})
       },
     )
-
-    test('builds a workbench app without the map when the vendor packages are unsupported', async () => {
-      mockResolveVendorBuildConfig.mockRejectedValueOnce(new Error('Unsupported react'))
-
-      await buildStaticFiles({basePath: '/', cwd, isWorkbenchApp: true, outputDir})
-
-      expect(mockGetViteConfig).toHaveBeenCalledWith(
-        expect.objectContaining({autoUpdates: undefined}),
-      )
-      expect(mockBuildApp).toHaveBeenCalledWith(defaultViteConfig, {reuseStandaloneBuild: true})
-    })
   })
 
   describe('isWorkbenchapp=false', () => {

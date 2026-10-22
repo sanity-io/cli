@@ -83,22 +83,17 @@ export async function buildStaticFiles(
 
   const sharesStyledComponents =
     isWorkbenchApp && Boolean(await getLocalPackageVersion('styled-components', cwd))
-  const vendor =
+  const autoUpdates =
     moduleCdnPackages || isWorkbenchApp
-      ? await resolveVendorBuildConfig({
-          cwd,
-          isApp: Boolean(isApp) && !sharesStyledComponents,
-        }).catch((error: unknown) => {
-          if (moduleCdnPackages) throw error
-        })
+      ? {
+          cssUrls: getAutoUpdatesCssUrls(moduleCdnPackages),
+          imports: getAutoUpdatesImportMap(moduleCdnPackages),
+          vendor: await resolveVendorBuildConfig({
+            cwd,
+            isApp: Boolean(isApp) && !sharesStyledComponents,
+          }),
+        }
       : undefined
-  const autoUpdates = vendor
-    ? {
-        cssUrls: getAutoUpdatesCssUrls(moduleCdnPackages),
-        imports: getAutoUpdatesImportMap(moduleCdnPackages),
-        vendor,
-      }
-    : undefined
 
   /* Federation builds only produce the federation environment
    * (remote-entry, mf-manifest) — skip client-specific steps like
@@ -176,10 +171,7 @@ export async function buildStaticFiles(
     }
 
     buildDebug('Bundling federation environment')
-    await buildFederatedApp(viteConfig, {
-      // Custom Vite hooks can resolve different dependencies in the two environments.
-      reuseStandaloneBuild: emitSpa && !extendViteConfig && !autoUpdates,
-    })
+    await buildFederatedApp(viteConfig)
     buildDebug('Bundling complete')
     // TODO: add stats here
     return {chunks: []}
