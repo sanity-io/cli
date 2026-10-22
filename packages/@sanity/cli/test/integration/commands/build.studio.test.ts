@@ -185,6 +185,24 @@ describe('#build studio', {timeout: (platform() === 'win32' ? 120 : 60) * 1000},
       // `@sanity/runtime-cli`), so a plain federated `sanity build` omits it.
       expect(distFiles).not.toContain('sanity-resource-bindings.js')
 
+      // Inside Workbench the remote loads `sanity` from the module CDN, and its installed copy
+      // only through the loader's lazy fallback.
+      const appAssets = manifest.exposes.find(({name}: {name: string}) => name === 'App').assets.js
+      const loaderChunks = []
+      for (const file of appAssets.sync) {
+        const code = await readFile(join(cwd, 'dist', file), 'utf8')
+        if (code.includes('/v1/modules/sanity/')) loaderChunks.push(code)
+      }
+      expect(loaderChunks).toHaveLength(1)
+      expect(loaderChunks[0]).toContain(
+        await readFile(join(cwd, 'dist', 'sanity-app-id.txt'), 'utf8'),
+      )
+      const fallbacks = [...loaderChunks[0].matchAll(/import\([`'"]\.\/([^`'"]+)[`'"]\)/g)].map(
+        ([, file]) => `static/${file}`,
+      )
+      expect(fallbacks).not.toHaveLength(0)
+      expect(appAssets.async).toEqual(expect.arrayContaining(fallbacks))
+
       // The build output must satisfy the deploy gate: `sanity deploy` runs
       // `readBuiltManifest` (not the static-SPA check) and ships only if it finds
       // the federation manifest. Asserting it against the real dist here closes
