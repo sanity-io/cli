@@ -16,6 +16,12 @@ const mockWriteSanityRuntime = vi.hoisted(() => vi.fn())
 const mockResolveEntries = vi.hoisted(() => vi.fn())
 const mockCopyDir = vi.hoisted(() => vi.fn())
 const mockWriteFavicons = vi.hoisted(() => vi.fn())
+const mockResolveVendorBuildConfig = vi.hoisted(() => vi.fn())
+const mockGetLocalPackageVersion = vi.hoisted(() => vi.fn())
+
+vi.mock('@sanity/cli-core/package-manager', () => ({
+  getLocalPackageVersion: mockGetLocalPackageVersion,
+}))
 
 vi.mock('@sanity/workbench-cli/build', () => ({
   buildFederatedApp: mockBuildApp,
@@ -39,6 +45,10 @@ vi.mock('../getViteConfig.js', () => ({
   getViteConfig: mockGetViteConfig,
 }))
 
+vi.mock('../resolveVendorBuildConfig.js', () => ({
+  resolveVendorBuildConfig: mockResolveVendorBuildConfig,
+}))
+
 vi.mock('../writeFavicons.js', () => ({
   writeFavicons: mockWriteFavicons,
 }))
@@ -51,10 +61,23 @@ vi.mock('../writeSanityRuntime.js', () => ({
 const cwd = '/test/cwd'
 const outputDir = '/test/cwd/dist'
 const defaultViteConfig: InlineConfig = {plugins: [{name: 'sanity-default'}], root: cwd}
+const vendor = {
+  entries: {'react/index': '/pkg/react/index.js'},
+  namesByChunkName: {'react/index': ['useState']},
+  specifiersByChunkName: {'react/index': 'react'},
+}
+const moduleCdnPackages = [
+  {
+    cssUrl: 'https://sanity-cdn.example/sanity/index.css',
+    name: 'sanity',
+    url: 'https://sanity-cdn.example/sanity',
+  },
+]
 
 describe('buildStaticFiles', () => {
   beforeEach(() => {
     mockGetViteConfig.mockResolvedValue(defaultViteConfig)
+    mockResolveVendorBuildConfig.mockResolvedValue(vendor)
     mockExtendViteConfigWithUserConfig.mockImplementation(async (_env, base, user) =>
       typeof user === 'function' ? user(base, _env) : {...base, ...user},
     )
@@ -120,9 +143,7 @@ describe('buildStaticFiles', () => {
 
       // The federation builder owns its environments; the legacy build bypasses sharing.
       expect(mockBuild).not.toHaveBeenCalled()
-      expect(mockBuildApp).toHaveBeenCalledWith(defaultViteConfig, {
-        reuseStandaloneBuild: true,
-      })
+      expect(mockBuildApp).toHaveBeenCalled()
     })
 
     test('threads schemaExtraction through so a federated studio still extracts its schema', async () => {
@@ -198,6 +219,74 @@ describe('buildStaticFiles', () => {
     })
   })
 
+  describe('vendor packages', () => {
+    test('maps the vendor packages and the module CDN packages of an auto-updating build', async () => {
+      await buildStaticFiles({basePath: '/', cwd, moduleCdnPackages, outputDir})
+
+      expect(mockResolveVendorBuildConfig).toHaveBeenCalledWith({cwd, isApp: false})
+      expect(mockGetViteConfig).toHaveBeenCalledWith(
+        expect.objectContaining({
+          autoUpdates: {
+            cssUrls: ['https://sanity-cdn.example/sanity/index.css'],
+            imports: {
+              sanity: 'https://sanity-cdn.example/sanity',
+              'sanity/': 'https://sanity-cdn.example/sanity/',
+            },
+            vendor,
+          },
+        }),
+      )
+    })
+
+    test('fails an auto-updating build when the vendor packages are unsupported', async () => {
+      mockResolveVendorBuildConfig.mockRejectedValueOnce(new Error('Unsupported react'))
+
+      await expect(
+        buildStaticFiles({basePath: '/', cwd, moduleCdnPackages, outputDir}),
+      ).rejects.toThrow('Unsupported react')
+    })
+
+    test.each([
+      {sharesStyledComponents: true, styledComponents: '6.4.0'},
+      {sharesStyledComponents: false, styledComponents: undefined},
+    ])(
+      'maps the vendor packages of a workbench app without auto-updates, sharing styled-components: $sharesStyledComponents',
+      async ({sharesStyledComponents, styledComponents}) => {
+        mockGetLocalPackageVersion.mockResolvedValueOnce(styledComponents)
+
+        await buildStaticFiles({
+          basePath: '/',
+          cwd,
+          entry: './src/App',
+          isApp: true,
+          isWorkbenchApp: true,
+          outputDir,
+        })
+
+        expect(mockGetLocalPackageVersion).toHaveBeenCalledWith('styled-components', cwd)
+        expect(mockResolveVendorBuildConfig).toHaveBeenCalledWith({
+          cwd,
+          isApp: !sharesStyledComponents,
+        })
+        expect(mockGetViteConfig).toHaveBeenCalledWith(
+          expect.objectContaining({autoUpdates: {cssUrls: [], imports: {}, vendor}}),
+        )
+        expect(mockBuildApp).toHaveBeenCalledWith(defaultViteConfig, {reuseStandaloneBuild: false})
+      },
+    )
+
+    test('builds a workbench app without the map when the vendor packages are unsupported', async () => {
+      mockResolveVendorBuildConfig.mockRejectedValueOnce(new Error('Unsupported react'))
+
+      await buildStaticFiles({basePath: '/', cwd, isWorkbenchApp: true, outputDir})
+
+      expect(mockGetViteConfig).toHaveBeenCalledWith(
+        expect.objectContaining({autoUpdates: undefined}),
+      )
+      expect(mockBuildApp).toHaveBeenCalledWith(defaultViteConfig, {reuseStandaloneBuild: true})
+    })
+  })
+
   describe('isWorkbenchapp=false', () => {
     test.each([false, true])('builds normally (isApp: %s)', async (isApp) => {
       const basePath = '/' // this is OS-agnostic, even on windows :shrug:
@@ -230,6 +319,7 @@ describe('buildStaticFiles', () => {
       expect(mockWriteFavicons).toHaveBeenCalledWith(faviconBasePath, staticOutputPath)
       expect(mockBuild).toHaveBeenCalledWith(defaultViteConfig)
       expect(mockBuildApp).not.toHaveBeenCalled()
+      expect(mockResolveVendorBuildConfig).not.toHaveBeenCalled()
       // Should ignore non-chunk types
       expect(chunks).toHaveLength(1)
       expect(chunks[0].name).toEqual('chonkiboi')

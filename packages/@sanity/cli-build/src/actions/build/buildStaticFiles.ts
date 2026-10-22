@@ -1,17 +1,20 @@
 import path from 'node:path'
 
+import {getLocalPackageVersion} from '@sanity/cli-core/package-manager'
 import {type CliConfig, type UserViteConfig} from '@sanity/cli-core/types'
 import {buildFederatedApp, type WorkbenchExposes} from '@sanity/workbench-cli/build'
 import {build} from 'vite'
 
 import {copyDir} from '../../util/copyDir.js'
-import {type ModuleCdnPlan} from './autoUpdates.js'
+import {type ModuleCdnPackage} from './autoUpdates.js'
 import {buildDebug} from './buildDebug.js'
+import {getAutoUpdatesCssUrls, getAutoUpdatesImportMap} from './getAutoUpdatesImportMap.js'
 import {
   getAppEnvironmentVariables,
   getStudioEnvironmentVariables,
 } from './getEnvironmentVariables.js'
 import {extendViteConfigWithUserConfig, finalizeViteConfig, getViteConfig} from './getViteConfig.js'
+import {resolveVendorBuildConfig} from './resolveVendorBuildConfig.js'
 import {writeFavicons} from './writeFavicons.js'
 import {resolveEntries, writeSanityRuntime} from './writeSanityRuntime.js'
 
@@ -39,7 +42,7 @@ interface StaticBuildOptions {
   /** Workbench app (opted in via `defineApplication`) — drives the federation build. */
   isWorkbenchApp?: boolean
   minify?: boolean
-  moduleCdn?: ModuleCdnPlan
+  moduleCdnPackages?: ModuleCdnPackage[]
   profile?: boolean
   reactCompiler?: CliConfig['reactCompiler']
   schemaExtraction?: CliConfig['schemaExtraction']
@@ -67,7 +70,7 @@ export async function buildStaticFiles(
     isBlueprints,
     isWorkbenchApp,
     minify = true,
-    moduleCdn,
+    moduleCdnPackages,
     outputDir,
     reactCompiler,
     schemaExtraction,
@@ -77,6 +80,25 @@ export async function buildStaticFiles(
   } = options
 
   const mode = 'production'
+
+  const sharesStyledComponents =
+    isWorkbenchApp && Boolean(await getLocalPackageVersion('styled-components', cwd))
+  const vendor =
+    moduleCdnPackages || isWorkbenchApp
+      ? await resolveVendorBuildConfig({
+          cwd,
+          isApp: Boolean(isApp) && !sharesStyledComponents,
+        }).catch((error: unknown) => {
+          if (moduleCdnPackages) throw error
+        })
+      : undefined
+  const autoUpdates = vendor
+    ? {
+        cssUrls: getAutoUpdatesCssUrls(moduleCdnPackages),
+        imports: getAutoUpdatesImportMap(moduleCdnPackages),
+        vendor,
+      }
+    : undefined
 
   /* Federation builds only produce the federation environment
    * (remote-entry, mf-manifest) — skip client-specific steps like
@@ -111,6 +133,7 @@ export async function buildStaticFiles(
 
     buildDebug('Resolving vite config (federation)')
     let viteConfig = await getViteConfig({
+      autoUpdates,
       basePath,
       cwd,
       entries,
@@ -121,7 +144,6 @@ export async function buildStaticFiles(
       isWorkbenchApp,
       minify,
       mode,
-      moduleCdn,
       outputDir,
       reactCompiler,
       // Schema extraction is a build-time artifact, not a client-specific step,
@@ -156,7 +178,7 @@ export async function buildStaticFiles(
     buildDebug('Bundling federation environment')
     await buildFederatedApp(viteConfig, {
       // Custom Vite hooks can resolve different dependencies in the two environments.
-      reuseStandaloneBuild: emitSpa && !extendViteConfig,
+      reuseStandaloneBuild: emitSpa && !extendViteConfig && !autoUpdates,
     })
     buildDebug('Bundling complete')
     // TODO: add stats here
@@ -184,6 +206,7 @@ export async function buildStaticFiles(
 
   buildDebug('Resolving vite config')
   let viteConfig = await getViteConfig({
+    autoUpdates,
     basePath,
     cwd,
     entries,
@@ -193,7 +216,6 @@ export async function buildStaticFiles(
     isWorkbenchApp,
     minify,
     mode,
-    moduleCdn,
     outputDir,
     reactCompiler,
     schemaExtraction,

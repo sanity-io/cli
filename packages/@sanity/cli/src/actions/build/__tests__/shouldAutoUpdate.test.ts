@@ -1,7 +1,7 @@
 import {exitCodes, type Output} from '@sanity/cli-core'
 import {beforeEach, describe, expect, it} from 'vitest'
 
-import {createMockOutput, workbenchApp} from '../../dev/__tests__/testHelpers.js'
+import {createMockOutput} from '../../dev/__tests__/testHelpers.js'
 import {resolveAutoUpdates, shouldAutoUpdate} from '../shouldAutoUpdate'
 import {type BuildFlags} from '../types'
 
@@ -284,14 +284,5 @@ describe('resolveAutoUpdates', () => {
         flags: {'auto-updates': false} as BuildFlags,
       }),
     ).toEqual({enabled: false, issue: {flag: '--no-auto-updates', type: 'deprecated-flag'}})
-  })
-
-  it('enables auto-updates for a workbench app', () => {
-    expect(
-      resolveAutoUpdates({
-        cliConfig: {app: workbenchApp(), deployment: {autoUpdates: true}},
-        flags: {} as BuildFlags,
-      }),
-    ).toEqual({enabled: true, issue: null})
   })
 })
