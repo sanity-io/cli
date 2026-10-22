@@ -1,5 +1,24 @@
 # Change Log
 
+## 8.22.1
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-v8.22.0...cli-v8.22.1)
+
+_2026-10-22_
+
+### Bug Fixes
+
+- Change to the schema/manifest build interface to return schemaInputs instead of the full unserializable object. ([#1997](https://github.com/sanity-io/cli/pull/1997)) ([10c9e7b](https://github.com/sanity-io/cli/commit/10c9e7bd7d1844572f8ab8292a0d0832ebbd2e99))
+- **schema:** make `sanity schema extract --watch` re-extract on changes ([#2014](https://github.com/sanity-io/cli/pull/2014)) ([f0c8d8b](https://github.com/sanity-io/cli/commit/f0c8d8b39f51a1504325147871f4008184947284))
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/cli-core bumped to 3.11.1
+    - @sanity/cli-build bumped to 7.0.0
+    - @sanity/workbench-cli bumped to 2.13.0
+
 ## 8.22.0
 
 [Compare changes](https://github.com/sanity-io/cli/compare/cli-v8.21.0...cli-v8.22.0)

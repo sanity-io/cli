@@ -1,5 +1,22 @@
 # Changelog
 
+## 7.0.0
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-build-v6.5.0...cli-build-v7.0.0)
+
+_2026-10-22_
+
+### ⚠ BREAKING CHANGES
+
+- Change to the schema/manifest build interface to return schemaInputs instead of the full unserializable object. ([#1997](https://github.com/sanity-io/cli/pull/1997)) ([10c9e7b](https://github.com/sanity-io/cli/commit/10c9e7bd7d1844572f8ab8292a0d0832ebbd2e99))
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/cli-core bumped to 3.11.1
+    - @sanity/workbench-cli bumped to 2.13.0
+
 ## 6.5.0
 
 [Compare changes](https://github.com/sanity-io/cli/compare/cli-build-v6.4.5...cli-build-v6.5.0)
