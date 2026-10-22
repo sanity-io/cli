@@ -2,6 +2,7 @@ import {validateMediaLibraryAssetAspect} from '@sanity/schema/_internal'
 import {type SchemaValidationProblem} from '@sanity/types'
 import startCase from 'lodash-es/startCase.js'
 
+import {type StoredAspectDocument} from '../../services/mediaLibraries.js'
 import {VALID_ASPECT_NAME} from './aspectName.js'
 
 /** Keys whose object members are schema definitions, printed wrapped in a definer call. */
@@ -21,13 +22,7 @@ const INLINE_ARRAY_MAX_WIDTH = 60
  * `sanity media deploy-aspect` or by hand) and carry fields the model has no
  * equivalent for.
  */
-export interface PullableAspectDocument {
-  _id: string
-
-  assetType?: unknown
-  definition?: unknown
-  public?: unknown
-}
+export type PullableAspectDocument = StoredAspectDocument
 
 export interface GeneratedFieldModule {
   filename: string
@@ -51,7 +46,7 @@ export interface SkippedAspect {
 export type PullAspectOutcome = GeneratedFieldModule | SkippedAspect
 
 /**
- * Codegen one stored aspect document into a `src/fields/<name>.ts` field
+ * Codegen one stored aspect document into a `src/fields/<name>.tsx` field
  * module for a Media Library config app.
  *
  * Stored aspects are migration-ready by construction: `definition` is the
@@ -140,7 +135,11 @@ export function aspectDocumentToFieldModule(doc: PullableAspectDocument): PullAs
   }
 
   return {
-    filename: `${name}.ts`,
+    // .tsx although the generated content has no JSX: field modules are
+    // expected to grow custom input components (the one thing the stored
+    // aspect could not carry), and a later rename would also mean fixing the
+    // `src:` entry in sanity.cli.ts. Matches the template's example modules.
+    filename: `${name}.tsx`,
     name,
     ...(typeof doc.public === 'boolean' ? {public: doc.public} : {}),
     source: printFieldModule(definition),

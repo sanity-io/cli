@@ -56,16 +56,24 @@ function mockLibraryList(libraries: Array<{id: string; status?: string}>) {
   })
 }
 
+// The production read pages on an `_id` cursor and only stops on an empty
+// page, so a non-empty result is always followed by one more request.
+function mockAspectQueryPages(libraryId: string, pages: unknown[][], capture?: unknown[]) {
+  for (const page of pages) {
+    mockApi({
+      apiVersion: MEDIA_LIBRARY_API_VERSION,
+      method: 'post',
+      query: {perspective: 'published'},
+      uri: `/media-libraries/${libraryId}/query`,
+    }).reply(200, (_uri, body) => {
+      capture?.push(body)
+      return {result: page}
+    })
+  }
+}
+
 function mockAspectQuery(libraryId: string, documents: unknown[], capture?: unknown[]) {
-  mockApi({
-    apiVersion: MEDIA_LIBRARY_API_VERSION,
-    method: 'post',
-    query: {perspective: 'published'},
-    uri: `/media-libraries/${libraryId}/query`,
-  }).reply(200, (_uri, body) => {
-    capture?.push(body)
-    return {result: documents}
-  })
+  mockAspectQueryPages(libraryId, documents.length > 0 ? [documents, []] : [[]], capture)
 }
 
 describe('#media:pull-aspects', () => {
@@ -126,25 +134,63 @@ describe('#media:pull-aspects', () => {
     const {stdout} = await testCommand(MediaPullAspectsCommand, [], {mocks: defaultMocks})
 
     // The GROQ that selects what gets pulled, asserted so a filter change
-    // cannot slip past these tests unnoticed.
+    // cannot slip past these tests unnoticed. The second request's cursor must
+    // advance past the last document of the first page — a frozen cursor would
+    // still satisfy single-page tests because the mock queue answers by order.
     expect(queryBodies).toEqual([
       {
-        params: {type: 'sanity.asset.aspect'},
-        query: '*[_type == $type] | order(_id asc)',
+        params: {lastId: '', type: 'sanity.asset.aspect'},
+        query: '*[_type == $type && _id > $lastId] | order(_id) [0...1000]',
+      },
+      {
+        params: {lastId: 'credit', type: 'sanity.asset.aspect'},
+        query: '*[_type == $type && _id > $lastId] | order(_id) [0...1000]',
       },
     ])
 
     expect(mockFsWriteFile).toHaveBeenCalledTimes(2)
     expect(mockFsWriteFile).toHaveBeenCalledWith(
-      convertToSystemPath('/test/project/src/fields/caption.ts'),
+      convertToSystemPath('/test/project/src/fields/caption.tsx'),
       expect.stringContaining(`export default defineField({`),
     )
     expect(stdout).toContain('Generated 2 field modules')
-    expect(stdout).toContain(`{name: 'caption', src: './src/fields/caption.ts', title: 'Caption'},`)
     expect(stdout).toContain(
-      `{name: 'credit', src: './src/fields/credit.ts', title: 'Credit', public: true},`,
+      `{name: 'caption', src: './src/fields/caption.tsx', title: 'Caption'},`,
+    )
+    expect(stdout).toContain(
+      `{name: 'credit', src: './src/fields/credit.tsx', title: 'Credit', public: true},`,
     )
     expect(stdout).toContain('the config app owns these definitions')
+  })
+
+  test('aggregates aspects across query pages — a capped response must not drop documents', async () => {
+    createTestToken('test-token')
+    mockLibraryList([{id: 'test-library-id'}])
+    mockAspectQueryPages('test-library-id', [
+      [
+        {
+          _id: 'caption',
+          _type: 'sanity.asset.aspect',
+          definition: {name: 'caption', title: 'Caption', type: 'string'},
+        },
+      ],
+      [
+        {
+          _id: 'credit',
+          _type: 'sanity.asset.aspect',
+          definition: {name: 'credit', title: 'Credit', type: 'string'},
+        },
+      ],
+      [],
+    ])
+    mockFsAccess.mockRejectedValue(new Error('ENOENT'))
+    mockFsMkdir.mockResolvedValue(undefined)
+    mockFsWriteFile.mockResolvedValue(undefined)
+
+    const {stdout} = await testCommand(MediaPullAspectsCommand, [], {mocks: defaultMocks})
+
+    expect(mockFsWriteFile).toHaveBeenCalledTimes(2)
+    expect(stdout).toContain('Generated 2 field modules')
   })
 
   test('skips fields already declared in the config and existing files', async () => {
@@ -208,7 +254,7 @@ describe('#media:pull-aspects', () => {
 
     expect(mockFsWriteFile).toHaveBeenCalledTimes(1)
     expect(mockFsWriteFile).toHaveBeenCalledWith(
-      convertToSystemPath('/test/project/src/fields/caption.ts'),
+      convertToSystemPath('/test/project/src/fields/caption.tsx'),
       expect.stringContaining(`title: 'Caption'`),
     )
     expect(stdout).toContain('Generated 1 field module')
@@ -216,7 +262,7 @@ describe('#media:pull-aspects', () => {
     expect(stderr).toContain('Also defines "caption" — generated from "caption" instead')
   })
 
-  test('detects an existing .tsx module for the same field, not just .ts', async () => {
+  test('detects an existing plain .ts module for the same field, not just .tsx', async () => {
     createTestToken('test-token')
     mockLibraryList([{id: 'test-library-id'}])
     mockAspectQuery('test-library-id', [
@@ -226,17 +272,16 @@ describe('#media:pull-aspects', () => {
         definition: {name: 'caption', title: 'Caption', type: 'string'},
       },
     ])
-    // Only the hand-written .tsx variant exists on disk.
+    // Only a hand-written plain .ts module exists on disk (`.tsx` does not
+    // end with `.ts`, so the generated default path is reported missing).
     mockFsAccess.mockImplementation((filePath: string) =>
-      String(filePath).endsWith('.tsx') ? Promise.resolve() : Promise.reject(new Error('ENOENT')),
+      String(filePath).endsWith('.ts') ? Promise.resolve() : Promise.reject(new Error('ENOENT')),
     )
 
     const {stderr, stdout} = await testCommand(MediaPullAspectsCommand, [], {mocks: defaultMocks})
 
     expect(mockFsWriteFile).not.toHaveBeenCalled()
-    expect(stderr).toContain(
-      `A file already exists at ${path.join('src', 'fields', 'caption.tsx')}`,
-    )
+    expect(stderr).toContain(`A file already exists at ${path.join('src', 'fields', 'caption.ts')}`)
     expect(stdout).toContain('No field modules generated.')
   })
 
@@ -261,7 +306,7 @@ describe('#media:pull-aspects', () => {
           app: unstable_defineMediaLibrary({
             // The declared module lives outside --out-dir and is .tsx; the
             // overwrite must replace it there — not orphan a new
-            // src/fields/notes.ts that deploy would never evaluate.
+            // src/fields/notes.tsx that deploy would never evaluate.
             fields: [{name: 'notes', src: './aspects/notes.tsx', title: 'Notes'}],
             organizationId: 'test-org-id',
           }),
@@ -320,7 +365,7 @@ describe('#media:pull-aspects', () => {
     )
   })
 
-  test('with --overwrite, an undeclared field replaces the existing .tsx file it found', async () => {
+  test('with --overwrite, an undeclared field replaces the existing .ts file it found', async () => {
     createTestToken('test-token')
     mockLibraryList([{id: 'test-library-id'}])
     mockAspectQuery('test-library-id', [
@@ -330,9 +375,10 @@ describe('#media:pull-aspects', () => {
         definition: {name: 'caption', title: 'Caption', type: 'string'},
       },
     ])
-    // Only the hand-written .tsx variant exists on disk.
+    // Only a hand-written plain .ts module exists on disk — the overwrite must
+    // replace it, not orphan it next to a freshly generated .tsx default.
     mockFsAccess.mockImplementation((filePath: string) =>
-      String(filePath).endsWith('.tsx') ? Promise.resolve() : Promise.reject(new Error('ENOENT')),
+      String(filePath).endsWith('.ts') ? Promise.resolve() : Promise.reject(new Error('ENOENT')),
     )
     mockFsMkdir.mockResolvedValue(undefined)
     mockFsWriteFile.mockResolvedValue(undefined)
@@ -343,13 +389,11 @@ describe('#media:pull-aspects', () => {
 
     expect(mockFsWriteFile).toHaveBeenCalledTimes(1)
     expect(mockFsWriteFile).toHaveBeenCalledWith(
-      convertToSystemPath('/test/project/src/fields/caption.tsx'),
+      convertToSystemPath('/test/project/src/fields/caption.ts'),
       expect.stringContaining(`export default defineField({`),
     )
     // The suggested config entry points at the file that was written.
-    expect(stdout).toContain(
-      `{name: 'caption', src: './src/fields/caption.tsx', title: 'Caption'},`,
-    )
+    expect(stdout).toContain(`{name: 'caption', src: './src/fields/caption.ts', title: 'Caption'},`)
   })
 
   test('exits with the SIGINT code when the library prompt is cancelled', async () => {
@@ -434,7 +478,7 @@ describe('#media:pull-aspects', () => {
 
     expect(error).toBeUndefined()
     expect(mockFsWriteFile).toHaveBeenCalledWith(
-      convertToSystemPath('/test/project/..foo/caption.ts'),
+      convertToSystemPath('/test/project/..foo/caption.tsx'),
       expect.stringContaining('export default defineField({'),
     )
   })
@@ -460,7 +504,7 @@ describe('#media:pull-aspects', () => {
     )
 
     // The report derives entries from the root-relative path, not the raw flag.
-    expect(stdout).toContain(`{name: 'caption', src: './custom/caption.ts', title: 'Caption'},`)
+    expect(stdout).toContain(`{name: 'caption', src: './custom/caption.tsx', title: 'Caption'},`)
     expect(stdout).not.toContain(`src: './/`)
   })
 

@@ -29,7 +29,7 @@ describe('aspectDocumentToFieldModule', () => {
     })
 
     expect(outcome.name).toBe('altText')
-    expect(outcome.filename).toBe('altText.ts')
+    expect(outcome.filename).toBe('altText.tsx')
     expect(outcome.title).toBe('Alt text')
     expect(outcome.public).toBeUndefined()
     expect(outcome.warnings).toEqual([])
@@ -145,7 +145,7 @@ describe('aspectDocumentToFieldModule', () => {
     })
 
     expect(outcome.name).toBe('caption')
-    expect(outcome.filename).toBe('caption.ts')
+    expect(outcome.filename).toBe('caption.tsx')
     expect(outcome.warnings).toHaveLength(1)
     expect(outcome.warnings[0]).toContain('"legacyCaption" and definition name "caption" differ')
     expect(outcome.warnings[0]).toContain('sanity media delete-aspect legacyCaption')
@@ -237,8 +237,8 @@ describe('formatFieldEntries', () => {
     ]
 
     expect(formatFieldEntries(entries, 'src/fields')).toMatchInlineSnapshot(`
-      "{name: 'caption', src: './src/fields/caption.ts', title: 'Caption'},
-      {name: 'seo', src: './src/fields/seo.ts', title: 'SEO \\'n stuff', public: true},"
+      "{name: 'caption', src: './src/fields/caption.tsx', title: 'Caption'},
+      {name: 'seo', src: './src/fields/seo.tsx', title: 'SEO \\'n stuff', public: true},"
     `)
   })
 })

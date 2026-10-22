@@ -17,7 +17,6 @@ import {
   aspectDocumentToFieldModule,
   formatFieldEntries,
   type GeneratedFieldModule,
-  type PullableAspectDocument,
   type SkippedAspect,
 } from '../../actions/media/pullAspects.js'
 import {promptForMediaLibrary} from '../../prompts/promptForMediaLibrary.js'
@@ -60,7 +59,7 @@ export class MediaPullAspectsCommand extends SanityCommand<typeof MediaPullAspec
   static override examples = [
     {
       command: '<%= config.bin %> <%= command.id %>',
-      description: 'Generate src/fields/<name>.ts modules from the stored aspects',
+      description: 'Generate src/fields/<name>.tsx modules from the stored aspects',
     },
     {
       command: '<%= config.bin %> <%= command.id %> --media-library-id ml123 --overwrite',
@@ -69,6 +68,12 @@ export class MediaPullAspectsCommand extends SanityCommand<typeof MediaPullAspec
   ]
 
   static override flags = flags
+
+  // Part of the beta config-app flow: only usable inside a config app (like
+  // the unlisted media-library-config init template, which points to it), and
+  // listing it next to the legacy aspect commands would mix the two
+  // paradigms. Unhide when the config app leaves beta.
+  static override hidden = true
 
   // --out-dir is a local filesystem path.
   static telemetry = defineCommandTelemetry(flags, {redact: ['out-dir']})
@@ -145,7 +150,7 @@ export class MediaPullAspectsCommand extends SanityCommand<typeof MediaPullAspec
       // First pass: convert every stored document.
       const candidates: GeneratedCandidate[] = []
       for (const doc of documents) {
-        const outcome = aspectDocumentToFieldModule(doc as unknown as PullableAspectDocument)
+        const outcome = aspectDocumentToFieldModule(doc)
         if (outcome.status === 'skipped') {
           skipped.push(outcome)
         } else {
@@ -194,11 +199,11 @@ export class MediaPullAspectsCommand extends SanityCommand<typeof MediaPullAspec
         }
 
         const defaultDestination = path.join(outDirAbsolute, module.filename)
-        // The pull generates `.ts`, but a hand-written module for the same
-        // field may be `.tsx` (the template ships one) — treat both as taken.
+        // The pull generates `.tsx`, but a hand-written module for the same
+        // field may be plain `.ts` — treat both as taken.
         const existing = await firstExisting([
           defaultDestination,
-          defaultDestination.replace(/\.ts$/, '.tsx'),
+          defaultDestination.replace(/\.tsx$/, '.ts'),
         ])
         if (!overwrite && existing) {
           skipped.push({
@@ -213,10 +218,10 @@ export class MediaPullAspectsCommand extends SanityCommand<typeof MediaPullAspec
         }
 
         // When overwriting a field the config already declares, the module
-        // must land at the declared `src` path — writing <out-dir>/<name>.ts
+        // must land at the declared `src` path — writing <out-dir>/<name>.tsx
         // instead would orphan the new file while deploy keeps evaluating the
         // old one. Failing that, replace the module found on disk (which may
-        // be the .tsx variant), and only then fall back to the default.
+        // be the .ts variant), and only then fall back to the default.
         const declaredSrc = overwrite ? configuredSrcByName.get(module.name) : undefined
         const destination = declaredSrc
           ? await resolveDeclaredSrc(path.resolve(root.directory, declaredSrc), module.filename)

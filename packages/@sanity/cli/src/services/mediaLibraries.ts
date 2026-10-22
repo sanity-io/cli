@@ -120,22 +120,51 @@ interface QueryResponse<T> {
  *
  * @internal
  */
-export async function getAspects(mediaLibraryId: string): Promise<Array<Record<string, unknown>>> {
+/**
+ * A stored `sanity.asset.aspect` document as the query API returns it: `_id`
+ * is guaranteed by the document store, everything else is validated by the
+ * consumer (`aspectDocumentToFieldModule`).
+ */
+export interface StoredAspectDocument {
+  _id: string
+
+  assetType?: unknown
+  definition?: unknown
+  public?: unknown
+}
+
+/** Query page size — see the cursor loop in `getAspects`. */
+const ASPECT_QUERY_PAGE_SIZE = 1000
+
+export async function getAspects(mediaLibraryId: string): Promise<StoredAspectDocument[]> {
   const client = await getMediaLibraryClient()
 
-  const response = await client.request<QueryResponse<Array<Record<string, unknown>>> | undefined>({
-    body: {
-      params: {type: MEDIA_LIBRARY_ASSET_ASPECT_TYPE_NAME},
-      query: `*[_type == $type] | order(_id asc)`,
-    },
-    method: 'POST',
-    // `published` is this API version's default; pinned so a future default
-    // change can never surface `drafts.*` duplicates of published documents.
-    query: {perspective: 'published'},
-    url: `/media-libraries/${mediaLibraryId}/query`,
-  })
+  // Paged on an `_id` cursor: the query API caps response sizes, and a
+  // truncated single read would silently drop aspects — a pull would then
+  // generate an incomplete config whose deploy deletes the missed documents.
+  // Only an empty page ends the loop.
+  const documents: StoredAspectDocument[] = []
+  let lastId = ''
+  for (;;) {
+    const response = await client.request<QueryResponse<StoredAspectDocument[]> | undefined>({
+      body: {
+        params: {lastId, type: MEDIA_LIBRARY_ASSET_ASPECT_TYPE_NAME},
+        query: `*[_type == $type && _id > $lastId] | order(_id) [0...${ASPECT_QUERY_PAGE_SIZE}]`,
+      },
+      method: 'POST',
+      // `published` is this API version's default; pinned so a future default
+      // change can never surface `drafts.*` duplicates of published documents.
+      query: {perspective: 'published'},
+      url: `/media-libraries/${mediaLibraryId}/query`,
+    })
+    const page = response?.result ?? []
+    documents.push(...page)
+    const last = page.at(-1)
+    if (!last) break
+    lastId = last._id
+  }
 
-  return response?.result ?? []
+  return documents
 }
 
 interface DeployAspectsOptions {
