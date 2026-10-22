@@ -207,13 +207,13 @@ export async function buildApp(
 
   let autoUpdates
   if (autoUpdatesEnabled) {
-    // A workbench document also hosts federated studios, whose CDN `sanity` imports `styled-components`.
-    const hostsStudios =
+    // A workbench app shares its own styled-components with the apps it hosts.
+    const sharesStyledComponents =
       options.isWorkbenchApp && Boolean(await getLocalPackageVersion('styled-components', workDir))
     autoUpdates = {
       cssUrls: autoUpdatesCssUrls,
       imports: autoUpdatesImports,
-      vendor: await resolveVendorBuildConfig({cwd: workDir, isApp: !hostsStudios}),
+      vendor: await resolveVendorBuildConfig({cwd: workDir, isApp: !sharesStyledComponents}),
     }
   }
 
