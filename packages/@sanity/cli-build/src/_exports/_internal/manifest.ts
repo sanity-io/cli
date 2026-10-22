@@ -19,5 +19,6 @@ export {
   type StoredWorkspaceSchema,
   type StudioManifest,
   type WorkspaceSchemaId,
+  type WorkspaceSchemaInput,
 } from '../../actions/manifest/types.js'
 export {MANIFEST_FILENAME, writeManifestFile} from '../../actions/manifest/writeManifestFile.js'

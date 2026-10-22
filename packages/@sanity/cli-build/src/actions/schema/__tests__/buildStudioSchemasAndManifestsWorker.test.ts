@@ -1,9 +1,9 @@
 import {type StudioManifest, type Workspace} from 'sanity'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
-import {type CreateWorkspaceManifest} from '../../manifest/types.js'
+import {type CreateWorkspaceManifest, type WorkspaceSchemaInput} from '../../manifest/types.js'
+import {workerBuildStudioSchemasAndManifests} from '../buildStudioSchemasAndManifestsWorker.js'
 import {type BuildStudioSchemasAndManifestsWorkerData} from '../types.js'
-import {workerBuildStudioSchemasAndManifests} from '../workerBuildStudioSchemasAndManifests.js'
 
 // Mutable so individual tests can flip which thread the module under test believes it is on
 const mockIsMainThread = vi.hoisted(() => ({value: false}))
@@ -37,10 +37,45 @@ vi.mock(import('../uploadSchemaToLexicon.js'), () => ({
 
 const workspaces = [{name: 'default'}, {name: 'staging'}] as unknown as Workspace[]
 
-const workspaceManifests = [
-  {dataset: 'production', name: 'default'},
-  {dataset: 'staging', name: 'staging'},
-] as unknown as CreateWorkspaceManifest[]
+const workspaceManifests: CreateWorkspaceManifest[] = [
+  {
+    basePath: '/',
+    dataset: 'production',
+    icon: 'favicon.ico',
+    name: 'default',
+    projectId: 'proj1234',
+    schema: [{name: 'post', type: 'document'}],
+    title: 'Default',
+    tools: [],
+  },
+  {
+    basePath: '/',
+    dataset: 'staging',
+    icon: 'favicon.ico',
+    name: 'staging',
+    projectId: 'other-project',
+    schema: [{name: 'author', type: 'document'}],
+    tools: [],
+  },
+]
+
+/** What `workspaceManifests` maps onto once the schema inputs are built. */
+const schemaInputs: WorkspaceSchemaInput[] = [
+  {
+    dataset: 'production',
+    manifestSchema: [{name: 'post', type: 'document'}],
+    name: 'default',
+    projectId: 'proj1234',
+    title: 'Default',
+  },
+  {
+    dataset: 'staging',
+    manifestSchema: [{name: 'author', type: 'document'}],
+    name: 'staging',
+    projectId: 'other-project',
+    title: undefined,
+  },
+]
 
 const studioManifest: StudioManifest = {
   buildId: '12345',
@@ -57,6 +92,7 @@ function createOptions(
     isExternal: false,
     outPath: 'dist/static',
     projectId: 'proj-123',
+    schemaRequired: false,
     verbose: false,
     workDir: '/studio',
     ...overrides,
@@ -75,7 +111,7 @@ afterEach(() => {
   vi.clearAllMocks()
 })
 
-describe('workerBuildStudioSchemasAndManifests', () => {
+describe('buildStudioSchemasAndManifestsWorker', () => {
   test('throws when called from the main thread', async () => {
     mockIsMainThread.value = true
 
@@ -123,17 +159,17 @@ describe('workerBuildStudioSchemasAndManifests', () => {
 
   describe('internal studio', () => {
     test('writes the manifest file, uploads the schema and returns the result', async () => {
-      const workspaceManifestsHandler = vi.fn().mockResolvedValue(undefined)
+      const workspaceSchemaHandler = vi.fn().mockResolvedValue(undefined)
 
       const result = await workerBuildStudioSchemasAndManifests({
         ...createOptions({isExternal: false, verbose: true}),
-        workspaceManifestsHandler,
+        workspaceSchemaHandler,
       })
 
       expect(result).toEqual({
+        schemaInputs,
         studioManifest,
         type: 'success',
-        workspaceManifests,
       })
 
       expect(mockExtractWorkspaceManifest).toHaveBeenCalledWith(workspaces, '/studio')
@@ -148,13 +184,14 @@ describe('workerBuildStudioSchemasAndManifests', () => {
         workDir: '/studio',
         workspaceManifests,
       })
-      expect(workspaceManifestsHandler).toHaveBeenCalledWith(workspaceManifests)
+      expect(workspaceSchemaHandler).toHaveBeenCalledWith(schemaInputs)
     })
 
     test('skips the handler when none is provided', async () => {
       const result = await workerBuildStudioSchemasAndManifests(createOptions({isExternal: false}))
 
       expect(result.type).toBe('success')
+      expect(result.schemaInputs).toEqual(schemaInputs)
       expect(mockWriteManifestFile).toHaveBeenCalledTimes(1)
       expect(mockUploadSchemaToLexicon).toHaveBeenCalledTimes(1)
     })
@@ -165,9 +202,9 @@ describe('workerBuildStudioSchemasAndManifests', () => {
       const result = await workerBuildStudioSchemasAndManifests(createOptions({isExternal: false}))
 
       expect(result).toEqual({
+        schemaInputs,
         studioManifest: null,
         type: 'success',
-        workspaceManifests,
       })
     })
 
@@ -187,31 +224,31 @@ describe('workerBuildStudioSchemasAndManifests', () => {
       ).rejects.toThrow('Failed to upload schema')
     })
 
-    test('propagates failures from the workspace manifests handler', async () => {
-      const workspaceManifestsHandler = vi.fn().mockRejectedValue(new Error('Handler exploded'))
+    test('propagates failures from the workspace schema handler', async () => {
+      const workspaceSchemaHandler = vi.fn().mockRejectedValue(new Error('Handler exploded'))
 
       await expect(
         workerBuildStudioSchemasAndManifests({
           ...createOptions({isExternal: false}),
-          workspaceManifestsHandler,
+          workspaceSchemaHandler,
         }),
       ).rejects.toThrow('Handler exploded')
     })
   })
 
   describe('external studio', () => {
-    test('uploads the schema and calls the handler without writing a manifest file', async () => {
-      const workspaceManifestsHandler = vi.fn().mockResolvedValue(undefined)
+    test('uploads the schema and skips the handler when the schema is not required', async () => {
+      const workspaceSchemaHandler = vi.fn().mockResolvedValue(undefined)
 
       const result = await workerBuildStudioSchemasAndManifests({
-        ...createOptions({isExternal: true, verbose: true}),
-        workspaceManifestsHandler,
+        ...createOptions({isExternal: true, schemaRequired: false, verbose: true}),
+        workspaceSchemaHandler,
       })
 
       expect(result).toEqual({
+        schemaInputs: null,
         studioManifest,
         type: 'success',
-        workspaceManifests,
       })
 
       expect(mockUploadSchemaToLexicon).toHaveBeenCalledWith({
@@ -220,7 +257,34 @@ describe('workerBuildStudioSchemasAndManifests', () => {
         workDir: '/studio',
         workspaces,
       })
-      expect(workspaceManifestsHandler).toHaveBeenCalledWith(workspaceManifests)
+      expect(workspaceSchemaHandler).not.toHaveBeenCalled()
+      expect(mockWriteManifestFile).not.toHaveBeenCalled()
+    })
+
+    test('builds schema inputs and calls the handler when the schema is required', async () => {
+      const workspaceSchemaHandler = vi.fn().mockResolvedValue(undefined)
+
+      const result = await workerBuildStudioSchemasAndManifests({
+        ...createOptions({isExternal: true, schemaRequired: true}),
+        workspaceSchemaHandler,
+      })
+
+      expect(result).toEqual({
+        schemaInputs,
+        studioManifest,
+        type: 'success',
+      })
+
+      expect(workspaceSchemaHandler).toHaveBeenCalledWith(schemaInputs)
+      expect(mockWriteManifestFile).not.toHaveBeenCalled()
+    })
+
+    test('returns schema inputs when the schema is required and no handler is provided', async () => {
+      const result = await workerBuildStudioSchemasAndManifests(
+        createOptions({isExternal: true, schemaRequired: true}),
+      )
+
+      expect(result.schemaInputs).toEqual(schemaInputs)
       expect(mockWriteManifestFile).not.toHaveBeenCalled()
     })
 
@@ -248,13 +312,13 @@ describe('workerBuildStudioSchemasAndManifests', () => {
       ).rejects.toThrow('Failed to upload schema')
     })
 
-    test('propagates failures from the workspace manifests handler', async () => {
-      const workspaceManifestsHandler = vi.fn().mockRejectedValue(new Error('Handler exploded'))
+    test('propagates failures from the workspace schema handler when the schema is required', async () => {
+      const workspaceSchemaHandler = vi.fn().mockRejectedValue(new Error('Handler exploded'))
 
       await expect(
         workerBuildStudioSchemasAndManifests({
-          ...createOptions({isExternal: true}),
-          workspaceManifestsHandler,
+          ...createOptions({isExternal: true, schemaRequired: true}),
+          workspaceSchemaHandler,
         }),
       ).rejects.toThrow('Handler exploded')
     })

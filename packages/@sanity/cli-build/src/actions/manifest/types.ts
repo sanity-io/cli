@@ -143,3 +143,17 @@ export interface StoredWorkspaceSchema extends SanityDocumentLike {
 export const extractManifestWorkerData = z.object({configPath: z.string(), workDir: z.string()})
 
 export type ExtractManifestWorkerData = z.infer<typeof extractManifestWorkerData>
+
+/**
+ * Workspace metadata + pre-extracted manifest schema for deployment.
+ * The schema must already be in ManifestSchemaType[] format (extracted from
+ * the live Schema object before any structured clone boundary).
+ */
+export interface WorkspaceSchemaInput {
+  dataset: string
+  manifestSchema: ManifestSchemaType[]
+  name: string
+  projectId: string
+
+  title?: string
+}
