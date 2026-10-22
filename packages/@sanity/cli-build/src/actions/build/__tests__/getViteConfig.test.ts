@@ -609,6 +609,38 @@ describe('#getViteConfig', () => {
     })
   })
 
+  test.each<{cdnImports: Record<string, string>; forwarded: boolean}>([
+    {cdnImports: {sanity: 'https://sanity-cdn.example/sanity'}, forwarded: true},
+    {cdnImports: {}, forwarded: false},
+  ])(
+    'forwards auto-updates to the federation build: $forwarded (CDN imports: $cdnImports)',
+    async ({cdnImports, forwarded}) => {
+      const autoUpdates = {
+        imports: cdnImports,
+        vendor: {entries: {}, namesByChunkName: {}, specifiersByChunkName: {}},
+      }
+
+      const config = await getViteConfig({
+        autoUpdates,
+        cwd: mockTestCwd,
+        entries: mockEntries,
+        getEnvironmentVariables,
+        isWorkbenchApp: true,
+        mode: 'production' as const,
+        reactCompiler: undefined,
+      })
+
+      expect(mockWorkbenchVitePlugins.mock.calls[0][0].autoUpdates).toBe(
+        forwarded ? autoUpdates : undefined,
+      )
+      // The standalone build maps the shared dependencies either way.
+      expect(config.plugins).toContainEqual(expect.objectContaining({name: 'sanity/auto-updates'}))
+      expect(config.environments?.client?.build?.rolldownOptions?.preserveEntrySignatures).toBe(
+        'exports-only',
+      )
+    },
+  )
+
   test('should not install esmExternalRequirePlugin when auto-updates are disabled', async () => {
     const {esmExternalRequirePlugin} = await import('vite')
 

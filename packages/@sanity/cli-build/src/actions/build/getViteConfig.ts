@@ -232,7 +232,9 @@ export async function getViteConfig(options: ViteOptions): Promise<InlineConfig>
             ...sharedPlugins,
             await workbenchVitePlugins({
               appId: workbenchAppId,
-              autoUpdates,
+              // Every workbench app maps its shared dependencies; only auto-updating ones have CDN imports.
+              autoUpdates:
+                Object.keys(autoUpdates?.imports ?? {}).length > 0 ? autoUpdates : undefined,
               cwd,
               entries,
               exposes,
