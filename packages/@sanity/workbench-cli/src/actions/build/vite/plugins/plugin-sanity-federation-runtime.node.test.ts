@@ -109,6 +109,7 @@ test('an auto-updating studio entry passes the module URL sanity was loaded from
   expect(studio.props).toEqual({
     config: {projectId: 'abc123'},
     scheme: 'dark',
+    unstable_appId: undefined,
     unstable_sanityModuleUrl: 'https://sanity-cdn.com/v1/modules/sanity',
   })
 })

@@ -55,6 +55,13 @@ describe('resolveId', () => {
   })
 })
 
+it('creates the loader with the app ID', async () => {
+  const plugin = sanityAutoUpdates({appId: 'app1', imports: {'@sanity/sdk': SDK_URL}})
+  const load = plugin.load as (id: string) => Promise<string>
+
+  expect(await load('\0virtual:sanity/auto-updates-loader')).toContain('appId: "app1"')
+})
+
 describe('applyToEnvironment', () => {
   it.each([
     {applies: true, command: 'build', name: FEDERATION_DIR_NAME},

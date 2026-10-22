@@ -18,6 +18,8 @@ export interface AutoUpdatesOptions {
   /** The standalone build's module CDN import map entries. */
   imports: Record<string, string>
 
+  /** The app's bus identity, which the CDN packages can't have inlined. */
+  appId?: string
   cssUrls?: string[]
 }
 
@@ -25,7 +27,7 @@ export interface AutoUpdatesOptions {
  * Swaps the federated app's imports of CDN packages for wrappers that load them through
  * `createAutoUpdatesLoader`, with the installed copy as a lazily loaded fallback.
  */
-export function sanityAutoUpdates({cssUrls = [], imports}: AutoUpdatesOptions): Plugin {
+export function sanityAutoUpdates({appId, cssUrls = [], imports}: AutoUpdatesOptions): Plugin {
   const packages = Object.entries(imports)
     .filter(([specifier]) => !specifier.endsWith('/'))
     .map(([name, url]) => ({css: cssUrls.filter((href) => href.startsWith(`${url}/`)), name, url}))
@@ -44,6 +46,7 @@ export function sanityAutoUpdates({cssUrls = [], imports}: AutoUpdatesOptions): 
         return `import {createAutoUpdatesLoader} from ${JSON.stringify(LOADER_ENTRY)}
 import * as React from 'react'
 export const {load, moduleUrl} = createAutoUpdatesLoader({
+  appId: ${JSON.stringify(appId)},
   importModule: (specifier) => import(/* @vite-ignore */ specifier),
   packages: ${JSON.stringify(packages)},
   react: React,

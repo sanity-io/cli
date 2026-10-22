@@ -11,16 +11,20 @@ const VISION_URL = 'https://sanity-cdn.com/v1/modules/by-app/app1/t100/%5E6.17.0
 const NOW = 1_800_000_000
 
 const react = {createContext() {}}
+const globals = globalThis as {__SANITY_APP_ID__?: string}
 const bundled = {source: 'bundled'}
 
 function setup({documentReact = react, imports = {} as Record<string, unknown>} = {}) {
+  const appIdAtImport = new Map<string, string | undefined>()
   const importModule = vi.fn(async (specifier: string) => {
     if (specifier === 'react') return documentReact
+    appIdAtImport.set(specifier, globals.__SANITY_APP_ID__)
     if (specifier in imports) return imports[specifier] as Record<string, unknown>
 
     throw new TypeError(`Failed to resolve module specifier "${specifier}"`)
   })
   const loader = createAutoUpdatesLoader({
+    appId: 'app1',
     importModule,
     packages: [
       {css: [`${SANITY_URL}/index.css`], name: 'sanity', url: SANITY_URL},
@@ -30,6 +34,7 @@ function setup({documentReact = react, imports = {} as Record<string, unknown>} 
   })
 
   return {
+    appIdAtImport,
     importModule,
     load: (specifier: string) => loader.load(specifier, async () => bundled),
     moduleUrl: loader.moduleUrl,
@@ -57,6 +62,7 @@ beforeEach(() => {
 })
 
 afterEach(() => {
+  delete globals.__SANITY_APP_ID__
   document.head.replaceChildren()
   vi.useRealTimers()
   vi.unstubAllGlobals()
@@ -91,6 +97,27 @@ describe('createAutoUpdatesLoader', () => {
     expect([...document.querySelectorAll('link')].map((link) => link.href)).toEqual([
       `${freshUrl(SANITY_URL)}/index.css`,
     ])
+  })
+
+  test('gives the module CDN packages the app ID they connect to the message bus with', async () => {
+    const {appIdAtImport, load} = setup({
+      imports: {[freshUrl(SANITY_URL)]: {}, 'sanity-auto-updates-import-map-probe': {}},
+    })
+
+    await load('sanity')
+
+    expect(appIdAtImport.get(freshUrl(SANITY_URL))).toBe('app1')
+  })
+
+  test("keeps another app's ID on the page", async () => {
+    globals.__SANITY_APP_ID__ = 'other-app'
+    const {load} = setup({
+      imports: {[freshUrl(SANITY_URL)]: {}, 'sanity-auto-updates-import-map-probe': {}},
+    })
+
+    await load('sanity')
+
+    expect(globals.__SANITY_APP_ID__).toBe('other-app')
   })
 
   test('reports the module CDN URL a package was loaded from', async () => {
@@ -128,6 +155,7 @@ describe('createAutoUpdatesLoader', () => {
 
     await expect(load('sanity')).resolves.toBe(bundled)
     expect(fetch).not.toHaveBeenCalled()
+    expect(globals.__SANITY_APP_ID__).toBeUndefined()
   })
 
   test('loads through the shim when the browser ignores an added import map', async () => {

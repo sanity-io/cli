@@ -9,6 +9,8 @@ interface CdnPackage {
 }
 
 interface AutoUpdatesLoaderOptions {
+  /** The app's bus identity, which the bundled copy has inlined as `__SANITY_APP_ID__`. */
+  appId: string | undefined
   /** Native dynamic import, resolved against the document's import maps. */
   importModule: (specifier: string) => Promise<Module>
   /** By-app module CDN URLs, as in the standalone import map. */
@@ -23,7 +25,12 @@ const IMPORT_MAP_PROBE = 'sanity-auto-updates-import-map-probe'
  * Loads CDN packages from the module CDN, or the app's bundled copy when the document lacks the app's `react`.
  * The CDN bundles import each other by bare specifier, so the standalone import map entries are registered scoped to their version directories.
  */
-export function createAutoUpdatesLoader({importModule, packages, react}: AutoUpdatesLoaderOptions) {
+export function createAutoUpdatesLoader({
+  appId,
+  importModule,
+  packages,
+  react,
+}: AutoUpdatesLoaderOptions) {
   const timestamp = `/t${Math.floor(Date.now() / 1000)}`
   const fresh = packages.map((pkg) => ({
     css: pkg.css.map((href) => href.replace(/\/t\d+/, timestamp)),
@@ -103,6 +110,10 @@ export function createAutoUpdatesLoader({importModule, packages, react}: AutoUpd
 
       return false
     }
+
+    // The CDN packages read it at runtime. Page-wide, so the first CDN-loaded app on a page wins.
+    // TODO(SDK-2213): pass the app ID to `sanity` per instance instead.
+    ;(globalThis as {__SANITY_APP_ID__?: string}).__SANITY_APP_ID__ ??= appId
 
     for (const href of fresh.flatMap(({css}) => css)) {
       if ([...document.querySelectorAll('link')].some((link) => link.href === href)) continue

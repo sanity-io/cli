@@ -21,7 +21,7 @@ const REMOTE_ENTRY_FILE = `${FEDERATION_FILE_NAME}.jsx`
 const studioEntry = (isolateStyles: boolean, autoUpdates: boolean) =>
   renderRemote({
     app: autoUpdates
-      ? `(props) => React.createElement(Studio, { config, unstable_sanityModuleUrl: moduleUrl('sanity'), ...props })`
+      ? `(props) => React.createElement(Studio, { config, unstable_appId: typeof __SANITY_APP_ID__ === 'string' ? __SANITY_APP_ID__ : undefined, unstable_sanityModuleUrl: moduleUrl('sanity'), ...props })`
       : `(props) => React.createElement(Studio, { config, ...props })`,
     hmr: true,
     isolateStyles,

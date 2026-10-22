@@ -38,6 +38,7 @@ describe('workbenchVitePlugins', () => {
       entries: {relativeConfigLocation: '../../sanity.config.ts', relativeEntry: null},
     })
     expect(result).toEqual([{name: 'sanity/federation'}])
+    expect(mockFederation.mock.calls[0][0].autoUpdates).toBeUndefined()
   })
 
   test('builds a studio remote from its sanity.config path', async () => {
@@ -85,14 +86,17 @@ describe('workbenchVitePlugins', () => {
     )
   })
 
-  test('passes the auto-updates config through to federation', async () => {
+  test('passes the auto-updates config and the app ID through to federation', async () => {
     const autoUpdates = {imports: {sanity: 'https://sanity-cdn.com/v1/modules/sanity'}}
     await workbenchVitePlugins({
+      appId: 'drop-desk',
       autoUpdates,
       cwd,
       entries: {relativeConfigLocation: '../../sanity.config.ts', relativeEntry: null},
     })
-    expect(mockFederation).toHaveBeenCalledWith(expect.objectContaining({autoUpdates}))
+    expect(mockFederation).toHaveBeenCalledWith(
+      expect.objectContaining({autoUpdates: {...autoUpdates, appId: 'drop-desk'}}),
+    )
   })
 
   test('passes the declared views and web workers through to federation', async () => {

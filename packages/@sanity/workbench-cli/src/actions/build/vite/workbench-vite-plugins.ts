@@ -74,7 +74,7 @@ export async function workbenchVitePlugins(options: WorkbenchViteOptions): Promi
           isApp: false as const,
           studioConfigPath: requireStudioConfigPath(entries.relativeConfigLocation),
         }),
-    autoUpdates,
+    autoUpdates: autoUpdates && {...autoUpdates, appId},
     exposes,
     isBlueprints,
     pkgJson,
