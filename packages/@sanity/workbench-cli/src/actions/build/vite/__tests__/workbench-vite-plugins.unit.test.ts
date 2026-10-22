@@ -85,6 +85,16 @@ describe('workbenchVitePlugins', () => {
     )
   })
 
+  test('passes the auto-updates config through to federation', async () => {
+    const autoUpdates = {imports: {sanity: 'https://sanity-cdn.com/v1/modules/sanity'}}
+    await workbenchVitePlugins({
+      autoUpdates,
+      cwd,
+      entries: {relativeConfigLocation: '../../sanity.config.ts', relativeEntry: null},
+    })
+    expect(mockFederation).toHaveBeenCalledWith(expect.objectContaining({autoUpdates}))
+  })
+
   test('passes the declared views and web workers through to federation', async () => {
     const views = [{name: 'feed', src: './src/panel.tsx', surface: 'panel' as const, title: 'feed'}]
     const webWorkers = [

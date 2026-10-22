@@ -14,6 +14,7 @@ import {type WorkbenchExposes} from '../../../resolveWorkbenchApp.js'
 import {isMediaLibraryConfigApp} from '../configs/configApp.js'
 import {federation} from './plugin.js'
 import {sanityAppId} from './plugins/plugin-sanity-app-id.js'
+import {type AutoUpdatesOptions} from './plugins/plugin-sanity-auto-updates.js'
 import {stripSuiGlobalReset} from './plugins/plugin-strip-sui-global-reset.js'
 
 interface WorkbenchViteOptions {
@@ -28,6 +29,9 @@ interface WorkbenchViteOptions {
 
   /** The app's bus identity, stamped into its modules for `@sanity/runtime`. */
   appId?: string
+
+  /** Load CDN packages from the module CDN instead of bundling them. */
+  autoUpdates?: AutoUpdatesOptions
 
   exposes?: WorkbenchExposes
   /** App (vs studio) build — selects the discriminated federation option shape. */
@@ -55,7 +59,7 @@ function requireStudioConfigPath(relativeConfigLocation: string | null): string 
 
 /** Build the Vite plugins for a workbench app's module-federation remote. */
 export async function workbenchVitePlugins(options: WorkbenchViteOptions): Promise<PluginOption> {
-  const {appId, cwd, entries, exposes, isApp, isBlueprints} = options
+  const {appId, autoUpdates, cwd, entries, exposes, isApp, isBlueprints} = options
   const pkgJson = await readPackageJson(path.join(cwd, 'package.json'))
 
   const federationPlugin = federation({
@@ -70,6 +74,7 @@ export async function workbenchVitePlugins(options: WorkbenchViteOptions): Promi
           isApp: false as const,
           studioConfigPath: requireStudioConfigPath(entries.relativeConfigLocation),
         }),
+    autoUpdates,
     exposes,
     isBlueprints,
     pkgJson,

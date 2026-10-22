@@ -14,6 +14,7 @@ import {
 import {FEDERATION_FILE_NAME, RUNTIME_DIR} from './constants.js'
 import {sanityFederationHost} from './plugins/plugin-federation-host.js'
 import {type FederationOptions, sanityModuleFederation} from './plugins/plugin-module-federation.js'
+import {type AutoUpdatesOptions, sanityAutoUpdates} from './plugins/plugin-sanity-auto-updates.js'
 import {sanityEnvironmentPlugin} from './plugins/plugin-sanity-environment.js'
 import {sanityExtensionArtifacts} from './plugins/plugin-sanity-extension-artifacts.js'
 import {
@@ -22,6 +23,8 @@ import {
 } from './plugins/plugin-sanity-federation-runtime.js'
 
 interface FederationPluginOptionsBase extends Omit<Partial<FederationOptions>, 'exposes'> {
+  /** Load CDN packages from the module CDN instead of bundling them. */
+  autoUpdates?: AutoUpdatesOptions
   exposes?: WorkbenchExposes
   /** Blueprints build (via `@sanity/runtime-cli`) — emit the resource-bindings module. */
   isBlueprints?: boolean
@@ -68,7 +71,14 @@ type FederationPluginOptions = AppFederationPluginOptions | StudioFederationPlug
  * @internal
  */
 export const federation = (options: FederationPluginOptions): PluginOption => {
-  const {exposes, isBlueprints, name: defaultName, pkgJson, workDir = process.cwd()} = options
+  const {
+    autoUpdates,
+    exposes,
+    isBlueprints,
+    name: defaultName,
+    pkgJson,
+    workDir = process.cwd(),
+  } = options
 
   let name = defaultName
 
@@ -144,5 +154,6 @@ export const federation = (options: FederationPluginOptions): PluginOption => {
     sanityExtensionArtifacts({artifacts}),
     sanityModuleFederation({exposes: federationExposes, name}),
     sanityFederationHost(),
+    ...(autoUpdates ? [sanityAutoUpdates(autoUpdates)] : []),
   ]
 }

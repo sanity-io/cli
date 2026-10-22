@@ -114,3 +114,29 @@ describe('federation media-library config exposes', () => {
     expect(mockHasIslandRuntime).not.toHaveBeenCalled()
   })
 })
+
+const hasAutoUpdatesPlugin = (plugins: unknown) =>
+  (plugins as {name?: string}[]).some(({name}) => name === 'sanity/auto-updates-loader')
+
+describe('federation auto-updates', () => {
+  test('adds the auto-updates plugin when auto-updates are on', () => {
+    const plugins = federation({
+      autoUpdates: {imports: {sanity: 'https://sanity-cdn.com/v1/modules/sanity'}},
+      isApp: false,
+      name: 'drop-desk',
+      studioConfigPath: '../../sanity.config.ts',
+      workDir,
+    })
+    expect(hasAutoUpdatesPlugin(plugins)).toBe(true)
+  })
+
+  test('adds no auto-updates plugin otherwise', () => {
+    const plugins = federation({
+      isApp: false,
+      name: 'drop-desk',
+      studioConfigPath: '../../sanity.config.ts',
+      workDir,
+    })
+    expect(hasAutoUpdatesPlugin(plugins)).toBe(false)
+  })
+})

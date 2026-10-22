@@ -232,6 +232,7 @@ export async function getViteConfig(options: ViteOptions): Promise<InlineConfig>
             ...sharedPlugins,
             await workbenchVitePlugins({
               appId: workbenchAppId,
+              autoUpdates,
               cwd,
               entries,
               exposes,
