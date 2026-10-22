@@ -3,7 +3,7 @@ import {join} from 'node:path'
 import * as configMocks from '@sanity/cli-test/mocks/cli-core/config'
 import {convertToSystemPath} from '@sanity/cli-test/paths'
 import {Features} from 'lightningcss'
-import {type ConfigEnv, type InlineConfig, type Plugin, type Rolldown} from 'vite'
+import {type ConfigEnv, type InlineConfig} from 'vite'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
 import {SANITY_CACHE_DIR} from '../../../constants.js'
@@ -50,10 +50,17 @@ vi.mock('@vitejs/plugin-react', () => ({
 vi.mock('vite', () => ({
   esmExternalRequirePlugin: vi.fn(() => ({name: 'esm-external-require'})),
   mergeConfig: vi.fn((base: InlineConfig, override: InlineConfig) => ({...base, ...override})),
-  perEnvironmentPlugin: vi.fn((name: string, applyToEnvironment: unknown) => ({
-    applyToEnvironment,
-    name,
-  })),
+}))
+
+const mockResolveVendorBuildConfig = vi.hoisted(() => vi.fn())
+const mockGetLocalPackageVersion = vi.hoisted(() => vi.fn())
+
+vi.mock('../resolveVendorBuildConfig.js', () => ({
+  resolveVendorBuildConfig: mockResolveVendorBuildConfig,
+}))
+
+vi.mock('@sanity/cli-core/package-manager', () => ({
+  getLocalPackageVersion: mockGetLocalPackageVersion,
 }))
 
 vi.mock('../createExternalFromImportMap.js', () => ({
@@ -493,21 +500,19 @@ describe('#getViteConfig', () => {
   })
 
   test('should configure auto-updates builds with vendor chunks and import map', async () => {
-    const autoUpdates = {
-      imports: {sanity: 'https://sanity-cdn.example/sanity'},
-      vendor: {
-        entries: {'react/index': convertToSystemPath('/pkg/react/index.js')},
-        namesByChunkName: {'react/index': ['useState']},
-        specifiersByChunkName: {'react/index': 'react'},
-      },
+    const vendor = {
+      entries: {'react/index': convertToSystemPath('/pkg/react/index.js')},
+      namesByChunkName: {'react/index': ['useState']},
+      specifiersByChunkName: {'react/index': 'react'},
     }
+    mockResolveVendorBuildConfig.mockResolvedValue(vendor)
 
     const options = {
-      autoUpdates,
       cwd: mockTestCwd,
       entries: mockEntries,
       getEnvironmentVariables,
       mode: 'production' as const,
+      moduleCdn: {packages: [{name: 'sanity', url: 'https://sanity-cdn.example/sanity'}]},
       reactCompiler: undefined,
     }
 
@@ -517,8 +522,12 @@ describe('#getViteConfig', () => {
 
     const config = await getViteConfig(options)
 
+    const imports = {
+      sanity: 'https://sanity-cdn.example/sanity',
+      'sanity/': 'https://sanity-cdn.example/sanity/',
+    }
     expect(sanityBuildEntries).toHaveBeenCalledWith({
-      autoUpdates,
+      autoUpdates: {cssUrls: [], imports, vendor},
       basePath: '/',
       cwd: mockTestCwd,
       isApp: undefined,
@@ -531,81 +540,97 @@ describe('#getViteConfig', () => {
     })
     // Vendor entry exports must survive the app-style build.
     expect(config.build?.rolldownOptions?.preserveEntrySignatures).toBe('exports-only')
-    expect(config.build?.rolldownOptions?.experimental).toEqual({nativeMagicString: true})
-    const output = config.build?.rolldownOptions?.output as Rolldown.OutputOptions
-    const entryFileNames = output.entryFileNames as (chunk: {name: string}) => string
-    expect(entryFileNames({name: 'react/index'})).toBe('vendor/[name]-[hash].mjs')
-    expect(entryFileNames({name: 'sanity'})).toBe('static/[name]-[hash].js')
-    expect(output.exports).toBe('named')
 
     // Both the CDN import map specifiers and the vendor specifiers are handed to
     // esmExternalRequirePlugin (so external require() is rewritten to ESM imports),
     // not to rolldownOptions.external.
-    expect(createExternalFromImportMap).toHaveBeenCalledWith({
-      imports: {react: '', sanity: 'https://sanity-cdn.example/sanity'},
-    })
+    expect(createExternalFromImportMap).toHaveBeenCalledWith({imports: {...imports, react: ''}})
     expect(esmExternalRequirePlugin).toHaveBeenCalledWith({external: ['external1', 'external2']})
     expect(config.plugins).toContainEqual({name: 'esm-external-require'})
     expect(config.build?.rolldownOptions).not.toHaveProperty('external')
   })
 
-  test('applies auto-updates to the client environment of a workbench build', async () => {
-    const autoUpdates = {
-      imports: {sanity: 'https://sanity-cdn.example/sanity'},
-      vendor: {
-        entries: {'react/index': convertToSystemPath('/pkg/react/index.js')},
-        namesByChunkName: {'react/index': ['useState']},
-        specifiersByChunkName: {'react/index': 'react'},
-      },
+  describe('workbench standalone page', () => {
+    const vendor = {
+      entries: {'react/index': convertToSystemPath('/pkg/react/index.js')},
+      namesByChunkName: {'react/index': ['useState']},
+      specifiersByChunkName: {'react/index': 'react'},
     }
-
-    const config = await getViteConfig({
-      autoUpdates,
+    const workbenchOptions = {
       cwd: mockTestCwd,
       entries: mockEntries,
       getEnvironmentVariables,
       isWorkbenchApp: true,
       mode: 'production' as const,
       reactCompiler: undefined,
+    }
+
+    test('hands the vendor build to workbench-cli, with the module CDN packages when auto-updating', async () => {
+      mockResolveVendorBuildConfig.mockResolvedValue(vendor)
+      const {sanityBuildEntries} = await import('../vite/plugin-sanity-build-entries.js')
+
+      await getViteConfig({
+        ...workbenchOptions,
+        moduleCdn: {packages: [{name: 'sanity', url: 'https://sanity-cdn.example/sanity'}]},
+      })
+
+      expect(mockWorkbenchVitePlugins).toHaveBeenCalledWith(
+        expect.objectContaining({
+          standaloneVendor: {
+            entries: vendor.entries,
+            fileName: 'vendor/[name]-[hash].mjs',
+            plugins: [{name: 'sanity-vendor-named-exporters'}, {name: 'esm-external-require'}],
+          },
+        }),
+      )
+      expect(sanityBuildEntries).toHaveBeenCalledWith(
+        expect.objectContaining({
+          autoUpdates: expect.objectContaining({
+            imports: expect.objectContaining({sanity: 'https://sanity-cdn.example/sanity'}),
+          }),
+        }),
+      )
     })
 
-    const plugin = config.plugins?.find(
-      (p) => p && typeof p === 'object' && 'name' in p && p.name === 'sanity/auto-updates',
-    ) as Plugin
-    const applyToEnvironment = plugin.applyToEnvironment as (env: {name: string}) => unknown
-    expect(applyToEnvironment({name: 'federation'})).toBe(false)
+    test.each([
+      {isApp: false, styledComponents: '6.4.0'},
+      {isApp: true, styledComponents: undefined},
+    ])(
+      'maps the vendor packages without auto-updates (styled-components $styledComponents)',
+      async ({isApp, styledComponents}) => {
+        mockResolveVendorBuildConfig.mockResolvedValue(vendor)
+        mockGetLocalPackageVersion.mockResolvedValueOnce(styledComponents)
+        const {sanityBuildEntries} = await import('../vite/plugin-sanity-build-entries.js')
 
-    const clientPlugins = applyToEnvironment({name: 'client'}) as Plugin[]
-    expect(clientPlugins).toContainEqual({name: 'esm-external-require'})
-    const vendorEntries = clientPlugins.find((p) => p.name === 'sanity/workbench-vendor-entries')!
+        await getViteConfig({...workbenchOptions, isApp: true})
 
-    const emitFile = vi.fn()
-    ;(vendorEntries.buildStart as (this: unknown) => void).call({emitFile})
-    expect(emitFile).toHaveBeenCalledWith({
-      id: convertToSystemPath('/pkg/react/index.js'),
-      name: 'react/index',
-      type: 'chunk',
+        expect(mockResolveVendorBuildConfig).toHaveBeenCalledWith({cwd: mockTestCwd, isApp})
+        expect(sanityBuildEntries).toHaveBeenCalledWith(
+          expect.objectContaining({autoUpdates: {cssUrls: [], imports: {}, vendor}}),
+        )
+      },
+    )
+
+    test('builds without the map when the vendor packages are unsupported', async () => {
+      mockResolveVendorBuildConfig.mockRejectedValueOnce(
+        new Error("Package 'react' requires at least 19.2.0."),
+      )
+
+      await getViteConfig(workbenchOptions)
+
+      expect(mockWorkbenchVitePlugins).toHaveBeenCalledWith(
+        expect.objectContaining({standaloneVendor: undefined}),
+      )
     })
 
-    // Non-vendor chunks keep the existing naming, e.g. Blueprints' resource bindings.
-    const outputOptions = vendorEntries.outputOptions as (
-      options: Rolldown.OutputOptions,
-    ) => Rolldown.OutputOptions
-    const output = outputOptions({
-      chunkFileNames: (chunk) =>
-        chunk.name === 'sanity-resource-bindings'
-          ? 'sanity-resource-bindings.js'
-          : 'static/[name]-[hash].js',
-    })
-    const chunkFileNames = output.chunkFileNames as (chunk: {name: string}) => string
-    expect(chunkFileNames({name: 'react/index'})).toBe('vendor/[name]-[hash].mjs')
-    expect(chunkFileNames({name: 'sanity-resource-bindings'})).toBe('sanity-resource-bindings.js')
-    expect(chunkFileNames({name: 'Studio'})).toBe('static/[name]-[hash].js')
-    expect(output.exports).toBe('named')
+    test('fails an auto-updating build when the vendor packages are unsupported', async () => {
+      mockResolveVendorBuildConfig.mockRejectedValueOnce(
+        new Error("Package 'react' requires at least 19.2.0."),
+      )
 
-    expect(config.environments?.client?.build?.rolldownOptions).toEqual({
-      experimental: {nativeMagicString: true},
-      preserveEntrySignatures: 'exports-only',
+      await expect(getViteConfig({...workbenchOptions, moduleCdn: {packages: []}})).rejects.toThrow(
+        "Package 'react' requires at least 19.2.0.",
+      )
     })
   })
 
@@ -620,6 +645,7 @@ describe('#getViteConfig', () => {
       reactCompiler: undefined,
     })
 
+    expect(mockResolveVendorBuildConfig).not.toHaveBeenCalled()
     expect(esmExternalRequirePlugin).not.toHaveBeenCalled()
     expect(config.build?.rolldownOptions?.input).toEqual({
       sanity: join(mockTestCwd, '.sanity/runtime/app.js'),

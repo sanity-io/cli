@@ -2,6 +2,7 @@ import path from 'node:path'
 
 import babel from '@rolldown/plugin-babel'
 import {findProjectRoot} from '@sanity/cli-core/config'
+import {getLocalPackageVersion} from '@sanity/cli-core/package-manager'
 import {getCliTelemetry} from '@sanity/cli-core/telemetry'
 import {type CliConfig, type ReactCompilerConfig, type UserViteConfig} from '@sanity/cli-core/types'
 import {isStaging} from '@sanity/cli-core/util'
@@ -19,7 +20,6 @@ import {
   esmExternalRequirePlugin,
   type InlineConfig,
   mergeConfig,
-  perEnvironmentPlugin,
   type Plugin,
   type PluginOption,
   type Rolldown,
@@ -27,11 +27,13 @@ import {
 
 import {SANITY_CACHE_DIR} from '../../constants.js'
 import {sanitySchemaExtractionPlugin} from '../schema/vite/plugin-schema-extraction.js'
-import {type AutoUpdatesBuildConfig} from './autoUpdates.js'
+import {type AutoUpdatesBuildConfig, type ModuleCdnPlan} from './autoUpdates.js'
 import {buildDebug} from './buildDebug.js'
 import {VENDOR_DIR} from './constants.js'
 import {createExternalFromImportMap} from './createExternalFromImportMap.js'
+import {getAutoUpdatesCssUrls, getAutoUpdatesImportMap} from './getAutoUpdatesImportMap.js'
 import {normalizeBasePath} from './normalizeBasePath.js'
+import {resolveVendorBuildConfig} from './resolveVendorBuildConfig.js'
 import {sanityBuildEntries} from './vite/plugin-sanity-build-entries.js'
 import {sanityFaviconsPlugin} from './vite/plugin-sanity-favicons.js'
 import {sanityRuntimeRewritePlugin} from './vite/plugin-sanity-runtime-rewrite.js'
@@ -68,13 +70,6 @@ interface ViteOptions {
   additionalPlugins?: Plugin[]
 
   /**
-   * Auto-updates configuration (production builds only). When set, vendor
-   * packages are emitted as hashed ESM chunks by this build and the import map
-   * in `index.html` is derived from the build output.
-   */
-  autoUpdates?: AutoUpdatesBuildConfig
-
-  /**
    * Base path (eg under where to serve the app - `/studio` or similar)
    * Will be normalized to ensure it starts and ends with a `/`
    */
@@ -101,6 +96,8 @@ interface ViteOptions {
    * Whether or not to minify the output (only used in `mode: 'production'`)
    */
   minify?: boolean
+
+  moduleCdn?: ModuleCdnPlan
 
   /**
    * Output directory (eg where to place the built files, if any)
@@ -137,7 +134,6 @@ interface ViteOptions {
 export async function getViteConfig(options: ViteOptions): Promise<InlineConfig> {
   const {
     additionalPlugins,
-    autoUpdates,
     basePath: rawBasePath = '/',
     cwd,
     entries,
@@ -147,6 +143,7 @@ export async function getViteConfig(options: ViteOptions): Promise<InlineConfig>
     isWorkbenchApp,
     minify,
     mode,
+    moduleCdn,
     outputDir,
     reactCompiler,
     schemaExtraction,
@@ -159,6 +156,25 @@ export async function getViteConfig(options: ViteOptions): Promise<InlineConfig>
   const basePath = normalizeBasePath(rawBasePath)
 
   const configPath = (await findProjectRoot(cwd)).path
+
+  let autoUpdates: AutoUpdatesBuildConfig | undefined
+  if (mode === 'production' && (moduleCdn || isWorkbenchApp)) {
+    const sharesStyledComponents =
+      isWorkbenchApp && Boolean(await getLocalPackageVersion('styled-components', cwd))
+    const vendor = await resolveVendorBuildConfig({
+      cwd,
+      isApp: Boolean(isApp) && !sharesStyledComponents,
+    }).catch((error: unknown) => {
+      if (moduleCdn) throw error
+    })
+    autoUpdates = vendor
+      ? {
+          cssUrls: moduleCdn ? getAutoUpdatesCssUrls(moduleCdn) : [],
+          imports: moduleCdn ? getAutoUpdatesImportMap(moduleCdn) : {},
+          vendor,
+        }
+      : undefined
+  }
 
   const customFaviconsPath = path.join(cwd, 'static')
   const defaultFaviconsPath = await getDefaultFaviconsPath()
@@ -237,53 +253,16 @@ export async function getViteConfig(options: ViteOptions): Promise<InlineConfig>
               exposes,
               isApp,
               isBlueprints,
+              standaloneVendor: autoUpdates && {
+                entries: autoUpdates.vendor.entries,
+                fileName: `${VENDOR_DIR}/[name]-[hash].mjs`,
+                plugins: getAutoUpdatesPlugins(autoUpdates),
+              },
             }),
             {
               ...sanityBuildEntries({autoUpdates, basePath, bridge: false, cwd, isApp}),
               applyToEnvironment: (env) => env.name === 'client',
             } satisfies Plugin,
-            ...(autoUpdates
-              ? [
-                  perEnvironmentPlugin(
-                    'sanity/auto-updates',
-                    (env) =>
-                      env.name === 'client' && [
-                        ...getAutoUpdatesPlugins(autoUpdates),
-                        // `@module-federation/vite` bootstraps every client-consumer environment's `input` as an
-                        // app entry and replaces its file names (`addEntry`, `patchHashEntryFileNames`).
-                        {
-                          buildStart() {
-                            for (const [name, id] of Object.entries(autoUpdates.vendor.entries)) {
-                              this.emitFile({id, name, type: 'chunk'})
-                            }
-                          },
-                          name: 'sanity/workbench-vendor-entries',
-                          outputOptions: ({
-                            chunkFileNames = 'static/[name]-[hash].js',
-                            ...rest
-                          }) => {
-                            const {output} = getAutoUpdatesRolldownOptions(autoUpdates)
-
-                            return {
-                              ...rest,
-                              // Rolldown names emitted chunks with `chunkFileNames`.
-                              chunkFileNames: (chunk) => {
-                                if (chunk.name in autoUpdates.vendor.entries) {
-                                  return output.entryFileNames(chunk)
-                                }
-
-                                return typeof chunkFileNames === 'function'
-                                  ? chunkFileNames(chunk)
-                                  : chunkFileNames
-                              },
-                              exports: output.exports,
-                            }
-                          },
-                        } satisfies Plugin,
-                      ],
-                  ),
-                ]
-              : []),
           ]
         : [
             ...sharedPlugins,
@@ -326,13 +305,6 @@ export async function getViteConfig(options: ViteOptions): Promise<InlineConfig>
     },
   }
 
-  if (isWorkbenchApp && autoUpdates) {
-    const {experimental, preserveEntrySignatures} = getAutoUpdatesRolldownOptions(autoUpdates)
-    viteConfig.environments = {
-      client: {build: {rolldownOptions: {experimental, preserveEntrySignatures}}},
-    }
-  }
-
   // Front-load the deps the federation `exposes` reach only via the host's
   // dynamic imports, which Vite's dep scanner (crawling from the HTML entry)
   // otherwise misses — see `workbenchOptimizeDeps`. Dev-server only; Vite
@@ -353,7 +325,9 @@ export async function getViteConfig(options: ViteOptions): Promise<InlineConfig>
       viteConfig.plugins!.push(...getAutoUpdatesPlugins(autoUpdates))
     }
 
-    const autoUpdatesOptions = autoUpdates ? getAutoUpdatesRolldownOptions(autoUpdates) : undefined
+    const vendorChunkNames = autoUpdates
+      ? new Set(Object.keys(autoUpdates.vendor.specifiersByChunkName))
+      : null
 
     viteConfig.build = {
       ...viteConfig.build,
@@ -363,13 +337,12 @@ export async function getViteConfig(options: ViteOptions): Promise<InlineConfig>
       minify: minify ? 'oxc' : false,
 
       rolldownOptions: {
-        ...autoUpdatesOptions,
         input: {
           sanity: path.join(cwd, '.sanity', 'runtime', 'app.js'),
-          ...autoUpdatesOptions?.input,
+          ...autoUpdates?.vendor.entries,
         },
         onwarn: onRolldownWarn,
-        ...(isBlueprints || autoUpdatesOptions
+        ...(isBlueprints || autoUpdates
           ? {
               output: {
                 ...(isBlueprints
@@ -386,8 +359,31 @@ export async function getViteConfig(options: ViteOptions): Promise<InlineConfig>
                       },
                     }
                   : {}),
-                ...autoUpdatesOptions?.output,
+                ...(autoUpdates
+                  ? {
+                      entryFileNames: (chunk) =>
+                        vendorChunkNames!.has(chunk.name)
+                          ? `${VENDOR_DIR}/[name]-[hash].mjs`
+                          : 'static/[name]-[hash].js',
+                      exports: 'named',
+                    }
+                  : {}),
               },
+            }
+          : {}),
+        ...(autoUpdates
+          ? {
+              // Expose Rolldown's native MagicString on `renderChunk`'s `meta` so
+              // the vendor named-exports plugin can edit chunks without a JS
+              // dependency.
+              experimental: {nativeMagicString: true},
+              // App-style builds default to `preserveEntrySignatures: false`, which
+              // treeshakes the exports off entry chunks. Vendor chunks are loaded by
+              // the browser via the import map, so their exports must survive (e.g.
+              // styled-components' native ESM exports). `exports-only` keeps exports
+              // for entries that have them, while the export-less `sanity` app entry
+              // still bundles as before.
+              preserveEntrySignatures: 'exports-only',
             }
           : {}),
       },
@@ -424,32 +420,6 @@ function getAutoUpdatesPlugins(autoUpdates: AutoUpdatesBuildConfig): Plugin[] {
       }),
     }),
   ]
-}
-
-function getAutoUpdatesRolldownOptions(autoUpdates: AutoUpdatesBuildConfig) {
-  const vendorChunkNames = new Set(Object.keys(autoUpdates.vendor.specifiersByChunkName))
-
-  return {
-    // Expose Rolldown's native MagicString on `renderChunk`'s `meta` so
-    // the vendor named-exports plugin can edit chunks without a JS
-    // dependency.
-    experimental: {nativeMagicString: true},
-    input: autoUpdates.vendor.entries,
-    output: {
-      entryFileNames: (chunk: Rolldown.PreRenderedChunk) =>
-        vendorChunkNames.has(chunk.name)
-          ? `${VENDOR_DIR}/[name]-[hash].mjs`
-          : 'static/[name]-[hash].js',
-      exports: 'named' as const,
-    },
-    // App-style builds default to `preserveEntrySignatures: false`, which
-    // treeshakes the exports off entry chunks. Vendor chunks are loaded by
-    // the browser via the import map, so their exports must survive (e.g.
-    // styled-components' native ESM exports). `exports-only` keeps exports
-    // for entries that have them, while the export-less `sanity` app entry
-    // still bundles as before.
-    preserveEntrySignatures: 'exports-only' as const,
-  }
 }
 
 /**
