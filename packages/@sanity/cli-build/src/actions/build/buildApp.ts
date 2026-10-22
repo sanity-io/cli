@@ -14,13 +14,13 @@ import {parse as semverParse} from 'semver'
 import {AppBuildTrace} from '../../telemetry/build.telemetry.js'
 import {CompareDependencyVersionsResult} from '../../util/compareDependencyVersions.js'
 import {formatModuleSizes, sortModulesBySize} from '../../util/moduleFormatUtils.js'
+import {type ModuleCdnPlan} from './autoUpdates.js'
 import {buildDebug} from './buildDebug.js'
 import {buildStaticFiles} from './buildStaticFiles.js'
 import {BuildEventListener} from './eventListener.js'
-import {getAutoUpdatesCssUrls, getAutoUpdatesImportMap} from './getAutoUpdatesImportMap.js'
+import {getModuleCdnPlan} from './getAutoUpdatesImportMap.js'
 import {getAppEnvironmentVariables} from './getEnvironmentVariables.js'
 import {handlePrereleaseVersions} from './handlePrereleaseVersions.js'
-import {resolveVendorBuildConfig} from './resolveVendorBuildConfig.js'
 
 export type BuildAppEventListener = BuildEventListener
 export interface BuildOptions {
@@ -87,8 +87,7 @@ export async function buildApp(
     return {mfManifest: undefined}
   }
 
-  let autoUpdatesImports = {}
-  let autoUpdatesCssUrls: string[] = []
+  let moduleCdn: ModuleCdnPlan | undefined
 
   if (autoUpdatesEnabled) {
     // Get the clean version without build metadata: https://semver.org/#spec-item-10
@@ -110,8 +109,7 @@ export async function buildApp(
         ? [{cssFile: 'index.css', name: 'sanity' as const, version: cleanSanityVersion}]
         : []),
     ]
-    autoUpdatesImports = getAutoUpdatesImportMap(autoUpdatedPackages, {appId})
-    autoUpdatesCssUrls = getAutoUpdatesCssUrls(autoUpdatedPackages, {appId})
+    moduleCdn = getModuleCdnPlan(autoUpdatedPackages, {appId})
 
     output.log(`${logSymbols.info} Building with auto-updates enabled`)
 
@@ -130,8 +128,7 @@ export async function buildApp(
         unattendedMode,
         unresolvedPrerelease,
       })
-      autoUpdatesImports = {}
-      autoUpdatesCssUrls = []
+      moduleCdn = undefined
       autoUpdatesEnabled = false
     }
 
@@ -191,28 +188,11 @@ export async function buildApp(
   const trace = getCliTelemetry().trace(AppBuildTrace)
   trace.start()
 
-  let autoUpdates
-  // A workbench document maps the dependencies it shares for the apps it hosts, auto-updating or not.
-  if (autoUpdatesEnabled || options.isWorkbenchApp) {
-    const sharesStyledComponents =
-      options.isWorkbenchApp && Boolean(await getLocalPackageVersion('styled-components', workDir))
-    const vendor = await resolveVendorBuildConfig({
-      cwd: workDir,
-      isApp: !sharesStyledComponents,
-    }).catch((error) => {
-      if (autoUpdatesEnabled) throw error
-    })
-    autoUpdates = vendor
-      ? {cssUrls: autoUpdatesCssUrls, imports: autoUpdatesImports, vendor}
-      : undefined
-  }
-
   try {
     timer.start('bundleStudio')
 
     const bundle = await buildStaticFiles({
       appTitle: options.appTitle,
-      autoUpdates,
       basePath,
       cwd: workDir,
       entry: options.entry,
@@ -221,6 +201,7 @@ export async function buildApp(
       isBlueprints: options.isBlueprints,
       isWorkbenchApp: options.isWorkbenchApp,
       minify: options.minify,
+      moduleCdn,
       outputDir,
       reactCompiler: options.reactCompiler,
       schemaExtraction: options.schemaExtraction,
