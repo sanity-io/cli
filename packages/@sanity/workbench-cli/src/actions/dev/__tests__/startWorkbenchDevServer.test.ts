@@ -498,7 +498,7 @@ describe('startWorkbenchDevServer', () => {
       })
     })
 
-    test('includes undefined manifest when a registered server has not yet extracted one', async () => {
+    test('sends a null id and an undefined manifest for a server without either yet', async () => {
       const mockServer = createMockViteServer()
       mockCreateServer.mockResolvedValue(mockServer)
 
@@ -511,7 +511,7 @@ describe('startWorkbenchDevServer', () => {
         applications: [
           {
             host: 'localhost',
-            id: undefined,
+            id: null,
             manifest: undefined,
             port: 3334,
             type: 'studio',
@@ -558,6 +558,32 @@ describe('startWorkbenchDevServer', () => {
             type: 'studio',
             visibility: 'unlisted',
           }),
+        ],
+        configs: [],
+      })
+    })
+
+    test('forwards the slug without a visibility', async () => {
+      const mockServer = createMockViteServer()
+      mockCreateServer.mockResolvedValue(mockServer)
+
+      await startWorkbenchDevServer(createDevOptions({cliConfig: federationConfig}))
+
+      const watchCallback = mockWatchRegistry.mock.calls[0][0]
+      watchCallback([
+        aDevServerManifest({organizationId: 'org-test', slug: 'studio', type: 'studio'}),
+      ])
+
+      expect(mockServer.ws.send).toHaveBeenCalledWith('sanity:workbench:local-applications', {
+        applications: [
+          {
+            host: 'localhost',
+            id: null,
+            manifest: undefined,
+            port: 3333,
+            slug: 'studio',
+            type: 'studio',
+          },
         ],
         configs: [],
       })

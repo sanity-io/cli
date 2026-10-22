@@ -3,8 +3,6 @@ import {styleText} from 'node:util'
 
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
-import {buildAppId} from '../../../appId.js'
-import {resolveWorkbenchApp} from '../../../resolveWorkbenchApp.js'
 import {
   createMockOutput,
   mockWorkbenchServer,
@@ -87,7 +85,7 @@ describe('startWorkbenchPreview', () => {
     })
     mockFindProjectRoot.mockResolvedValue({path: '/tmp/sanity-project/sanity.cli.ts'})
     mockExtractManifest.mockResolvedValue({title: 'Test App'})
-    // Default: no id file in the build output, so start falls back to the hash.
+    // Default: no id file in the build output.
     mockReadFile.mockRejectedValue(Object.assign(new Error('ENOENT'), {code: 'ENOENT'}))
   })
 
@@ -126,28 +124,53 @@ describe('startWorkbenchPreview', () => {
   })
 
   describe('registration', () => {
-    test('checks the deprecated app id, then registers the built remote with its manifest', async () => {
+    test('checks the deprecated app id, then registers the built remote with its manifest and no id', async () => {
       await run()
-
-      const appId = await buildAppId(resolveWorkbenchApp(workbenchCliConfig())!)
 
       expect(mockCheckForDeprecatedAppId).toHaveBeenCalled()
       expect(mockExtractManifest).toHaveBeenCalledWith({
-        applicationId: appId,
+        applicationId: undefined,
         configPath: '/tmp/sanity-project/sanity.cli.ts',
         workDir: '/tmp/sanity-project',
       })
       expect(readManifest()).toMatchObject({
         host: 'localhost',
-        // `start` advertises the build id (matching the bundle), not host-port.
-        id: appId,
         manifest: {title: 'Test App'},
+        name: 'test-app',
         organizationId: 'org-123',
         port: 3334,
+        reference: 'org-123/test-app',
         slug: 'test-app',
         type: 'coreApp',
         visibility: 'default',
       })
+      expect(readManifest()).not.toHaveProperty('id')
+    })
+
+    test('registers the identity declared in defineApplication, as dev does', async () => {
+      await run({
+        cliConfig: workbenchCliConfig({
+          app: workbenchApp({isSingleton: true, name: 'drop-desk', visibility: 'unlisted'}),
+        }),
+      })
+
+      expect(readManifest()).toMatchObject({
+        name: 'drop-desk',
+        reference: 'sanity/drop-desk',
+        slug: 'test-app',
+        visibility: 'unlisted',
+      })
+    })
+
+    test('registers no id when the build inlined its slug for want of an app id', async () => {
+      mockReadFile.mockResolvedValue('test-app\n')
+
+      await run()
+
+      expect(mockExtractManifest).toHaveBeenCalledWith(
+        expect.objectContaining({applicationId: 'test-app'}),
+      )
+      expect(readManifest()).not.toHaveProperty('id')
     })
 
     test('registers a studio build as a studio', async () => {
@@ -158,14 +181,14 @@ describe('startWorkbenchPreview', () => {
 
     test('advertises the id the build inlined, so a deploy build (API id) still matches', async () => {
       // A deploy build carries the applications-API id, which start can't recompute.
-      mockReadFile.mockResolvedValue('app_deployed_id\n')
+      mockReadFile.mockResolvedValue('v27rvqtlp3lmdvcln6ey3lro\n')
 
       await run()
 
       expect(mockExtractManifest).toHaveBeenCalledWith(
-        expect.objectContaining({applicationId: 'app_deployed_id'}),
+        expect.objectContaining({applicationId: 'v27rvqtlp3lmdvcln6ey3lro'}),
       )
-      expect(readManifest().id).toBe('app_deployed_id')
+      expect(readManifest().id).toBe('v27rvqtlp3lmdvcln6ey3lro')
     })
   })
 
@@ -228,17 +251,17 @@ describe('startWorkbenchPreview', () => {
   })
 
   describe('URL announcement', () => {
-    test('links straight to a studio build in the Dashboard', async () => {
+    test('links to a studio build at its studio route', async () => {
       const output = createMockOutput()
       await run({isApp: false, output})
 
       expect(output.log).toHaveBeenCalledWith(
-        `Dashboard preview server started at ${styleText(['blue', 'underline'], `http://localhost:3333/local/${readManifest().id}`)}`,
+        `Dashboard preview server started at ${styleText(['blue', 'underline'], 'http://localhost:3333/studios/test-app')}`,
       )
     })
 
-    test('links to an app build with an app view under the id the build inlined', async () => {
-      mockReadFile.mockResolvedValue('app_deployed_id\n')
+    test('links to an app build with an app view at its slug, whatever id the build inlined', async () => {
+      mockReadFile.mockResolvedValue('v27rvqtlp3lmdvcln6ey3lro\n')
       const output = createMockOutput()
 
       await run({
@@ -247,7 +270,7 @@ describe('startWorkbenchPreview', () => {
       })
 
       expect(output.log).toHaveBeenCalledWith(
-        `Dashboard preview server started at ${styleText(['blue', 'underline'], 'http://localhost:3333/local/app_deployed_id')}`,
+        `Dashboard preview server started at ${styleText(['blue', 'underline'], 'http://localhost:3333/applications/test-app')}`,
       )
     })
 

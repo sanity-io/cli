@@ -17,7 +17,6 @@ export {
 export {buildFederatedApp} from '../actions/build/vite/discover-shared-dependencies.js'
 export {workbenchOptimizeDeps} from '../actions/build/vite/optimize-deps.js'
 export {workbenchVitePlugins} from '../actions/build/vite/workbench-vite-plugins.js'
-export {buildAppId} from '../appId.js'
 export {
   resolveAppEntry,
   resolveWorkbenchApp,

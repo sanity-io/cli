@@ -3,7 +3,6 @@ import {
   buildApp as internalBuildApp,
 } from '@sanity/cli-build/_internal/build'
 import {
-  buildAppId,
   resolveAppEntry,
   resolveWorkbenchApp,
   resolveWorkbenchConfig,
@@ -67,9 +66,10 @@ export async function buildApp(
     unattendedMode: flags.yes,
     vite: cliConfig.vite,
     // Shared with deploy: it passes the resolved application id (minted by the
-    // API on a first deploy) to inline; a plain build has none, so it hashes the shape.
+    // API on a first deploy) to inline. Without an app id, the bus falls back to
+    // the slug, as in dev.
     workbenchAppId: workbench
-      ? (options.applicationId ?? (await buildAppId(workbench)))
+      ? (options.applicationId ?? cliConfig?.deployment?.appId ?? workbench.slug)
       : undefined,
     workDir,
 

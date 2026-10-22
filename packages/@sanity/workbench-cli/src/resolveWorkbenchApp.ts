@@ -27,10 +27,10 @@ export interface WorkbenchExposes {
 export interface ResolvedWorkbenchApp {
   /**
    * Stable identity, distinct from the `slug` address. Defaults to `slug`, and is
-   * what every identity key (build id, interface ids) is built from.
+   * what every identity key (interface ids) is built from.
    */
   readonly name: string
-  /** Organization that owns the app — part of its build-id identity. */
+  /** Organization that owns the app. */
   readonly organizationId: string
   readonly slug: string
 

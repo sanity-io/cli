@@ -1,7 +1,6 @@
 import {type CliConfig, getCliConfigUncached, type Output} from '@sanity/cli-core'
 import {type ViteDevServer} from 'vite'
 
-import {applicationReference} from '../../applicationReference.js'
 import {isWorkbenchApp, isWorkbenchConfig} from '../../defineApp.js'
 import {deriveInterfaces} from '../../deriveInterfaces.js'
 import {resolveWorkbenchConfig} from '../../resolveWorkbenchConfig.js'
@@ -12,6 +11,7 @@ import {
   dashboardPath,
   type DevServerManifest,
   getRegisteredServers,
+  localAppIdentity,
   registerDevServer,
 } from './registry.js'
 import {startDevManifestWatcher} from './startDevManifestWatcher.js'
@@ -96,35 +96,23 @@ export async function startDevServerRegistration(
   const workbenchApp = isWorkbenchApp(cliConfig.app) ? cliConfig.app : undefined
   const config = resolveWorkbenchConfig(cliConfig)
   // A config runs alongside the app it configures, so give it its own id
-  // namespace — sharing the app's slug would make the two indistinguishable here.
-  const id = config ? `config:${config.appType}` : workbenchApp?.slug
-  // Identity is resolved and the reference composed here, so the workbench reads
-  // both off the registry entry instead of recomposing them. Name defaults to the
-  // slug, mirroring brett.
-  const name = workbenchApp?.name ?? workbenchApp?.slug
-  const reference =
-    workbenchApp && name
-      ? // No workbench app is a singleton now that the only one (the Media Library)
-        // is a config, not an app — so its reference is always `<org>/<name>`.
-        applicationReference({
-          isSingleton: false,
-          name,
-          organizationId: workbenchApp.organizationId,
-        })
-      : undefined
+  // namespace — sharing the app's id would make the two indistinguishable here.
+  const id = config ? `config:${config.appType}` : cliConfig.deployment?.appId
+  const identity = workbenchApp ? localAppIdentity(workbenchApp) : undefined
+  const slug = identity?.slug
+  const type = isApp ? 'coreApp' : 'studio'
 
-  // Separate namespaces mean a shared id is a genuine duplicate, so the gate is
-  // an id match within the org — no config-vs-app role left to reconcile.
+  // The Dashboard keys a local app on its id, or on its slug and route without one.
   const organizationId = cliConfig.app?.organizationId
-  const devServer = id
-    ? getRegisteredServers().find(
-        (server) => server.id === id && server.organizationId === organizationId,
-      )
-    : undefined
+  const devServer = getRegisteredServers().find(
+    (server) =>
+      server.organizationId === organizationId &&
+      ((id && server.id === id) || (slug && server.slug === slug && server.type === type)),
+  )
 
-  if (id && devServer) {
+  if (devServer) {
     output.error(
-      `"${id}" is already served by another dev server running on port ${devServer.port}, ` +
+      `"${id && devServer.id === id ? id : slug}" is already served by another dev server running on port ${devServer.port}, ` +
         "so the Dashboard can't tell them apart and this one stays out of it. Stop that server first.",
       {exit: false},
     )
@@ -136,14 +124,11 @@ export async function startDevServerRegistration(
     host: appHost,
     id,
     interfaces,
-    name,
     organizationId,
     port: appPort,
     projectId: cliConfig?.api?.projectId,
-    reference,
-    slug: workbenchApp?.slug,
-    type: isApp ? 'coreApp' : 'studio',
-    visibility: workbenchApp ? (workbenchApp.visibility ?? 'default') : undefined,
+    ...identity,
+    type,
     workDir,
   })
 
@@ -158,7 +143,7 @@ export async function startDevServerRegistration(
       return {
         configs: await deriveConfigs(nextConfig),
         interfaces: deriveInterfaces(nextConfig.app, {isApp}),
-        manifest: await extractManifest({...params, applicationId: id}),
+        manifest: await extractManifest({...params, applicationId: id ?? slug}),
       }
     },
     // A studio's root resolves to `sanity.config.*` but its interfaces live in
@@ -194,6 +179,6 @@ export async function startDevServerRegistration(
       registration.release()
       await watcher.close()
     },
-    path: dashboardPath({id, interfaces}),
+    path: dashboardPath({interfaces, slug, type}),
   }
 }
