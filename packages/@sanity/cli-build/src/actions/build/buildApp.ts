@@ -80,8 +80,22 @@ export async function buildApp(
   const installedSdkVersion = await getLocalPackageVersion('@sanity/sdk-react', workDir)
   const installedSanityVersion = await getLocalPackageVersion('sanity', workDir)
 
-  if (!installedSdkVersion) {
+  // A Media Library config ships no SDK app — its inputs are island-rendered
+  // by `sanity`, so verify that instead and skip the SDK auto-update
+  // machinery. Checked via the `appType` discriminator, not the mere presence
+  // of a config: a future `ConfigSchema` member must not inherit these
+  // media-library build semantics by default.
+  const isMediaLibraryConfigBuild = options.exposes?.config?.appType === 'media-library'
+
+  if (!installedSdkVersion && !isMediaLibraryConfigBuild) {
     output.error(`Failed to find installed @sanity/sdk-react version`, {
+      exit: exitCodes.RUNTIME_ERROR,
+    })
+    return {mfManifest: undefined}
+  }
+
+  if (isMediaLibraryConfigBuild && !installedSanityVersion) {
+    output.error(`Failed to find installed sanity version`, {
       exit: exitCodes.RUNTIME_ERROR,
     })
     return {mfManifest: undefined}
@@ -90,7 +104,7 @@ export async function buildApp(
   let autoUpdatesImports = {}
   let autoUpdatesCssUrls: string[] = []
 
-  if (autoUpdatesEnabled) {
+  if (autoUpdatesEnabled && !isMediaLibraryConfigBuild) {
     // Get the clean version without build metadata: https://semver.org/#spec-item-10
     const cleanSDKVersion = semverParse(installedSdkVersion)?.version
     if (!cleanSDKVersion) {
