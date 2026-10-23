@@ -5,9 +5,7 @@ import {type VendorBuildConfig} from './resolveVendorBuildConfig.js'
  *
  * Auto-updating deployments load `sanity` (and friends) from Sanity's module
  * CDN via an import map, and load `react`/`react-dom`/`styled-components` from
- * hashed vendor chunks emitted by the build itself. These concerns always come
- * together: when auto-updates are disabled none of this applies and everything
- * is bundled as usual.
+ * hashed vendor chunks emitted by the build itself.
  *
  * @internal
  */
@@ -19,4 +17,11 @@ export interface AutoUpdatesBuildConfig {
 
   /** Stylesheets served from the module CDN, loaded via `<link>` tags. */
   cssUrls?: string[]
+}
+
+export interface ModuleCdnPackage {
+  name: string
+  url: string
+
+  cssUrl?: string
 }

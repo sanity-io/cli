@@ -112,30 +112,24 @@ beforeEach(() => {
 })
 
 describe('deployStudio (federated studio)', () => {
-  test('`deployment.autoUpdates` warns and still deploys pinned', async () => {
+  test('`deployment.autoUpdates` builds and deploys as auto-updating', async () => {
     const options = deployOptions({cliConfig: {deployment: {autoUpdates: true}}})
 
     await deployStudio(options)
 
-    expect(options.output.warn).toHaveBeenCalledWith(
-      expect.stringContaining("Auto-updates aren't supported yet"),
-    )
     expect(mockDeployWorkbenchApp).toHaveBeenCalledWith(
-      expect.objectContaining({isAutoUpdating: false}),
+      expect.objectContaining({isAutoUpdating: true}),
     )
     expect(mockBuildStudio).toHaveBeenCalledWith(
-      expect.objectContaining({autoUpdatesEnabled: false}),
+      expect.objectContaining({autoUpdatesEnabled: true}),
     )
   })
 
-  test('says nothing when auto-updates were never configured', async () => {
+  test('deploys pinned when auto-updates were never configured', async () => {
     const options = deployOptions()
 
     await deployStudio(options)
 
-    expect(options.output.warn).not.toHaveBeenCalledWith(
-      expect.stringContaining("Auto-updates aren't supported"),
-    )
     expect(mockDeployWorkbenchApp).toHaveBeenCalledWith(
       expect.objectContaining({isAutoUpdating: false}),
     )

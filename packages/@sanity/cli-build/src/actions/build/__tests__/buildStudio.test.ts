@@ -7,7 +7,6 @@ import {DefinedTelemetryTrace} from '@sanity/telemetry'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
 import {type BuildOptions, buildStudio, BuildStudioEventListener} from '../buildStudio.js'
-import {getAutoUpdatesCssUrls, getAutoUpdatesImportMap} from '../getAutoUpdatesImportMap.js'
 
 function buildOptions(
   overrides: Partial<BuildOptions> & Pick<BuildOptions, 'output'>,
@@ -78,19 +77,6 @@ vi.mock(import('../checkStudioDependencyVersions.js'), () => ({
   checkStudioDependencyVersions: vi.fn().mockResolvedValue(undefined),
 }))
 
-vi.mock(import('../getAutoUpdatesImportMap.js'), () => ({
-  getAutoUpdatesCssUrls: vi.fn(),
-  getAutoUpdatesImportMap: vi.fn(),
-}))
-
-vi.mock(import('../resolveVendorBuildConfig.js'), () => ({
-  resolveVendorBuildConfig: vi.fn().mockResolvedValue({
-    entries: {},
-    namesByChunkName: {},
-    specifiersByChunkName: {},
-  }),
-}))
-
 vi.mock(import('../../../telemetry/build.telemetry.js'), () => ({
   StudioBuildTrace: {} as DefinedTelemetryTrace<
     {
@@ -109,6 +95,7 @@ vi.mock(import('@sanity/cli-core/package-manager'), () => ({
 }))
 vi.mock(import('@sanity/cli-core/util'), () => ({
   isInteractive: mockedIsInteractive,
+  isStaging: () => false,
 }))
 
 function createMockOutput(): Output {
@@ -459,20 +446,16 @@ describe('#buildStudio', () => {
 
     await buildStudio(buildOptions({appId: 'my-app-id', autoUpdatesEnabled: true, output}))
 
-    const sanityDependencies = vi.mocked(getAutoUpdatesImportMap).mock.calls[0][0]
-    expect(sanityDependencies).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({cssFile: 'index.css', name: 'sanity'}),
-        expect.objectContaining({
-          cssFile: 'index.css',
-          name: '@sanity/vision',
-          version: '3.5.0',
-        }),
-      ]),
-    )
-
-    // The same dependency array is passed to getAutoUpdatesCssUrls
-    expect(vi.mocked(getAutoUpdatesCssUrls).mock.calls[0][0]).toBe(sanityDependencies)
+    expect(mockedBuildStaticFiles.mock.calls[0][0].moduleCdnPackages).toEqual([
+      expect.objectContaining({
+        cssUrl: expect.stringMatching(/\/sanity\/index\.css$/),
+        name: 'sanity',
+      }),
+      expect.objectContaining({
+        cssUrl: expect.stringMatching(/index\.css$/),
+        name: '@sanity/vision',
+      }),
+    ])
   })
 
   test('should not check appId when auto-updates are disabled', async () => {

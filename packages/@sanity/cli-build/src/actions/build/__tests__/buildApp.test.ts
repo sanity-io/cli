@@ -55,10 +55,6 @@ vi.mock(import('../buildStaticFiles.js'), () => ({
   buildStaticFiles: mockedBuildStaticFiles,
 }))
 
-vi.mock(import('../resolveVendorBuildConfig.js'), () => ({
-  resolveVendorBuildConfig: vi.fn(),
-}))
-
 vi.mock('../buildDebug', () => ({
   buildDebug: vi.fn(),
 }))
@@ -67,17 +63,13 @@ vi.mock(import('../getEnvironmentVariables.js'), () => ({
   getAppEnvironmentVariables: mockGetAppEnvironmentVariables,
 }))
 
-vi.mock(import('../getAutoUpdatesImportMap'), () => ({
-  getAutoUpdatesCssUrls: vi.fn(),
-  getAutoUpdatesImportMap: vi.fn(),
-}))
-
 vi.mock(import('@sanity/cli-core/package-manager'), () => ({
   getLocalPackageVersion: mockedGetLocalPackageVersion,
 }))
 
 vi.mock(import('@sanity/cli-core/util'), () => ({
   isInteractive: mockedIsInteractive,
+  isStaging: () => false,
 }))
 
 vi.mock(import('@sanity/cli-core/ux'), async (importOriginal) => {
