@@ -6,6 +6,7 @@ import {afterEach, beforeEach, describe, expect, test} from 'vitest'
 import {getE2EProjectId, runCli} from '../../helpers/runCli.js'
 
 const projectId = getE2EProjectId()
+const isRegistryMode = process.env.E2E_REGISTRY_MODE === 'true'
 
 describe('sanity init - studio (interactive)', {timeout: 120_000}, () => {
   let tmp: Awaited<ReturnType<typeof createTmpDir>>
@@ -36,7 +37,7 @@ describe('sanity init - studio (interactive)', {timeout: 120_000}, () => {
       interactive: true,
     })
 
-    await session.waitForText(/Select project|Create.*project/i)
+    await session.waitForText(/What would you like to create|Select project|Create.*project/i)
     session.sendControl('c')
 
     await session.waitForExit(130)
@@ -79,7 +80,7 @@ describe('sanity init - studio (interactive)', {timeout: 120_000}, () => {
 
   // The next three keep a real install: they either drive the package manager
   // prompt, assert on install artifacts, or wait on install progress output.
-  test('walks through template, TypeScript, and package manager prompts', async () => {
+  test('walks through Studio, template, TypeScript, and package manager prompts', async () => {
     const session = await runCli({
       args: [
         'init',
@@ -95,8 +96,14 @@ describe('sanity init - studio (interactive)', {timeout: 120_000}, () => {
       interactive: true,
     })
 
+    if (!isRegistryMode) {
+      await session.waitForText(/What would you like to create/i)
+      expect(session.getOutput()).toContain('https://www.sanity.io/studio')
+      await session.selectOption('Sanity Studio')
+    }
+
     await session.waitForText(/Select project template/i)
-    session.sendKey('Enter')
+    await session.selectOption('Clean project')
 
     await session.waitForText(/Do you want to use TypeScript/i)
     session.sendKey('Enter')

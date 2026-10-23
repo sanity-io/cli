@@ -121,6 +121,11 @@ describe('sanity init - Next.js integration', {timeout: 120_000}, () => {
         interactive: true,
       })
 
+      if (process.env.E2E_REGISTRY_MODE !== 'true') {
+        await session.waitForText(/What would you like to create/i)
+        await session.selectOption('Sanity Studio')
+      }
+
       await session.waitForText(/Would you like to add configuration files/i)
       session.sendKey('Enter')
 
@@ -165,6 +170,11 @@ describe('sanity init - Next.js integration', {timeout: 120_000}, () => {
         cwd: nextjsDir,
         interactive: true,
       })
+
+      if (process.env.E2E_REGISTRY_MODE !== 'true') {
+        await session.waitForText(/What would you like to create/i)
+        await session.selectOption('Sanity Studio')
+      }
 
       await session.waitForText(/Would you like to add configuration files/i)
       session.sendKey('Enter')
