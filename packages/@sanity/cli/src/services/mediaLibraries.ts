@@ -114,13 +114,6 @@ interface QueryResponse<T> {
 }
 
 /**
- * Fetch the stored aspect documents of a media library
- * @param mediaLibraryId - The media library ID
- * @returns A promise that resolves to the aspect documents, ordered by id
- *
- * @internal
- */
-/**
  * A stored `sanity.asset.aspect` document as the query API returns it: `_id`
  * is guaranteed by the document store, everything else is validated by the
  * consumer (`aspectDocumentToFieldModule`).
@@ -133,23 +126,35 @@ export interface StoredAspectDocument {
   public?: unknown
 }
 
-/** Query page size — see the cursor loop in `getAspects`. */
-const ASPECT_QUERY_PAGE_SIZE = 1000
+/** Query page size — see the cursor loop in `queryAllPages`. */
+const QUERY_PAGE_SIZE = 1000
 
-export async function getAspects(mediaLibraryId: string): Promise<StoredAspectDocument[]> {
+/**
+ * Run a media-library GROQ query to exhaustion, paging on an `_id` cursor:
+ * the query API caps single-response sizes, and a truncated read would
+ * silently drop documents. Only an *empty* page ends the loop — a short page
+ * is not trusted as exhaustion, in case the endpoint ever returns fewer rows
+ * than the requested slice; the cursor advances past the last returned id
+ * either way, so partial slices just mean extra round-trips.
+ */
+async function queryAllPages<T extends {_id: string}>(options: {
+  /** GROQ filter the `_id` cursor condition is appended to, e.g. `_type == $type`. */
+  filter: string
+  mediaLibraryId: string
+  params: Record<string, unknown>
+  /** GROQ projection, e.g. `{_id}`. Omitted, the whole documents return. */
+  projection?: string
+}): Promise<T[]> {
+  const {filter, mediaLibraryId, params, projection = ''} = options
   const client = await getMediaLibraryClient()
 
-  // Paged on an `_id` cursor: the query API caps response sizes, and a
-  // truncated single read would silently drop aspects — a pull would then
-  // generate an incomplete config whose deploy deletes the missed documents.
-  // Only an empty page ends the loop.
-  const documents: StoredAspectDocument[] = []
+  const documents: T[] = []
   let lastId = ''
   for (;;) {
-    const response = await client.request<QueryResponse<StoredAspectDocument[]> | undefined>({
+    const response = await client.request<QueryResponse<T[]> | undefined>({
       body: {
-        params: {lastId, type: MEDIA_LIBRARY_ASSET_ASPECT_TYPE_NAME},
-        query: `*[_type == $type && _id > $lastId] | order(_id) [0...${ASPECT_QUERY_PAGE_SIZE}]`,
+        params: {...params, lastId},
+        query: `*[${filter} && _id > $lastId] | order(_id) [0...${QUERY_PAGE_SIZE}]${projection}`,
       },
       method: 'POST',
       // `published` is this API version's default; pinned so a future default
@@ -165,6 +170,23 @@ export async function getAspects(mediaLibraryId: string): Promise<StoredAspectDo
   }
 
   return documents
+}
+
+/**
+ * Fetch the stored aspect documents of a media library
+ * @param mediaLibraryId - The media library ID
+ * @returns A promise that resolves to the aspect documents, ordered by id
+ *
+ * @internal
+ */
+export function getAspects(mediaLibraryId: string): Promise<StoredAspectDocument[]> {
+  // An incomplete read here is destructive downstream: a pull would generate
+  // a config missing the dropped aspects, and its deploy deletes them.
+  return queryAllPages<StoredAspectDocument>({
+    filter: '_type == $type',
+    mediaLibraryId,
+    params: {type: MEDIA_LIBRARY_ASSET_ASPECT_TYPE_NAME},
+  })
 }
 
 interface DeployAspectsOptions {
