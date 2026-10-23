@@ -61,7 +61,7 @@ afterEach(() => {
 })
 
 describe('createAutoUpdatesLoader', () => {
-  test("loads the module CDN packages the app imports as the app's own instance", async () => {
+  test("loads the module CDN packages as the app's own instance, with CSS for the ones it imports", async () => {
     const {load, moduleUrl} = setup()
 
     await expect(load('sanity/structure')).resolves.toBe(
@@ -70,7 +70,12 @@ describe('createAutoUpdatesLoader', () => {
 
     expect(importThroughShim).toHaveBeenCalledWith({
       appId: 'app1',
-      imports: {sanity: freshUrl(SANITY_URL), 'sanity/': `${freshUrl(SANITY_URL)}/`},
+      imports: {
+        '@sanity/sdk': freshUrl(SDK_URL),
+        '@sanity/sdk/': `${freshUrl(SDK_URL)}/`,
+        sanity: freshUrl(SANITY_URL),
+        'sanity/': `${freshUrl(SANITY_URL)}/`,
+      },
       ownInstances: {},
     })
     expect([...document.querySelectorAll('link')].map((link) => link.href)).toEqual([

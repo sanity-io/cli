@@ -26,20 +26,18 @@ export function createAutoUpdatesLoader({
   specifiers,
 }: AutoUpdatesLoaderOptions) {
   const timestamp = `/t${Math.floor(Date.now() / 1000)}`
-  const used = packages
-    .filter(({name}) => specifiers.some((specifier) => packageOf(specifier) === name))
-    .map(({cssUrl, name, url}) => ({
-      cssUrl: cssUrl?.replace(/\/t\d+/, timestamp),
-      name,
-      url: url.replace(/\/t\d+/, timestamp),
-    }))
+  const fresh = packages.map(({cssUrl, name, url}) => ({
+    cssUrl: cssUrl?.replace(/\/t\d+/, timestamp),
+    name,
+    url: url.replace(/\/t\d+/, timestamp),
+  }))
   const modules = new Map<string, Module>()
   let ready: Promise<boolean> | undefined
 
   return {
     load,
     moduleUrl: (name: string) =>
-      modules.size > 0 ? used.find((pkg) => pkg.name === name)?.url : undefined,
+      modules.size > 0 ? fresh.find((pkg) => pkg.name === name)?.url : undefined,
   }
 
   async function load(specifier: string, bundled: () => Promise<Module>): Promise<Module> {
@@ -59,7 +57,8 @@ export function createAutoUpdatesLoader({
       const importCdn = await importThroughShim({
         appId,
         imports: Object.fromEntries(
-          used.flatMap(({name, url}) => [
+          // Every package, since the CDN bundles import each other (`@sanity/sdk-react` imports `@sanity/sdk`).
+          fresh.flatMap(({name, url}) => [
             [name, url],
             [`${name}/`, `${url}/`],
           ]),
@@ -69,7 +68,7 @@ export function createAutoUpdatesLoader({
       // All or nothing: one bundled package would pull in bundled copies of the others.
       const loaded = await Promise.all(
         specifiers.map(async (specifier) => {
-          const pkg = used.find(({name}) => name === packageOf(specifier))!
+          const pkg = fresh.find(({name}) => name === packageOf(specifier))!
 
           return [specifier, await importCdn(pkg.url + specifier.slice(pkg.name.length))] as const
         }),
@@ -82,8 +81,12 @@ export function createAutoUpdatesLoader({
       return false
     }
 
-    for (const {cssUrl} of used) {
-      if (!cssUrl || [...document.querySelectorAll('link')].some(({href}) => href === cssUrl)) {
+    for (const {cssUrl, name} of fresh) {
+      if (
+        !cssUrl ||
+        !specifiers.some((specifier) => packageOf(specifier) === name) ||
+        [...document.querySelectorAll('link')].some(({href}) => href === cssUrl)
+      ) {
         continue
       }
 
