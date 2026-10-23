@@ -43,6 +43,24 @@ describe.skipIf(isRegistryMode)(
       expect(output).not.toMatch(/Project name:/)
     })
 
+    test('selects the project whose ID is pasted with Enter', async () => {
+      const session = await runCli({args: ['init', '--bare'], interactive: true})
+
+      await session.waitForText(/❯ Create new project/)
+      // One write, like a paste: Enter arrives before the results for the term
+      session.write(`${projectId}\r`)
+      await session.waitForText(highlightedAfterTyping('select an existing one', projectId))
+      session.sendKey('Enter')
+
+      await session.waitForText(/Select dataset to use|Project name:/)
+      expect(stripVTControlCharacters(session.getOutput())).not.toMatch(/Project name:/)
+      await session.selectOption('production')
+
+      await session.waitForExit(0)
+
+      expect(stripVTControlCharacters(session.getOutput())).toContain(`Project ID: ${projectId}`)
+    })
+
     test('filters organizations by search term when creating a project', async () => {
       const session = await runCli({args: ['init', '--bare'], interactive: true})
 
