@@ -14,7 +14,7 @@ import {logSymbols, spinner} from '@sanity/cli-core/ux'
 import {resolveWorkbenchConfig} from '@sanity/workbench-cli/deploy'
 
 import {
-  aspectDocumentToFieldModule,
+  convertAspectDocuments,
   formatFieldEntries,
   type GeneratedFieldModule,
   type SkippedAspect,
@@ -44,12 +44,6 @@ const flags = {
     description:
       'Overwrite existing field modules and re-generate fields already declared in the config',
   }),
-}
-
-/** A generated module paired with the stored document it came from. */
-interface GeneratedCandidate {
-  module: GeneratedFieldModule
-  sourceId: string
 }
 
 export class MediaPullAspectsCommand extends SanityCommand<typeof MediaPullAspectsCommand> {
@@ -146,43 +140,8 @@ export class MediaPullAspectsCommand extends SanityCommand<typeof MediaPullAspec
       const configuredNames = new Set(config.fields.map((field) => field.name))
       const configuredSrcByName = new Map(config.fields.map((field) => [field.name, field.src]))
 
-      const skipped: SkippedAspect[] = []
-
-      // First pass: convert every stored document.
-      const candidates: GeneratedCandidate[] = []
-      for (const doc of documents) {
-        const outcome = aspectDocumentToFieldModule(doc)
-        if (outcome.status === 'skipped') {
-          skipped.push(outcome)
-        } else {
-          candidates.push({module: outcome, sourceId: String(doc._id)})
-        }
-      }
-
-      // Second pass: one module per field name. Two stored documents can
-      // resolve to the same name (a legacy document whose `_id` predates its
-      // `definition.name`), which would write the same file twice — the
-      // document whose `_id` matches the name wins, the rest are skipped.
-      const byName = new Map<string, GeneratedCandidate[]>()
-      for (const candidate of candidates) {
-        const group = byName.get(candidate.module.name) ?? []
-        group.push(candidate)
-        byName.set(candidate.module.name, group)
-      }
-      const winners: GeneratedFieldModule[] = []
-      for (const [name, group] of byName) {
-        const winner = group.find((candidate) => candidate.sourceId === name) ?? group[0]
-        winners.push(winner.module)
-        for (const loser of group) {
-          if (loser === winner) continue
-          skipped.push({
-            id: loser.sourceId,
-            reasons: [`Also defines "${name}" — generated from "${winner.sourceId}" instead`],
-            status: 'skipped',
-            validationErrors: [],
-          })
-        }
-      }
+      // One module per field name; name collisions and invalid documents are skipped.
+      const {modules: winners, skipped} = convertAspectDocuments(documents)
 
       const generated: GeneratedFieldModule[] = []
       // Module name -> written path relative to the project root, so the

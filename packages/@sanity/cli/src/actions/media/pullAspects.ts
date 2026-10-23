@@ -46,6 +46,58 @@ export interface SkippedAspect {
 export type PullAspectOutcome = GeneratedFieldModule | SkippedAspect
 
 /**
+ * Convert a page of stored aspect documents into field modules, one per field
+ * name. Two stored documents can resolve to the same name (a legacy document
+ * whose `_id` predates its `definition.name`), which would otherwise produce
+ * the same module twice — the document whose `_id` matches the name wins, the
+ * rest are reported as skipped. Shared by `sanity media pull-aspects` and the
+ * init-time pull offer.
+ *
+ * @internal
+ */
+export function convertAspectDocuments(documents: PullableAspectDocument[]): {
+  modules: GeneratedFieldModule[]
+  skipped: SkippedAspect[]
+} {
+  const skipped: SkippedAspect[] = []
+
+  // First pass: convert every stored document.
+  const candidates: Array<{module: GeneratedFieldModule; sourceId: string}> = []
+  for (const doc of documents) {
+    const outcome = aspectDocumentToFieldModule(doc)
+    if (outcome.status === 'skipped') {
+      skipped.push(outcome)
+    } else {
+      candidates.push({module: outcome, sourceId: String(doc._id)})
+    }
+  }
+
+  // Second pass: pick one winner per name.
+  const byName = new Map<string, Array<{module: GeneratedFieldModule; sourceId: string}>>()
+  for (const candidate of candidates) {
+    const group = byName.get(candidate.module.name) ?? []
+    group.push(candidate)
+    byName.set(candidate.module.name, group)
+  }
+  const modules: GeneratedFieldModule[] = []
+  for (const [name, group] of byName) {
+    const winner = group.find((candidate) => candidate.sourceId === name) ?? group[0]
+    modules.push(winner.module)
+    for (const loser of group) {
+      if (loser === winner) continue
+      skipped.push({
+        id: loser.sourceId,
+        reasons: [`Also defines "${name}" — generated from "${winner.sourceId}" instead`],
+        status: 'skipped',
+        validationErrors: [],
+      })
+    }
+  }
+
+  return {modules, skipped}
+}
+
+/**
  * Codegen one stored aspect document into a `src/fields/<name>.tsx` field
  * module for a Media Library config app.
  *
