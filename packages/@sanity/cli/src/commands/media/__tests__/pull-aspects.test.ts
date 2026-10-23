@@ -2,27 +2,52 @@ import path from 'node:path'
 
 import {ProjectRootNotFoundError} from '@sanity/cli-core'
 import {exitCodes} from '@sanity/cli-core/ExitCodes'
+import {confirm} from '@sanity/cli-core/ux'
 import {convertToSystemPath, createTestToken, mockApi, testCommand} from '@sanity/cli-test'
 import {unstable_defineMediaLibrary} from '@sanity/workbench-cli'
 import {cleanAll, pendingMocks} from 'nock'
-import {afterEach, describe, expect, test, vi} from 'vitest'
+import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
 import {MEDIA_LIBRARY_API_VERSION} from '../../../services/mediaLibraries.js'
 import {MediaPullAspectsCommand} from '../pull-aspects.js'
 
 const mockFsAccess = vi.hoisted(() => vi.fn())
 const mockFsMkdir = vi.hoisted(() => vi.fn())
+const mockFsReadFile = vi.hoisted(() => vi.fn())
 const mockFsWriteFile = vi.hoisted(() => vi.fn())
 const mockPromptForMediaLibrary = vi.hoisted(() => vi.fn())
 
 vi.mock('node:fs/promises', () => ({
   access: mockFsAccess,
   mkdir: mockFsMkdir,
+  readFile: mockFsReadFile,
   writeFile: mockFsWriteFile,
 }))
 vi.mock('../../../prompts/promptForMediaLibrary.js', () => ({
   promptForMediaLibrary: mockPromptForMediaLibrary,
 }))
+vi.mock('@sanity/cli-core/ux', async () => {
+  const actual = await vi.importActual<typeof import('@sanity/cli-core/ux')>('@sanity/cli-core/ux')
+  return {
+    ...actual,
+    confirm: vi.fn(),
+  }
+})
+
+const mockConfirm = vi.mocked(confirm)
+
+/** The sanity.cli.ts the registration flow reads and rewrites. */
+const SCAFFOLDED_CLI_CONFIG = `import {defineCliConfig, unstable_defineMediaLibrary} from 'sanity/cli'
+
+export default defineCliConfig({
+  app: unstable_defineMediaLibrary({
+    organizationId: 'test-org-id',
+    fields: [
+      {name: 'existing', src: './src/fields/existing.ts', title: 'Existing'},
+    ],
+  }),
+})
+`
 
 const defaultMocks = {
   cliConfig: {
@@ -77,6 +102,13 @@ function mockAspectQuery(libraryId: string, documents: unknown[], capture?: unkn
 }
 
 describe('#media:pull-aspects', () => {
+  beforeEach(() => {
+    // Default: the registration prompt is turned down, so pre-existing tests
+    // keep exercising the print-the-entries path.
+    mockConfirm.mockResolvedValue(false)
+    mockFsReadFile.mockResolvedValue(SCAFFOLDED_CLI_CONFIG)
+  })
+
   afterEach(() => {
     vi.clearAllMocks()
     const pending = pendingMocks()
@@ -229,6 +261,56 @@ describe('#media:pull-aspects', () => {
     expect(stderr).toContain('Already declared in sanity.cli.ts')
     expect(stderr).toContain('A file already exists')
     expect(stdout).toContain('No field modules generated.')
+  })
+
+  test('a module already on disk but missing from the config is still offered for registration', async () => {
+    // Pull once, decline the prompt, run again: the file exists, so nothing is
+    // written — but the field is still undeclared, and deploy deletes
+    // undeclared stored aspects. The re-run must offer the entry again.
+    createTestToken('test-token')
+    mockLibraryList([{id: 'test-library-id'}])
+    mockAspectQuery('test-library-id', [
+      {
+        _id: 'notes',
+        _type: 'sanity.asset.aspect',
+        definition: {name: 'notes', title: 'Notes', type: 'text'},
+      },
+    ])
+    // The module exists on disk (every path resolves).
+    mockFsAccess.mockResolvedValue(undefined)
+    mockConfirm.mockResolvedValue(true)
+
+    const {stderr, stdout} = await testCommand(MediaPullAspectsCommand, [], {mocks: defaultMocks})
+
+    // The module file is not rewritten — only sanity.cli.ts is.
+    expect(mockFsWriteFile).toHaveBeenCalledTimes(1)
+    expect(mockFsWriteFile).toHaveBeenCalledWith(
+      convertToSystemPath('/test/project/sanity.cli.ts'),
+      expect.stringContaining(`{name: 'notes', src: './src/fields/notes.tsx', title: 'Notes'},`),
+    )
+    expect(stderr).toContain('A file already exists')
+    expect(stdout).toContain('Declared 1 field in sanity.cli.ts')
+  })
+
+  test('declining the offer for an existing undeclared module still prints its entry and the deletion warning', async () => {
+    createTestToken('test-token')
+    mockLibraryList([{id: 'test-library-id'}])
+    mockAspectQuery('test-library-id', [
+      {
+        _id: 'notes',
+        _type: 'sanity.asset.aspect',
+        definition: {name: 'notes', title: 'Notes', type: 'text'},
+      },
+    ])
+    mockFsAccess.mockResolvedValue(undefined)
+    // beforeEach declines the prompt.
+
+    const {stdout} = await testCommand(MediaPullAspectsCommand, [], {mocks: defaultMocks})
+
+    expect(mockFsWriteFile).not.toHaveBeenCalled()
+    expect(stdout).toContain('No field modules generated.')
+    expect(stdout).toContain(`{name: 'notes', src: './src/fields/notes.tsx', title: 'Notes'},`)
+    expect(stdout).toContain('not declared in sanity.cli.ts are deleted on deploy')
   })
 
   test('generates one module when two stored docs resolve to the same name — the doc whose _id matches wins', async () => {
@@ -513,6 +595,179 @@ describe('#media:pull-aspects', () => {
     expect(MediaPullAspectsCommand.telemetry.redactedFlags).toEqual([
       {canonical: '--out-dir', flags: ['--out-dir']},
     ])
+  })
+
+  test('declares the generated fields in sanity.cli.ts when the prompt is accepted', async () => {
+    createTestToken('test-token')
+    mockLibraryList([{id: 'test-library-id'}])
+    mockAspectQuery('test-library-id', [
+      {
+        _id: 'caption',
+        _type: 'sanity.asset.aspect',
+        definition: {name: 'caption', title: 'Caption', type: 'string'},
+      },
+    ])
+    mockFsAccess.mockRejectedValue(new Error('ENOENT'))
+    mockFsMkdir.mockResolvedValue(undefined)
+    mockFsWriteFile.mockResolvedValue(undefined)
+    mockConfirm.mockResolvedValue(true)
+
+    const {stderr, stdout} = await testCommand(MediaPullAspectsCommand, [], {mocks: defaultMocks})
+
+    expect(mockConfirm).toHaveBeenCalledWith({
+      default: true,
+      message: 'Declare the 1 pulled field in sanity.cli.ts?',
+    })
+    expect(mockFsReadFile).toHaveBeenCalledWith(
+      convertToSystemPath('/test/project/sanity.cli.ts'),
+      'utf8',
+    )
+    // One write for the module, one for the updated config.
+    expect(mockFsWriteFile).toHaveBeenCalledTimes(2)
+    expect(mockFsWriteFile).toHaveBeenCalledWith(
+      convertToSystemPath('/test/project/sanity.cli.ts'),
+      expect.stringContaining(
+        `{name: 'existing', src: './src/fields/existing.ts', title: 'Existing'},\n      {name: 'caption', src: './src/fields/caption.tsx', title: 'Caption'},`,
+      ),
+    )
+    expect(stdout).toContain('Declared 1 field in sanity.cli.ts')
+    expect(stdout).not.toContain('Add the generated')
+    expect(stderr).not.toContain('deletes the stored definition')
+  })
+
+  test('--update-config declares the fields without prompting, even unattended', async () => {
+    createTestToken('test-token')
+    mockLibraryList([{id: 'test-library-id'}])
+    mockAspectQuery('test-library-id', [
+      {
+        _id: 'caption',
+        _type: 'sanity.asset.aspect',
+        definition: {name: 'caption', title: 'Caption', type: 'string'},
+      },
+    ])
+    mockFsAccess.mockRejectedValue(new Error('ENOENT'))
+    mockFsMkdir.mockResolvedValue(undefined)
+    mockFsWriteFile.mockResolvedValue(undefined)
+
+    const {stdout} = await testCommand(MediaPullAspectsCommand, ['--update-config'], {
+      mocks: {...defaultMocks, isInteractive: false},
+    })
+
+    expect(mockConfirm).not.toHaveBeenCalled()
+    expect(mockFsWriteFile).toHaveBeenCalledWith(
+      convertToSystemPath('/test/project/sanity.cli.ts'),
+      expect.stringContaining(
+        `{name: 'caption', src: './src/fields/caption.tsx', title: 'Caption'},`,
+      ),
+    )
+    expect(stdout).toContain('Declared 1 field in sanity.cli.ts')
+  })
+
+  test('--no-update-config skips the prompt and prints the entries with a deletion warning', async () => {
+    createTestToken('test-token')
+    mockLibraryList([{id: 'test-library-id'}])
+    mockAspectQuery('test-library-id', [
+      {
+        _id: 'caption',
+        _type: 'sanity.asset.aspect',
+        definition: {name: 'caption', title: 'Caption', type: 'string'},
+      },
+    ])
+    mockFsAccess.mockRejectedValue(new Error('ENOENT'))
+    mockFsMkdir.mockResolvedValue(undefined)
+    mockFsWriteFile.mockResolvedValue(undefined)
+
+    const {stderr, stdout} = await testCommand(MediaPullAspectsCommand, ['--no-update-config'], {
+      mocks: defaultMocks,
+    })
+
+    expect(mockConfirm).not.toHaveBeenCalled()
+    expect(mockFsReadFile).not.toHaveBeenCalled()
+    expect(mockFsWriteFile).toHaveBeenCalledTimes(1)
+    expect(stdout).toContain(
+      `{name: 'caption', src: './src/fields/caption.tsx', title: 'Caption'},`,
+    )
+    expect(stderr).toContain('deletes the stored definition')
+  })
+
+  test('unattended runs without --update-config leave the config alone', async () => {
+    createTestToken('test-token')
+    mockLibraryList([{id: 'test-library-id'}])
+    mockAspectQuery('test-library-id', [
+      {
+        _id: 'caption',
+        _type: 'sanity.asset.aspect',
+        definition: {name: 'caption', title: 'Caption', type: 'string'},
+      },
+    ])
+    mockFsAccess.mockRejectedValue(new Error('ENOENT'))
+    mockFsMkdir.mockResolvedValue(undefined)
+    mockFsWriteFile.mockResolvedValue(undefined)
+
+    const {stderr, stdout} = await testCommand(MediaPullAspectsCommand, [], {
+      mocks: {...defaultMocks, isInteractive: false},
+    })
+
+    expect(mockConfirm).not.toHaveBeenCalled()
+    expect(mockFsWriteFile).toHaveBeenCalledTimes(1)
+    expect(stdout).toContain(
+      `{name: 'caption', src: './src/fields/caption.tsx', title: 'Caption'},`,
+    )
+    expect(stderr).toContain('deletes the stored definition')
+  })
+
+  test('falls back to printing the entries when sanity.cli.ts cannot be edited safely', async () => {
+    createTestToken('test-token')
+    mockLibraryList([{id: 'test-library-id'}])
+    mockAspectQuery('test-library-id', [
+      {
+        _id: 'caption',
+        _type: 'sanity.asset.aspect',
+        definition: {name: 'caption', title: 'Caption', type: 'string'},
+      },
+    ])
+    mockFsAccess.mockRejectedValue(new Error('ENOENT'))
+    mockFsMkdir.mockResolvedValue(undefined)
+    mockFsWriteFile.mockResolvedValue(undefined)
+    mockConfirm.mockResolvedValue(true)
+    // The config object lives behind a variable the editor refuses to chase.
+    mockFsReadFile.mockResolvedValue(
+      `import {defineCliConfig, unstable_defineMediaLibrary} from 'sanity/cli'\n\n` +
+        `export default defineCliConfig({app: unstable_defineMediaLibrary(mediaLibraryOptions)})\n`,
+    )
+
+    const {stderr, stdout} = await testCommand(MediaPullAspectsCommand, [], {mocks: defaultMocks})
+
+    // Only the module write — the config is left untouched.
+    expect(mockFsWriteFile).toHaveBeenCalledTimes(1)
+    expect(stderr).toContain('Could not update sanity.cli.ts automatically')
+    expect(stderr).toContain('is not an object literal')
+    expect(stdout).toContain(
+      `{name: 'caption', src: './src/fields/caption.tsx', title: 'Caption'},`,
+    )
+    expect(stderr).toContain('deletes the stored definition')
+  })
+
+  test('exits with the SIGINT code when the registration prompt is cancelled', async () => {
+    createTestToken('test-token')
+    mockLibraryList([{id: 'test-library-id'}])
+    mockAspectQuery('test-library-id', [
+      {
+        _id: 'caption',
+        _type: 'sanity.asset.aspect',
+        definition: {name: 'caption', title: 'Caption', type: 'string'},
+      },
+    ])
+    mockFsAccess.mockRejectedValue(new Error('ENOENT'))
+    mockFsMkdir.mockResolvedValue(undefined)
+    mockFsWriteFile.mockResolvedValue(undefined)
+    mockConfirm.mockRejectedValue(Object.assign(new Error('SIGINT'), {name: 'ExitPromptError'}))
+
+    const {error, stderr} = await testCommand(MediaPullAspectsCommand, [], {mocks: defaultMocks})
+
+    expect(error?.oclif?.exit).toBe(exitCodes.SIGINT)
+    expect(stderr).toContain('Aborted by user')
+    expect(stderr).not.toContain('Failed to pull aspects')
   })
 
   test('reports an empty library without writing anything', async () => {

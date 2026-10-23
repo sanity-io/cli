@@ -150,6 +150,7 @@
   },
   "devDependencies": {
     "@eslint/compat": "catalog:",
+    "@oxc-project/types": "0.152.0",
     "@repo/package.config": "workspace:*",
     "@repo/tsconfig": "workspace:*",
     "@sanity/cli-test": "workspace:*",

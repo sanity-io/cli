@@ -1,4 +1,4 @@
-import {access, mkdir, writeFile} from 'node:fs/promises'
+import {access, mkdir, readFile, writeFile} from 'node:fs/promises'
 import path from 'node:path'
 import {styleText} from 'node:util'
 
@@ -10,9 +10,10 @@ import {
   SanityCommand,
   subdebug,
 } from '@sanity/cli-core'
-import {logSymbols, spinner} from '@sanity/cli-core/ux'
+import {confirm, logSymbols, spinner} from '@sanity/cli-core/ux'
 import {resolveWorkbenchConfig} from '@sanity/workbench-cli/deploy'
 
+import {appendFieldEntries} from '../../actions/media/cliConfigFields.js'
 import {
   convertAspectDocuments,
   formatFieldEntries,
@@ -44,7 +45,19 @@ const flags = {
     description:
       'Overwrite existing field modules and re-generate fields already declared in the config',
   }),
+  'update-config': Flags.boolean({
+    allowNo: true,
+    description:
+      'Declare the generated fields in sanity.cli.ts (--no-update-config to skip). Prompted when omitted; unattended runs only print the entries',
+  }),
 }
+
+/**
+ * The outcome of offering to declare the generated fields in `sanity.cli.ts`:
+ * written, turned down (flag, prompt, or unattended), or not writable (the
+ * config shape could not be edited safely — the `reason` says why).
+ */
+type Registration = 'added' | 'declined' | {reason: string}
 
 export class MediaPullAspectsCommand extends SanityCommand<typeof MediaPullAspectsCommand> {
   static override description =
@@ -147,6 +160,9 @@ export class MediaPullAspectsCommand extends SanityCommand<typeof MediaPullAspec
       // Module name -> written path relative to the project root, so the
       // report shows where each module actually landed.
       const writtenPaths = new Map<string, string>()
+      // Module name -> path of a module skipped because it already exists on
+      // disk. Those fields may still be undeclared and need registration.
+      const existingPaths = new Map<string, string>()
       for (const module of winners) {
         if (!overwrite && configuredNames.has(module.name)) {
           skipped.push({
@@ -166,6 +182,11 @@ export class MediaPullAspectsCommand extends SanityCommand<typeof MediaPullAspec
           defaultDestination.replace(/\.tsx$/, '.ts'),
         ])
         if (!overwrite && existing) {
+          // The file is left alone, but the field is undeclared (declared
+          // names were skipped above) — so it still joins the registration
+          // offer below. An on-disk module without a config entry is exactly
+          // the state the next deploy punishes, however the file got there.
+          existingPaths.set(module.name, path.relative(root.directory, existing))
           skipped.push({
             id: module.name,
             reasons: [
@@ -193,7 +214,36 @@ export class MediaPullAspectsCommand extends SanityCommand<typeof MediaPullAspec
         generated.push(module)
       }
 
-      this.report({configuredNames, generated, outDir: outDirRelative, skipped, writtenPaths})
+      // Fields present locally — written this run or already on disk — but not
+      // declared get offered for registration: the deploy mirrors config to
+      // stored documents, so an undeclared stored aspect is deleted by the
+      // next deploy — leaving the entries unpasted is a data hazard, not just
+      // friction. Existing files count because a prior pull may have been
+      // declined (or edited by hand): the file being there does not make the
+      // field declared.
+      const entryPaths = new Map([...writtenPaths, ...existingPaths])
+      const newEntries = winners.filter(
+        (module) => !configuredNames.has(module.name) && entryPaths.has(module.name),
+      )
+      const entryLines =
+        newEntries.length > 0
+          ? formatFieldEntries(newEntries, outDirRelative, entryPaths).split('\n')
+          : []
+      const registration =
+        newEntries.length > 0
+          ? await this.maybeRegisterFields({configPath: root.path, entryLines})
+          : null
+
+      this.report({
+        configuredNames,
+        entryLines,
+        generated,
+        newEntries,
+        outDir: outDirRelative,
+        registration,
+        skipped,
+        writtenPaths,
+      })
     } catch (error) {
       // Ctrl+C on the library prompt and errors that already carry their exit
       // code (`this.error` inside helpers) pass through to SanityCommand.catch.
@@ -208,16 +258,52 @@ export class MediaPullAspectsCommand extends SanityCommand<typeof MediaPullAspec
     }
   }
 
+  /**
+   * Offer to declare the generated fields in `sanity.cli.ts`. `--update-config`
+   * / `--no-update-config` decide outright; otherwise an interactive run
+   * prompts (default yes) and an unattended run leaves the config alone.
+   */
+  private async maybeRegisterFields({
+    configPath,
+    entryLines,
+  }: {
+    configPath: string
+    entryLines: string[]
+  }): Promise<Registration> {
+    const flag = this.flags['update-config']
+    const shouldUpdate =
+      flag ??
+      (this.isUnattended()
+        ? false
+        : await confirm({
+            default: true,
+            message: `Declare the ${entryLines.length} pulled ${pluralize('field', entryLines.length)} in sanity.cli.ts?`,
+          }))
+    if (!shouldUpdate) return 'declined'
+
+    const source = await readFile(configPath, 'utf8')
+    const result = appendFieldEntries(source, entryLines)
+    if (!result.ok) return {reason: result.reason}
+    await writeFile(configPath, result.updated)
+    return 'added'
+  }
+
   private report({
     configuredNames,
+    entryLines,
     generated,
+    newEntries,
     outDir,
+    registration,
     skipped,
     writtenPaths,
   }: {
     configuredNames: Set<string>
+    entryLines: string[]
     generated: GeneratedFieldModule[]
+    newEntries: GeneratedFieldModule[]
     outDir: string
+    registration: Registration | null
     skipped: SkippedAspect[]
     writtenPaths: Map<string, string>
   }): void {
@@ -233,38 +319,52 @@ export class MediaPullAspectsCommand extends SanityCommand<typeof MediaPullAspec
       }
     }
 
-    if (generated.length === 0) {
+    // No modules written and nothing to declare: done. Skipped-but-undeclared
+    // fields keep the report alive — their registration outcome still matters.
+    if (generated.length === 0 && newEntries.length === 0) {
       this.log('')
       this.log('No field modules generated.')
       return
     }
 
-    this.log('')
-    this.log(
-      `${logSymbols.success} ${styleText('bold', `Generated ${generated.length} field ${pluralize('module', generated.length)}`)}`,
-    )
-    for (const module of generated) {
-      const location = writtenPaths.get(module.name) ?? path.join(outDir, module.filename)
-      this.log(`  - ${module.name} ${styleText('dim', location)}`)
-      for (const warning of module.warnings) {
-        this.log(`    ${logSymbols.warning} ${warning}`)
+    if (generated.length === 0) {
+      this.log('')
+      this.log('No field modules generated.')
+    } else {
+      this.log('')
+      this.log(
+        `${logSymbols.success} ${styleText('bold', `Generated ${generated.length} field ${pluralize('module', generated.length)}`)}`,
+      )
+      for (const module of generated) {
+        const location = writtenPaths.get(module.name) ?? path.join(outDir, module.filename)
+        this.log(`  - ${module.name} ${styleText('dim', location)}`)
+        for (const warning of module.warnings) {
+          this.log(`    ${logSymbols.warning} ${warning}`)
+        }
       }
     }
 
-    const newEntries = generated.filter((module) => !configuredNames.has(module.name))
-    if (newEntries.length > 0) {
+    if (newEntries.length > 0 && registration === 'added') {
+      this.log('')
+      this.log(
+        `${logSymbols.success} Declared ${newEntries.length} ${pluralize('field', newEntries.length)} in ${styleText('bold', 'sanity.cli.ts')}`,
+      )
+    } else if (newEntries.length > 0) {
+      if (registration !== null && typeof registration === 'object') {
+        this.warn(`Could not update sanity.cli.ts automatically: ${registration.reason}`)
+      }
       this.log('')
       this.log(
         configuredNames.size > 0
-          ? `Add the generated ${pluralize('field', newEntries.length)} to the \`fields\` array in ${styleText('bold', 'sanity.cli.ts')}:`
-          : `Declare the generated ${pluralize('field', newEntries.length)} in ${styleText('bold', 'sanity.cli.ts')}:`,
+          ? `Add the pulled ${pluralize('field', newEntries.length)} to the \`fields\` array in ${styleText('bold', 'sanity.cli.ts')}:`
+          : `Declare the pulled ${pluralize('field', newEntries.length)} in ${styleText('bold', 'sanity.cli.ts')}:`,
       )
       this.log('')
-      this.log(
-        formatFieldEntries(newEntries, outDir, writtenPaths)
-          .split('\n')
-          .map((line) => `  ${line}`)
-          .join('\n'),
+      this.log(entryLines.map((line) => `  ${line}`).join('\n'))
+      // The deploy mirrors config into stored documents; a pulled-but-undeclared
+      // field reads as stale there, so leaving the entries out is destructive.
+      this.warn(
+        '`sanity deploy` deletes the stored definition of any field not declared in sanity.cli.ts.',
       )
     }
 
