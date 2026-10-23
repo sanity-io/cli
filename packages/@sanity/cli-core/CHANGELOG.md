@@ -1,5 +1,15 @@
 # Changelog
 
+## 3.12.0
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-core-v3.11.1...cli-core-v3.12.0)
+
+_2026-10-23_
+
+### Features
+
+- **deploy:** sync media-library aspect documents on config deploy (DAM-1821) ([#2018](https://github.com/sanity-io/cli/pull/2018)) ([fda50ee](https://github.com/sanity-io/cli/commit/fda50eebce218ccfccac0bbd9871a1d71327f367))
+
 ## 3.11.1
 
 [Compare changes](https://github.com/sanity-io/cli/compare/cli-core-v3.11.0...cli-core-v3.11.1)

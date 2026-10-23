@@ -1,5 +1,35 @@
 # Change Log
 
+## 8.23.0
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-v8.22.1...cli-v8.23.0)
+
+_2026-10-23_
+
+### Features
+
+- **deploy:** sync media-library aspect documents on config deploy (DAM-1821) ([#2018](https://github.com/sanity-io/cli/pull/2018)) ([fda50ee](https://github.com/sanity-io/cli/commit/fda50eebce218ccfccac0bbd9871a1d71327f367))
+- **init:** add unlisted media-library-config template ([#2015](https://github.com/sanity-io/cli/pull/2015)) ([532a7d1](https://github.com/sanity-io/cli/commit/532a7d1ba986f58811d57a2a7e6c0c9e2a378af5))
+- **media:** add sanity media prune-aspect-data (DAM-1877) ([#2019](https://github.com/sanity-io/cli/pull/2019)) ([3617575](https://github.com/sanity-io/cli/commit/361757532e72f2eef7a35a394e87e9299cc14807))
+- **media:** add sanity media pull-aspects ([#2016](https://github.com/sanity-io/cli/pull/2016)) ([76998d7](https://github.com/sanity-io/cli/commit/76998d79d03171504c006617a84cb143e758aa3d))
+- **media:** declare pulled aspects in sanity.cli.ts and offer init-time pull ([#2030](https://github.com/sanity-io/cli/pull/2030)) ([e66887a](https://github.com/sanity-io/cli/commit/e66887a4467b8d68907e5e4957eb8058bd1ed9d3))
+- **context:** add issue commands for knowledge bases ([#2004](https://github.com/sanity-io/cli/pull/2004)) ([1546ca9](https://github.com/sanity-io/cli/commit/1546ca91cb85e1691ff6133f514d6e86af02847e))
+- **context:** add entry commands for knowledge bases ([#2006](https://github.com/sanity-io/cli/pull/2006)) ([cd52e7b](https://github.com/sanity-io/cli/commit/cd52e7b3d37f8c68236490c516301790d05c0587))
+- **context:** add query command for knowledge base documents ([#2007](https://github.com/sanity-io/cli/pull/2007)) ([bcf5da3](https://github.com/sanity-io/cli/commit/bcf5da327b89ef0407080c5223960d1a3744e1f7))
+
+### Bug Fixes
+
+- **deploy:** prevent a blueprint-managed app from being deployed by the deploy command ([#2052](https://github.com/sanity-io/cli/pull/2052)) ([36753c0](https://github.com/sanity-io/cli/commit/36753c0d6cf9dfe08ae04f271d635f70d27e8b8e))
+- **exec:** run .cjs scripts without the Vite runner ([#2001](https://github.com/sanity-io/cli/pull/2001)) ([402149c](https://github.com/sanity-io/cli/commit/402149c4848d09a84c6e0a2297b13ba9ea8988ba))
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/cli-build bumped to 7.0.2
+    - @sanity/cli-core bumped to 3.12.0
+    - @sanity/workbench-cli bumped to 2.14.0
+
 ## 8.22.1
 
 [Compare changes](https://github.com/sanity-io/cli/compare/cli-v8.22.0...cli-v8.22.1)

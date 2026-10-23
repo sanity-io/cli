@@ -1,5 +1,22 @@
 # Changelog
 
+## 7.0.2
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-build-v7.0.1...cli-build-v7.0.2)
+
+_2026-10-23_
+
+### Bug Fixes
+
+- **build:** keep default generateBundle order and skip ?url css links ([#2057](https://github.com/sanity-io/cli/pull/2057)) ([1a0408d](https://github.com/sanity-io/cli/commit/1a0408d06c1f5fb256ccc6a5817a680320e6eda6))
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/cli-core bumped to 3.12.0
+    - @sanity/workbench-cli bumped to 2.14.0
+
 ## 7.0.1
 
 [Compare changes](https://github.com/sanity-io/cli/compare/cli-build-v7.0.0...cli-build-v7.0.1)

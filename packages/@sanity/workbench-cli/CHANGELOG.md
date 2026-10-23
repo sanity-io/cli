@@ -1,5 +1,21 @@
 # @sanity/workbench-cli
 
+## 2.14.0
+
+[Compare changes](https://github.com/sanity-io/cli/compare/workbench-cli-v2.13.0...workbench-cli-v2.14.0)
+
+_2026-10-23_
+
+### Features
+
+- **init:** add unlisted media-library-config template ([#2015](https://github.com/sanity-io/cli/pull/2015)) ([532a7d1](https://github.com/sanity-io/cli/commit/532a7d1ba986f58811d57a2a7e6c0c9e2a378af5))
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/cli-core bumped to 3.12.0
+
 ## 2.13.0
 
 [Compare changes](https://github.com/sanity-io/cli/compare/workbench-cli-v2.12.0...workbench-cli-v2.13.0)
