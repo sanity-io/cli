@@ -1,5 +1,15 @@
 # Change Log
 
+## 8.23.1
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-v8.23.0...cli-v8.23.1)
+
+_2026-10-23_
+
+### Bug Fixes
+
+- **dependencies:** unpin runtime-cli ([#2062](https://github.com/sanity-io/cli/pull/2062)) ([5b31e6f](https://github.com/sanity-io/cli/commit/5b31e6f189c5bfd60df46f652dd33494c9b2e1c8))
+
 ## 8.23.0
 
 [Compare changes](https://github.com/sanity-io/cli/compare/cli-v8.22.1...cli-v8.23.0)
