@@ -1,7 +1,7 @@
 /**
  * Composition of the pure aspect-sync contract (`./contract.ts`) with the
  * CLI's Media Library API services, for `sanity deploy` of a media-library
- * config app (DAM-1821).
+ * config app.
  *
  * Split into a read-only **plan** and a mutating **apply** so the deploy flow
  * can report the plan — including the deletion list — in both dry-run and

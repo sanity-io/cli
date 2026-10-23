@@ -1,9 +1,8 @@
 /**
  * The Media Library configuration lifecycle — pure serialization and mirror
  * semantics, vendored from huey's `@repo/media-library-config` (the package
- * that proved the contract; see DAM-1369/DAM-1586/DAM-1821). Keep the two
- * copies behaviorally identical until huey's standalone sync bin is retired
- * in favor of `sanity deploy`.
+ * that proved the contract). Keep the two copies behaviorally identical until
+ * huey's standalone sync bin is retired in favor of `sanity deploy`.
  *
  * A media library's aspect fields are declared as *field modules* in a config
  * app's `sanity.cli.ts` (`unstable_defineMediaLibrary({fields: [...]})`).
