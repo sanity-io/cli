@@ -11,7 +11,6 @@ export interface ModuleCdnPackage {
 
 interface AutoUpdatesLoaderOptions {
   appId: string | undefined
-  importModule: (specifier: string) => Promise<Module>
   packages: ModuleCdnPackage[]
   shared: Record<string, () => Promise<Module>>
   specifiers: string[]
@@ -20,7 +19,6 @@ interface AutoUpdatesLoaderOptions {
 // Loads the app's CDN packages as its own instance; if any fails, the app uses its bundled copies.
 export function createAutoUpdatesLoader({
   appId,
-  importModule,
   packages,
   shared,
   specifiers,
@@ -63,7 +61,7 @@ export function createAutoUpdatesLoader({
             [`${name}/`, `${url}/`],
           ]),
         ),
-        ownInstances: await findOwnInstances(shared, importModule),
+        shared,
       })
       // All or nothing: one bundled package would pull in bundled copies of the others.
       const loaded = await Promise.all(
@@ -98,38 +96,6 @@ export function createAutoUpdatesLoader({
 
     return true
   }
-}
-
-async function findOwnInstances(
-  shared: Record<string, () => Promise<Module>>,
-  importModule: (specifier: string) => Promise<Module>,
-): Promise<Record<string, Module>> {
-  const specifiers = Object.keys(shared)
-  const own = await Promise.all(
-    specifiers
-      .filter((specifier) => specifier === packageOf(specifier))
-      .map(async (name) => {
-        const [module, documentModule] = await Promise.all([
-          shared[name](),
-          importModule(name).catch(() => {}),
-        ])
-        // Compare the page module's keys only: module federation adds interop keys like `__moduleExports`.
-        if (
-          documentModule &&
-          Object.keys(documentModule).every((key) => module[key] === documentModule[key])
-        ) {
-          return []
-        }
-
-        const subpaths = specifiers.filter((specifier) => packageOf(specifier) === name)
-
-        return Promise.all(
-          subpaths.map(async (specifier) => [specifier, await shared[specifier]()] as const),
-        )
-      }),
-  )
-
-  return Object.fromEntries(own.flat())
 }
 
 function packageOf(specifier: string): string {
