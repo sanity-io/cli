@@ -730,7 +730,7 @@ describe('#media:pull-aspects', () => {
     mockFsMkdir.mockResolvedValue(undefined)
     mockFsWriteFile.mockResolvedValue(undefined)
     mockConfirm.mockResolvedValue(true)
-    // The fields array lives behind a spread the static editor cannot see.
+    // The config object lives behind a variable the editor refuses to chase.
     mockFsReadFile.mockResolvedValue(
       `import {defineCliConfig, unstable_defineMediaLibrary} from 'sanity/cli'\n\n` +
         `export default defineCliConfig({app: unstable_defineMediaLibrary(mediaLibraryOptions)})\n`,
@@ -741,7 +741,7 @@ describe('#media:pull-aspects', () => {
     // Only the module write — the config is left untouched.
     expect(mockFsWriteFile).toHaveBeenCalledTimes(1)
     expect(stderr).toContain('Could not update sanity.cli.ts automatically')
-    expect(stderr).toContain('array literal found')
+    expect(stderr).toContain('is not an object literal')
     expect(stdout).toContain(
       `{name: 'caption', src: './src/fields/caption.tsx', title: 'Caption'},`,
     )

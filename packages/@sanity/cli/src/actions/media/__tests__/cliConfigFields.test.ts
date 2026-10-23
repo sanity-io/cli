@@ -131,14 +131,32 @@ describe('appendFieldEntries', () => {
     const result = appendFieldEntries(source, ['{}'])
     expect(result).toEqual({
       ok: false,
-      reason:
-        'no `fields: [...]` array literal found in the `unstable_defineMediaLibrary(...)` call',
+      reason: 'the `fields` value is not an array literal',
+    })
+  })
+
+  test('bails when the config has no fields property', () => {
+    const source = SCAFFOLD.replace(/fields: \[[^]*?\],\n/, '')
+    const result = appendFieldEntries(source, ['{}'])
+    expect(result).toEqual({
+      ok: false,
+      reason: 'no `fields` property in the `unstable_defineMediaLibrary({...})` config',
+    })
+  })
+
+  test('bails when the config is not an object literal', () => {
+    const source = `export default unstable_defineMediaLibrary(sharedConfig)`
+    const result = appendFieldEntries(source, ['{}'])
+    expect(result).toEqual({
+      ok: false,
+      reason: 'the `unstable_defineMediaLibrary(...)` argument is not an object literal',
     })
   })
 
   test('a commented-out fields array next to a computed value is not edited', () => {
-    // The dangerous shape: a regex that is not comment-aware would "edit" the
-    // comment, report success, and deploy would still delete the stored aspects.
+    // The dangerous shape: a locator that is not comment-aware would "edit"
+    // the comment, report success, and deploy would still delete the stored
+    // aspects.
     const source = SCAFFOLD.replace(
       /fields: \[[^]*?\],/,
       '// fields: [{name: "old", src: "./old.tsx"}],\n    fields: computedFields,',
@@ -146,8 +164,7 @@ describe('appendFieldEntries', () => {
     const result = appendFieldEntries(source, ['{}'])
     expect(result).toEqual({
       ok: false,
-      reason:
-        'no `fields: [...]` array literal found in the `unstable_defineMediaLibrary(...)` call',
+      reason: 'the `fields` value is not an array literal',
     })
   })
 
@@ -188,32 +205,40 @@ describe('appendFieldEntries', () => {
     )
   })
 
-  test('bails on multiple fields arrays inside the call rather than guessing', () => {
+  test('a fields array nested inside another config value is neither edited nor blocking', () => {
     const source = SCAFFOLD.replace(
       `organizationId: 'org-1',`,
       `extra: {fields: []},\n    organizationId: 'org-1',`,
     )
+    const updated = unwrap(
+      appendFieldEntries(source, [`{name: 'x', src: './src/fields/x.tsx', title: 'X'},`]),
+    )
+
+    expect(updated).toContain('extra: {fields: []},')
+    expect(updated).toContain(
+      `title: 'Notes'},\n      {name: 'x', src: './src/fields/x.tsx', title: 'X'},`,
+    )
+  })
+
+  test('bails on duplicate fields keys rather than guessing which one deploy reads', () => {
+    const source = SCAFFOLD.replace(
+      `organizationId: 'org-1',`,
+      `fields: [],\n    organizationId: 'org-1',`,
+    )
     const result = appendFieldEntries(source, ['{}'])
     expect(result).toEqual({
       ok: false,
-      reason:
-        'more than one `fields: [...]` array found in the `unstable_defineMediaLibrary(...)` call',
+      reason: 'more than one `fields` property in the `unstable_defineMediaLibrary({...})` config',
     })
   })
 
-  test('bails when the call never closes', () => {
+  test('bails when the config does not parse', () => {
     const source = `export default unstable_defineMediaLibrary({fields: [`
     const result = appendFieldEntries(source, ['{}'])
     expect(result).toEqual({
       ok: false,
-      reason: 'the `unstable_defineMediaLibrary(...)` call never closes',
+      reason: 'the config does not parse as TypeScript',
     })
-  })
-
-  test('bails when the array never closes', () => {
-    const source = `export default unstable_defineMediaLibrary({fields: [})`
-    const result = appendFieldEntries(source, ['{}'])
-    expect(result).toEqual({ok: false, reason: 'the `fields` array never closes'})
   })
 })
 
