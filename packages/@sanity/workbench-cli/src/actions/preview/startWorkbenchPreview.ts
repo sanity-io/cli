@@ -112,7 +112,6 @@ export async function startWorkbenchPreview(
     const configs = await deriveConfigs(cliConfig)
     const id = inlinedId ?? (await buildAppId(workbench))
     const interfaces = deriveInterfaces(cliConfig.app, {isApp})
-    const type = isApp ? 'coreApp' : 'studio'
     const registration = registerDevServer({
       applicationId: cliConfig.deployment?.appId,
       configs,
@@ -124,16 +123,11 @@ export async function startWorkbenchPreview(
       port: remote.port,
       projectId: cliConfig?.api?.projectId,
       ...localAppIdentity(workbench),
-      type,
+      type: isApp ? 'coreApp' : 'studio',
       workDir,
     })
     closers.push(async () => registration.release())
-    dashboardAppPath = dashboardPath({
-      interfaces,
-      isSingleton: workbench.isSingleton,
-      slug: workbench.slug,
-      type,
-    })
+    dashboardAppPath = dashboardPath({id, interfaces})
   } catch (err) {
     await close()
     throw err
