@@ -11,6 +11,7 @@ import {
 } from '../../resource-bindings.js'
 import {FEDERATION_FILE_NAME, RUNTIME_DIR} from '../constants.js'
 import {getFederationApi} from './plugin-module-federation.js'
+import {AUTO_UPDATES_ID} from './plugin-sanity-auto-updates.js'
 
 const REMOTE_ENTRY_FILE = `${FEDERATION_FILE_NAME}.jsx`
 
@@ -19,10 +20,11 @@ const REMOTE_ENTRY_FILE = `${FEDERATION_FILE_NAME}.jsx`
 // placeholder is filled in per-build (Blueprints only — see below).
 const studioEntry = (isolateStyles: boolean) =>
   renderRemote({
-    app: `(props) => React.createElement(Studio, { config, ...props })`,
+    app: `(props) => React.createElement(Studio, { config, ...studioProps(), ...props })`,
     hmr: true,
     isolateStyles,
     preamble: `%RESOURCE_BINDINGS_IMPORT%import { Studio } from 'sanity'
+import { studioProps } from '${AUTO_UPDATES_ID}'
 import config from %STUDIO_CONFIG%`,
   })
 
