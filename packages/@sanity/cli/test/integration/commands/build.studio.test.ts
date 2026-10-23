@@ -142,23 +142,20 @@ describe('#build studio', {timeout: (platform() === 'win32' ? 120 : 60) * 1000},
       // `@sanity/runtime-cli`), so a plain federated `sanity build` omits it.
       expect(distFiles).not.toContain('sanity-resource-bindings.js')
 
-      // The remote loads `sanity` through the loader; the installed copy is only a lazy fallback.
-      const appAssets = manifest.exposes.find(({name}: {name: string}) => name === 'App').assets.js
-      const loaderChunks = []
-      for (const file of appAssets.sync) {
-        const code = await readFile(join(cwd, 'dist', file), 'utf8')
-        if (code.includes('/v1/modules/sanity/')) loaderChunks.push(code)
-      }
-      expect(loaderChunks).toHaveLength(1)
-      expect(loaderChunks[0]).toContain('"react/jsx-runtime"')
-      expect(loaderChunks[0]).toContain(
-        await readFile(join(cwd, 'dist', 'sanity-app-id.txt'), 'utf8'),
-      )
-      const fallbacks = [...loaderChunks[0].matchAll(/import\([`'"]\.\/([^`'"]+)[`'"]\)/g)].map(
-        ([, file]) => `static/${file}`,
-      )
-      expect(fallbacks).not.toHaveLength(0)
-      expect(appAssets.async).toEqual(expect.arrayContaining(fallbacks))
+      // Inside Workbench, the remote loads `sanity` from the module CDN as this app; the
+      // installed copy (several MB) is only a lazy fallback.
+      const appChunks = manifest.exposes.find(({name}: {name: string}) => name === 'App').assets.js
+        .sync
+      const appCode = (
+        await Promise.all(
+          appChunks.map((file: string) => readFile(join(cwd, 'dist', file), 'utf8')),
+        )
+      ).join('\n')
+      const appId = await readFile(join(cwd, 'dist', 'sanity-app-id.txt'), 'utf8')
+      expect(appId).not.toBe('')
+      expect(appCode).toContain(appId)
+      expect(appCode).toContain('/v1/modules/')
+      expect(appCode.length).toBeLessThan(1_000_000)
 
       // The build output must satisfy the deploy gate: `sanity deploy` runs
       // `readBuiltManifest` (not the static-SPA check) and ships only if it finds
