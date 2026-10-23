@@ -189,7 +189,9 @@ describe('deployStudioSchemasAndManifestsWorker', () => {
 
       await deployStudioSchemasAndManifestsWorker(port, createWorkerData())
 
-      expect(messages).toEqual([{error: 'No workspaces found', type: 'error', validation}])
+      expect(messages).toEqual([
+        {causes: [], error: 'No workspaces found', type: 'error', validation},
+      ])
       expect(mockExtractValidationFromSchemaError).toHaveBeenCalledWith(failure, '/studio')
     })
 
@@ -199,7 +201,9 @@ describe('deployStudioSchemasAndManifestsWorker', () => {
 
       await deployStudioSchemasAndManifestsWorker(port, createWorkerData())
 
-      expect(messages).toEqual([{error: 'ENOENT', type: 'error', validation: undefined}])
+      expect(messages).toEqual([
+        {causes: [], error: 'ENOENT', type: 'error', validation: undefined},
+      ])
     })
 
     test('stringifies non-Error failures', async () => {
@@ -208,7 +212,34 @@ describe('deployStudioSchemasAndManifestsWorker', () => {
 
       await deployStudioSchemasAndManifestsWorker(port, createWorkerData())
 
-      expect(messages).toEqual([{error: 'kaboom', type: 'error', validation: undefined}])
+      expect(messages).toEqual([
+        {causes: [], error: 'kaboom', type: 'error', validation: undefined},
+      ])
+    })
+
+    test('serializes the failure cause chain so it survives the worker boundary', async () => {
+      const {messages, port} = createPort()
+      const transport = Object.assign(new Error('connect ETIMEDOUT 1.2.3.4:443'), {
+        code: 'ETIMEDOUT',
+      })
+      const fetchFailure = new TypeError('fetch failed', {cause: transport})
+      mockWorkerBuildStudioSchemasAndManifests.mockRejectedValue(
+        new Error('Failed to upload schema for workspace "default"', {cause: fetchFailure}),
+      )
+
+      await deployStudioSchemasAndManifestsWorker(port, createWorkerData())
+
+      expect(messages).toEqual([
+        {
+          causes: [
+            {message: 'fetch failed', name: 'TypeError'},
+            {code: 'ETIMEDOUT', message: 'connect ETIMEDOUT 1.2.3.4:443', name: 'Error'},
+          ],
+          error: 'Failed to upload schema for workspace "default"',
+          type: 'error',
+          validation: undefined,
+        },
+      ])
     })
 
     test('reports a failed schema deployment as an error message', async () => {
@@ -218,7 +249,7 @@ describe('deployStudioSchemasAndManifestsWorker', () => {
       await deployStudioSchemasAndManifestsWorker(port, createWorkerData())
 
       expect(messages).toEqual([
-        {error: 'Failed to deploy 1/1 schemas', type: 'error', validation: undefined},
+        {causes: [], error: 'Failed to deploy 1/1 schemas', type: 'error', validation: undefined},
       ])
     })
   })
