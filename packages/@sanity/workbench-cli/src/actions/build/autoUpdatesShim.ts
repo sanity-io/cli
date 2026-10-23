@@ -16,17 +16,13 @@ interface Globals {
   [INSTANCES]?: Map<string, Instance>
 }
 
-// Versioned: remotes built with another version of this contract fall back to their bundled copy.
+// Bump when the registry, virtual URL or re-export shape changes; mismatched remotes fall back.
 const INSTANCES_KEY = 'sanity.autoUpdates.instances.v1'
 const INSTANCES = Symbol.for(INSTANCES_KEY)
 const VIRTUAL_URL = /^https?:\/\/[^/]+\/~([^/]+)\/(.*)$/
 
-/**
- * Imports module CDN packages as the app's own instance, through es-module-shims. Every module
- * loads under `<page origin>/~<instance>/<cdn host>/<path>`, so the app gets its own module state
- * and app ID even when another app on the page loads the same version, and its own instances of
- * shared packages where the page's differ.
- */
+// Loads CDN modules under `<page origin>/~<instance>/<cdn host>/<path>`: each app gets its own
+// module state and app ID, plus its own react etc. where they differ from the page's.
 export async function importThroughShim({
   appId,
   imports,
@@ -66,7 +62,7 @@ export async function importThroughShim({
 }
 
 async function loadImportShim(globals: Globals): Promise<ImportShim> {
-  // The document's own entries load natively, so the CDN code shares the page's instances.
+  // es-module-shims skips these, so CDN code imports the page's react etc. natively.
   const documentImports = Object.fromEntries(
     [...document.querySelectorAll('script[type="importmap"]')].flatMap((script) =>
       Object.entries<string>(JSON.parse(script.textContent || '{}').imports ?? {}).map(
@@ -93,7 +89,7 @@ async function loadImportShim(globals: Globals): Promise<ImportShim> {
       if (!response.ok) throw new Error(`${response.url} responded with ${response.status}`)
 
       return {
-        // Inline the app ID the way the app's own build does with `define`.
+        // Inlines the app ID like the app build's `define`, which never runs on CDN code.
         source: (await response.text()).replaceAll(
           /(?<![\w$.])__SANITY_APP_ID__(?![\w$])/g,
           JSON.stringify(instance.appId) ?? 'undefined',

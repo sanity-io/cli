@@ -142,8 +142,7 @@ describe('#build studio', {timeout: (platform() === 'win32' ? 120 : 60) * 1000},
       // `@sanity/runtime-cli`), so a plain federated `sanity build` omits it.
       expect(distFiles).not.toContain('sanity-resource-bindings.js')
 
-      // Inside Workbench the remote loads `sanity` from the module CDN, and its installed copy
-      // only through the loader's lazy fallback.
+      // The remote loads `sanity` through the loader; the installed copy is only a lazy fallback.
       const appAssets = manifest.exposes.find(({name}: {name: string}) => name === 'App').assets.js
       const loaderChunks = []
       for (const file of appAssets.sync) {
