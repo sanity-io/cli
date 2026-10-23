@@ -7,6 +7,7 @@ import {
   type SanityDocument,
 } from '@sanity/types'
 
+import {VALID_ASPECT_NAME} from '../actions/media/aspectName.js'
 import {ASSET_UPLOAD_REQUEST_TAG_PREFIX, URL_INGEST_TIMEOUT_MS} from './assets.js'
 
 export const MEDIA_LIBRARY_API_VERSION = 'v2025-02-19'
@@ -142,12 +143,14 @@ async function queryAllPages<T extends {_id: string}>(options: {
   filter: string
   mediaLibraryId: string
   params: Record<string, unknown>
+  /** `raw` includes drafts — call sites say why they need them. */
+  perspective?: 'published' | 'raw'
   /** GROQ projection, e.g. `{_id}`. Omitted, the whole documents return. */
   projection?: string
   /** Request tag, e.g. `aspect-sync`. */
   tag?: string
 }): Promise<T[]> {
-  const {filter, mediaLibraryId, params, projection = '', tag} = options
+  const {filter, mediaLibraryId, params, perspective = 'published', projection = '', tag} = options
   const client = await getMediaLibraryClient()
 
   const documents: T[] = []
@@ -159,9 +162,10 @@ async function queryAllPages<T extends {_id: string}>(options: {
         query: `*[${filter} && _id > $lastId] | order(_id) [0...${QUERY_PAGE_SIZE}]${projection}`,
       },
       method: 'POST',
-      // `published` is this API version's default; pinned so a future default
-      // change can never surface `drafts.*` duplicates of published documents.
-      query: {perspective: 'published'},
+      // `published` is this API version's default; passed explicitly so a
+      // future default change can never silently surface `drafts.*`
+      // duplicates of published documents.
+      query: {perspective},
       tag,
       url: `/media-libraries/${mediaLibraryId}/query`,
     })
@@ -198,23 +202,87 @@ export function getAspects(mediaLibraryId: string): Promise<StoredAspectDocument
  * truncated list means reporting success while stale documents are left
  * behind — `queryAllPages` reads to exhaustion.
  *
- * The `published` perspective pin matters doubly here: stale detection must
- * never see draft ids. The sync's upserts write published documents and its
- * deletes match ids exactly, so drafts (not normally used for aspect docs)
- * are out of scope either way — a default-perspective read could flag a
- * `drafts.*` id as stale and target it for deletion.
+ * The `published` perspective (the helper's default) matters doubly here:
+ * stale detection must never see draft ids. The sync's upserts write
+ * published documents and its deletes match ids exactly, so drafts (not
+ * normally used for aspect docs) are out of scope either way — a
+ * default-perspective read could flag a `drafts.*` id as stale and target it
+ * for deletion.
+ *
+ * `tag` names the calling operation in request logs; it defaults to the
+ * deploy-time sync, the original consumer.
  *
  * @internal
  */
-export async function getStoredAspectIds(mediaLibraryId: string): Promise<string[]> {
+export async function getStoredAspectIds(
+  mediaLibraryId: string,
+  tag = 'aspect-sync',
+): Promise<string[]> {
   const documents = await queryAllPages<{_id: string}>({
     filter: '_type == $type',
     mediaLibraryId,
     params: {type: MEDIA_LIBRARY_ASSET_ASPECT_TYPE_NAME},
     projection: '{_id}',
-    tag: 'aspect-sync',
+    tag,
   })
   return documents.map((doc) => doc._id)
+}
+
+/**
+ * Fetch the `_id` of every asset document carrying a value under
+ * `aspects.<aspectName>`.
+ *
+ * Queried under the `raw` perspective so drafts are included alongside
+ * published documents — a prune that missed drafts would resurrect the data
+ * on publish.
+ *
+ * @internal
+ */
+export async function getAspectDataCarrierIds(
+  mediaLibraryId: string,
+  aspectName: string,
+): Promise<string[]> {
+  // Defense in depth: callers validate the name against the aspect-name rule,
+  // but this string is interpolated into GROQ, so re-guard here.
+  if (!VALID_ASPECT_NAME.test(aspectName)) {
+    throw new Error(`"${aspectName}" is not a valid aspect name`)
+  }
+  const documents = await queryAllPages<{_id: string}>({
+    filter: `_type == "sanity.asset" && defined(aspects["${aspectName}"])`,
+    mediaLibraryId,
+    params: {},
+    perspective: 'raw',
+    projection: '{_id}',
+    tag: 'prune-aspect-data',
+  })
+  return documents.map((doc) => doc._id)
+}
+
+/**
+ * Remove `aspects.<aspectName>` from the given asset documents in one mutate
+ * request. Irreversible — this deletes aspect data, not a definition.
+ *
+ * @internal
+ */
+export async function unsetAspectData(options: {
+  aspectName: string
+  assetIds: string[]
+  mediaLibraryId: string
+}): Promise<void> {
+  const {aspectName, assetIds, mediaLibraryId} = options
+
+  const client = await getMediaLibraryClient()
+
+  await client.request({
+    body: {
+      mutations: assetIds.map((id) => ({
+        patch: {id, unset: [`aspects.${aspectName}`]},
+      })),
+    },
+    method: 'POST',
+    tag: 'prune-aspect-data',
+    url: `/media-libraries/${mediaLibraryId}/mutate`,
+  })
 }
 
 interface MutateAspectsResponse {
