@@ -205,6 +205,18 @@ describe('#codemod', () => {
       expect(args).not.toContain(process.cwd())
     })
 
+    test.each([
+      [['dashboard'], false],
+      [['dashboard', '--dry'], true],
+    ])('tells prepare whether %j is a dry run', async (args, dry) => {
+      setupBasicMocks()
+      mockDashboardPrepare.mockResolvedValue({options: {}, paths: ['/project/sanity.cli.ts']})
+
+      await testCommand(CodemodCommand, args)
+
+      expect(mockDashboardPrepare).toHaveBeenCalledWith(expect.objectContaining({dry}))
+    })
+
     test('does not run the transform when prepare fails', async () => {
       const {spawnMock} = setupBasicMocks()
       mockDashboardPrepare.mockRejectedValue(
