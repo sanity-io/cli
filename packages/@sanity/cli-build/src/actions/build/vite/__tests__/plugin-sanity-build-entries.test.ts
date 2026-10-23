@@ -91,7 +91,7 @@ async function runGenerateBundle(
 ): Promise<void> {
   const hook = plugin.generateBundle
   if (!hook || typeof hook === 'function') {
-    throw new Error('expected generateBundle to run after vite:css-post')
+    throw new Error('expected generateBundle object hook')
   }
   await hook.handler.call(
     {emitFile} as unknown as ThisParameterType<typeof hook.handler>,
@@ -99,6 +99,12 @@ async function runGenerateBundle(
     bundle as unknown as Parameters<typeof hook.handler>[1],
     false,
   )
+}
+
+function generateBundleOrder(plugin: Plugin): unknown {
+  const hook = plugin.generateBundle
+  if (!hook || typeof hook === 'function') throw new Error('expected generateBundle object hook')
+  return hook.order
 }
 
 function lastRenderedCss(): string[] {
@@ -192,12 +198,12 @@ describe('sanityBuildEntries stylesheets', () => {
     expect(html).toContain('<link href="static/style-abc123.css" rel="stylesheet" />')
   })
 
-  test('finds the combined sheet via originalFileNames when names is missing', async () => {
+  test('finds the combined sheet via name when names is missing', async () => {
     const {css} = await renderBundle({
       bundle: {
         'bundled/app-abc123.css': {
           fileName: 'bundled/app-abc123.css',
-          originalFileNames: ['style.css'],
+          name: 'style.css',
           type: 'asset',
         },
         'static/sanity-abc.js': entryChunk({viteMetadata: undefined}),
@@ -208,16 +214,30 @@ describe('sanityBuildEntries stylesheets', () => {
     expect(css).toEqual(['bundled/app-abc123.css'])
   })
 
-  test('falls back to emitted css assets when the bundle name is unavailable', async () => {
+  test('does not link css assets that are not the combined stylesheet', async () => {
     const {css} = await renderBundle({
       bundle: {
         'static/all-abc123.css': {fileName: 'static/all-abc123.css', type: 'asset'},
+        'static/print-abc123.css': {
+          fileName: 'static/print-abc123.css',
+          name: 'print.css',
+          names: ['print.css'],
+          originalFileName: 'print.css',
+          originalFileNames: ['print.css'],
+          type: 'asset',
+        },
         'static/sanity-abc.js': entryChunk(),
+        'static/style-def456.css': {
+          fileName: 'static/style-def456.css',
+          names: ['print.css'],
+          originalFileNames: ['src/style.css'],
+          type: 'asset',
+        },
       },
       cssCodeSplit: false,
     })
 
-    expect(css).toEqual(['static/all-abc123.css'])
+    expect(css).toEqual([])
   })
 
   test('does not link the combined sheet twice when importedCss already lists it', async () => {
@@ -239,7 +259,62 @@ describe('sanityBuildEntries stylesheets', () => {
   })
 })
 
+describe('sanityBuildEntries generateBundle order', () => {
+  test('keeps the default hook order for code-split builds', async () => {
+    const plugin = sanityBuildEntries({basePath: '/', cwd: '/project'})
+    expect(generateBundleOrder(plugin)).toBeUndefined()
+    await resolveConfig(plugin, true)
+    expect(generateBundleOrder(plugin)).toBeUndefined()
+  })
+
+  test('runs after vite:css-post when cssCodeSplit is false', async () => {
+    const plugin = sanityBuildEntries({basePath: '/', cwd: '/project'})
+    await resolveConfig(plugin, false)
+    expect(generateBundleOrder(plugin)).toBe('post')
+  })
+})
+
 describe('sanityBuildEntries vite build', () => {
+  test(
+    'default builds emit index.html before unordered post plugins run',
+    {timeout: 60_000},
+    async () => {
+      let sawIndexHtml: boolean | undefined
+      const observer: Plugin = {
+        enforce: 'post',
+        generateBundle(_options, bundle) {
+          sawIndexHtml = 'index.html' in bundle
+        },
+        name: 'test:index-html-observer',
+      }
+
+      await buildFixture({cssCodeSplit: true, plugins: [observer]})
+      expect(sawIndexHtml).toBe(true)
+    },
+  )
+
+  test(
+    'cssCodeSplit: false does not link a ?url css import as a stylesheet',
+    {timeout: 60_000},
+    async () => {
+      const output = await buildFixture({cssCodeSplit: false, globalCss: false, printCssUrl: true})
+      expect(output.css).toEqual([])
+      expect(output.html).not.toContain('rel="stylesheet"')
+      expect(output.files).toEqual([expect.stringMatching(/^static\/print-[^/]+\.css$/)])
+    },
+  )
+
+  test(
+    'cssCodeSplit: false links only the combined sheet next to a ?url css import',
+    {timeout: 60_000},
+    async () => {
+      const output = await buildFixture({cssCodeSplit: false, printCssUrl: true})
+      expect(output.css).toEqual([expect.stringMatching(/^static\/style-[^/]+\.css$/)])
+      expect(output.sources[0]).toContain(MARKER)
+      expect(output.files).toHaveLength(2)
+    },
+  )
+
   test('code-split builds link the entry stylesheet', {timeout: 60_000}, async () => {
     const output = await buildFixture({cssCodeSplit: true})
     expect(output.css).toEqual([expect.stringMatching(/^static\/sanity-[^/]+\.css$/)])
@@ -279,21 +354,31 @@ describe('sanityBuildEntries vite build', () => {
 async function buildFixture(options: {
   assetFileNames?: string
   cssCodeSplit: boolean
+  globalCss?: boolean
+  plugins?: Plugin[]
+  printCssUrl?: boolean
 }): Promise<{css: string[]; files: string[]; html: string; sources: string[]}> {
+  const {globalCss = true, plugins = [], printCssUrl = false} = options
   const root = await mkdtemp(path.join(tmpdir(), 'sanity-css-'))
   try {
     const runtimeDir = path.join(root, '.sanity', 'runtime')
     await mkdir(runtimeDir, {recursive: true})
+    const imports = [
+      globalCss ? `import './studio.css'` : '',
+      printCssUrl ? `import printUrl from './print.css?url'\nconsole.log(printUrl)` : '',
+    ]
     await writeFile(
       path.join(runtimeDir, 'app.js'),
-      `import './studio.css'\nconsole.log('studio')\n`,
+      `${imports.filter(Boolean).join('\n')}\nconsole.log('studio')\n`,
     )
     await writeFile(path.join(runtimeDir, 'studio.css'), `.${MARKER} { color: #123456; }\n`)
+    await writeFile(path.join(runtimeDir, 'print.css'), `@media print { body { color: #000; } }\n`)
 
     vi.mocked(renderDocument).mockClear()
     await build({
       build: {
         assetsDir: 'static',
+        assetsInlineLimit: 0,
         cssCodeSplit: options.cssCodeSplit,
         cssMinify: false,
         emptyOutDir: true,
@@ -306,7 +391,7 @@ async function buildFixture(options: {
       },
       configFile: false,
       logLevel: 'silent',
-      plugins: [sanityBuildEntries({basePath: '/', cwd: root})],
+      plugins: [sanityBuildEntries({basePath: '/', cwd: root}), ...plugins],
       root,
     })
 
