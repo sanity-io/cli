@@ -2,7 +2,8 @@
 
 ## About This Repository
 
-This repository contains the Sanity CLI, built with the [oclif framework](https://oclif.io).
+This repository contains the Sanity CLI, built with the [oclif framework](https://oclif.io),
+and the `groq` query-helper package used by Sanity TypeGen.
 
 The CLI provides:
 

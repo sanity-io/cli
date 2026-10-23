@@ -46,6 +46,7 @@ jobs:
             './packages/@sanity/cli-test' \
             './packages/@sanity/eslint-config-cli' \
             './packages/@sanity/workbench-cli' \
+            './packages/groq' \
             --pnpm \
             --json pkg-pr-new-output.json \
             --comment=off \
