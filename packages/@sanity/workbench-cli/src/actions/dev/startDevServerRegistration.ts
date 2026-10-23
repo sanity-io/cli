@@ -183,6 +183,11 @@ export async function startDevServerRegistration(
       registration.release()
       await watcher.close()
     },
-    path: dashboardPath({interfaces, slug: identity?.slug, type}),
+    path: dashboardPath({
+      interfaces,
+      isSingleton: workbenchApp?.isSingleton,
+      slug: identity?.slug,
+      type,
+    }),
   }
 }

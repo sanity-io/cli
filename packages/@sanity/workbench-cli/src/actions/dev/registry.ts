@@ -212,12 +212,13 @@ export function localAppIdentity(
  * always get one, configs and panel-only apps don't, so they'd 404.
  */
 export function dashboardPath(
-  server: Pick<DevServerManifest, 'interfaces' | 'slug' | 'type'>,
+  server: Pick<DevServerManifest, 'interfaces' | 'slug' | 'type'> & {isSingleton?: boolean},
 ): string | undefined {
   const hasAppView = (server.interfaces ?? []).some(
     (iface) => 'surface' in iface && iface.surface === 'window',
   )
   if (!server.slug || !hasAppView) return undefined
+  if (server.isSingleton) return `/${encodeURIComponent(server.slug)}`
 
   return `/${server.type === 'studio' ? 'studios' : 'applications'}/${encodeURIComponent(server.slug)}`
 }
