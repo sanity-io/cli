@@ -80,25 +80,21 @@ export async function buildApp(
   const installedSdkVersion = await getLocalPackageVersion('@sanity/sdk-react', workDir)
   const installedSanityVersion = await getLocalPackageVersion('sanity', workDir)
 
-  // A Media Library config ships no SDK application: its custom inputs are
-  // island-rendered by the runtime bundled from `sanity`
-  // (`sanity/media-library-island-runtime`), so `sanity` is the runtime
-  // provider to verify — requiring `@sanity/sdk-react` would block the
-  // scaffolded `media-library-config` template, which deliberately doesn't
-  // install it. The SDK auto-update machinery is skipped for the same reason.
-  // Checked via the `appType` discriminator, not the mere presence of a
-  // config: `ConfigSchema` is a union built to grow, and a future config type
-  // must not inherit these media-library build semantics by default.
-  const isConfigOnlyBuild = options.exposes?.config?.appType === 'media-library'
+  // A Media Library config ships no SDK app — its inputs are island-rendered
+  // by `sanity`, so verify that instead and skip the SDK auto-update
+  // machinery. Checked via the `appType` discriminator, not the mere presence
+  // of a config: a future `ConfigSchema` member must not inherit these
+  // media-library build semantics by default.
+  const isMediaLibraryConfigBuild = options.exposes?.config?.appType === 'media-library'
 
-  if (!installedSdkVersion && !isConfigOnlyBuild) {
+  if (!installedSdkVersion && !isMediaLibraryConfigBuild) {
     output.error(`Failed to find installed @sanity/sdk-react version`, {
       exit: exitCodes.RUNTIME_ERROR,
     })
     return {mfManifest: undefined}
   }
 
-  if (isConfigOnlyBuild && !installedSanityVersion) {
+  if (isMediaLibraryConfigBuild && !installedSanityVersion) {
     output.error(`Failed to find installed sanity version`, {
       exit: exitCodes.RUNTIME_ERROR,
     })
@@ -108,7 +104,7 @@ export async function buildApp(
   let autoUpdatesImports = {}
   let autoUpdatesCssUrls: string[] = []
 
-  if (autoUpdatesEnabled && !isConfigOnlyBuild) {
+  if (autoUpdatesEnabled && !isMediaLibraryConfigBuild) {
     // Get the clean version without build metadata: https://semver.org/#spec-item-10
     const cleanSDKVersion = semverParse(installedSdkVersion)?.version
     if (!cleanSDKVersion) {

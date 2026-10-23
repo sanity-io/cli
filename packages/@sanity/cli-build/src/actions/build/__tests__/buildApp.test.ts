@@ -142,9 +142,9 @@ describe('#buildApp', () => {
   // island runtime comes from `sanity` — so the scaffolded template installs
   // `sanity` but not `@sanity/sdk-react`, and the build must accept that.
   describe('config-only build', () => {
-    const configExposes = {
+    const configExposes: BuildOptions['exposes'] = {
       config: {appType: 'media-library', fields: []},
-    } as unknown as BuildOptions['exposes']
+    }
 
     let outDir: string
     beforeEach(async () => {
@@ -225,6 +225,57 @@ describe('#buildApp', () => {
       expect(compareDependencyVersions).not.toHaveBeenCalled()
       expect(output.error).not.toHaveBeenCalled()
       expect(mockedBuildStaticFiles).toHaveBeenCalled()
+    })
+
+    // The scaffolded template's real-world shape: auto-updates on by default,
+    // `@sanity/sdk-react` never installed. Without the appType gate this path
+    // fell through to parsing the missing SDK version.
+    test('builds with auto-updates enabled and no @sanity/sdk-react installed', async () => {
+      const output = createMockOutput()
+
+      mockedGetLocalPackageVersion.mockImplementation((moduleName) =>
+        moduleName === '@sanity/sdk-react' ? null : '1.0.0',
+      )
+
+      await buildApp(
+        buildOptions({
+          autoUpdatesEnabled: true,
+          exposes: configExposes,
+          isWorkbenchApp: true,
+          outDir,
+          output,
+          unattendedMode: true,
+        }),
+      )
+
+      expect(output.error).not.toHaveBeenCalled()
+      expect(mockedBuildStaticFiles).toHaveBeenCalled()
+    })
+
+    // The gate keys on `appType`, not on being a workbench build: a workbench
+    // *views* app (no config) still ships the SDK runtime and must keep
+    // requiring @sanity/sdk-react.
+    test('a workbench app without a config still requires @sanity/sdk-react', async () => {
+      const output = createMockOutput()
+
+      mockedGetLocalPackageVersion.mockImplementation((moduleName) =>
+        moduleName === '@sanity/sdk-react' ? null : '1.0.0',
+      )
+
+      await buildApp(
+        buildOptions({
+          isWorkbenchApp: true,
+          outDir,
+          output,
+          unattendedMode: true,
+        }),
+      )
+
+      expect(output.error).toHaveBeenCalledWith(
+        'Failed to find installed @sanity/sdk-react version',
+        {exit: exitCodes.RUNTIME_ERROR},
+      )
+      expect(mockedBuildStaticFiles).not.toHaveBeenCalled()
     })
   })
 
