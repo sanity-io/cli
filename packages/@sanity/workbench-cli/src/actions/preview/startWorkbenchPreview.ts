@@ -128,7 +128,12 @@ export async function startWorkbenchPreview(
       workDir,
     })
     closers.push(async () => registration.release())
-    dashboardAppPath = dashboardPath({interfaces, slug: workbench.slug, type})
+    dashboardAppPath = dashboardPath({
+      interfaces,
+      isSingleton: workbench.isSingleton,
+      slug: workbench.slug,
+      type,
+    })
   } catch (err) {
     await close()
     throw err

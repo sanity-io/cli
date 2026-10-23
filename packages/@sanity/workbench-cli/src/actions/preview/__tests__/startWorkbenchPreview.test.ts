@@ -279,6 +279,21 @@ describe('startWorkbenchPreview', () => {
       )
     })
 
+    test('links to a singleton build with an app view at its own route', async () => {
+      const output = createMockOutput()
+
+      await run({
+        cliConfig: workbenchCliConfig({
+          app: workbenchApp({entry: './src/App.tsx', isSingleton: true}),
+        }),
+        output,
+      })
+
+      expect(output.log).toHaveBeenCalledWith(
+        `Dashboard preview server started at ${styleText(['blue', 'underline'], 'http://localhost:3333/test-app')}`,
+      )
+    })
+
     test('links to the Dashboard root when the app build has no app view', async () => {
       const output = createMockOutput()
       await run({output})
