@@ -107,7 +107,6 @@ function renderAutoUpdatesModule(moduleCdn: ModuleCdn | undefined): string {
   return `import {createAutoUpdatesLoader} from ${JSON.stringify(LOADER_ENTRY)}
 export const {load, moduleUrl} = createAutoUpdatesLoader({
   appId: typeof __SANITY_APP_ID__ === 'string' ? __SANITY_APP_ID__ : undefined,
-  importModule: (specifier) => import(/* @vite-ignore */ specifier),
   packages: ${JSON.stringify(moduleCdn.packages)},
   shared: {${shared.join(', ')}},
   specifiers: JSON.parse(${JSON.stringify(SPECIFIERS_PLACEHOLDER)}),
