@@ -330,7 +330,11 @@ describe('#tokens:delete', () => {
   })
 
   test('handles network errors when fetching tokens', async () => {
-    // Don't set up any mock to simulate network failure
+    mockApi({
+      apiVersion: TOKENS_API_VERSION,
+      uri: '/access/project/test-project/robots',
+    }).replyWithError(new Error('Network Error'))
+
     const {error} = await testCommand(DeleteTokensCommand, [], {mocks: defaultMocks})
     expect(error).toBeInstanceOf(Error)
     expect(error?.message).toContain('Could not list API tokens')
@@ -338,7 +342,12 @@ describe('#tokens:delete', () => {
   })
 
   test('handles network errors when deleting token', async () => {
-    // Don't set up any mock to simulate network failure
+    mockApi({
+      apiVersion: TOKENS_API_VERSION,
+      method: 'delete',
+      uri: '/access/project/test-project/robots/token-api-123',
+    }).replyWithError(new Error('Network Error'))
+
     const {error} = await testCommand(DeleteTokensCommand, ['token-api-123', '--yes'], {
       mocks: defaultMocks,
     })

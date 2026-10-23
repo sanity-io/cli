@@ -36,6 +36,7 @@ import {
 import {getAppId} from '../../util/appId.js'
 import {EXTERNAL_APP_NOT_SUPPORTED, NO_ORGANIZATION_ID} from '../../util/errorMessages.js'
 import {buildApp} from '../build/buildApp.js'
+import {checkBlueprintManaged} from './blueprintManaged.js'
 import {createUserApplication} from './createUserApplication.js'
 import {
   checkAppId,
@@ -133,6 +134,8 @@ async function runAppDeployment(
   )
 
   checkAppId(reporter, {cliConfig})
+
+  await checkBlueprintManaged(reporter, {kind: 'coreApp', projectRootDir: workDir})
 
   let application: UserApplicationResolved | null = null
   let appCreated = false
