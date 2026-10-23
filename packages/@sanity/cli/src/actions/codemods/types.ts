@@ -10,7 +10,7 @@ export interface CodeMod {
    * Runs in the CLI process before the transform (prompts, API lookups). `options` reach the
    * transform's `options` argument; `paths` replace the default target of the whole directory.
    */
-  prepare?: (context: {output: Output; workDir: string}) => Promise<{
+  prepare?: (context: {dry: boolean; output: Output; workDir: string}) => Promise<{
     options: Record<string, string>
     paths: string[]
   }>
