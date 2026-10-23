@@ -1,6 +1,6 @@
 {
   "name": "@sanity/workbench-cli",
-  "version": "2.14.0",
+  "version": "2.13.0",
   "description": "Internal implementation detail of the Sanity CLI's unstable workbench support. Not intended for direct use.",
   "homepage": "https://github.com/sanity-io/cli",
   "bugs": "https://github.com/sanity-io/cli/issues",
@@ -51,6 +51,10 @@
       "source": "./src/_exports/_internal_worker_bus.ts",
       "default": "./dist/_exports/_internal_worker_bus.js"
     },
+    "./_internal_auto_updates": {
+      "source": "./src/_exports/_internal_auto_updates.ts",
+      "default": "./dist/_exports/_internal_auto_updates.js"
+    },
     "./undeploy": {
       "source": "./src/_exports/undeploy.ts",
       "default": "./dist/_exports/undeploy.js"
@@ -79,6 +83,7 @@
     "@sanity/sdk": "catalog:",
     "@sanity/types": "catalog:",
     "@vitejs/plugin-react": "catalog:",
+    "es-module-shims": "^2.8.4",
     "form-data": "catalog:",
     "rxjs": "catalog:",
     "semver": "catalog:",
