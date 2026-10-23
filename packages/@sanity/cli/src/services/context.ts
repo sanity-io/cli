@@ -277,3 +277,15 @@ export async function rebuildEntry(
   const client = await getContextClient(knowledgeBaseId)
   return client.context.entries.rebuild({path})
 }
+
+/**
+ * Run a GROQ query against an organization's Context documents
+ */
+export async function queryContext(
+  organizationId: string,
+  query: string,
+  params?: Record<string, unknown>,
+): Promise<unknown> {
+  const client = await getContextClient(undefined, organizationId)
+  return client.context.fetch(query, params)
+}
