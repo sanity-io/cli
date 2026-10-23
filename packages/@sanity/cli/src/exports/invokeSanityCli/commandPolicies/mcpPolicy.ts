@@ -224,6 +224,9 @@ export const mcpPolicy: CommandPolicySet = {
     deniedFlags: ['replace-aspects'],
     validate: ({args}) => typeof args.source === 'string' && isRemoteAssetSource(args.source),
   }),
+  // media:pull-aspects is hidden while the config app is in beta, so it takes
+  // the deny-by-default path like any unlisted command. The exhaustiveness
+  // test forces an explicit entry when it is unhidden.
 
   // Creates migration source files in the local project.
   'migrations:create': deny,
