@@ -213,7 +213,7 @@ describe('startDevServerRegistration', () => {
     await register({cliConfig: workbenchCliConfig({deployment: {appId: APP_ID}}), output})
 
     expect(output.error).toHaveBeenCalledWith(
-      expect.stringContaining(`"${APP_ID}" is already served`),
+      expect.stringContaining('"test-app" is the same application as "other-app"'),
       {exit: false},
     )
     expect(fsMock.files.has(manifestPath())).toBe(false)
@@ -518,7 +518,7 @@ describe('startDevServerRegistration', () => {
     test('opens a studio at its slug', async () => {
       const {path} = await register({isApp: false})
 
-      expect(path).toBe('/studios/test-app')
+      expect(path).toBe('/local/test-app')
     })
 
     test('opens an app with an app view at its slug', async () => {
@@ -527,7 +527,7 @@ describe('startDevServerRegistration', () => {
         isApp: true,
       })
 
-      expect(path).toBe('/applications/test-app')
+      expect(path).toBe('/local/test-app')
     })
 
     test('has no path for an app without an app view, which the Dashboard 404s', async () => {

@@ -102,7 +102,6 @@ export async function startDevServerRegistration(
   // Identity is resolved and the reference composed here, so the workbench reads
   // both off the registry entry instead of recomposing them.
   const identity = workbenchApp ? localAppIdentity(workbenchApp) : undefined
-  const type = isApp ? 'coreApp' : 'studio'
 
   // The Dashboard tells local apps apart by their bus id and by the application
   // they stand in for.
@@ -114,8 +113,12 @@ export async function startDevServerRegistration(
   )
 
   if (id && devServer) {
+    const served =
+      devServer.id === id
+        ? `"${id}" is already served`
+        : `"${id}" is the same application as "${devServer.id}", served`
     output.error(
-      `"${devServer.id === id ? id : applicationId}" is already served by another dev server running on port ${devServer.port}, ` +
+      `${served} by another dev server running on port ${devServer.port}, ` +
         "so the Dashboard can't tell them apart and this one stays out of it. Stop that server first.",
       {exit: false},
     )
@@ -132,7 +135,7 @@ export async function startDevServerRegistration(
     port: appPort,
     projectId: cliConfig?.api?.projectId,
     ...identity,
-    type,
+    type: isApp ? 'coreApp' : 'studio',
     workDir,
   })
 
@@ -183,11 +186,6 @@ export async function startDevServerRegistration(
       registration.release()
       await watcher.close()
     },
-    path: dashboardPath({
-      interfaces,
-      isSingleton: workbenchApp?.isSingleton,
-      slug: identity?.slug,
-      type,
-    }),
+    path: dashboardPath({id, interfaces}),
   }
 }

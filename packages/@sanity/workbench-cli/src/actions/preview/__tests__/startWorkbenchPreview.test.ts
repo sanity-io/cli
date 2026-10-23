@@ -261,11 +261,11 @@ describe('startWorkbenchPreview', () => {
       await run({isApp: false, output})
 
       expect(output.log).toHaveBeenCalledWith(
-        `Dashboard preview server started at ${styleText(['blue', 'underline'], 'http://localhost:3333/studios/test-app')}`,
+        `Dashboard preview server started at ${styleText(['blue', 'underline'], `http://localhost:3333/local/${readManifest().id}`)}`,
       )
     })
 
-    test('links to an app build with an app view at its slug, whatever id the build inlined', async () => {
+    test('links to an app build with an app view under the id the build inlined', async () => {
       mockReadFile.mockResolvedValue('app_deployed_id\n')
       const output = createMockOutput()
 
@@ -275,22 +275,7 @@ describe('startWorkbenchPreview', () => {
       })
 
       expect(output.log).toHaveBeenCalledWith(
-        `Dashboard preview server started at ${styleText(['blue', 'underline'], 'http://localhost:3333/applications/test-app')}`,
-      )
-    })
-
-    test('links to a singleton build with an app view at its own route', async () => {
-      const output = createMockOutput()
-
-      await run({
-        cliConfig: workbenchCliConfig({
-          app: workbenchApp({entry: './src/App.tsx', isSingleton: true}),
-        }),
-        output,
-      })
-
-      expect(output.log).toHaveBeenCalledWith(
-        `Dashboard preview server started at ${styleText(['blue', 'underline'], 'http://localhost:3333/test-app')}`,
+        `Dashboard preview server started at ${styleText(['blue', 'underline'], 'http://localhost:3333/local/app_deployed_id')}`,
       )
     })
 

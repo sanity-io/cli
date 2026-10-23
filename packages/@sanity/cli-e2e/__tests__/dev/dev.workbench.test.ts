@@ -29,7 +29,7 @@ describe.skipIf(isRegistryMode)('sanity dev (workbench/federation)', {timeout: 1
     // so it proves the real workbench dev orchestration ran — not just a build.
     await session.waitForText(
       new RegExp(
-        String.raw`Dashboard dev server started at http://localhost:${port}/studios/federated-studio`,
+        String.raw`Dashboard dev server started at http://localhost:${port}/local/federated-studio`,
         'i',
       ),
       {timeout: 90_000},
@@ -38,7 +38,7 @@ describe.skipIf(isRegistryMode)('sanity dev (workbench/federation)', {timeout: 1
     // `getOutput()` keeps ANSI codes; the URL isn't split by color escapes, so
     // assert it on the raw buffer too.
     const output = session.getOutput()
-    expect(output).toContain(`http://localhost:${port}/studios/federated-studio`)
+    expect(output).toContain(`http://localhost:${port}/local/federated-studio`)
 
     // The app server carries the app's bus identity (`__SANITY_APP_ID__`) for
     // `@sanity/runtime` — its slug, so a running app never collides with its

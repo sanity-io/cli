@@ -131,9 +131,8 @@ export const devServerManifestSchema = z.object({
   ),
   host: z.string(),
   /**
-   * The id the app runs under on the bus: its slug, also when it has an
-   * `applicationId`, as Dashboards that predate `applicationId` key local apps on
-   * this. Move the bus to `applicationId` once those Dashboards are gone.
+   * The id the app runs under on the bus. It stays apart from `applicationId`,
+   * because Dashboards that predate `applicationId` key local apps on it.
    */
   id: z.optional(z.string()),
   interfaces: z.optional(z.array(devServerInterfaceSchema)),
@@ -205,21 +204,18 @@ export function localAppIdentity(
 }
 
 /**
- * Where the Dashboard shell opens a registered server: the route of its deployed
- * counterpart, only when it has a slug and a `surface: 'window'` interface. That
- * interface is the app view the route renders (see toWireInterface); studios
- * always get one, configs and panel-only apps don't, so they'd 404.
+ * Where the Dashboard shell opens a registered server: `/local/<id>`, only when
+ * it has an id and a `surface: 'window'` interface. That interface is the app
+ * view the shell's `/local/:applicationId` route renders (see toWireInterface);
+ * studios always get one, configs and panel-only apps don't, so they'd 404.
  */
 export function dashboardPath(
-  server: Pick<DevServerManifest, 'interfaces' | 'slug' | 'type'> & {isSingleton?: boolean},
+  server: Pick<DevServerManifest, 'id' | 'interfaces'>,
 ): string | undefined {
   const hasAppView = (server.interfaces ?? []).some(
     (iface) => 'surface' in iface && iface.surface === 'window',
   )
-  if (!server.slug || !hasAppView) return undefined
-  if (server.isSingleton) return `/${encodeURIComponent(server.slug)}`
-
-  return `/${server.type === 'studio' ? 'studios' : 'applications'}/${encodeURIComponent(server.slug)}`
+  return server.id && hasAppView ? `/local/${encodeURIComponent(server.id)}` : undefined
 }
 
 /**
