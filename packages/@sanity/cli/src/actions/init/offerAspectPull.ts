@@ -69,6 +69,25 @@ export async function offerAspectPull({
     }
   }
 
+  // The config edit is resolved before anything touches the disk: bailing
+  // after deleting the example modules would leave the scaffold declaring
+  // files that no longer exist. On bail the scaffold stays a consistent,
+  // working pair (example fields + their declarations), and the caller's
+  // `!pulledAspects` branch already points at `sanity media pull-aspects`.
+  const configPath = await findCliConfig(outputPath)
+  const entryLines = formatFieldEntries(modules, FIELDS_DIR.replaceAll(path.sep, '/')).split('\n')
+
+  const bail = (reason: string): false => {
+    output.warn(
+      `Could not seed the config from the existing aspects (${reason}) — the example fields are kept.`,
+    )
+    return false
+  }
+
+  if (!configPath) return bail('no sanity.cli.ts found')
+  const result = replaceFieldEntries(await readFile(configPath, 'utf8'), entryLines)
+  if (!result.ok) return bail(result.reason)
+
   // The example modules make way for the real ones: entries are replaced
   // wholesale in the config, so files left behind would just be orphans.
   const fieldsDir = path.join(outputPath, FIELDS_DIR)
@@ -77,24 +96,6 @@ export async function offerAspectPull({
   for (const module of modules) {
     await writeFile(path.join(fieldsDir, module.filename), module.source)
   }
-
-  const configPath = await findCliConfig(outputPath)
-  const entryLines = formatFieldEntries(modules, FIELDS_DIR.replaceAll(path.sep, '/')).split('\n')
-
-  // Modules are already on disk at this point; if the declarations cannot be
-  // written, surface them to paste — leaving them undeclared makes deploy
-  // delete the stored originals.
-  const bail = (reason: string): true => {
-    output.warn(`Could not declare the generated fields automatically: ${reason}`)
-    output.log('Replace the `fields` entries in sanity.cli.ts with:')
-    output.log('')
-    output.log(entryLines.map((line) => `  ${line}`).join('\n'))
-    return true
-  }
-
-  if (!configPath) return bail('no sanity.cli.ts found')
-  const result = replaceFieldEntries(await readFile(configPath, 'utf8'), entryLines)
-  if (!result.ok) return bail(result.reason)
 
   await writeFile(configPath, result.updated)
   output.log(

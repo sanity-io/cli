@@ -177,7 +177,7 @@ describe('offerAspectPull', () => {
     )
   })
 
-  test('falls back to printing the entries when the config cannot be edited safely', async () => {
+  test('leaves the scaffold untouched when the config cannot be edited safely', async () => {
     mockGetAspects.mockResolvedValue([CAPTION_DOC])
     mockFsReadFile.mockResolvedValue(
       `import {defineCliConfig, unstable_defineMediaLibrary} from 'sanity/cli'\n\n` +
@@ -187,13 +187,14 @@ describe('offerAspectPull', () => {
 
     const pulled = await offerAspectPull({library: LIBRARY, output, outputPath: OUTPUT_PATH})
 
-    // The modules are on disk, so this still counts as pulled.
-    expect(pulled).toBe(true)
+    // Nothing was pulled: the example fields and their declarations are still
+    // a consistent, working pair — and the caller's `!pulledAspects` branch
+    // points at `sanity media pull-aspects`.
+    expect(pulled).toBe(false)
     const warnings = vi.mocked(output.warn).mock.calls.flat().join('\n')
-    expect(warnings).toContain('Could not declare the generated fields automatically')
-    const logs = vi.mocked(output.log).mock.calls.flat().join('\n')
-    expect(logs).toContain(`{name: 'caption', src: './src/fields/caption.tsx', title: 'Caption'},`)
-    // No config write — only the module write.
-    expect(mockFsWriteFile).not.toHaveBeenCalledWith(CONFIG_PATH, expect.any(String))
+    expect(warnings).toContain('Could not seed the config from the existing aspects')
+    // No filesystem changes at all: no example deletion, no module or config writes.
+    expect(mockFsRm).not.toHaveBeenCalled()
+    expect(mockFsWriteFile).not.toHaveBeenCalled()
   })
 })
