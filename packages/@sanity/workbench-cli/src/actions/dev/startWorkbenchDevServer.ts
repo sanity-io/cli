@@ -34,6 +34,7 @@ const toApplicationsPayload = (servers: DevServerManifest[]) => ({
     .filter((server) => !isConfigOnlyServer(server))
     .map(
       ({
+        applicationId,
         host,
         id,
         interfaces,
@@ -47,6 +48,7 @@ const toApplicationsPayload = (servers: DevServerManifest[]) => ({
         type,
         visibility,
       }) => ({
+        applicationId,
         host,
         id,
         // Views cross to the remote keyed on `type`, never the internal `surface`.
