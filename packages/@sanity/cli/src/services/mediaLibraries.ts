@@ -144,8 +144,10 @@ async function queryAllPages<T extends {_id: string}>(options: {
   params: Record<string, unknown>
   /** GROQ projection, e.g. `{_id}`. Omitted, the whole documents return. */
   projection?: string
+  /** Request tag, e.g. `aspect-sync`. */
+  tag?: string
 }): Promise<T[]> {
-  const {filter, mediaLibraryId, params, projection = ''} = options
+  const {filter, mediaLibraryId, params, projection = '', tag} = options
   const client = await getMediaLibraryClient()
 
   const documents: T[] = []
@@ -160,6 +162,7 @@ async function queryAllPages<T extends {_id: string}>(options: {
       // `published` is this API version's default; pinned so a future default
       // change can never surface `drafts.*` duplicates of published documents.
       query: {perspective: 'published'},
+      tag,
       url: `/media-libraries/${mediaLibraryId}/query`,
     })
     const page = response?.result ?? []
@@ -189,52 +192,29 @@ export function getAspects(mediaLibraryId: string): Promise<StoredAspectDocument
   })
 }
 
-/** Page size for id-cursor pagination of stored-aspect-id queries. */
-const ASPECT_ID_PAGE_SIZE = 1000
-
 /**
- * Fetch every stored aspect document `_id` of a media library with an
- * id-cursor loop. The query API caps single-response sizes, and the consumer
+ * Fetch every stored aspect document `_id` of a media library. The consumer
  * acts destructively on the result (mirror deletes), where a silently
  * truncated list means reporting success while stale documents are left
- * behind.
+ * behind — `queryAllPages` reads to exhaustion.
  *
- * The loop only terminates on an *empty* page — a short page is not trusted
- * as exhaustion, in case the endpoint ever returns fewer rows than the
- * requested slice (response-size caps). The cursor advances past the last
- * returned id regardless, so partial slices just mean extra round-trips.
- *
- * Pinned to the `published` perspective so stale detection never sees draft
- * ids: the sync's upserts write published documents and its deletes match ids
- * exactly, so drafts (not normally used for aspect docs) are out of scope
- * either way — the endpoint's default perspective could flag a `drafts.*` id
- * as stale and target it for deletion.
+ * The `published` perspective pin matters doubly here: stale detection must
+ * never see draft ids. The sync's upserts write published documents and its
+ * deletes match ids exactly, so drafts (not normally used for aspect docs)
+ * are out of scope either way — a default-perspective read could flag a
+ * `drafts.*` id as stale and target it for deletion.
  *
  * @internal
  */
 export async function getStoredAspectIds(mediaLibraryId: string): Promise<string[]> {
-  const client = await getMediaLibraryClient()
-
-  const ids: string[] = []
-  let lastId = ''
-  for (;;) {
-    const response = await client.request<QueryResponse<Array<{_id: string}>> | undefined>({
-      body: {
-        params: {lastId, type: MEDIA_LIBRARY_ASSET_ASPECT_TYPE_NAME},
-        query: `*[_type == $type && _id > $lastId] | order(_id) [0...${ASPECT_ID_PAGE_SIZE}]{_id}`,
-      },
-      method: 'POST',
-      query: {perspective: 'published'},
-      tag: 'aspect-sync',
-      url: `/media-libraries/${mediaLibraryId}/query`,
-    })
-    const page = response?.result ?? []
-    const last = page.at(-1)
-    if (!last) break
-    for (const doc of page) ids.push(doc._id)
-    lastId = last._id
-  }
-  return ids
+  const documents = await queryAllPages<{_id: string}>({
+    filter: '_type == $type',
+    mediaLibraryId,
+    params: {type: MEDIA_LIBRARY_ASSET_ASPECT_TYPE_NAME},
+    projection: '{_id}',
+    tag: 'aspect-sync',
+  })
+  return documents.map((doc) => doc._id)
 }
 
 interface MutateAspectsResponse {
