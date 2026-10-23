@@ -11,6 +11,7 @@ import {deployStudio} from '../actions/deploy/deployStudio.js'
 import {getAppId} from '../util/appId.js'
 import {determineIsApp} from '../util/determineIsApp.js'
 import {dirIsEmptyOrNonExistent} from '../util/dirIsEmptyOrNonExistent.js'
+import {defineCommandTelemetry} from '../util/telemetry/commandTelemetry.js'
 
 export class DeployCommand extends SanityCommand<typeof DeployCommand> {
   static override args = {
@@ -122,6 +123,8 @@ export class DeployCommand extends SanityCommand<typeof DeployCommand> {
         'Unattended mode, answers "yes" to any "yes/no" prompt and otherwise uses defaults',
     }),
   }
+
+  static telemetry = defineCommandTelemetry(this.flags, {redact: ['title', 'url']})
 
   public async run(): Promise<void> {
     const {flags} = await this.parse(DeployCommand)

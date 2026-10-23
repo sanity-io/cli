@@ -284,7 +284,7 @@ describe('context create', () => {
         '--description=Secret plans',
         '--organization=org-abc123',
       ],
-      CreateKnowledgeBaseCommand.telemetry,
+      CreateKnowledgeBaseCommand,
     )
 
     expect(result.extraArguments).toEqual(['--title', '--description', '--organization=org-abc123'])

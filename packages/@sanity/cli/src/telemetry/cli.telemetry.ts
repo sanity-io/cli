@@ -2,7 +2,7 @@ import {defineTrace} from '@sanity/telemetry'
 
 export interface CLITraceData {
   /**
-   * Command arguments, eg any arguments after `sanity <command>` (no flags)
+   * Resolved subcommand names, excluding positional user input
    */
   commandArguments: string[]
 
@@ -13,7 +13,7 @@ export interface CLITraceData {
   }
 
   /**
-   * Arguments after the ended argument list (--)
+   * Recognized flags, with sensitive values and forwarded arguments omitted
    */
   extraArguments: string[]
   /**
@@ -25,5 +25,5 @@ export interface CLITraceData {
 export const CliCommandTelemetry = defineTrace<CLITraceData>({
   description: 'A CLI command was executed',
   name: 'CLI Command Executed',
-  version: 1,
+  version: 2,
 })

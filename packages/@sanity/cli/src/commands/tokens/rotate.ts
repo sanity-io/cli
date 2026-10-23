@@ -5,6 +5,7 @@ import {isHttpError} from '@sanity/client'
 
 import {rotateToken} from '../../services/tokens.js'
 import {readTokenFromStdin} from '../../util/readTokenFromStdin.js'
+import {defineCommandTelemetry} from '../../util/telemetry/commandTelemetry.js'
 
 const tokensRotateDebug = subdebug('tokens:rotate')
 
@@ -40,6 +41,8 @@ export class RotateTokenCommand extends SanityCommand<typeof RotateTokenCommand>
   }
 
   static override hiddenAliases: string[] = ['token:rotate']
+
+  static telemetry = defineCommandTelemetry(this.flags, {redact: ['token']})
 
   public async run(): Promise<void> {
     const {flags} = await this.parse(RotateTokenCommand)

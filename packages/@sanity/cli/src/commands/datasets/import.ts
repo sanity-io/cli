@@ -13,6 +13,7 @@ import {promptForDatasetName} from '../../prompts/promptForDatasetName.js'
 import {promptForProject} from '../../prompts/promptForProject.js'
 import {createDataset, listDatasets} from '../../services/datasets.js'
 import {getDatasetFlag, getProjectIdFlag} from '../../util/sharedFlags.js'
+import {defineCommandTelemetry} from '../../util/telemetry/commandTelemetry.js'
 
 const importDebug = subdebug('dataset:import')
 
@@ -154,6 +155,8 @@ export class ImportDatasetCommand extends SanityCommand<typeof ImportDatasetComm
   }
 
   static override hiddenAliases: string[] = ['dataset:import']
+
+  static telemetry = defineCommandTelemetry(this.flags, {redact: ['token']})
 
   private currentProgress?: ReturnType<typeof spinner>
   private currentStep?: string

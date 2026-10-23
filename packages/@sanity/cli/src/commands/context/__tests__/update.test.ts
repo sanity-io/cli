@@ -145,7 +145,7 @@ describe('context update', () => {
         '--description=Secret plans',
         '--refresh-frequency=weekly',
       ],
-      UpdateKnowledgeBaseCommand.telemetry,
+      UpdateKnowledgeBaseCommand,
     )
 
     expect(result.extraArguments).toEqual([

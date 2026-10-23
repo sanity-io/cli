@@ -33,6 +33,7 @@ import {
   type ResourceTypesWatcher,
   watchResourceTypes,
 } from '../../actions/typegen/watchResourceTypes.js'
+import {defineCommandTelemetry} from '../../util/telemetry/commandTelemetry.js'
 
 const description = `Sanity TypeGen
 
@@ -76,6 +77,8 @@ export class TypegenGenerateCommand extends SanityCommand<typeof TypegenGenerate
   }
 
   static override hiddenAliases: string[] = ['typegen:generate']
+
+  static telemetry = defineCommandTelemetry(this.flags, {redact: ['config-path']})
 
   public async run(): Promise<void> {
     const {flags} = await this.parse(TypegenGenerateCommand)

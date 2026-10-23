@@ -4,6 +4,7 @@ import {exitCodes, SanityCommand} from '@sanity/cli-core'
 import {listSchemas} from '../../actions/schema/listSchemas.js'
 import {schemasListDebug} from '../../actions/schema/utils/debug.js'
 import {parseWorkspaceSchemaId} from '../../actions/schema/utils/schemaStoreValidation.js'
+import {defineCommandTelemetry} from '../../util/telemetry/commandTelemetry.js'
 
 const description = `
 List all schemas in the current dataset.
@@ -57,6 +58,8 @@ export class ListSchemaCommand extends SanityCommand<typeof ListSchemaCommand> {
   }
 
   static override hiddenAliases: string[] = ['schema:list']
+
+  static telemetry = defineCommandTelemetry(this.flags, {redact: ['manifest-dir']})
 
   public async run(): Promise<void> {
     const {flags} = await this.parse(ListSchemaCommand)
