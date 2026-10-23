@@ -26,6 +26,7 @@ import {setupMCP} from '../mcp/setupMCP.js'
 import {setupSkills} from '../skills/setupSkills.js'
 import {checkNextJsReactCompatibility} from './checkNextJsReactCompatibility.js'
 import {determineAppTemplate} from './determineAppTemplate.js'
+import {determineMediaLibraryTemplate} from './determineMediaLibraryTemplate.js'
 import {createOrAppendEnvVars} from './env/createOrAppendEnvVars.js'
 import {initApp} from './initApp.js'
 import {InitError} from './initError.js'
@@ -59,7 +60,17 @@ export async function initAction(options: InitOptions, context: InitContext): Pr
     throw new InitError('--reconfigure is deprecated - manual configuration is now required', 1)
   }
 
-  if (options.project && options.organization) {
+  // Media Library config templates ride the app init flow end to end:
+  // organization-only project details, app unattended-flag rules, `initApp`.
+  // Template-shape differences are handled downstream (bootstrapLocalTemplate
+  // and initApp check `determineMediaLibraryTemplate` themselves).
+  const isMediaLibraryTemplate = options.template
+    ? determineMediaLibraryTemplate(options.template)
+    : false
+
+  // That template ignores project flags outright (getProjectDetails warns), so
+  // the pair is not the move-a-project contradiction this guard is about.
+  if (options.project && options.organization && !isMediaLibraryTemplate) {
     throw new InitError(
       'You have specified both a project and an organization. To move a project to an organization please visit https://www.sanity.io/manage',
       1,
@@ -83,6 +94,12 @@ export async function initAction(options: InitOptions, context: InitContext): Pr
     remoteTemplateInfo = await getGitHubRepoInfo(options.template, options.templateToken)
   }
 
+  // Warned before any setup so the user can cancel. Remote templates ship their
+  // own `sanity.cli.*`, so there is nothing to swap.
+  if (options.dashboard && remoteTemplateInfo) {
+    output.warn('--dashboard is ignored for remote templates')
+  }
+
   if (detectedFramework && detectedFramework.slug !== 'sanity' && remoteTemplateInfo) {
     throw new InitError(
       `A remote template cannot be used with a detected framework. Detected: ${detectedFramework.name}`,
@@ -90,10 +107,19 @@ export async function initAction(options: InitOptions, context: InitContext): Pr
     )
   }
 
-  const isAppTemplate = options.template ? determineAppTemplate(options.template) : false
+  const isAppTemplate = options.template
+    ? determineAppTemplate(options.template) || isMediaLibraryTemplate
+    : false
+
+  // A config app persists to the org's installation, not to a dashboard
+  // workbench, so `createMediaLibraryCliConfig` has no slot for --dashboard.
+  // Warned rather than silently dropped (same courtesy as remote templates).
+  if (options.dashboard && isMediaLibraryTemplate) {
+    output.warn('--dashboard is ignored for the media-library-config template')
+  }
 
   if (options.unattended) {
-    checkFlagsInUnattendedMode(options, {isAppTemplate, isNextJs})
+    checkFlagsInUnattendedMode(options, {isAppTemplate, isMediaLibraryTemplate, isNextJs})
   }
 
   trace.start()
@@ -126,7 +152,14 @@ export async function initAction(options: InitOptions, context: InitContext): Pr
   }
 
   let newProject: string | undefined
-  if (options.projectName) {
+  // A media-library config records only the organization; creating a project
+  // from --project-name here would be a throwaway side effect.
+  if (options.projectName && isMediaLibraryTemplate) {
+    output.warn(
+      '--project-name is ignored for the media-library-config template — it only records the organization.',
+    )
+  }
+  if (options.projectName && !isMediaLibraryTemplate) {
     newProject = await createProjectFromName({
       coupon: options.coupon,
       createProjectName: options.projectName,
@@ -144,6 +177,7 @@ export async function initAction(options: InitOptions, context: InitContext): Pr
       dataset: options.dataset,
       datasetDefault: options.datasetDefault,
       isAppTemplate,
+      isMediaLibraryTemplate,
       newProject,
       organization: options.organization,
       output,
@@ -240,9 +274,14 @@ export async function initAction(options: InitOptions, context: InitContext): Pr
     step: 'useDetectedFramework',
   })
 
-  const sluggedName = deburr(displayName.toLowerCase())
-    .replaceAll(/\s+/g, '-')
-    .replaceAll(/[^a-z0-9-]/g, '')
+  // The media-library config template skips project selection, so
+  // `displayName` is empty and the slug would be too — which would default the
+  // output-path prompt to the (usually non-empty) cwd, a default
+  // `validateEmptyPath` then refuses. Fall back to the template's own name.
+  const sluggedName =
+    deburr(displayName.toLowerCase())
+      .replaceAll(/\s+/g, '-')
+      .replaceAll(/[^a-z0-9-]/g, '') || (isMediaLibraryTemplate ? 'media-library-config' : '')
 
   const initFramework = initNext
 
@@ -266,6 +305,9 @@ export async function initAction(options: InitOptions, context: InitContext): Pr
   }
 
   if (initNext) {
+    if (options.dashboard) {
+      output.warn('--dashboard is ignored for Next.js projects')
+    }
     await initNextJs({
       datasetName,
       detectedFramework,
@@ -298,10 +340,10 @@ export async function initAction(options: InitOptions, context: InitContext): Pr
     return
   }
 
-  // Workbench is opt-in (no prompt): the flag swaps the scaffolded
+  // The Dashboard is opt-in (no prompt): `--dashboard` swaps the scaffolded
   // `sanity.cli.*` over to `defineApplication` — the branded app is the sole
-  // workbench opt-in.
-  const workbench = flagOrDefault(options.unstableWorkbench, false)
+  // Dashboard opt-in.
+  const workbench = flagOrDefault(options.dashboard, false)
 
   const sharedParams = {
     defaults,
@@ -332,7 +374,11 @@ export async function initAction(options: InitOptions, context: InitContext): Pr
 
 function checkFlagsInUnattendedMode(
   options: InitOptions,
-  {isAppTemplate, isNextJs}: {isAppTemplate: boolean; isNextJs: boolean},
+  {
+    isAppTemplate,
+    isMediaLibraryTemplate,
+    isNextJs,
+  }: {isAppTemplate: boolean; isMediaLibraryTemplate: boolean; isNextJs: boolean},
 ): void {
   debug('Unattended mode, validating required options')
 
@@ -345,7 +391,14 @@ function checkFlagsInUnattendedMode(
       )
     }
 
-    if (options.projectName && !options.organization) {
+    // The media-library config is organization-only, so project flags can't
+    // stand in for --organization the way they can for other app templates.
+    if (isMediaLibraryTemplate && !options.organization) {
+      errors.push(
+        'Organization is required for the media-library-config template in unattended mode. ' +
+          'Pass it with `--organization <id>`.',
+      )
+    } else if (options.projectName && !options.organization) {
       errors.push(
         'Organization is required when creating a project in unattended mode. Pass it with `--organization <id>`.',
       )

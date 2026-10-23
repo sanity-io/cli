@@ -110,12 +110,15 @@ describe('#list', () => {
   })
 
   test('handles network errors gracefully', async () => {
-    // Don't set up any mock to simulate network failure
+    mockApi({
+      apiVersion: CORS_API_VERSION,
+      uri: `/projects/${testProjectId}/cors`,
+    }).replyWithError(new Error('Network Error'))
+
     const {error} = await testCommand(List, [], {mocks: defaultMocks})
 
     expect(error).toBeInstanceOf(Error)
     expect(error?.message).toContain('CORS origins list retrieval failed')
-    // The actual error can vary (authorization, network, etc.) so just check the wrapper
   })
 
   test('throws error when no project ID is found', async () => {

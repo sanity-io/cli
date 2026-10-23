@@ -11,13 +11,15 @@ import {
 import {type AppVisibility, exitCodes} from '@sanity/cli-core'
 import {getErrorMessage} from '@sanity/cli-core/errors'
 import {getCoreAppUrl} from '@sanity/cli-core/util'
-import {spinner} from '@sanity/cli-core/ux'
+import {confirm, spinner} from '@sanity/cli-core/ux'
+import {resolveAppEntry} from '@sanity/workbench-cli/build'
 import {
   createCoreApp,
   deployConfig,
   deployWorkbenchApp,
   getApplicationUrl,
   getWorkbench,
+  getWorkbenchUrl,
   resolveInstallationId,
   resolveWorkbenchConfig,
   summarizeConfig,
@@ -32,8 +34,16 @@ import {
   type UserApplicationResolved,
 } from '../../services/userApplications.js'
 import {getAppId} from '../../util/appId.js'
+import {runStep} from '../../util/checks.js'
 import {EXTERNAL_APP_NOT_SUPPORTED, NO_ORGANIZATION_ID} from '../../util/errorMessages.js'
+import {pluralize} from '../../util/pluralize.js'
 import {buildApp} from '../build/buildApp.js'
+import {
+  applyAspectSync,
+  type AspectSyncPlan,
+  planAspectSync,
+} from '../media/aspectSync/syncAspects.js'
+import {checkBlueprintManaged} from './blueprintManaged.js'
 import {createUserApplication} from './createUserApplication.js'
 import {
   checkAppId,
@@ -77,6 +87,7 @@ async function runAppDeployment(
 
   const deployConfigOnly = !!config
   const deployApplication = !config && (!workbench || workbench.hasInterfaces)
+  const hasAppView = resolveAppEntry(cliConfig.app) !== undefined
 
   const appTitle = workbench
     ? flags.title?.trim() || cliConfig.app?.title?.trim() || workbench.slug
@@ -131,6 +142,8 @@ async function runAppDeployment(
 
   checkAppId(reporter, {cliConfig})
 
+  await checkBlueprintManaged(reporter, {kind: 'coreApp', projectRootDir: workDir})
+
   let application: UserApplicationResolved | null = null
   let appCreated = false
   let workbenchApp: object | undefined
@@ -144,6 +157,7 @@ async function runAppDeployment(
     workbenchApp = (
       await checkAppTarget(reporter, {
         appId,
+        hasAppView,
         isWorkbenchApp: true,
         organizationId,
         slug: workbench.slug,
@@ -192,7 +206,7 @@ async function runAppDeployment(
   // A record created above is stranded at its slug (and blocks retries) if any
   // step before it fully deploys fails, so undo the creation on failure.
   try {
-    await checkBuild(reporter, {
+    const built = await checkBuild(reporter, {
       build: () =>
         buildApp({
           applicationId: workbench ? applicationId : undefined,
@@ -210,11 +224,14 @@ async function runAppDeployment(
       successMessage: 'App built',
     })
 
-    await verifyOutputDir({
-      isWorkbenchApp: workbench !== null || config !== null,
-      reporter,
-      sourceDir,
-    })
+    // A federated build has already read its manifest; anything else verifies the directory.
+    const mfManifest =
+      built?.mfManifest ??
+      (await verifyOutputDir({
+        isWorkbenchApp: workbench !== null || config !== null,
+        reporter,
+        sourceDir,
+      }))
 
     // Workbench apps and configs ship a federation remote and don't read the
     // core-app manifest; only plain core-apps do. Manifests aren't strictly
@@ -253,6 +270,44 @@ async function runAppDeployment(
       )
     }
 
+    // Plan the aspect-document sync in both modes, so the report — dry-run and
+    // real — shows what the sync will write and, prominently, what it will
+    // delete, before anything mutates. Gated on a resolved installation: when
+    // that check failed, a real run already exited and a dry run has reported
+    // the config as undeployable.
+    let aspectSyncPlan: AspectSyncPlan | undefined
+    // Gated on the `appType` discriminator, not the mere presence of a config:
+    // `ConfigSchema` is a union built to grow, and a future config type must
+    // not inherit the media-library aspect sync — and its deletions — by
+    // default.
+    if (configAppType === 'media-library' && organizationId && config && installationId) {
+      // runStep so an unexpected throw (network, API) becomes a fail check:
+      // a real run exits, a dry run records it and keeps reporting.
+      const planned = await runStep(reporter, {
+        debug: deployDebug,
+        formatError: (err) => `Planning the aspect-document sync failed: ${getErrorMessage(err)}`,
+        name: 'aspect sync plan',
+        work: () =>
+          planAspectSync({
+            fields: config.fields,
+            mediaLibraryId: flags['media-library-id'],
+            organizationId,
+            workDir,
+          }),
+      })
+      if (planned && 'failure' in planned) {
+        reporter.report({
+          exitCode: planned.failure.exitCode,
+          message: planned.failure.message,
+          solution: planned.failure.solution,
+          status: 'fail',
+        })
+      } else if (planned) {
+        aspectSyncPlan = planned.plan
+        reportAspectSyncPlan(reporter, aspectSyncPlan)
+      }
+    }
+
     const interfaces = deployApplication && workbench ? reportInterfaces(reporter, workbench) : null
 
     // Applied after the app is live (see below) so a failed deploy never leaves
@@ -278,14 +333,45 @@ async function runAppDeployment(
       version,
       ...toWorkbenchPayload(workbench, {config: configSummary, interfaces, title: appTitle}),
       ...(configSummary ? {config: configSummary} : {}),
+      ...(aspectSyncPlan
+        ? {
+            aspectSync: {
+              deleteIds: aspectSyncPlan.staleIds,
+              mediaLibraryId: aspectSyncPlan.mediaLibraryId,
+              upsertIds: aspectSyncPlan.documents.map((document) => document._id),
+            },
+          }
+        : {}),
     }
 
     // Dry run stops here — everything below mutates.
     if (dryRun) return {application: null, payload}
 
+    // Deleting stored definitions is the destructive part of a config deploy,
+    // so an interactive run confirms it before anything mutates. Unattended
+    // runs (--yes; forced in CI) proceed — the config is the source of truth
+    // and the dry-run report lists the deletions.
+    if (aspectSyncPlan && aspectSyncPlan.staleIds.length > 0 && !flags.yes) {
+      const staleCount = aspectSyncPlan.staleIds.length
+      const proceed = await confirm({
+        default: false,
+        message:
+          `Delete ${staleCount} stored aspect ${pluralize('definition', staleCount)} with no ` +
+          `matching config field (${aspectSyncPlan.staleIds.join(', ')})?`,
+      })
+      if (!proceed) {
+        output.error('Deploy cancelled — the stored aspect definitions are unchanged.', {
+          exit: exitCodes.USER_ABORT,
+        })
+      }
+    }
+
     // A config-only singleton ships no application, only its config.
     if (!deployApplication) {
       await deployApplicationConfig()
+      if (aspectSyncPlan) {
+        await runAspectSync(aspectSyncPlan, output)
+      }
       if (installationId && version) {
         return {application: null, installationId, payload}
       }
@@ -298,12 +384,14 @@ async function runAppDeployment(
     // The app was created (or resolved from `deployment.appId`) before the build,
     // so this only ships the deployment; plain coreApps use user-applications below.
     if (workbench && organizationId && applicationId) {
+      if (!mfManifest) throw new Error('The federated build produced no manifest.')
       await deployWorkbenchApp({
         app: cliConfig.app,
         applicationId,
         icon: appIcon,
         isApp: true,
         isAutoUpdating,
+        mfManifest,
         // Once the deployment is live, a metadata-sync or later config failure
         // must not delete the app.
         onDeployed: () => {
@@ -316,7 +404,14 @@ async function runAppDeployment(
         visibility: workbench.visibility,
       })
       await deployApplicationConfig()
-      const url = getApplicationUrl({id: applicationId, organizationId, type: 'coreApp'})
+      const url = hasAppView
+        ? getApplicationUrl({
+            id: applicationId,
+            organizationId,
+            slug: workbench.slug,
+            type: 'coreApp',
+          })
+        : getWorkbenchUrl(organizationId)
       logAppDeployed({
         applicationId,
         cliConfig,
@@ -349,6 +444,7 @@ async function runAppDeployment(
       applicationId: application.id,
       cliConfig,
       created: appCreated,
+      createRequested: flags.create,
       organizationId: application.organizationId,
       output,
       title: application.title,
@@ -366,6 +462,72 @@ async function runAppDeployment(
 }
 
 /**
+ * Reports the planned aspect-document sync: the upserts as a pass, stripped
+ * non-serializable values as information, and — prominently, as a warning —
+ * the stored definitions the sync will delete because no config field matches
+ * them. Deploy is a mirror: the config owns the library's aspect namespace.
+ */
+export function reportAspectSyncPlan(reporter: DeployCheckReporter, plan: AspectSyncPlan): void {
+  const upserts = plan.documents.length
+  reporter.report({
+    message: `Will sync ${upserts} aspect ${pluralize('definition', upserts)} to media library ${plan.mediaLibraryId}`,
+    status: 'pass',
+  })
+
+  const strippedFields = Object.entries(plan.strippedByField)
+  if (strippedFields.length > 0) {
+    // Expected for fields with custom inputs, validation callbacks, or
+    // initial-value resolvers: the live config keeps those capabilities, only
+    // the stored mirror (read by Studio plugin mode and the dashboard) omits
+    // them. Reported so the capability gap is explicit, but not a warning.
+    const details = strippedFields
+      .map(([name, paths]) => `${name} (${paths.join(', ')})`)
+      .join('; ')
+    reporter.report({
+      message: `Stored definitions omit non-serializable values: ${details}`,
+      status: 'pass',
+    })
+  }
+
+  if (plan.staleIds.length > 0) {
+    reporter.report({
+      message: `Will delete ${plan.staleIds.length} stored aspect ${pluralize('definition', plan.staleIds.length)} with no matching config field: ${plan.staleIds.join(', ')}`,
+      solution:
+        'Definitions only — aspects.<name> values on assets stay put and resurface if a matching ' +
+        'field is added back. To keep a definition, declare a matching field in sanity.cli.ts ' +
+        '(generate one with `sanity media pull-aspects`)',
+      status: 'warn',
+    })
+  }
+}
+
+/**
+ * Applies the planned sync after the config itself deployed. A failure here
+ * leaves the config live but the stored mirror stale, so the error says so
+ * and points at the retry (deploys are idempotent).
+ */
+async function runAspectSync(
+  plan: AspectSyncPlan,
+  output: DeployAppOptions['output'],
+): Promise<void> {
+  try {
+    await applyAspectSync(plan)
+  } catch (err) {
+    throw new Error(
+      `The config deployed, but syncing its aspect documents to media library ${plan.mediaLibraryId} failed: ${getErrorMessage(err)}\nRun \`sanity deploy\` again to retry the sync.`,
+      {cause: err},
+    )
+  }
+  const deleted =
+    plan.staleIds.length > 0
+      ? ` (deleted ${plan.staleIds.length} stale ${pluralize('definition', plan.staleIds.length)})`
+      : ''
+  output.log(
+    `Synced ${plan.documents.length} aspect ${pluralize('definition', plan.documents.length)} to media library ${plan.mediaLibraryId}${deleted}`,
+  )
+}
+
+/**
  * Finds the application a real deploy targets, creating one when none is
  * configured. A dry run resolves and reports the target read-only instead.
  */
@@ -379,12 +541,18 @@ async function resolveAppApplication(
   const title = flags.title?.trim() || cliConfig.app?.title?.trim() || undefined
 
   if (dryRun) {
-    await checkAppTarget(reporter, {appId: getAppId(cliConfig), organizationId, title})
+    await checkAppTarget(reporter, {
+      appId: getAppId(cliConfig),
+      create: flags.create,
+      organizationId,
+      title,
+    })
     return {application: null, created: false}
   }
 
   let application = await findUserApplication({
     cliConfig,
+    create: flags.create,
     organizationId,
     output,
     title,
@@ -453,7 +621,7 @@ export async function syncApplicationMetadata({
     spin.fail()
     const message = getErrorMessage(err)
     deployDebug('Error updating application metadata', {message})
-    output.warn(`Error updating application metadata: ${message}`)
+    output.logDiagnostic(`Warning: Error updating application metadata: ${message}`)
     return application
   }
 }
@@ -494,6 +662,7 @@ export function logAppDeployed({
   applicationId,
   cliConfig,
   created,
+  createRequested = false,
   organizationId,
   output,
   title,
@@ -502,6 +671,7 @@ export function logAppDeployed({
   applicationId: string
   cliConfig: DeployAppOptions['cliConfig']
   created: boolean
+  createRequested?: boolean
   organizationId: string
   output: DeployAppOptions['output']
   title: string | null
@@ -518,7 +688,9 @@ export function logAppDeployed({
     output.log(
       styleText(
         'yellow',
-        '\nDeploying again without `deployment.appId` creates another new application.',
+        createRequested
+          ? '\nSave `deployment.appId` and omit --create on later deploys to update this application.'
+          : '\nSave `deployment.appId` to update this application on later deploys.',
       ),
     )
   }

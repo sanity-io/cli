@@ -44,6 +44,22 @@ describe('startServerForTokenCallback', () => {
     vi.clearAllMocks()
   })
 
+  test('uses an OS-assigned port by default', async () => {
+    let attemptedPort: number | undefined
+    useMockServer(
+      (server, port) => {
+        attemptedPort = port
+        setImmediate(() => server.emit('listening'))
+      },
+      {address: '127.0.0.1', family: 'IPv4', port: 54_321},
+    )
+
+    const {loginUrl} = await startServerForTokenCallback('https://api.sanity.io/auth/google')
+
+    expect(attemptedPort).toBe(0)
+    expect(loginUrl.searchParams.get('origin')).toBe('http://localhost:54321/callback')
+  })
+
   test('falls back to an OS-assigned port when the preferred port is busy', async () => {
     vi.stubEnv('SANITY_CLI_CALLBACK_PORT', '1234')
 

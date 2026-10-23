@@ -4,7 +4,7 @@ import {join} from 'node:path'
 import {extractCoreAppManifest} from '@sanity/cli-build/_internal/manifest'
 import {confirm, input, select} from '@sanity/cli-core/ux'
 import {mockApi, testCommand, testFixture} from '@sanity/cli-test'
-import {defineApplication} from '@sanity/workbench-cli'
+import {defineApplication, definePanelView} from '@sanity/workbench-cli'
 import {cleanAll, pendingMocks} from 'nock'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
@@ -15,7 +15,7 @@ import {USER_APPLICATIONS_API_VERSION} from '../../../src/services/userApplicati
 import {dirIsEmptyOrNonExistent} from '../../../src/util/dirIsEmptyOrNonExistent.js'
 
 const mockGetLocalPackageVersion = vi.hoisted(() => vi.fn())
-const mockCheckBuiltOutput = vi.hoisted(() => vi.fn())
+const mockReadBuiltManifest = vi.hoisted(() => vi.fn())
 const mockCreateCoreApp = vi.hoisted(() => vi.fn())
 const mockDeployWorkbenchApp = vi.hoisted(() => vi.fn())
 const mockListApplications = vi.hoisted(() => vi.fn())
@@ -41,9 +41,13 @@ vi.mock('../../../src/actions/deploy/checkDir.js', () => ({
   checkDir: vi.fn(),
 }))
 
+vi.mock(import('@sanity/workbench-cli/build'), async (importOriginal) => ({
+  ...(await importOriginal()),
+  readBuiltManifest: mockReadBuiltManifest,
+}))
+
 vi.mock(import('@sanity/workbench-cli/deploy'), async (importOriginal) => ({
   ...(await importOriginal()),
-  checkBuiltOutput: mockCheckBuiltOutput,
   createCoreApp: mockCreateCoreApp,
   deployWorkbenchApp: mockDeployWorkbenchApp,
   listApplications: mockListApplications,
@@ -78,6 +82,7 @@ const mockExtractCoreAppManifest = vi.mocked(extractCoreAppManifest)
 
 const appId = 'app-id'
 const organizationId = 'org-id'
+const previousExitCode = process.exitCode
 
 const defaultMocks = {
   cliConfig: {
@@ -102,7 +107,7 @@ describe('#deploy app', () => {
       return null
     })
     mockCheckDir.mockResolvedValue()
-    mockCheckBuiltOutput.mockResolvedValue(undefined)
+    mockReadBuiltManifest.mockResolvedValue({id: 'prebuilt'})
     // No existing app at the app's slug, so a first deploy creates one.
     mockListApplications.mockResolvedValue([])
     // Default to empty manifest for app deployments
@@ -110,6 +115,7 @@ describe('#deploy app', () => {
   })
 
   afterEach(() => {
+    process.exitCode = previousExitCode
     vi.clearAllMocks()
     const pending = pendingMocks()
     cleanAll()
@@ -121,6 +127,196 @@ describe('#deploy app', () => {
 
     expect(error?.message).toContain('Nonexistent flag: --invalid')
     expect(error?.oclif?.exit).toBe(2)
+  })
+
+  test.each([
+    {existingCount: 0, useConfigTitle: false},
+    {existingCount: 1, useConfigTitle: true},
+    {existingCount: 3, useConfigTitle: false},
+  ])(
+    '--create deploys a new app without prompts with $existingCount existing apps',
+    async ({existingCount, useConfigTitle}) => {
+      const cwd = await testFixture('basic-app')
+      process.cwd = () => cwd
+      const application = {
+        appHost: 'new-app-host',
+        createdAt: '2026-01-01T00:00:00Z',
+        id: 'new-app-id',
+        organizationId,
+        projectId: null,
+        title: 'New App',
+        type: 'coreApp',
+        updatedAt: '2026-01-01T00:00:00Z',
+        urlType: 'internal',
+      }
+
+      mockApi({
+        apiVersion: USER_APPLICATIONS_API_VERSION,
+        query: {appType: 'coreApp', organizationId},
+        uri: '/user-applications',
+      })
+        .optionally()
+        .reply(
+          200,
+          Array.from({length: existingCount}, (_, index) => ({
+            ...application,
+            appHost: `existing-${index}`,
+            id: `existing-${index}`,
+          })),
+        )
+      const create = mockApi({
+        apiVersion: USER_APPLICATIONS_API_VERSION,
+        method: 'post',
+        query: {appType: 'coreApp', organizationId},
+        uri: '/user-applications',
+      }).reply(200, (_uri, body) => {
+        expect(body).toEqual({
+          appHost: expect.stringMatching(/^[a-z][a-z0-9]{11}$/),
+          title: 'New App',
+          type: 'coreApp',
+          urlType: 'internal',
+        })
+        return application
+      })
+      const deploy = mockApi({
+        apiVersion: USER_APPLICATIONS_API_VERSION,
+        method: 'post',
+        query: {appType: 'coreApp'},
+        uri: '/user-applications/new-app-id/deployments',
+      }).reply(201, {id: 'deployment-id'}, {location: 'https://new-app-host.sanity.app/'})
+
+      const args = ['--create', '--json']
+      if (!useConfigTitle) args.push('--title', '  New App  ')
+      const {error, stderr, stdout} = await testCommand(DeployCommand, args, {
+        config: {root: cwd},
+        mocks: {
+          cliConfig: {app: {organizationId, ...(useConfigTitle ? {title: '  New App  '} : {})}},
+          isInteractive: false,
+        },
+      })
+
+      if (error) throw error
+      expect(JSON.parse(stdout)).toMatchObject({
+        action: 'create',
+        application: {id: 'new-app-id', title: 'New App'},
+        deployed: true,
+        url: `https://www.sanity.io/@${organizationId}/application/new-app-id`,
+      })
+      expect(create.isDone()).toBe(true)
+      expect(deploy.isDone()).toBe(true)
+      expect(stderr).toContain('Save `deployment.appId` and omit --create')
+      expect(mockSelect).not.toHaveBeenCalled()
+      expect(mockInput).not.toHaveBeenCalled()
+      expect(mockConfirm).not.toHaveBeenCalled()
+
+      mockApi({
+        apiVersion: USER_APPLICATIONS_API_VERSION,
+        query: {appType: 'coreApp'},
+        uri: '/user-applications/new-app-id',
+      }).reply(200, application)
+      mockApi({
+        apiVersion: USER_APPLICATIONS_API_VERSION,
+        method: 'post',
+        query: {appType: 'coreApp'},
+        uri: '/user-applications/new-app-id/deployments',
+      }).reply(201, {id: 'second-deployment'}, {location: 'https://new-app-host.sanity.app/'})
+
+      const redeploy = await testCommand(DeployCommand, ['--yes', '--json'], {
+        config: {root: cwd},
+        mocks: {
+          cliConfig: {app: {organizationId}, deployment: {appId: 'new-app-id'}},
+          isInteractive: false,
+        },
+      })
+      if (redeploy.error) throw redeploy.error
+      expect(JSON.parse(redeploy.stdout)).toMatchObject({
+        action: 'update',
+        application: {id: 'new-app-id'},
+        deployed: true,
+      })
+    },
+  )
+
+  test('previews --create in JSON without creating an app or uploading a deployment', async () => {
+    const cwd = await testFixture('basic-app')
+    process.cwd = () => cwd
+    // No HTTP mocks: any attempt to create or upload fails the dry run.
+    const {error, stdout} = await testCommand(
+      DeployCommand,
+      ['--create', '--title', 'New App', '--dry-run', '--json'],
+      {
+        config: {root: cwd},
+        mocks: {cliConfig: {app: {organizationId}}, isInteractive: false},
+      },
+    )
+
+    if (error) throw error
+    expect(JSON.parse(stdout)).toMatchObject({
+      action: 'create',
+      application: null,
+      canDeploy: true,
+      errors: {},
+      payload: {appId: null},
+    })
+    expect(mockSelect).not.toHaveBeenCalled()
+    expect(mockInput).not.toHaveBeenCalled()
+  })
+
+  test.each([
+    {dryRun: false, title: undefined},
+    {dryRun: false, title: ''},
+    {dryRun: false, title: '   '},
+    {dryRun: true, title: undefined},
+    {dryRun: true, title: ''},
+    {dryRun: true, title: '   '},
+  ])(
+    'rejects --create without a nonblank title (dryRun=$dryRun, title="$title")',
+    async ({dryRun, title}) => {
+      const cwd = await testFixture('basic-app')
+      process.cwd = () => cwd
+      const args = ['--create', '--yes', '--json']
+      if (dryRun) args.push('--dry-run')
+      if (title !== undefined) args.push('--title', title)
+
+      const {stdout} = await testCommand(DeployCommand, args, {
+        config: {root: cwd},
+        mocks: {cliConfig: {app: {organizationId, title: '   '}}, isInteractive: false},
+      })
+
+      expect(process.exitCode).toBe(2)
+      const result = JSON.parse(stdout)
+      if (dryRun) {
+        expect(result.canDeploy).toBe(false)
+        expect(Object.values(result.errors).join(' ')).toContain('Pass `--title')
+      } else {
+        expect(result.deployed).toBe(false)
+        expect(result.error.message).toContain('Pass `--title')
+      }
+      expect(mockInput).not.toHaveBeenCalled()
+      expect(mockSelect).not.toHaveBeenCalled()
+    },
+  )
+
+  test('a title alone does not choose creation over the organization’s existing apps', async () => {
+    const cwd = await testFixture('basic-app')
+    process.cwd = () => cwd
+    mockApi({
+      apiVersion: USER_APPLICATIONS_API_VERSION,
+      query: {appType: 'coreApp', organizationId},
+      uri: '/user-applications',
+    }).reply(200, [{id: 'existing-app', title: 'Existing App'}])
+
+    const {stdout} = await testCommand(DeployCommand, ['--title', 'New App', '--json'], {
+      config: {root: cwd},
+      mocks: {cliConfig: {app: {organizationId}}, isInteractive: false},
+    })
+
+    expect(process.exitCode).toBe(2)
+    expect(JSON.parse(stdout)).toMatchObject({
+      deployed: false,
+      error: {message: expect.stringContaining('sanity deploy --create --title')},
+    })
+    expect(mockSelect).not.toHaveBeenCalled()
   })
 
   test("should prompt to confirm deleting source directory if it's not empty", async () => {
@@ -360,7 +556,7 @@ describe('#deploy app', () => {
     expect(error?.message).toContain('declares no entry, views or web workers')
     expect(error?.oclif?.exit).toBe(2)
     // fails before any directory check or API call
-    expect(mockCheckBuiltOutput).not.toHaveBeenCalled()
+    expect(mockReadBuiltManifest).not.toHaveBeenCalled()
     expect(mockCheckDir).not.toHaveBeenCalled()
   })
 
@@ -404,7 +600,7 @@ describe('#deploy app', () => {
     const result = JSON.parse(stdout)
     expect(result.deployed).toBe(true)
     expect(result.action).toBe('create')
-    expect(result.url).toBe(`https://${organizationId}.sanity.run/application/app_new`)
+    expect(result.url).toBe(`https://${organizationId}.sanity.run/applications/drop-desk-host`)
     expect(result.payload).toMatchObject({appId: null, slug: 'drop-desk-host', type: 'coreApp'})
     expect(result.application).toMatchObject({id: 'app_new', slug: 'drop-desk-host'})
   })
@@ -465,6 +661,28 @@ describe('#deploy app', () => {
     expect(mockDeployWorkbenchApp).not.toHaveBeenCalled()
   })
 
+  test('rejects --external, since only studios can be hosted externally', async () => {
+    const cwd = await testFixture('basic-app')
+    process.cwd = () => cwd
+
+    const app = defineApplication({
+      entry: './src/App.tsx',
+      organizationId,
+      slug: 'drop-desk-host',
+      title: 'Workbench App',
+    })
+
+    const {error} = await testCommand(
+      DeployCommand,
+      ['--external', '--url', 'https://apps.example.com'],
+      {config: {root: cwd}, mocks: {cliConfig: {app}}},
+    )
+
+    expect(error?.message).toContain('Deploying an app to an external host is not supported')
+    expect(mockCreateCoreApp).not.toHaveBeenCalled()
+    expect(mockDeployWorkbenchApp).not.toHaveBeenCalled()
+  })
+
   test('a dry run surfaces the configured slug and creates nothing', async () => {
     const cwd = await testFixture('basic-app')
     process.cwd = () => cwd
@@ -504,7 +722,7 @@ describe('#deploy app', () => {
     mockApi({apiVersion: 'vX', uri: '/applications/app_existing'}).reply(200, {
       id: 'app_existing',
       organizationId,
-      slug: 'drop-desk-host',
+      slug: 'drop-desk-old',
       title: 'Workbench App',
       type: 'coreApp',
     })
@@ -516,7 +734,7 @@ describe('#deploy app', () => {
       title: 'Workbench App',
     })
 
-    const {error} = await testCommand(DeployCommand, [], {
+    const {error, stdout} = await testCommand(DeployCommand, [], {
       config: {root: cwd},
       mocks: {cliConfig: {app, deployment: {appId: 'app_existing'}}},
     })
@@ -526,6 +744,82 @@ describe('#deploy app', () => {
     expect(mockDeployWorkbenchApp).toHaveBeenCalledWith(
       expect.objectContaining({applicationId: 'app_existing'}),
     )
+    expect(stdout).toContain(
+      `Success! Application deployed to https://${organizationId}.sanity.run/applications/drop-desk-host`,
+    )
+  })
+
+  test('a panel-only app links the organization workbench in human and --json output', async () => {
+    const cwd = await testFixture('basic-app')
+    process.cwd = () => cwd
+
+    const app = defineApplication({
+      organizationId,
+      slug: 'drop-desk-host',
+      title: 'Workbench App',
+      views: [definePanelView({name: 'feed', src: './src/App.tsx', title: 'Feed'})],
+    })
+    const deploy = (args: string[]) => {
+      mockApi({apiVersion: 'vX', uri: '/applications/app_existing'}).reply(200, {
+        id: 'app_existing',
+        organizationId,
+        slug: 'drop-desk-host',
+        title: 'Workbench App',
+        type: 'coreApp',
+      })
+      return testCommand(DeployCommand, args, {
+        config: {root: cwd},
+        mocks: {cliConfig: {app, deployment: {appId: 'app_existing'}}},
+      })
+    }
+
+    const human = await deploy([])
+    if (human.error) throw human.error
+    expect(human.stdout).toContain(
+      `Success! Application deployed to https://${organizationId}.sanity.run —`,
+    )
+
+    const json = await deploy(['--json'])
+    if (json.error) throw json.error
+    expect(JSON.parse(json.stdout).url).toBe(`https://${organizationId}.sanity.run`)
+
+    const dryRun = await deploy(['--dry-run', '--json'])
+    if (dryRun.error) throw dryRun.error
+    expect(JSON.parse(dryRun.stdout).url).toBe(`https://${organizationId}.sanity.run`)
+  })
+
+  test.each([
+    {args: [], label: "the build's", source: 'build'},
+    {args: ['--no-build'], label: "the output directory's", source: 'directory'},
+  ])('a redeploy ships $label federation manifest', async ({args, source}) => {
+    const cwd = await testFixture('basic-app')
+    process.cwd = () => cwd
+
+    mockApi({apiVersion: 'vX', uri: '/applications/app_existing'}).reply(200, {
+      id: 'app_existing',
+      organizationId,
+      slug: 'drop-desk-host',
+      title: 'Workbench App',
+      type: 'coreApp',
+    })
+    const mfManifest = {id: source}
+    if (source === 'build') mockBuildApp.mockResolvedValueOnce({mfManifest})
+    else mockReadBuiltManifest.mockResolvedValueOnce(mfManifest)
+
+    const app = defineApplication({
+      entry: './src/App.tsx',
+      organizationId,
+      slug: 'drop-desk-host',
+      title: 'Workbench App',
+    })
+
+    const {error} = await testCommand(DeployCommand, args, {
+      config: {root: cwd},
+      mocks: {cliConfig: {app, deployment: {appId: 'app_existing'}}},
+    })
+
+    if (error) throw error
+    expect(mockDeployWorkbenchApp).toHaveBeenCalledWith(expect.objectContaining({mfManifest}))
   })
 
   test('ships the sanitized workbench app icon straight to Brett', async () => {
@@ -777,6 +1071,7 @@ describe('#deploy app', () => {
       `Add the deployment.appId to your sanity.cli.js or sanity.cli.ts file:`,
     )
     expect(stdout).toContain(`deployment: {\n  appId: '${newAppId}',`)
+    expect(stdout).not.toContain('omit --create')
     expect(mockInput).toHaveBeenCalledWith({
       message: 'Enter a title for your application:',
       validate: expect.any(Function),

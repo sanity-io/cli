@@ -174,6 +174,30 @@ describe('#exec', {timeout: 15 * 1000}, () => {
       },
     )
 
+    test.skipIf(isWindowsNode24OrUp)('executes CommonJS scripts that use require', async (t) => {
+      const cjsScriptPath = join(exampleDir, 'test-script.cjs')
+      await copyFile(join(fixtureDir, 'exec-cjs-script.cjs'), cjsScriptPath)
+
+      const {error, stderr, stdout} = await testCommand(ExecCommand, [
+        cjsScriptPath,
+        '--',
+        '--dry-run',
+      ])
+      t.onTestFailed(() => {
+        // eslint-disable-next-line no-console
+        console.log(stdout)
+        // eslint-disable-next-line no-console
+        console.warn(stderr)
+      })
+
+      if (error) throw error
+
+      const data = JSON.parse(stdout.trim())
+      expect(data.success).toBe(true)
+      expect(data.joined).toBe(join('a', 'b'))
+      expect(data.argv).toEqual([process.argv[0], cjsScriptPath, '--dry-run'])
+    })
+
     test.skipIf(!TEST_TOKEN)('executes script with --with-user-token flag', async (t) => {
       if (!TEST_TOKEN) return // TypeScript guard
 

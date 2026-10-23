@@ -2,6 +2,7 @@ import {join} from 'node:path'
 
 import * as configMocks from '@sanity/cli-test/mocks/cli-core/config'
 import {convertToSystemPath} from '@sanity/cli-test/paths'
+import {Features} from 'lightningcss'
 import {type ConfigEnv, type InlineConfig} from 'vite'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
@@ -140,6 +141,11 @@ describe('#getViteConfig', () => {
       },
       cacheDir: `${SANITY_CACHE_DIR}/vite`,
       configFile: false,
+      css: {
+        lightningcss: {
+          exclude: Features.LightDark,
+        },
+      },
       envPrefix: 'SANITY_STUDIO_',
       logLevel: 'info',
       mode: 'development',
@@ -230,6 +236,26 @@ describe('#getViteConfig', () => {
 
     expect(config.build?.rolldownOptions).not.toHaveProperty('external')
   })
+
+  test.each(['development', 'production'] as const)(
+    'disables Lightning CSS light-dark polyfill in %s so Studio theme is not OS-driven',
+    async (mode) => {
+      const config = await getViteConfig({
+        cwd: mockTestCwd,
+        entries: mockEntries,
+        getEnvironmentVariables,
+        minify: mode === 'production',
+        mode,
+        reactCompiler: undefined,
+      })
+
+      expect(config.css).toEqual({
+        lightningcss: {
+          exclude: Features.LightDark,
+        },
+      })
+    },
+  )
 
   test('omits the resource-bindings chunk when not a Blueprints build', async () => {
     const config = await getViteConfig({

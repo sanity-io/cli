@@ -131,6 +131,8 @@ describe('bootstrapLocalTemplate (workbench)', () => {
     expect(cliConfig).toContain(`title: 'My Studio'`)
     // `slug` derives from the entered project name, slugified
     expect(cliConfig).toContain(`slug: 'my-studio'`)
+    // `name` pins the identity to the scaffolded slug, so renaming `slug` keeps it
+    expect(cliConfig).toContain(`name: 'my-studio'`)
     expect(cliConfig).toContain(`organizationId: 'org1'`)
     expect(cliConfig).toContain(`projectId: 'abc123'`)
     // Studios brand without an entry — studio app views aren't implemented yet
@@ -162,6 +164,7 @@ describe('bootstrapLocalTemplate (workbench)', () => {
     // App init derives `slug` from the output directory, same as package.json's name
     const pkgJson = JSON.parse(await readFile(path.join(tmp, 'package.json'), 'utf8'))
     expect(cliConfig).toContain(`slug: '${pkgJson.name}'`)
+    expect(cliConfig).toContain(`name: '${pkgJson.name}'`)
     expect(cliConfig).toContain(`organizationId: 'org1'`)
     expect(cliConfig).toContain(`entry: './src/App.tsx'`)
   })
@@ -192,7 +195,48 @@ describe('bootstrapLocalTemplate (workbench)', () => {
     // An empty `slug` would fail app config validation — the constant kicks in
     expect(cliConfig).not.toContain(`slug: ''`)
     expect(cliConfig).toContain(`slug: 'sanity-app'`)
+    expect(cliConfig).toContain(`name: 'sanity-app'`)
   })
+
+  const templatesDir = path.resolve(import.meta.dirname, '../../../../templates')
+  const docFiles = ['README.md', 'AGENTS.md', '.claude/skills/sanity-app-sdk/SKILL.md']
+
+  test.each([
+    {sourceDir: 'shared/dashboard/app-quickstart', templateName: 'app-quickstart', workbench: true},
+    {sourceDir: 'shared/dashboard/app-sanity-ui', templateName: 'app-sanity-ui', workbench: true},
+    {sourceDir: 'app-quickstart', templateName: 'app-quickstart', workbench: false},
+    {sourceDir: 'app-sanity-ui', templateName: 'app-sanity-ui', workbench: false},
+  ])(
+    'writes the $sourceDir docs for $templateName (workbench: $workbench)',
+    async ({sourceDir, templateName, workbench}) => {
+      await bootstrapLocalTemplate({
+        output: makeOutput(),
+        outputPath: tmp,
+        packageName: 'my-app',
+        templateName,
+        useTypeScript: true,
+        variables: {
+          autoUpdates: false,
+          dataset: 'production',
+          organizationId: 'org1',
+          projectId: 'abc123',
+          projectName: 'My App',
+          workbench,
+        },
+      })
+
+      for (const file of docFiles) {
+        const written = await readFile(path.join(tmp, file), 'utf8')
+        expect(written, file).toBe(await readFile(path.join(templatesDir, sourceDir, file), 'utf8'))
+      }
+      if (workbench) {
+        // Guards against the overlay drifting back to the standard docs
+        expect(await readFile(path.join(tmp, 'AGENTS.md'), 'utf8')).toContain(
+          '@sanity/sdk-react/dashboard',
+        )
+      }
+    },
+  )
 
   test('scaffolds the plain sanity.cli.ts when workbench is disabled', async () => {
     await bootstrapLocalTemplate({

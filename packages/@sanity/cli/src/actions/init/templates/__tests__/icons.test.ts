@@ -61,9 +61,12 @@ describe('init template @sanity/icons usage', () => {
     ['getStarted', getStarted],
     ['shopify', shopify],
     ['shopifyOnline', shopifyOnline],
-    ['appSanityUi', appSanityUi],
   ] as const)('%s depends on @sanity/ui v3', (_name, template) => {
     expect(template.dependencies?.['@sanity/ui']).toMatch(/^\^3\./)
+  })
+
+  test('appSanityUi depends on @sanity/ui v4', () => {
+    expect(appSanityUi.dependencies?.['@sanity/ui']).toMatch(/^\^4\./)
   })
 
   test('filesystem templates do not use barrelled @sanity/icons imports', async () => {

@@ -4,18 +4,30 @@ import {type Context} from '@sanity/client'
 const CONTEXT_API_VERSION = 'v2026-08-25'
 
 /**
- * Knowledge-base-scoped methods on `client.context` (imports, builds, jobs)
- * operate on the client's configured `resource`; collection-level methods
+ * Knowledge-base-scoped methods on `client.context` operate on the client's
+ * configured `resource`; collection-level methods
  * (`client.context.knowledgeBases.*`) are addressed per call and need none.
+ * GROQ-backed reads also need `context.organizationId`.
  */
-async function getContextClient(knowledgeBaseId?: string) {
+async function getContextClient(knowledgeBaseId?: string, organizationId?: string) {
   return getGlobalCliClient({
     apiVersion: CONTEXT_API_VERSION,
     requireUser: true,
     ...(knowledgeBaseId === undefined
       ? {}
       : {resource: {id: knowledgeBaseId, type: 'knowledge-base' as const}}),
+    ...(organizationId === undefined ? {} : {context: {organizationId}}),
   })
+}
+
+/**
+ * GROQ-backed reads (issues, entries) query the organization's
+ * document store, where documents are keyed by the knowledge base's public ID.
+ * Fetching the knowledge base resolves both, whichever of its IDs was passed.
+ */
+async function getContextStoreClient(knowledgeBaseId: string) {
+  const {organizationId, publicId} = await getKnowledgeBase(knowledgeBaseId)
+  return getContextClient(publicId, organizationId)
 }
 
 /**
@@ -165,4 +177,115 @@ export async function refreshKnowledgeBase(
 export async function getJob(knowledgeBaseId: string, jobId: string): Promise<Context.Job> {
   const client = await getContextClient(knowledgeBaseId)
   return client.context.jobs.get({jobId})
+}
+
+/**
+ * List all issues for a knowledge base, optionally narrowed to one status
+ */
+export async function listIssues(
+  knowledgeBaseId: string,
+  status?: Context.IssueDoc['status'],
+): Promise<Context.IssueDoc[]> {
+  const client = await getContextStoreClient(knowledgeBaseId)
+  return client.context.issues.list({status})
+}
+
+/**
+ * Get a single issue by ID, or `null` when it does not exist
+ */
+export async function getIssue(
+  knowledgeBaseId: string,
+  issueId: string,
+): Promise<Context.IssueDoc | null> {
+  const client = await getContextStoreClient(knowledgeBaseId)
+  return client.context.issues.get({issueId})
+}
+
+/**
+ * Resolve a conflict issue by choosing one of its sides (by index). Choosing
+ * a side other than the entry's current content starts a rewrite job.
+ */
+export async function resolveIssue(
+  knowledgeBaseId: string,
+  issueId: string,
+  resolution: number,
+): Promise<Context.ResolveIssueResponse> {
+  const client = await getContextClient(knowledgeBaseId)
+  return client.context.issues.resolve({issueId, resolution})
+}
+
+/**
+ * Dismiss an issue
+ */
+export async function dismissIssue(
+  knowledgeBaseId: string,
+  issueId: string,
+): Promise<Context.DismissIssueResponse> {
+  const client = await getContextClient(knowledgeBaseId)
+  return client.context.issues.dismiss({issueId})
+}
+
+/**
+ * Reopen a resolved conflict issue
+ */
+export async function reopenIssue(
+  knowledgeBaseId: string,
+  issueId: string,
+): Promise<Context.ReopenIssueResponse> {
+  const client = await getContextClient(knowledgeBaseId)
+  return client.context.issues.reopen({issueId})
+}
+
+/**
+ * Apply accepted issues to a knowledge base in one batch
+ */
+export async function applyIssues(
+  knowledgeBaseId: string,
+  issueIds: string[],
+): Promise<Context.ApplyIssuesResponse> {
+  const client = await getContextClient(knowledgeBaseId)
+  return client.context.issues.apply({issueIds})
+}
+
+/**
+ * List all entries for a knowledge base, path-ordered, without bodies
+ */
+export async function listEntries(knowledgeBaseId: string): Promise<Context.Entry[]> {
+  const client = await getContextStoreClient(knowledgeBaseId)
+  return client.context.entries.list()
+}
+
+/**
+ * Get a single entry with its body and citations by outline path, or `null`
+ * when no entry sits at that path
+ */
+export async function getEntry(
+  knowledgeBaseId: string,
+  path: string,
+): Promise<Context.EntryDoc | null> {
+  const client = await getContextStoreClient(knowledgeBaseId)
+  return client.context.entries.get({path})
+}
+
+/**
+ * Rebuild one entry from its sources by outline path
+ */
+export async function rebuildEntry(
+  knowledgeBaseId: string,
+  path: string,
+): Promise<Context.RebuildEntryResponse> {
+  const client = await getContextClient(knowledgeBaseId)
+  return client.context.entries.rebuild({path})
+}
+
+/**
+ * Run a GROQ query against an organization's Context documents
+ */
+export async function queryContext(
+  organizationId: string,
+  query: string,
+  params?: Record<string, unknown>,
+): Promise<unknown> {
+  const client = await getContextClient(undefined, organizationId)
+  return client.context.fetch(query, params)
 }

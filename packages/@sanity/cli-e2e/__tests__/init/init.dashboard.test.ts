@@ -1,0 +1,113 @@
+import {existsSync, readFileSync} from 'node:fs'
+
+import {createTmpDir} from '@sanity/cli-test'
+import {afterEach, beforeEach, describe, expect, test} from 'vitest'
+
+import {getE2EDataset, getE2EOrganizationId, getE2EProjectId, runCli} from '../../helpers/runCli.js'
+
+const orgId = getE2EOrganizationId()
+const projectId = getE2EProjectId()
+const dataset = getE2EDataset()
+
+// `--dashboard` isn't on the published `latest` CLI yet, so skip against the registry.
+const isRegistryMode = process.env.E2E_REGISTRY_MODE === 'true'
+
+// `--dashboard` swaps the scaffolded `sanity.cli.ts` over to the
+// `defineApplication` variant (the sole federation opt-in). It applies to both
+// the studio and SDK-app templates, which use different config shapes.
+describe.skipIf(isRegistryMode)('sanity init - dashboard', {timeout: 120_000}, () => {
+  let tmp: Awaited<ReturnType<typeof createTmpDir>>
+
+  beforeEach(async () => {
+    tmp = await createTmpDir({useSystemTmp: true})
+  })
+
+  afterEach(async () => {
+    await tmp.cleanup()
+  })
+
+  test('scaffolds a studio whose sanity.cli.ts opts into the Dashboard', async () => {
+    const {error, exitCode} = await runCli({
+      args: [
+        'init',
+        '-y',
+        '--project',
+        projectId,
+        '--dataset',
+        dataset,
+        '--output-path',
+        tmp.path,
+        '--typescript',
+        '--package-manager',
+        'pnpm',
+        '--no-git',
+        '--no-mcp',
+        '--dashboard',
+        '--no-install',
+      ],
+    })
+
+    if (error) throw error
+    expect(exitCode).toBe(0)
+
+    // Studio files are scaffolded as usual...
+    expect(existsSync(`${tmp.path}/sanity.config.ts`)).toBe(true)
+
+    // ...but the CLI config is the Dashboard (`defineApplication`) variant,
+    // branded with the project's org id.
+    const cliConfig = readFileSync(`${tmp.path}/sanity.cli.ts`, 'utf8')
+    expect(cliConfig).toContain('defineApplication')
+    expect(cliConfig).toContain(projectId)
+    expect(cliConfig).toContain(`organizationId: '${orgId}'`)
+    // `slug` is pre-filled, defaulted from the name/title, and `name` pins the
+    // identity to that same value
+    const slug = cliConfig.match(/slug: '([a-z0-9-]+)'/)?.[1]
+    expect(slug).toBeDefined()
+    expect(cliConfig).toContain(`name: '${slug}'`)
+  })
+
+  test('scaffolds an SDK app whose sanity.cli.ts opts into the Dashboard', async () => {
+    const {error, exitCode} = await runCli({
+      args: [
+        'init',
+        '-y',
+        '--template',
+        'app-quickstart',
+        '--organization',
+        orgId,
+        '--output-path',
+        tmp.path,
+        '--typescript',
+        '--package-manager',
+        'pnpm',
+        '--no-git',
+        '--no-mcp',
+        '--dashboard',
+        '--no-install',
+      ],
+    })
+
+    if (error) throw error
+    expect(exitCode).toBe(0)
+
+    // The SDK app is scaffolded (App entry, no studio config)...
+    expect(existsSync(`${tmp.path}/src/App.tsx`)).toBe(true)
+    expect(existsSync(`${tmp.path}/sanity.config.ts`)).toBe(false)
+
+    // ...and its CLI config is the Dashboard app variant: `defineApplication`
+    // with an `entry` (the navigable app view), branded with the org id.
+    const cliConfig = readFileSync(`${tmp.path}/sanity.cli.ts`, 'utf8')
+    expect(cliConfig).toContain('defineApplication')
+    expect(cliConfig).toContain('entry')
+    expect(cliConfig).toContain(orgId)
+    // `slug` is pre-filled — app init derives it from the output directory,
+    // same as the package name
+    const pkgJson = JSON.parse(readFileSync(`${tmp.path}/package.json`, 'utf8'))
+    expect(cliConfig).toContain(`slug: '${pkgJson.name}'`)
+    expect(cliConfig).toContain(`name: '${pkgJson.name}'`)
+    expect(pkgJson.name).toMatch(/^[a-z0-9-]+$/)
+
+    // The agent docs are the Dashboard versions, not the template's standard ones
+    expect(readFileSync(`${tmp.path}/AGENTS.md`, 'utf8')).toContain('@sanity/sdk-react/dashboard')
+  })
+})

@@ -1,0 +1,609 @@
+{
+  "types": {
+    "author": {
+      "title": "Author",
+      "fields": [
+        {
+          "name": "name",
+          "typeDef": {
+            "title": "Name",
+            "extends": "string",
+            "validation": [
+              {
+                "level": "error",
+                "rules": [
+                  {
+                    "type": "required"
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "slug",
+          "typeDef": {
+            "title": "Slug",
+            "extends": "slug",
+            "options": {
+              "source": "name"
+            },
+            "validation": [
+              {
+                "level": "error",
+                "rules": [
+                  {
+                    "type": "custom"
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "portrait",
+          "typeDef": {
+            "title": "Portrait",
+            "fields": [
+              {
+                "name": "asset",
+                "typeDef": {
+                  "to": [
+                    {
+                      "name": "sanity.imageAsset"
+                    }
+                  ],
+                  "title": "Asset",
+                  "fields": [
+                    {
+                      "key": "book.author._ref",
+                      "__type": "hoisted"
+                    },
+                    {
+                      "key": "book.author._weak",
+                      "__type": "hoisted"
+                    }
+                  ],
+                  "extends": "reference",
+                  "fieldsets": [],
+                  "validation": [
+                    {
+                      "level": "error",
+                      "rules": [
+                        {
+                          "type": "reference"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              },
+              {
+                "name": "media",
+                "typeDef": {
+                  "to": [
+                    {
+                      "name": "sanity.asset"
+                    }
+                  ],
+                  "title": "Media",
+                  "fields": [
+                    {
+                      "key": "book.cover.media._ref",
+                      "__type": "hoisted"
+                    },
+                    {
+                      "key": "book.cover.media._weak",
+                      "__type": "hoisted"
+                    }
+                  ],
+                  "hidden": true,
+                  "extends": "globalDocumentReference"
+                }
+              },
+              {
+                "name": "hotspot",
+                "typeDef": {
+                  "title": "Hotspot",
+                  "hidden": true,
+                  "extends": "sanity.imageHotspot"
+                }
+              },
+              {
+                "name": "crop",
+                "typeDef": {
+                  "title": "Crop",
+                  "hidden": true,
+                  "extends": "sanity.imageCrop"
+                }
+              }
+            ],
+            "extends": "image",
+            "options": {},
+            "fieldsets": []
+          }
+        }
+      ],
+      "extends": "document",
+      "options": {},
+      "orderings": [
+        {
+          "by": [
+            {
+              "field": "name",
+              "direction": "asc"
+            }
+          ],
+          "i18n": {
+            "title": {
+              "ns": "studio",
+              "key": "default-orderings.name"
+            }
+          },
+          "name": "name",
+          "title": "Name"
+        }
+      ]
+    },
+    "book": {
+      "title": "Book",
+      "fields": [
+        {
+          "name": "title",
+          "typeDef": {
+            "title": "Title",
+            "extends": "string",
+            "validation": [
+              {
+                "level": "error",
+                "rules": [
+                  {
+                    "type": "required"
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "author",
+          "typeDef": {
+            "to": [
+              {
+                "name": "author"
+              }
+            ],
+            "title": "Author",
+            "fields": [
+              {
+                "key": "book.author._ref",
+                "__type": "hoisted"
+              },
+              {
+                "key": "book.author._weak",
+                "__type": "hoisted"
+              }
+            ],
+            "extends": "reference",
+            "fieldsets": [],
+            "validation": [
+              {
+                "level": "error",
+                "rules": [
+                  {
+                    "type": "reference"
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "cover",
+          "typeDef": {
+            "title": "Cover",
+            "fields": [
+              {
+                "name": "asset",
+                "typeDef": {
+                  "to": [
+                    {
+                      "name": "sanity.imageAsset"
+                    }
+                  ],
+                  "title": "Asset",
+                  "fields": [
+                    {
+                      "key": "book.author._ref",
+                      "__type": "hoisted"
+                    },
+                    {
+                      "key": "book.author._weak",
+                      "__type": "hoisted"
+                    }
+                  ],
+                  "extends": "reference",
+                  "fieldsets": [],
+                  "validation": [
+                    {
+                      "level": "error",
+                      "rules": [
+                        {
+                          "type": "reference"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              },
+              {
+                "name": "media",
+                "typeDef": {
+                  "to": [
+                    {
+                      "name": "sanity.asset"
+                    }
+                  ],
+                  "title": "Media",
+                  "fields": [
+                    {
+                      "key": "book.cover.media._ref",
+                      "__type": "hoisted"
+                    },
+                    {
+                      "key": "book.cover.media._weak",
+                      "__type": "hoisted"
+                    }
+                  ],
+                  "hidden": true,
+                  "extends": "globalDocumentReference"
+                }
+              },
+              {
+                "name": "hotspot",
+                "typeDef": {
+                  "title": "Hotspot",
+                  "hidden": true,
+                  "extends": "sanity.imageHotspot"
+                }
+              },
+              {
+                "name": "crop",
+                "typeDef": {
+                  "title": "Crop",
+                  "hidden": true,
+                  "extends": "sanity.imageCrop"
+                }
+              }
+            ],
+            "extends": "image",
+            "options": {},
+            "fieldsets": []
+          }
+        },
+        {
+          "name": "location",
+          "typeDef": {
+            "title": "Location",
+            "extends": "geopoint"
+          }
+        },
+        {
+          "name": "body",
+          "typeDef": {
+            "of": [
+              {
+                "name": "block",
+                "typeDef": {
+                  "marks": {
+                    "decorators": [
+                      {
+                        "title": "Strong",
+                        "value": "strong",
+                        "i18nTitleKey": "inputs.portable-text.decorator.strong"
+                      },
+                      {
+                        "title": "Italic",
+                        "value": "em",
+                        "i18nTitleKey": "inputs.portable-text.decorator.emphasis"
+                      },
+                      {
+                        "title": "Code",
+                        "value": "code",
+                        "i18nTitleKey": "inputs.portable-text.decorator.code"
+                      },
+                      {
+                        "title": "Underline",
+                        "value": "underline",
+                        "i18nTitleKey": "inputs.portable-text.decorator.underline"
+                      },
+                      {
+                        "title": "Strike",
+                        "value": "strike-through",
+                        "i18nTitleKey": "inputs.portable-text.decorator.strike-through"
+                      }
+                    ]
+                  },
+                  "fields": [
+                    {
+                      "name": "children",
+                      "typeDef": {
+                        "of": [
+                          {
+                            "name": "span",
+                            "typeDef": {
+                              "fields": [
+                                {
+                                  "name": "marks",
+                                  "typeDef": {
+                                    "of": [
+                                      {
+                                        "name": "string",
+                                        "typeDef": {
+                                          "extends": "string"
+                                        }
+                                      }
+                                    ],
+                                    "title": "Marks",
+                                    "extends": "array"
+                                  }
+                                },
+                                {
+                                  "name": "text",
+                                  "typeDef": {
+                                    "title": "Text",
+                                    "extends": "string"
+                                  }
+                                }
+                              ],
+                              "extends": "span",
+                              "options": {}
+                            }
+                          }
+                        ],
+                        "title": "Content",
+                        "extends": "array"
+                      }
+                    },
+                    {
+                      "name": "style",
+                      "typeDef": {
+                        "title": "Style",
+                        "extends": "string",
+                        "options": {
+                          "list": [
+                            {
+                              "title": "Normal",
+                              "value": "normal",
+                              "i18nTitleKey": "inputs.portable-text.style.normal"
+                            },
+                            {
+                              "title": "Heading 1",
+                              "value": "h1",
+                              "i18nTitleKey": "inputs.portable-text.style.h1"
+                            },
+                            {
+                              "title": "Heading 2",
+                              "value": "h2",
+                              "i18nTitleKey": "inputs.portable-text.style.h2"
+                            },
+                            {
+                              "title": "Heading 3",
+                              "value": "h3",
+                              "i18nTitleKey": "inputs.portable-text.style.h3"
+                            },
+                            {
+                              "title": "Heading 4",
+                              "value": "h4",
+                              "i18nTitleKey": "inputs.portable-text.style.h4"
+                            },
+                            {
+                              "title": "Heading 5",
+                              "value": "h5",
+                              "i18nTitleKey": "inputs.portable-text.style.h5"
+                            },
+                            {
+                              "title": "Heading 6",
+                              "value": "h6",
+                              "i18nTitleKey": "inputs.portable-text.style.h6"
+                            },
+                            {
+                              "title": "Quote",
+                              "value": "blockquote",
+                              "i18nTitleKey": "inputs.portable-text.style.quote"
+                            }
+                          ]
+                        },
+                        "validation": [
+                          {
+                            "level": "error",
+                            "rules": [
+                              {
+                                "type": "enum",
+                                "values": [
+                                  "normal",
+                                  "h1",
+                                  "h2",
+                                  "h3",
+                                  "h4",
+                                  "h5",
+                                  "h6",
+                                  "blockquote"
+                                ]
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    },
+                    {
+                      "name": "listItem",
+                      "typeDef": {
+                        "title": "List type",
+                        "extends": "string",
+                        "options": {
+                          "list": [
+                            {
+                              "title": "Bulleted list",
+                              "value": "bullet",
+                              "i18nTitleKey": "inputs.portable-text.list-type.bullet"
+                            },
+                            {
+                              "title": "Numbered list",
+                              "value": "number",
+                              "i18nTitleKey": "inputs.portable-text.list-type.number"
+                            }
+                          ]
+                        },
+                        "validation": [
+                          {
+                            "level": "error",
+                            "rules": [
+                              {
+                                "type": "enum",
+                                "values": ["bullet", "number"]
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    },
+                    {
+                      "name": "markDefs",
+                      "typeDef": {
+                        "of": [
+                          {
+                            "name": "link",
+                            "typeDef": {
+                              "title": "Link",
+                              "fields": [
+                                {
+                                  "name": "href",
+                                  "typeDef": {
+                                    "title": "Link",
+                                    "extends": "url",
+                                    "validation": [
+                                      {
+                                        "level": "error",
+                                        "rules": [
+                                          {
+                                            "type": "uri",
+                                            "scheme": ["http", "https", "tel", "mailto"],
+                                            "allowRelative": true
+                                          }
+                                        ]
+                                      }
+                                    ],
+                                    "description": "A valid web, email, phone, or relative link."
+                                  }
+                                }
+                              ],
+                              "extends": "object",
+                              "options": {
+                                "modal": {
+                                  "type": "popover"
+                                }
+                              },
+                              "orderings": []
+                            }
+                          }
+                        ],
+                        "title": "Mark definitions",
+                        "extends": "array"
+                      }
+                    },
+                    {
+                      "name": "level",
+                      "typeDef": {
+                        "title": "Indentation",
+                        "extends": "number"
+                      }
+                    }
+                  ],
+                  "extends": "block",
+                  "options": {}
+                }
+              }
+            ],
+            "title": "Body",
+            "extends": "array"
+          }
+        },
+        {
+          "name": "seo",
+          "typeDef": {
+            "title": "Seo",
+            "extends": "seo"
+          }
+        }
+      ],
+      "extends": "document",
+      "options": {},
+      "orderings": [
+        {
+          "by": [
+            {
+              "field": "title",
+              "direction": "asc"
+            }
+          ],
+          "i18n": {
+            "title": {
+              "ns": "studio",
+              "key": "default-orderings.title"
+            }
+          },
+          "name": "title",
+          "title": "Title"
+        }
+      ]
+    },
+    "seo": {
+      "title": "Seo",
+      "fields": [
+        {
+          "name": "description",
+          "typeDef": {
+            "title": "Description",
+            "extends": "text"
+          }
+        }
+      ],
+      "extends": "object",
+      "options": {},
+      "orderings": []
+    }
+  },
+  "hoisted": {
+    "book.cover.media._ref": {
+      "name": "_ref",
+      "typeDef": {
+        "title": "Referenced document ID",
+        "extends": "string"
+      }
+    },
+    "book.author._ref": {
+      "name": "_ref",
+      "typeDef": {
+        "title": "Referenced document ID",
+        "extends": "string"
+      }
+    },
+    "book.cover.media._weak": {
+      "name": "_weak",
+      "typeDef": {
+        "title": "Weak reference",
+        "extends": "boolean"
+      }
+    },
+    "book.author._weak": {
+      "name": "_weak",
+      "typeDef": {
+        "title": "Weak reference",
+        "extends": "boolean"
+      }
+    }
+  },
+  "registries": ["uEiBEqMueF97SJJIXRVlRk9QXl1d73MHdVykEFvwzAnaAVA"],
+  "errors": []
+}

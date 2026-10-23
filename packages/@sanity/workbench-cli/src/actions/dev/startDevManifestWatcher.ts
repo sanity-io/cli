@@ -114,7 +114,7 @@ export async function startDevManifestWatcher<T>({
       // the user sees what went wrong alongside the spinner indicator.
       devDebug('Manifest regeneration failed: %O', err)
       output.warn(
-        `Could not extract manifest for workbench: ${err instanceof Error ? err.message : String(err)}`,
+        `Could not extract manifest for the Dashboard: ${err instanceof Error ? err.message : String(err)}`,
       )
     } finally {
       running = false

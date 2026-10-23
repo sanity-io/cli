@@ -90,7 +90,36 @@ describe('getEntryModule', () => {
     expect(output).toContain("import './sanity-resource-bindings.js'")
     // It must precede the app imports so bindings evaluate first.
     expect(output.indexOf('sanity-resource-bindings.js')).toBeLessThan(
-      output.indexOf('renderStudio'),
+      output.indexOf('import studioConfig from "./sanity.config"'),
     )
+  })
+
+  // `react-dom` reads the DevTools hook once at module init, so a side-effect
+  // import at the top of the user module only runs first if that module is the
+  // entry's first import.
+  test('imports the studio config before sanity', () => {
+    const output = getEntryModule({
+      reactStrictMode: undefined,
+      relativeConfigLocation: './sanity.config',
+    })
+
+    const configImport = output.indexOf('import studioConfig from "./sanity.config"')
+    const sanityImport = output.indexOf('import {renderStudio} from "sanity"')
+    expect(configImport).toBeGreaterThanOrEqual(0)
+    expect(configImport).toBeLessThan(sanityImport)
+  })
+
+  test('imports the user App before react-dom and react', () => {
+    const output = getEntryModule({
+      entry: './src/App',
+      isApp: true,
+      reactStrictMode: undefined,
+      relativeConfigLocation: null,
+    })
+
+    const appImport = output.indexOf('import App from "./src/App"')
+    expect(appImport).toBeGreaterThanOrEqual(0)
+    expect(appImport).toBeLessThan(output.indexOf("import {createRoot} from 'react-dom/client'"))
+    expect(appImport).toBeLessThan(output.indexOf("import {createElement} from 'react'"))
   })
 })

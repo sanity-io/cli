@@ -9,52 +9,14 @@ import {
   readWorkbenchLock,
   registerDevServer,
   runRegistryExitCleanupForTesting,
+  waitForWorkbenchLock,
   watchRegistry,
 } from '../registry.js'
 import {FakeFsWatcher} from './devTestHelpers.js'
 
-// An in-memory stand-in for the small slice of `node:fs` the registry uses, so
-// these stay unit tests with no real disk I/O. It models just enough: absolute
-// posix paths, the `wx` exclusive-create flag the lock relies on, and ENOENT on
-// missing reads/unlinks.
-const fsMock = vi.hoisted(() => {
-  const files = new Map<string, string>()
-  const dirs = new Set<string>()
-
-  return {
-    dirs,
-    files,
-    module: {
-      existsSync: (p: string) => files.has(p) || dirs.has(p),
-      mkdirSync: (p: string) => dirs.add(p),
-      // `path.join` yields backslash separators on Windows, so match on either.
-      readdirSync: (p: string) =>
-        [...files.keys()]
-          .filter((f) => f.slice(0, Math.max(f.lastIndexOf('/'), f.lastIndexOf('\\'))) === p)
-          .map((f) => f.slice(p.length + 1)),
-      readFileSync: (p: string) => {
-        if (!files.has(p)) throw Object.assign(new Error('ENOENT'), {code: 'ENOENT'})
-        return files.get(p)
-      },
-      realpathSync: {native: (p: string) => p},
-      unlinkSync: (p: string) => {
-        if (!files.has(p)) throw Object.assign(new Error('ENOENT'), {code: 'ENOENT'})
-        files.delete(p)
-      },
-      watch: vi.fn(),
-      writeFileSync: vi.fn((p: string, data: string, opts?: {flag?: string}) => {
-        if (opts?.flag?.includes('x') && files.has(p)) {
-          throw Object.assign(new Error('EEXIST'), {code: 'EEXIST'})
-        }
-        files.set(p, data)
-      }),
-    },
-    reset() {
-      files.clear()
-      dirs.clear()
-    },
-  }
-})
+// A fresh in-memory `node:fs` for this file (see ./fsMock.ts): own state per
+// file, reset per test, so the registry's real read/write path runs with no disk I/O.
+const fsMock = await vi.hoisted(async () => (await import('./fsMock.js')).createFsMock())
 
 vi.mock('node:fs', () => fsMock.module)
 
@@ -79,7 +41,8 @@ const REGISTRY_DIR = join(DATA_DIR, 'dev-servers')
 const OS_START = new Date('2026-04-17T11:38:10.000Z')
 
 const manifestPath = () => join(REGISTRY_DIR, `${process.pid}.json`)
-const lockPath = () => join(REGISTRY_DIR, 'workbench.lock')
+const ORG = 'org-test'
+const lockPath = () => join(REGISTRY_DIR, `workbench-${ORG}.lock`)
 const readJson = (path: string) => JSON.parse(fsMock.files.get(path)!)
 
 const liveManifest = (port: number): DevServerManifest => ({
@@ -298,35 +261,55 @@ describe('watchRegistry', () => {
 
 describe('acquireWorkbenchLock', () => {
   test('acquires an available lock and stores its metadata', () => {
-    const lock = acquireWorkbenchLock({host: '0.0.0.0', port: 4000})
+    const lock = acquireWorkbenchLock({host: '0.0.0.0', organizationId: ORG, port: 4000})
 
     expect(lock).toBeDefined()
-    expect(readJson(lockPath())).toMatchObject({
+    expect(readJson(lockPath())).toEqual({
       host: '0.0.0.0',
       pid: process.pid,
       port: 4000,
+      ready: false,
       startedAt: OS_START.toISOString(),
       version: 2,
     })
   })
 
   test('returns undefined when a live process already holds the lock', () => {
-    acquireWorkbenchLock({host: 'localhost', port: 3333})
-    expect(acquireWorkbenchLock({host: 'localhost', port: 3333})).toBeUndefined()
+    acquireWorkbenchLock({host: 'localhost', organizationId: ORG, port: 3333})
+    expect(
+      acquireWorkbenchLock({host: 'localhost', organizationId: ORG, port: 3333}),
+    ).toBeUndefined()
+  })
+
+  test('acquires a separate lock for another organization', () => {
+    acquireWorkbenchLock({host: 'localhost', organizationId: ORG, port: 3333})
+
+    expect(
+      acquireWorkbenchLock({host: 'localhost', organizationId: 'org-other', port: 3333}),
+    ).toBeDefined()
+    expect(readWorkbenchLock('org-other')).toMatchObject({pid: process.pid})
   })
 
   test('release frees the lock for the next acquirer', () => {
-    const lock = acquireWorkbenchLock({host: 'localhost', port: 3333})
+    const lock = acquireWorkbenchLock({host: 'localhost', organizationId: ORG, port: 3333})
     lock!.release()
 
-    expect(acquireWorkbenchLock({host: 'localhost', port: 3333})).toBeDefined()
+    expect(acquireWorkbenchLock({host: 'localhost', organizationId: ORG, port: 3333})).toBeDefined()
   })
 
-  test('updatePort rewrites the port in the lock file', () => {
-    const lock = acquireWorkbenchLock({host: 'localhost', port: 3333})
+  test('updatePort records the bound port and marks the lock ready', () => {
+    const lock = acquireWorkbenchLock({host: 'localhost', organizationId: ORG, port: 3333})
+
     lock!.updatePort(3334)
 
-    expect(readJson(lockPath()).port).toBe(3334)
+    expect(readJson(lockPath())).toEqual({
+      host: 'localhost',
+      pid: process.pid,
+      port: 3334,
+      ready: true,
+      startedAt: OS_START.toISOString(),
+      version: 2,
+    })
   })
 
   test('reclaims a stale lock left by a dead process', () => {
@@ -335,7 +318,7 @@ describe('acquireWorkbenchLock', () => {
       JSON.stringify({host: 'localhost', pid: 99_999_999, port: 3333, startedAt: '', version: 1}),
     )
 
-    expect(acquireWorkbenchLock({host: 'localhost', port: 3333})).toBeDefined()
+    expect(acquireWorkbenchLock({host: 'localhost', organizationId: ORG, port: 3333})).toBeDefined()
   })
 
   test('returns undefined when the lock write fails for a reason other than an existing lock', () => {
@@ -343,7 +326,9 @@ describe('acquireWorkbenchLock', () => {
       throw Object.assign(new Error('permission denied'), {code: 'EACCES'})
     })
 
-    expect(acquireWorkbenchLock({host: 'localhost', port: 3333})).toBeUndefined()
+    expect(
+      acquireWorkbenchLock({host: 'localhost', organizationId: ORG, port: 3333}),
+    ).toBeUndefined()
   })
 
   test('returns undefined without recursing once retries are exhausted', () => {
@@ -351,19 +336,21 @@ describe('acquireWorkbenchLock', () => {
     // so with retries=0 the call must not loop forever.
     fsMock.files.set(lockPath(), JSON.stringify({host: 'localhost', pid: 1, port: 1}))
 
-    expect(acquireWorkbenchLock({host: 'localhost', port: 3333}, 0)).toBeUndefined()
+    expect(
+      acquireWorkbenchLock({host: 'localhost', organizationId: ORG, port: 3333}, 0),
+    ).toBeUndefined()
   })
 })
 
 describe('readWorkbenchLock', () => {
   test('returns undefined when no lock file exists', () => {
-    expect(readWorkbenchLock()).toBeUndefined()
+    expect(readWorkbenchLock(ORG)).toBeUndefined()
   })
 
   test('returns the lock when its holder is alive', () => {
-    acquireWorkbenchLock({host: '0.0.0.0', port: 4000})
+    acquireWorkbenchLock({host: '0.0.0.0', organizationId: ORG, port: 4000})
 
-    expect(readWorkbenchLock()).toMatchObject({host: '0.0.0.0', pid: process.pid, port: 4000})
+    expect(readWorkbenchLock(ORG)).toMatchObject({host: '0.0.0.0', pid: process.pid, port: 4000})
   })
 
   test.each([
@@ -376,8 +363,76 @@ describe('readWorkbenchLock', () => {
   ])('prunes the lock and returns undefined for %s', (_label, contents) => {
     fsMock.files.set(lockPath(), contents)
 
-    expect(readWorkbenchLock()).toBeUndefined()
+    expect(readWorkbenchLock(ORG)).toBeUndefined()
     expect(fsMock.module.existsSync(lockPath())).toBe(false)
+  })
+})
+
+describe('waitForWorkbenchLock', () => {
+  test('waits until the holder records the port its shell bound', async () => {
+    const lock = acquireWorkbenchLock({host: 'localhost', organizationId: ORG, port: 3333})!
+    let settled = false
+    const pending = waitForWorkbenchLock(ORG).finally(() => (settled = true))
+
+    await vi.advanceTimersByTimeAsync(200)
+    expect(settled).toBe(false)
+
+    lock.updatePort(3334)
+    await vi.advanceTimersByTimeAsync(50)
+
+    await expect(pending).resolves.toMatchObject({port: 3334, ready: true})
+  })
+
+  test('keeps the lock when a poll reads it mid-write', async () => {
+    const lock = acquireWorkbenchLock({host: 'localhost', organizationId: ORG, port: 3333})!
+    const pending = waitForWorkbenchLock(ORG)
+
+    // `updatePort` truncates the file before writing it.
+    fsMock.files.set(lockPath(), '')
+    await vi.advanceTimersByTimeAsync(100)
+    expect(fsMock.module.existsSync(lockPath())).toBe(true)
+
+    lock.updatePort(3334)
+    await vi.advanceTimersByTimeAsync(50)
+
+    await expect(pending).resolves.toMatchObject({port: 3334})
+  })
+
+  test('stops waiting when the holder releases the lock', async () => {
+    const lock = acquireWorkbenchLock({host: 'localhost', organizationId: ORG, port: 3333})!
+    const pending = waitForWorkbenchLock(ORG)
+
+    lock.release()
+    await vi.advanceTimersByTimeAsync(50)
+
+    await expect(pending).resolves.toBeUndefined()
+  })
+
+  test('treats a lock written by an older CLI (no ready flag) as ready', async () => {
+    fsMock.files.set(
+      lockPath(),
+      JSON.stringify({
+        host: 'localhost',
+        pid: process.pid,
+        port: 3333,
+        startedAt: OS_START.toISOString(),
+        version: 2,
+      }),
+    )
+
+    const pending = waitForWorkbenchLock(ORG)
+
+    expect(vi.getTimerCount()).toBe(0)
+    await expect(pending).resolves.toMatchObject({port: 3333})
+  })
+
+  test('returns the lock as-is when the holder never marks it ready', async () => {
+    acquireWorkbenchLock({host: 'localhost', organizationId: ORG, port: 3333})
+    const pending = waitForWorkbenchLock(ORG)
+
+    await vi.advanceTimersByTimeAsync(10_000)
+
+    await expect(pending).resolves.toMatchObject({port: 3333, ready: false})
   })
 })
 
@@ -395,7 +450,7 @@ describe('exit backstop', () => {
   })
 
   test('removes the workbench lock when the process exits without a release', () => {
-    acquireWorkbenchLock({host: 'localhost', port: 3333})
+    acquireWorkbenchLock({host: 'localhost', organizationId: ORG, port: 3333})
     expect(fsMock.module.existsSync(lockPath())).toBe(true)
 
     runRegistryExitCleanupForTesting()
@@ -404,7 +459,7 @@ describe('exit backstop', () => {
   })
 
   test('leaves a lock reacquired by a successor untouched', () => {
-    acquireWorkbenchLock({host: 'localhost', port: 3333})
+    acquireWorkbenchLock({host: 'localhost', organizationId: ORG, port: 3333})
     // A different process now owns the lock file.
     fsMock.files.set(
       lockPath(),

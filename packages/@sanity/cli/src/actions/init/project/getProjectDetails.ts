@@ -17,6 +17,7 @@ export async function getProjectDetails({
   dataset,
   datasetDefault,
   isAppTemplate,
+  isMediaLibraryTemplate = false,
   newProject,
   organization,
   output,
@@ -32,6 +33,7 @@ export async function getProjectDetails({
   dataset: string | undefined
   datasetDefault: boolean
   isAppTemplate: boolean
+  isMediaLibraryTemplate?: boolean
   newProject: string | undefined
   organization: string | undefined
   output: InitContext['output']
@@ -53,7 +55,9 @@ export async function getProjectDetails({
   if (isAppTemplate) {
     const hasProjectFlag = Boolean(project || newProject)
     let appOrganizationId: string | undefined = organization
-    if (!appOrganizationId && !hasProjectFlag) {
+    // A media-library config is organization-only, so the org is always
+    // resolved here — project flags can't stand in for it.
+    if (!appOrganizationId && (isMediaLibraryTemplate || !hasProjectFlag)) {
       let organizations: ProjectOrganization[]
       try {
         organizations = await listOrganizations()
@@ -66,6 +70,26 @@ export async function getProjectDetails({
         organizations,
         user,
       })
+    }
+
+    // The media-library config scaffold records only `app.organizationId`, so
+    // the project/dataset setup below would create or select resources the
+    // template throws away — and picking a project from another organization
+    // would silently override the chosen org. Skip it entirely.
+    if (isMediaLibraryTemplate) {
+      if (hasProjectFlag) {
+        output.warn(
+          'Project flags are ignored for the media-library-config template — it only records the organization.',
+        )
+      }
+      trace.log({datasetName: '', selectedOption: 'skip', step: 'createOrSelectDataset'})
+      return {
+        datasetName: '',
+        displayName: '',
+        isFirstProject: false,
+        organizationId: appOrganizationId,
+        projectId: '',
+      }
     }
 
     const {
@@ -134,6 +158,7 @@ export async function getProjectDetails({
     datasetName: datasetResult.datasetName,
     displayName: projectResult.displayName,
     isFirstProject: projectResult.isFirstProject,
+    organizationId: projectResult.organizationId,
     projectId: projectResult.projectId,
   }
 }

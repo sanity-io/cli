@@ -1,5 +1,163 @@
 # Changelog
 
+## 7.0.1
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-build-v7.0.0...cli-build-v7.0.1)
+
+_2026-10-23_
+
+### Bug Fixes
+
+- **build:** config-only builds verify sanity, not @sanity/sdk-react ([#2053](https://github.com/sanity-io/cli/pull/2053)) ([03a9b7a](https://github.com/sanity-io/cli/commit/03a9b7afd421acf844e772ee7401205d09495953))
+- **build:** link stylesheets when cssCodeSplit is false ([#2045](https://github.com/sanity-io/cli/pull/2045)) ([816726a](https://github.com/sanity-io/cli/commit/816726a207564cfde3e1aab6e35c58bb7793ebb8))
+
+## 7.0.0
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-build-v6.5.0...cli-build-v7.0.0)
+
+_2026-10-22_
+
+### ⚠ BREAKING CHANGES
+
+- Change to the schema/manifest build interface to return schemaInputs instead of the full unserializable object. ([#1997](https://github.com/sanity-io/cli/pull/1997)) ([10c9e7b](https://github.com/sanity-io/cli/commit/10c9e7bd7d1844572f8ab8292a0d0832ebbd2e99))
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/cli-core bumped to 3.11.1
+    - @sanity/workbench-cli bumped to 2.13.0
+
+## 6.5.0
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-build-v6.4.5...cli-build-v6.5.0)
+
+_2026-10-21_
+
+### Features
+
+- **build:** return the module federation manifest from buildStudio and buildApp ([#2026](https://github.com/sanity-io/cli/pull/2026)) ([ee487dd](https://github.com/sanity-io/cli/commit/ee487ddb261dbd0d8936d1918a58263fa0a5f712))
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/cli-core bumped to 3.11.0
+    - @sanity/workbench-cli bumped to 2.12.0
+
+## 6.4.5
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-build-v6.4.4...cli-build-v6.4.5)
+
+_2026-10-08_
+
+### Bug Fixes
+
+- **deps:** update react monorepo to ^19.3.0 ([#1954](https://github.com/sanity-io/cli/pull/1954)) ([1d8d74f](https://github.com/sanity-io/cli/commit/1d8d74f47fd234a3f6a545e14250b9c815f14b23))
+- **deps:** update sanity-tooling ([#1955](https://github.com/sanity-io/cli/pull/1955)) ([9a3cf63](https://github.com/sanity-io/cli/commit/9a3cf631d084ed36a1bdeea1584d6be86d911213))
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/workbench-cli bumped to 2.8.4
+
+## 6.4.4
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-build-v6.4.3...cli-build-v6.4.4)
+
+_2026-10-05_
+
+### Bug Fixes
+
+- **deps:** update dependency @rolldown/plugin-babel to ^0.2.4 ([#1948](https://github.com/sanity-io/cli/pull/1948)) ([7f01184](https://github.com/sanity-io/cli/commit/7f01184c332f0c52d2543cb51c08504fdcc17470))
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/workbench-cli bumped to 2.8.3
+
+## 6.4.3
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-build-v6.4.2...cli-build-v6.4.3)
+
+_2026-10-05_
+
+### Bug Fixes
+
+- **cli-build:** skip the error overlay for error events without an error ([#1940](https://github.com/sanity-io/cli/pull/1940)) ([e36d29a](https://github.com/sanity-io/cli/commit/e36d29af52c889933bf472ca8ee94dbb752dda92))
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/workbench-cli bumped to 2.8.2
+
+## 6.4.2
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-build-v6.4.1...cli-build-v6.4.2)
+
+_2026-09-28_
+
+### Bug Fixes
+
+- The generated studio entry now imports your `sanity.config` before `sanity`, and the app entry imports your app before `react-dom/client`. A side-effect import at the top of that file, such as `import 'react-devtools-cdt-mcp/register'` or any other tool that must install a global hook before React loads, runs before React initializes during `sanity dev`. A production `sanity build` can still evaluate shared dependency chunks before that code, so the same order is not guaranteed in the built bundle. ([#1925](https://github.com/sanity-io/cli/pull/1925)) ([bc61791](https://github.com/sanity-io/cli/commit/bc6179121f478f74b756d75e79b68e027dd06193))
+
+## 6.4.1
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-build-v6.4.0...cli-build-v6.4.1)
+
+_2026-09-22_
+
+### Bug Fixes
+
+- **workbench-cli:** share compatible dependencies ([#1885](https://github.com/sanity-io/cli/pull/1885)) ([73392e6](https://github.com/sanity-io/cli/commit/73392e660a936f126df836e7fa6c0cf9613f1538))
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/workbench-cli bumped to 2.6.0
+
+## 6.4.0
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-build-v6.3.1...cli-build-v6.4.0)
+
+_2026-09-18_
+
+### Features
+
+- media library url ingest ([#1875](https://github.com/sanity-io/cli/pull/1875)) ([ac3a20c](https://github.com/sanity-io/cli/commit/ac3a20cd49b90d0abcdfed0f8dc8d472bbf3e783))
+
+### Bug Fixes
+
+- **deps:** update dependency @sanity/ui to v4 ([#1816](https://github.com/sanity-io/cli/pull/1816)) ([1085c60](https://github.com/sanity-io/cli/commit/1085c60292174964dc883cb0f0fb783246498a2e))
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/cli-core bumped to 3.8.0
+    - @sanity/workbench-cli bumped to 2.5.2
+
+## 6.3.1
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-build-v6.3.0...cli-build-v6.3.1)
+
+_2026-09-10_
+
+### Bug Fixes
+
+- **cli-build:** disable lightningcss light-dark polyfill ([#1868](https://github.com/sanity-io/cli/pull/1868)) ([d81302e](https://github.com/sanity-io/cli/commit/d81302ed9abc5dbaf287250ba6bb400eebff96ce))
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/workbench-cli bumped to 2.4.3
+    - @sanity/cli-core bumped to 3.7.0
+
 ## 6.3.0
 
 [Compare changes](https://github.com/sanity-io/cli/compare/cli-build-v6.2.0...cli-build-v6.3.0)

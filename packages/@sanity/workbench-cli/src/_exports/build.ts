@@ -4,6 +4,7 @@
 // deploy-time guards, so it takes the bare `resolveWorkbenchApp` — the guarded
 // view (`getWorkbench`) is the deploy entry's export.
 
+export {readBuiltManifest} from '../actions/build/readBuiltManifest.js'
 export {
   RESOURCE_BINDINGS_CHUNK_NAME,
   RESOURCE_BINDINGS_ENTRY_IMPORT,
@@ -13,8 +14,13 @@ export {
   resourceBindingsChunkFileName,
   resourceBindingsCodeSplittingGroup,
 } from '../actions/build/resource-bindings.js'
+export {buildFederatedApp} from '../actions/build/vite/discover-shared-dependencies.js'
 export {workbenchOptimizeDeps} from '../actions/build/vite/optimize-deps.js'
 export {workbenchVitePlugins} from '../actions/build/vite/workbench-vite-plugins.js'
 export {buildAppId} from '../appId.js'
-export {resolveWorkbenchApp, type WorkbenchExposes} from '../resolveWorkbenchApp.js'
+export {
+  resolveAppEntry,
+  resolveWorkbenchApp,
+  type WorkbenchExposes,
+} from '../resolveWorkbenchApp.js'
 export {type ResolvedMediaLibraryConfig, resolveWorkbenchConfig} from '../resolveWorkbenchConfig.js'

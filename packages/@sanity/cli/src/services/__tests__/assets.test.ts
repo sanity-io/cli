@@ -4,7 +4,7 @@ import {getProjectCliClient} from '@sanity/cli-core'
 import {Observable} from 'rxjs'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
-import {ASSETS_API_VERSION, uploadAsset} from '../assets.js'
+import {ASSETS_API_VERSION, ingestAssetFromUrl, uploadAsset} from '../assets.js'
 
 vi.mock('@sanity/cli-core', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@sanity/cli-core')>()),
@@ -107,5 +107,94 @@ describe('uploadAsset', () => {
     await expect(result).rejects.toThrow('SIGINT')
     expect(stream.destroyed).toBe(true)
     expect(requestTeardown).toHaveBeenCalledOnce()
+  })
+})
+
+describe('ingestAssetFromUrl', () => {
+  afterEach(() => {
+    vi.clearAllMocks()
+  })
+
+  test('asks Content Lake to fetch the image itself', async () => {
+    const asset = {_id: 'image-abc-1x1-png'}
+    const request = vi.fn().mockResolvedValue({document: asset})
+    mockGetProjectCliClient.mockResolvedValue({request} as never)
+
+    await expect(
+      ingestAssetFromUrl({
+        assetType: 'image',
+        dataset: 'production',
+        projectId: 'test-project',
+        url: 'https://example.com/hero.png',
+      }),
+    ).resolves.toBe(asset)
+
+    expect(mockGetProjectCliClient).toHaveBeenCalledWith({
+      apiVersion: ASSETS_API_VERSION,
+      dataset: 'production',
+      projectId: 'test-project',
+      requestTagPrefix: 'sanity.cli.assets.upload',
+      requireUser: true,
+    })
+    expect(request).toHaveBeenCalledWith(
+      expect.objectContaining({
+        body: {url: 'https://example.com/hero.png'},
+        method: 'POST',
+        url: '/assets/images/production/from-url',
+      }),
+    )
+  })
+
+  test('targets the file route for non-image assets', async () => {
+    const request = vi.fn().mockResolvedValue({document: {_id: 'file-abc-pdf'}})
+    mockGetProjectCliClient.mockResolvedValue({request} as never)
+
+    await ingestAssetFromUrl({
+      assetType: 'file',
+      dataset: 'staging',
+      filename: 'brief.pdf',
+      projectId: 'test-project',
+      url: 'https://example.com/download?id=42',
+    })
+
+    expect(request).toHaveBeenCalledWith(
+      expect.objectContaining({
+        body: {filename: 'brief.pdf', url: 'https://example.com/download?id=42'},
+        url: '/assets/files/staging/from-url',
+      }),
+    )
+  })
+
+  test('omits the filename so Content Lake derives it from the response', async () => {
+    const request = vi.fn().mockResolvedValue({document: {_id: 'image-abc-1x1-png'}})
+    mockGetProjectCliClient.mockResolvedValue({request} as never)
+
+    await ingestAssetFromUrl({
+      assetType: 'image',
+      dataset: 'production',
+      projectId: 'test-project',
+      url: 'https://example.com/hero.png',
+    })
+
+    expect(request.mock.calls[0][0].body).not.toHaveProperty('filename')
+  })
+
+  test('does not issue the request when already aborted', async () => {
+    const request = vi.fn()
+    mockGetProjectCliClient.mockResolvedValue({request} as never)
+    const controller = new AbortController()
+    controller.abort(new Error('SIGINT'))
+
+    await expect(
+      ingestAssetFromUrl({
+        assetType: 'image',
+        dataset: 'production',
+        projectId: 'test-project',
+        signal: controller.signal,
+        url: 'https://example.com/hero.png',
+      }),
+    ).rejects.toThrow('SIGINT')
+
+    expect(request).not.toHaveBeenCalled()
   })
 })

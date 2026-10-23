@@ -8,7 +8,7 @@ import {getCliTelemetry} from '@sanity/cli-core/telemetry'
 import {type CliConfig, type Output, type UserViteConfig} from '@sanity/cli-core/types'
 import {isInteractive} from '@sanity/cli-core/util'
 import {confirm, getTimer, logSymbols, spinner, type SpinnerInstance} from '@sanity/cli-core/ux'
-import {type WorkbenchExposes} from '@sanity/workbench-cli/build'
+import {readBuiltManifest, type WorkbenchExposes} from '@sanity/workbench-cli/build'
 import {parse as semverParse} from 'semver'
 
 import {AppBuildTrace} from '../../telemetry/build.telemetry.js'
@@ -63,7 +63,9 @@ export interface BuildOptions {
  * Internal build app that avoids depending on flags for CLI config.
  * @param options - options for the build
  */
-export async function buildApp(options: BuildOptions): Promise<void> {
+export async function buildApp(
+  options: BuildOptions,
+): Promise<{mfManifest: Record<string, unknown> | undefined}> {
   buildDebug(`Building app`)
 
   const {appId, determineBasePath, eventListener, outDir, output, workDir} = options
@@ -78,24 +80,38 @@ export async function buildApp(options: BuildOptions): Promise<void> {
   const installedSdkVersion = await getLocalPackageVersion('@sanity/sdk-react', workDir)
   const installedSanityVersion = await getLocalPackageVersion('sanity', workDir)
 
-  if (!installedSdkVersion) {
+  // A Media Library config ships no SDK app — its inputs are island-rendered
+  // by `sanity`, so verify that instead and skip the SDK auto-update
+  // machinery. Checked via the `appType` discriminator, not the mere presence
+  // of a config: a future `ConfigSchema` member must not inherit these
+  // media-library build semantics by default.
+  const isMediaLibraryConfigBuild = options.exposes?.config?.appType === 'media-library'
+
+  if (!installedSdkVersion && !isMediaLibraryConfigBuild) {
     output.error(`Failed to find installed @sanity/sdk-react version`, {
       exit: exitCodes.RUNTIME_ERROR,
     })
-    return
+    return {mfManifest: undefined}
+  }
+
+  if (isMediaLibraryConfigBuild && !installedSanityVersion) {
+    output.error(`Failed to find installed sanity version`, {
+      exit: exitCodes.RUNTIME_ERROR,
+    })
+    return {mfManifest: undefined}
   }
 
   let autoUpdatesImports = {}
   let autoUpdatesCssUrls: string[] = []
 
-  if (autoUpdatesEnabled) {
+  if (autoUpdatesEnabled && !isMediaLibraryConfigBuild) {
     // Get the clean version without build metadata: https://semver.org/#spec-item-10
     const cleanSDKVersion = semverParse(installedSdkVersion)?.version
     if (!cleanSDKVersion) {
       output.error(`Failed to parse installed SDK version: ${installedSdkVersion}`, {
         exit: exitCodes.RUNTIME_ERROR,
       })
-      return
+      return {mfManifest: undefined}
     }
 
     // Sanity might not be installed, but if it is, we want to auto update it.
@@ -148,7 +164,7 @@ export async function buildApp(options: BuildOptions): Promise<void> {
 
         if (!shouldContinue) {
           output.error('Declined to continue with build', {exit: exitCodes.RUNTIME_ERROR})
-          return
+          return {mfManifest: undefined}
         }
       } else {
         // if non-interactive or unattended, just show the warning
@@ -219,6 +235,7 @@ export async function buildApp(options: BuildOptions): Promise<void> {
       vite: options.vite,
       workbenchAppId: options.workbenchAppId,
     })
+    const mfManifest = options.isWorkbenchApp ? await readBuiltManifest(outputDir) : undefined
 
     trace.log({
       outputSize: bundle.chunks
@@ -236,11 +253,13 @@ export async function buildApp(options: BuildOptions): Promise<void> {
     }
 
     trace.complete()
+    return {mfManifest}
   } catch (error) {
     spin.fail()
     trace.error(error)
     const message = error instanceof Error ? error.message : String(error)
     buildDebug(`Failed to build Sanity application`, {error})
     output.error(`Failed to build Sanity application: ${message}`, {exit: exitCodes.RUNTIME_ERROR})
+    return {mfManifest: undefined}
   }
 }

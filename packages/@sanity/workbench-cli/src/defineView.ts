@@ -118,7 +118,7 @@ export interface DefinedView<TSurface extends ViewSurface = ViewSurface> {
 }
 
 /**
- * Define a Sanity Workbench view. The first argument narrows the component shape
+ * Define a Sanity Dashboard view. The first argument narrows the component shape
  * and the props each component receives — `"panel"` yields a `{title, panel}`
  * record whose components are typed with the panel props.
  *

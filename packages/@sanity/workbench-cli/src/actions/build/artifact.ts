@@ -1,5 +1,8 @@
 import {type WorkbenchExposes} from '../../resolveWorkbenchApp.js'
-import {configArtifacts} from './configs/artifact.js'
+import {
+  type MediaLibraryConfigArtifactOptions,
+  mediaLibraryConfigArtifacts,
+} from './configs/artifact.js'
 import {serviceArtifacts} from './services/artifact.js'
 import {viewArtifacts} from './views/artifact.js'
 
@@ -11,6 +14,8 @@ import {viewArtifacts} from './views/artifact.js'
 interface ArtifactContext {
   /** Import specifier for an app `src` file, relative to this artifact. */
   resolveImport: (src: string) => string
+
+  isolateStyles?: boolean
 }
 
 /**
@@ -61,10 +66,13 @@ export function artifactExposes(
  * writes — the single place that composes the per-type expanders, so the expose
  * mapping and the file writing read from one expansion.
  */
-export function workbenchArtifacts(exposes: WorkbenchExposes): GeneratedArtifact[] {
+export function workbenchArtifacts(
+  exposes: WorkbenchExposes,
+  configOptions: MediaLibraryConfigArtifactOptions = {},
+): GeneratedArtifact[] {
   return [
     ...viewArtifacts(exposes.views ?? []),
     ...serviceArtifacts(exposes.webWorkers ?? []),
-    ...configArtifacts(exposes.config),
+    ...mediaLibraryConfigArtifacts(exposes.config, configOptions),
   ]
 }

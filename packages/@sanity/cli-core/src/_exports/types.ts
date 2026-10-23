@@ -3,6 +3,7 @@ export {
   type ConfigStore,
   type ReactCompilerConfig,
   type TypeGenConfig,
+  type TypeGenResource,
 } from '../config/cli/types/cliConfig.js'
 export {type UserViteConfig} from '../config/cli/types/userViteConfig.js'
 export {type ApplicationType} from '../config/cli/workbenchApp.js'

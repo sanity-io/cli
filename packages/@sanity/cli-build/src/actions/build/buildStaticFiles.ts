@@ -1,8 +1,8 @@
 import path from 'node:path'
 
 import {type CliConfig, type UserViteConfig} from '@sanity/cli-core/types'
-import {type WorkbenchExposes} from '@sanity/workbench-cli/build'
-import {build, createBuilder} from 'vite'
+import {buildFederatedApp, type WorkbenchExposes} from '@sanity/workbench-cli/build'
+import {build} from 'vite'
 
 import {copyDir} from '../../util/copyDir.js'
 import {type AutoUpdatesBuildConfig} from './autoUpdates.js'
@@ -153,8 +153,10 @@ export async function buildStaticFiles(
     }
 
     buildDebug('Bundling federation environment')
-    const builder = await createBuilder(viteConfig)
-    await builder.buildApp()
+    await buildFederatedApp(viteConfig, {
+      // Custom Vite hooks can resolve different dependencies in the two environments.
+      reuseStandaloneBuild: emitSpa && !extendViteConfig,
+    })
     buildDebug('Bundling complete')
     // TODO: add stats here
     return {chunks: []}

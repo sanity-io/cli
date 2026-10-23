@@ -1,13 +1,18 @@
 import {styleText} from 'node:util'
 
 import {type Output, type TelemetryUserProperties} from '@sanity/cli-core'
+import {isStaging} from '@sanity/cli-core/util'
 import {logSymbols} from '@sanity/cli-core/ux'
 import {type TelemetryTrace} from '@sanity/telemetry'
 
+import {getMediaLibrariesForOrganization, type MediaLibrary} from '../../services/mediaLibraries.js'
 import {type InitStepResult} from '../../telemetry/init.telemetry.js'
+import {getInstallCommand} from '../../util/packageManager/installPackages.js'
 import {type EditorName} from '../mcp/editorConfigs.js'
+import {determineMediaLibraryTemplate} from './determineMediaLibraryTemplate.js'
 import {InitError} from './initError.js'
 import {getPostInitMCPPrompt} from './initHelpers.js'
+import {offerAspectPull} from './offerAspectPull.js'
 import {type RepoInfo} from './remoteTemplate.js'
 import {scaffoldAndInstall, selectTemplate} from './scaffoldTemplate.js'
 import {type InitOptions} from './types.js'
@@ -55,7 +60,7 @@ export async function initApp({
     throw new InitError(`Template "${templateName}" not found`, 1)
   }
 
-  await scaffoldAndInstall({
+  const {pkgManager} = await scaffoldAndInstall({
     datasetName,
     defaults,
     displayName: '',
@@ -76,11 +81,59 @@ export async function initApp({
   const isCurrentDir = outputPath === workDir
   const goToProjectDir = `\n(${styleText('cyan', `cd ${outputPath}`)} to navigate to your new project directory)`
 
+  if (determineMediaLibraryTemplate(templateName)) {
+    output.log(
+      `${logSymbols.success} ${styleText(['green', 'bold'], 'Success!')} Your Media Library config app has been scaffolded.`,
+    )
+    if (!isCurrentDir) output.log(goToProjectDir)
+    if (!options.install) {
+      output.log(
+        `\nRun ${styleText('cyan', getInstallCommand(pkgManager))} to install dependencies.`,
+      )
+    }
+    let libraries: MediaLibrary[] = []
+    if (organizationId) {
+      output.log(`\nConfigured for organization ${styleText('cyan', organizationId)}.`)
+      libraries = await warnIfNoActiveMediaLibrary(organizationId, output)
+    }
+
+    // The deploy mirrors config into the library and deletes stored aspects
+    // the config does not declare, so an org that already defines aspects is
+    // offered a pull now — while init is interactive and authenticated. Only
+    // with exactly one active library; picking one is pull-aspects territory.
+    let pulledAspects = false
+    if (libraries.length === 1 && !options.unattended) {
+      output.log('')
+      pulledAspects = await offerAspectPull({library: libraries[0], output, outputPath})
+    }
+
+    output.log(
+      '\nField definitions live in `src/fields/` and are registered in `sanity.cli.ts` — see the README for the authoring rules.',
+    )
+    if (libraries.length > 0 && !pulledAspects) {
+      output.log(
+        `\nAlready defining aspects in your Media Library? Generate field modules from them with ${styleText('cyan', 'npx sanity media pull-aspects')}.`,
+      )
+    }
+    output.log('\nRefer to our documentation for a walkthrough:')
+    output.log(styleText(['blue', 'underline'], 'https://www.sanity.io/docs/media-library'))
+    await logMcpConfirmation(mcpConfigured, output)
+    output.log('\n')
+    output.log(`Other helpful commands:`)
+    output.log(`npx sanity docs browse     to open the documentation in a browser`)
+    output.log(`npx sanity dev             to serve your fields to the Media Library live`)
+    output.log(`npx sanity deploy          to deploy the config to your organization`)
+    return
+  }
+
   //output for custom apps here
   output.log(
     `${logSymbols.success} ${styleText(['green', 'bold'], 'Success!')} Your custom app has been scaffolded.`,
   )
   if (!isCurrentDir) output.log(goToProjectDir)
+  if (!options.install) {
+    output.log(`\nRun ${styleText('cyan', getInstallCommand(pkgManager))} to install dependencies.`)
+  }
 
   if (projectId && datasetName) {
     output.log(
@@ -98,17 +151,57 @@ export async function initApp({
   output.log(
     styleText(['blue', 'underline'], 'https://www.sanity.io/docs/app-sdk/sdk-configuration'),
   )
-  if (mcpConfigured && mcpConfigured.length > 0) {
-    const message = await getPostInitMCPPrompt(mcpConfigured)
-    output.log(`\n${message}`)
-    output.log(`\nLearn more: ${styleText('cyan', 'https://mcp.sanity.io')}`)
-    output.log(
-      `\nHave feedback? Tell us in the community: ${styleText('cyan', 'https://www.sanity.io/community/join')}`,
-    )
-  }
+  await logMcpConfirmation(mcpConfigured, output)
   output.log('\n')
   output.log(`Other helpful commands:`)
   output.log(`npx sanity docs browse     to open the documentation in a browser`)
   output.log(`npx sanity dev             to start the development server for your app`)
   output.log(`npx sanity deploy          to deploy your app`)
+}
+
+/**
+ * The post-init MCP confirmation shown by every template branch: which
+ * editors were configured during init and where to learn more. No-op when
+ * MCP setup was skipped or configured nothing.
+ */
+async function logMcpConfirmation(mcpConfigured: EditorName[], output: Output): Promise<void> {
+  if (!mcpConfigured || mcpConfigured.length === 0) return
+  const message = await getPostInitMCPPrompt(mcpConfigured)
+  output.log(`\n${message}`)
+  output.log(`\nLearn more: ${styleText('cyan', 'https://mcp.sanity.io')}`)
+  output.log(
+    `\nHave feedback? Tell us in the community: ${styleText('cyan', 'https://www.sanity.io/community/join')}`,
+  )
+}
+
+/**
+ * Media Library is provisioned per organization, outside this app (in
+ * Manage). Without an active library the dashboard's media area comes up
+ * empty, so say so now — init is the one interactive, authenticated moment.
+ * API errors (offline, no access to the org, timeout) are swallowed: this is
+ * a hint, not a gate.
+ *
+ * @returns the organization's active libraries — empty also on lookup
+ * failure, so follow-up suggestions stay silent in the unknown case.
+ */
+export async function warnIfNoActiveMediaLibrary(
+  organizationId: string,
+  output: Output,
+): Promise<MediaLibrary[]> {
+  try {
+    const libraries = await getMediaLibrariesForOrganization(organizationId)
+    if (libraries.length > 0) return libraries
+  } catch {
+    return []
+  }
+
+  const manageUrl = `${isStaging() ? 'https://sanity.work' : 'https://www.sanity.io'}/manage`
+  // No symbol or leading newline: output.warn already prefixes `Warning:`.
+  output.warn(
+    `Organization ${organizationId} has no active Media Library, ` +
+      `so the dashboard's media area will be empty. Media Library is provisioned per ` +
+      `organization — enable it in Manage (${manageUrl}) or learn more at ` +
+      `https://www.sanity.io/docs/media-library.`,
+  )
+  return []
 }

@@ -14,7 +14,6 @@ packages:
   - 'packages/@sanity/workbench-cli'
   - 'packages/create-sanity'
   - 'fixtures/*'
-  - 'tmp/*'
 
 catalog:
   # Linting
@@ -26,20 +25,27 @@ catalog:
   groq-js: ^2.0.0
 
   # Sanity
-  sanity: ^6.12.0
-  '@sanity/vision': ^6.12.0
-  '@sanity/types': ^6.12.0
-  '@sanity/schema': ^6.12.0
-  '@sanity/client': ^8.5.0
-  '@sanity/codegen': ^8.1.0
+  sanity: ^6.17.0
+  '@sanity/vision': ^6.17.0
+  '@sanity/types': ^6.17.0
+  '@sanity/schema': ^6.17.0
+  '@sanity/client': ^8.9.0
+  '@sanity/codegen': ^8.2.0
+  '@sanity/sdk': ^3.8.0
   '@sanity/telemetry': ^1.1.0
+
+  # React
+  react: ^19.3.0
+  react-dom: ^19.3.0
+  '@types/react': ^19.3.0
+  '@types/react-dom': ^19.3.0
 
   # Build & Development Tools
   babel-plugin-react-compiler: ^1.0.0
-  oxc-transform-react: ^0.147.0
+  oxc-transform-react: ^0.153.0
   typescript: ^6.0.3
-  vite: ^8.2.2
-  '@vitejs/plugin-react': ^6.1.1
+  vite: ^8.3.3
+  '@vitejs/plugin-react': ^6.1.2
   tsx: ^4.23.12
 
   # Testing
@@ -55,8 +61,8 @@ catalog:
   '@oclif/plugin-not-found': ^3.2.88
 
   # Utilities
-  get-it: ^9.5.2
-  obug: ^2.1.4
+  get-it: ^9.5.4
+  obug: ^3.0.0
   jsdom: ^29.1.1
   zod: ^4.5.2
   'get-tsconfig': ^4.14.3
@@ -68,6 +74,8 @@ catalog:
   tinyglobby: ^0.2.17
   lodash-es: ^4.18.1
   '@types/lodash-es': ^4.17.12
+  semver: ^7.8.1
+  '@types/semver': ^7.7.1
   yaml: ^2.9.0
   form-data: ^4.0.5
   tar: ^7.5.18

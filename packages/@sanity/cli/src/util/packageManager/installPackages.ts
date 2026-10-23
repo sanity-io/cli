@@ -35,6 +35,33 @@ const PACKAGE_MANAGER_COMMANDS: PackageManagerCommands = {
   },
 }
 
+// `manual` has no command of its own, so commands shown to the user fall back to npm
+function toLib(packageManager: PackageManager): PackageManagerLibs {
+  return packageManager === 'manual' ? 'npm' : packageManager
+}
+
+/**
+ * The command a user would run by hand to install a project's declared
+ * dependencies, eg `pnpm install`.
+ *
+ * @internal
+ */
+export function getInstallCommand(packageManager: PackageManager): string {
+  const lib = toLib(packageManager)
+  return `${lib} ${PACKAGE_MANAGER_COMMANDS.install[lib].join(' ')}`
+}
+
+/**
+ * The command a user would run by hand to add the given packages to a project,
+ * eg `pnpm add --save-prod sanity@5`.
+ *
+ * @internal
+ */
+export function getAddCommand(packageManager: PackageManager, packages: string[]): string {
+  const lib = toLib(packageManager)
+  return `${lib} ${PACKAGE_MANAGER_COMMANDS.add[lib](packages).join(' ')}`
+}
+
 const IGNORED_BUILDS_NOTICE =
   'pnpm skipped build scripts for some dependencies. Run "pnpm approve-builds" in the project directory to pick which dependencies should be allowed to run scripts.'
 
@@ -146,8 +173,7 @@ export async function installDeclaredPackages(
   }
 
   if (packageManager === 'manual') {
-    const npmCommand = PACKAGE_MANAGER_COMMANDS.install.npm
-    output.log(`Manual installation selected — run 'npm ${npmCommand.join(' ')}' or equivalent`)
+    output.log(`Manual installation selected — run '${getInstallCommand('manual')}' or equivalent`)
   } else {
     const args = PACKAGE_MANAGER_COMMANDS.install[packageManager]
     await executePackageManagerCommand(
@@ -177,8 +203,9 @@ export async function installNewPackages(
   }
 
   if (packageManager === 'manual') {
-    const npmCommand = PACKAGE_MANAGER_COMMANDS.add.npm(packages)
-    output.log(`Manual installation selected - run 'npm ${npmCommand.join(' ')}' or equivalent`)
+    output.log(
+      `Manual installation selected - run '${getAddCommand('manual', packages)}' or equivalent`,
+    )
   } else {
     const args = PACKAGE_MANAGER_COMMANDS.add[packageManager](packages)
     await executePackageManagerCommand(

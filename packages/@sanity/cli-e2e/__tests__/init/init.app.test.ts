@@ -39,6 +39,7 @@ describe('sanity init - app', {timeout: 120_000}, () => {
           '--package-manager',
           'pnpm',
           '--no-git',
+          '--no-install',
         ],
       })
 
@@ -51,8 +52,8 @@ describe('sanity init - app', {timeout: 120_000}, () => {
       const cliConfig = readFileSync(`${tmp.path}/sanity.cli.ts`, 'utf8')
       expect(cliConfig).toContain('organizationId')
       expect(cliConfig).toContain('entry')
-      // Inverse guard: without `--unstable--workbench` the app config is the plain
-      // `app: {}` literal, never the `defineApplication` (workbench) variant. The
+      // Inverse guard: without `--dashboard` the app config is the plain
+      // `app: {}` literal, never the `defineApplication` (Dashboard) variant. The
       // shared fields above don't distinguish the two, so assert the brand is absent.
       expect(cliConfig).not.toContain('defineApplication')
 
@@ -77,6 +78,7 @@ describe('sanity init - app', {timeout: 120_000}, () => {
           '--package-manager',
           'pnpm',
           '--no-git',
+          '--no-install',
         ],
       })
 
@@ -92,6 +94,8 @@ describe('sanity init - app', {timeout: 120_000}, () => {
     })
   })
 
+  // Keeps a real install: the flow drives the package manager prompt, which
+  // only appears when there is an install to run.
   test('complete interactive flow selects project and dataset', async () => {
     const session = await runCli({
       args: [

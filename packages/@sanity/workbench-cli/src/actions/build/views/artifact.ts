@@ -36,10 +36,11 @@ export function viewArtifacts(views: readonly InterfaceArtifact[]): GeneratedArt
       artifacts.push({
         expose: `./${VIEWS_DIR_NAME}/${view.name}/${component}`,
         path: `${VIEWS_DIR_NAME}/${view.name}/${component}.js`,
-        source: ({resolveImport}) =>
+        source: ({isolateStyles, resolveImport}) =>
           renderRemote({
             app: `typeof view.components === 'function' ? view.components : view.components[${JSON.stringify(component)}]`,
             hmr: true,
+            isolateStyles,
             preamble: `import view from ${JSON.stringify(resolveImport(view.src))}`,
             version: `view.version`,
           }),

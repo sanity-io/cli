@@ -15,8 +15,8 @@ afterEach(() => {
   vi.clearAllMocks()
 })
 
-function runPlugin(): (Plugin | Promise<Plugin>)[] {
-  return sanityModuleFederation({exposes: {}, name: 'test-app'}) as (Plugin | Promise<Plugin>)[]
+function runPlugin(): Plugin[] {
+  return sanityModuleFederation({exposes: {}, name: 'test-app'}) as Plugin[]
 }
 
 function appliesTo(plugin: Plugin, name: string, command: 'build' | 'serve'): boolean {
@@ -46,27 +46,10 @@ describe('sanityModuleFederation', () => {
     mockFederation.mockReturnValue([{name: 'mf-core'} satisfies Plugin])
 
     const [plugin] = runPlugin()
-    if (plugin instanceof Promise) throw new Error('expected a sync plugin')
 
     expect(plugin.name).toBe('mf-core')
     expect(appliesTo(plugin, 'client', 'serve')).toBe(true)
     expect(appliesTo(plugin, FEDERATION_DIR_NAME, 'build')).toBe(true)
     expect(appliesTo(plugin, 'client', 'build')).toBe(false)
-  })
-
-  it('keeps promise-delivered plugins intact and scopes them once resolved', async () => {
-    mockFederation.mockReturnValue([
-      Promise.resolve([{name: 'mf-lazy-a'} satisfies Plugin, {name: 'mf-lazy-b'} satisfies Plugin]),
-    ])
-
-    const [plugin] = runPlugin()
-
-    expect(plugin).toBeInstanceOf(Promise)
-    const resolved = (await plugin) as unknown as Plugin[]
-    expect(resolved.map((p) => p.name)).toEqual(['mf-lazy-a', 'mf-lazy-b'])
-    for (const lazyPlugin of resolved) {
-      expect(appliesTo(lazyPlugin, FEDERATION_DIR_NAME, 'build')).toBe(true)
-      expect(appliesTo(lazyPlugin, 'client', 'build')).toBe(false)
-    }
   })
 })

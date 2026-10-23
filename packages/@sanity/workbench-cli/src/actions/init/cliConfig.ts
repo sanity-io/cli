@@ -12,6 +12,7 @@ import {defineApplication, defineCliConfig} from 'sanity/cli'
 export default defineCliConfig({
   app: defineApplication({
     title: '%title%',
+    name: '%slug%',
     slug: '%slug%',
     organizationId: '%organizationId%',
     entry: '%entry%',
@@ -20,7 +21,28 @@ export default defineCliConfig({
 `
 
 /**
- * Studio scaffold — brands with slug/title only, no `entry` (studio app views
+ * Media Library config app scaffold — `unstable_defineMediaLibrary` declares
+ * field (aspect) definitions for an organization's Media Library; the
+ * workbench CLI wires the island build natively for this app shape. The
+ * `fields` entries must match the modules the template ships in
+ * `src/fields/`.
+ */
+export const workbenchMediaLibraryConfigTemplate = `
+import {defineCliConfig, unstable_defineMediaLibrary} from 'sanity/cli'
+
+export default defineCliConfig({
+  app: unstable_defineMediaLibrary({
+    organizationId: '%organizationId%',
+    fields: [
+      {name: 'caption', src: './src/fields/caption.tsx', title: 'Caption'},
+      {name: 'notes', src: './src/fields/notes.tsx', title: 'Notes'},
+    ],
+  }),
+})
+`
+
+/**
+ * Studio scaffold — brands with name/slug/title only, no `entry` (studio app views
  * aren't implemented yet).
  */
 export const workbenchStudioConfigTemplate = `
@@ -33,6 +55,7 @@ export default defineCliConfig({
   },
   app: defineApplication({
     title: '%title%',
+    name: '%slug%',
     slug: '%slug%',
     organizationId: '%organizationId%',
   }),

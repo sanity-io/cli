@@ -73,6 +73,27 @@ describe('sanityTypegenPlugin', () => {
     vi.useRealTimers()
   })
 
+  it('does not generate when typegen.resources is set, and says why', async () => {
+    const plugin = sanityTypegenPlugin({
+      config: {
+        resources: [{dataset: 'production', generates: './production.ts', projectId: 'abc123'}],
+      },
+      output,
+      workDir: TEST_PROJECT_DIR,
+    })
+
+    const configResolved = plugin.configResolved as (config: {root: string}) => void
+    configResolved({root: TEST_PROJECT_DIR})
+
+    expect(output.log).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.stringContaining('does not support typegen.resources yet'),
+    )
+    expect(plugin.configureServer).toBeUndefined()
+    expect(plugin.buildEnd).toBeUndefined()
+    expect(runTypegenGenerate).not.toHaveBeenCalled()
+  })
+
   it('runs initial generation when httpServer emits listening event', async () => {
     const plugin = sanityTypegenPlugin({
       config: {},

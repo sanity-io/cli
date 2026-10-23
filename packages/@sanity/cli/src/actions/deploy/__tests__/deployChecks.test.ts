@@ -11,6 +11,7 @@ import {
   checkAppId,
   checkAppTarget,
   checkAutoUpdates,
+  checkExternalUrl,
   checkStudioTarget,
   type DeployCheck,
   describeAppTarget,
@@ -241,7 +242,18 @@ describe('checkAppTarget', () => {
     mockResolveApp.mockResolvedValue({type: 'would-create'})
     const reporter = createCollectingReporter<DeployCheck>()
 
-    await checkAppTarget(reporter, {appId: undefined, organizationId: 'org-1', title: 'My App'})
+    await checkAppTarget(reporter, {
+      appId: undefined,
+      create: true,
+      organizationId: 'org-1',
+      title: 'My App',
+    })
+
+    expect(mockResolveApp).toHaveBeenCalledWith({
+      appId: undefined,
+      create: true,
+      organizationId: 'org-1',
+    })
 
     expect(reporter.results[0]).toMatchObject({status: 'pass'})
     expect(reporter.results[0]?.message).toContain('Would create a new application "My App"')
@@ -266,6 +278,7 @@ describe('checkAppTarget', () => {
 
     expect(reporter.results[0]).toMatchObject({exitCode: exitCodes.USAGE_ERROR, status: 'fail'})
     expect(reporter.results[0]?.message).toContain('2 existing applications to choose from')
+    expect(reporter.results[0]?.solution).toContain('sanity deploy --create --title')
   })
 
   test('invalid → fail check', async () => {
@@ -309,19 +322,41 @@ describe('checkAppTarget (workbench backend)', () => {
     mockGetApplication.mockResolvedValue(workbenchApp({title: 'Drop Desk'}))
     const reporter = createCollectingReporter<DeployCheck>()
 
-    await checkAppTarget(reporter, {appId: 'app-1', isWorkbenchApp: true, title: 'ignored'})
+    await checkAppTarget(reporter, {
+      appId: 'app-1',
+      hasAppView: true,
+      isWorkbenchApp: true,
+      title: 'ignored',
+    })
 
     expect(reporter.results[0]).toMatchObject({status: 'pass'})
     expect(reporter.results[0]?.message).toContain('Deploys to existing application "Drop Desk"')
     expect(reporter.results[0]?.target?.action).toBe('update')
-    expect(reporter.results[0]?.target?.url).toBe('https://org-1.sanity.run/application/app-1')
+    expect(reporter.results[0]?.target?.url).toBe('https://org-1.sanity.run/applications/app')
+  })
+
+  test('existing appId without an app view → links the organization workbench', async () => {
+    mockGetApplication.mockResolvedValue(workbenchApp({title: 'Drop Desk'}))
+    const reporter = createCollectingReporter<DeployCheck>()
+
+    await checkAppTarget(reporter, {appId: 'app-1', hasAppView: false, isWorkbenchApp: true})
+
+    expect(reporter.results[0]?.message).toBe(
+      'Deploys to existing application "Drop Desk" at https://org-1.sanity.run',
+    )
+    expect(reporter.results[0]?.target?.url).toBe('https://org-1.sanity.run')
   })
 
   test('unknown appId → fail check pointing to deployment.appId', async () => {
     mockGetApplication.mockResolvedValue(null)
     const reporter = createCollectingReporter<DeployCheck>()
 
-    await checkAppTarget(reporter, {appId: 'nope', isWorkbenchApp: true, title: 'ignored'})
+    await checkAppTarget(reporter, {
+      appId: 'nope',
+      hasAppView: true,
+      isWorkbenchApp: true,
+      title: 'ignored',
+    })
 
     expect(reporter.results[0]?.status).toBe('fail')
     expect(reporter.results[0]?.solution).toContain('deployment.appId')
@@ -330,7 +365,12 @@ describe('checkAppTarget (workbench backend)', () => {
   test('no appId → pass check for the application that would be created', async () => {
     const reporter = createCollectingReporter<DeployCheck>()
 
-    await checkAppTarget(reporter, {appId: undefined, isWorkbenchApp: true, title: 'New App'})
+    await checkAppTarget(reporter, {
+      appId: undefined,
+      hasAppView: true,
+      isWorkbenchApp: true,
+      title: 'New App',
+    })
 
     expect(reporter.results[0]).toMatchObject({status: 'pass'})
     expect(reporter.results[0]?.message).toContain('Would create a new application "New App"')
@@ -342,6 +382,7 @@ describe('checkAppTarget (workbench backend)', () => {
 
     await checkAppTarget(reporter, {
       appId: undefined,
+      hasAppView: true,
       isWorkbenchApp: true,
       slug: 'drop-desk',
       title: 'New App',
@@ -368,7 +409,7 @@ describe('slug-taken', () => {
     organizationId: 'org-1',
     title: 'Agent',
     type: 'coreApp' as const,
-    url: 'https://org-1.sanity.run/application/existing-1',
+    url: 'https://org-1.sanity.run/applications/existing-1',
   }
 
   test('fails naming the existing app id and how to reuse it', () => {
@@ -384,7 +425,7 @@ describe('slug-taken', () => {
       id: 'existing-1',
       title: 'Agent',
       type: 'coreApp',
-      url: 'https://org-1.sanity.run/application/existing-1',
+      url: 'https://org-1.sanity.run/applications/existing-1',
     })
     // A studio collides in the same namespace, so it gets the same diagnosis.
     expect(
@@ -436,10 +477,10 @@ describe('checkStudioTarget (workbench backend)', () => {
 
     expect(reporter.results[0]).toMatchObject({status: 'pass'})
     expect(reporter.results[0]?.message).toContain(
-      'Deploys to existing studio https://org-1.sanity.run/studio/app-1',
+      'Deploys to existing studio https://org-1.sanity.run/studios/my-studio',
     )
     expect(check?.target?.action).toBe('update')
-    expect(check?.target?.url).toBe('https://org-1.sanity.run/studio/app-1')
+    expect(check?.target?.url).toBe('https://org-1.sanity.run/studios/my-studio')
   })
 
   test('no appId → pass check naming the slug the studio would be created at', async () => {
@@ -548,5 +589,64 @@ describe('checkAppId', () => {
     checkAppId(reporter, {cliConfig: {deployment: {appId: 'new'}} as CliConfig})
 
     expect(reporter.results).toHaveLength(0)
+  })
+})
+
+describe('checkExternalUrl', () => {
+  test('a first deploy registers the origin of --url', () => {
+    const reporter = createCollectingReporter<DeployCheck>()
+
+    expect(checkExternalUrl(reporter, {appId: undefined, url: 'https://studio.example.com/'})).toBe(
+      'https://studio.example.com',
+    )
+    expect(reporter.results).toEqual([
+      {message: 'Registers at https://studio.example.com', status: 'pass'},
+    ])
+  })
+
+  test('a first deploy without --url fails as a usage error', () => {
+    const reporter = createCollectingReporter<DeployCheck>()
+
+    expect(checkExternalUrl(reporter, {appId: undefined, url: undefined})).toBeUndefined()
+    expect(reporter.results).toEqual([
+      expect.objectContaining({
+        exitCode: exitCodes.USAGE_ERROR,
+        solution: expect.stringContaining('--url'),
+        status: 'fail',
+      }),
+    ])
+  })
+
+  test.each([
+    ['a path', 'https://example.com/studio'],
+    ['a query or hash', 'https://example.com/?v=1#top'],
+  ])('a URL with %s fails as a usage error', (_, url) => {
+    const reporter = createCollectingReporter<DeployCheck>()
+
+    expect(checkExternalUrl(reporter, {appId: undefined, url})).toBeUndefined()
+    expect(reporter.results).toEqual([
+      {
+        exitCode: exitCodes.USAGE_ERROR,
+        message: '--url must be an origin with no path, query or hash',
+        solution:
+          'Pass the origin your host serves the build from, for example --url https://studio.example.com',
+        status: 'fail',
+      },
+    ])
+  })
+
+  test('a URL that is not http(s) fails as a usage error', () => {
+    const reporter = createCollectingReporter<DeployCheck>()
+
+    expect(
+      checkExternalUrl(reporter, {appId: undefined, url: 'ftp://studio.example.com'}),
+    ).toBeUndefined()
+    expect(reporter.results).toEqual([
+      expect.objectContaining({
+        exitCode: exitCodes.USAGE_ERROR,
+        message: 'URL must use http or https protocol',
+        status: 'fail',
+      }),
+    ])
   })
 })

@@ -58,7 +58,7 @@ export async function listSchemas(options: ListSchemasOptions): Promise<void> {
   }
 
   if (json) {
-    output.log(JSON.stringify(id ? parsedSchemas[0] : parsedSchemas, null, 2))
+    output.logJson(id ? parsedSchemas[0] : parsedSchemas)
   } else {
     printSchemas({output, schemas: parsedSchemas, workspaces: projectDatasets})
   }
@@ -86,6 +86,7 @@ function parseSchemas(
       if (schema.status === 'fulfilled') return schema.value
 
       const error = schema.reason
+      const logDiagnostic = json ? output.logDiagnostic.bind(output) : output.log.bind(output)
 
       if (error instanceof DatasetError) {
         if (
@@ -95,7 +96,6 @@ function parseSchemas(
           'statusCode' in error.cause &&
           error.cause.statusCode === 401
         ) {
-          const logDiagnostic = json ? output.warn.bind(output) : output.log.bind(output)
           logDiagnostic(
             styleText(
               'yellow',
@@ -107,7 +107,6 @@ function parseSchemas(
           return []
         }
 
-        const logDiagnostic = json ? output.warn.bind(output) : output.log.bind(output)
         logDiagnostic(
           styleText('red', `↳ Failed to fetch schema from "${error.dataset}":\n  ${error.message}`),
         )

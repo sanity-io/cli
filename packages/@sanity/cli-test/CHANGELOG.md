@@ -1,5 +1,129 @@
 # Changelog
 
+## 21.0.1
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-test-v21.0.0...cli-test-v21.0.1)
+
+_2026-10-22_
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/cli-core bumped to 3.11.1
+
+## 21.0.0
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-test-v20.0.0...cli-test-v21.0.0)
+
+_2026-10-21_
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/cli-core bumped to 3.11.0
+
+## 20.0.0
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-test-v19.0.2...cli-test-v20.0.0)
+
+_2026-10-17_
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/cli-core bumped to 3.10.0
+
+## 19.0.2
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-test-v19.0.1...cli-test-v19.0.2)
+
+_2026-10-15_
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/cli-core bumped to 3.9.2
+
+## 19.0.1
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-test-v19.0.0...cli-test-v19.0.1)
+
+_2026-10-14_
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/cli-core bumped to 3.9.1
+
+## 19.0.0
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-test-v18.0.2...cli-test-v19.0.0)
+
+_2026-10-08_
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/cli-core bumped to 3.9.0
+
+## 18.0.2
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-test-v18.0.1...cli-test-v18.0.2)
+
+_2026-10-02_
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/cli-core bumped to 3.8.2
+
+## 18.0.1
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-test-v18.0.0...cli-test-v18.0.1)
+
+_2026-09-24_
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/cli-core bumped to 3.8.1
+
+## 18.0.0
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-test-v17.0.0...cli-test-v18.0.0)
+
+_2026-09-18_
+
+### Features
+
+- media library url ingest ([#1875](https://github.com/sanity-io/cli/pull/1875)) ([ac3a20c](https://github.com/sanity-io/cli/commit/ac3a20cd49b90d0abcdfed0f8dc8d472bbf3e783))
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/cli-core bumped to 3.8.0
+
+## 17.0.0
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-test-v16.0.1...cli-test-v17.0.0)
+
+_2026-09-10_
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/cli-core bumped to 3.7.0
+
 ## 16.0.1
 
 [Compare changes](https://github.com/sanity-io/cli/compare/cli-test-v16.0.0...cli-test-v16.0.1)

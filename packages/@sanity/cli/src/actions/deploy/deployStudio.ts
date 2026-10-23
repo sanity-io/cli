@@ -1,4 +1,4 @@
-import {basename, dirname} from 'node:path'
+import {basename, dirname, relative} from 'node:path'
 import {styleText} from 'node:util'
 import {createGzip, type Gzip} from 'node:zlib'
 
@@ -13,6 +13,7 @@ import {
   deployWorkbenchApp,
   getApplicationUrl,
   getWorkbench,
+  getWorkbenchUrl,
   toWorkbenchPayload,
 } from '@sanity/workbench-cli/deploy'
 import {type StudioManifest} from 'sanity'
@@ -22,10 +23,12 @@ import {createDeployment, type UserApplication} from '../../services/userApplica
 import {getAppId} from '../../util/appId.js'
 import {NO_ORGANIZATION_ID, NO_PROJECT_ID} from '../../util/errorMessages.js'
 import {buildStudio} from '../build/buildStudio.js'
+import {checkBlueprintManaged} from './blueprintManaged.js'
 import {createStudioUserApplication} from './createUserApplication.js'
 import {
   checkAutoUpdates,
   checkBuild,
+  checkExternalUrl,
   checkPackageVersion,
   checkStudioTarget,
   type DeployCheckReporter,
@@ -63,17 +66,9 @@ async function runStudioDeployment(
   const organizationId = cliConfig.app?.organizationId
   const appId = getAppId(cliConfig)
   const dryRun = !!flags['dry-run']
-
-  // A federated app deploys through Sanity's build/hosting pipeline, which
-  // --external skips — fail before doing any other work.
-  if (isExternal && isWorkbenchApp) {
-    reporter.report({
-      exitCode: exitCodes.USAGE_ERROR,
-      message: 'Deploying a federated application to an external host is not yet supported',
-      solution: 'Remove the --external flag to deploy to Sanity hosting',
-      status: 'fail',
-    })
-  }
+  // A legacy external studio only registers its URL; a federated one is built
+  // and deployed like a hosted one, minus the upload.
+  const isLegacyExternal = isExternal && !isWorkbenchApp
 
   const appTitle = workbench
     ? flags.title?.trim() || cliConfig.app?.title?.trim() || workbench.slug
@@ -96,12 +91,15 @@ async function runStudioDeployment(
         },
   )
 
+  await checkBlueprintManaged(reporter, {kind: 'studio', projectRootDir: workDir})
+
   // Workbench studios deploy to Brett (which needs the org); plain studios
   // resolve/create on user-applications, unchanged.
   let application: UserApplication | null = null
   let studioCreated = false
-  let workbenchApp: object | undefined
-  if (workbench && !isExternal) {
+  let workbenchApp: {externalUrl?: string} | undefined
+  let externalUrl: string | undefined
+  if (workbench) {
     reporter.report(
       organizationId
         ? {message: `Organization: ${organizationId}`, status: 'pass'}
@@ -120,16 +118,19 @@ async function runStudioDeployment(
         title: appTitle,
       })
     )?.application
+    if (isExternal) externalUrl = checkExternalUrl(reporter, {appId, url: flags.url})
   } else {
     ;({application, created: studioCreated} = await resolveStudioApplication(options, {
       dryRun,
       reporter,
     }))
   }
+  // A redeploy follows how the application was registered, so --external is only needed once.
+  const isExternallyHosted = isExternal || !!workbenchApp?.externalUrl
 
   // A first deploy mints the app id and the build inlines it; --no-build would
   // ship an existing bundle carrying a different id, so it can't be a first deploy.
-  if (workbench && !isExternal && !appId && !flags.build) {
+  if (workbench && !appId && !flags.build) {
     reporter.report({
       exitCode: exitCodes.USAGE_ERROR,
       message: 'A first deploy cannot skip the build (--no-build)',
@@ -140,17 +141,16 @@ async function runStudioDeployment(
 
   // Read up front so a bad icon path fails before we create or build.
   const appIcon =
-    !dryRun && !isExternal && workbench?.icon
-      ? await readIconFromPath(workDir, workbench.icon)
-      : undefined
+    !dryRun && workbench?.icon ? await readIconFromPath(workDir, workbench.icon) : undefined
 
   // Create the studio before the build so the bundle carries its real id. A
   // redeploy already has it from `deployment.appId`; a dry run skips creation.
   let applicationId = appId
   let applicationCreated = false
   let rollbackApp: (() => Promise<void>) | undefined
-  if (!dryRun && workbench && !isExternal && organizationId && !applicationId) {
+  if (!dryRun && workbench && organizationId && !applicationId) {
     const created = await createStudio({
+      externalUrl,
       name: workbench.name,
       organizationId,
       projectId,
@@ -167,7 +167,7 @@ async function runStudioDeployment(
   // A record created above is stranded at its slug (and blocks retries) if any
   // step before it fully deploys fails, so undo the creation on failure.
   try {
-    await checkBuild(reporter, {
+    const built = await checkBuild(reporter, {
       build: () =>
         buildStudio({
           applicationId: workbench ? applicationId : undefined,
@@ -179,16 +179,17 @@ async function runStudioDeployment(
           output,
           workDir,
         }),
-      skipReason: studioBuildSkipReason({build: flags.build, isExternal}),
+      skipReason: studioBuildSkipReason({build: flags.build, isLegacyExternal}),
       successMessage: 'Studio built',
     })
 
-    if (!isExternal) {
-      await verifyOutputDir({isWorkbenchApp, reporter, sourceDir})
+    let mfManifest = built?.mfManifest
+    // A federated build has already read its manifest; anything else verifies the directory.
+    if (mfManifest === undefined && !isLegacyExternal) {
+      mfManifest = await verifyOutputDir({isWorkbenchApp, reporter, sourceDir})
     }
 
-    // An external studio hosts its own bundle, so nothing registers.
-    const interfaces = workbench && !isExternal ? reportInterfaces(reporter, workbench) : null
+    const interfaces = workbench ? reportInterfaces(reporter, workbench) : null
 
     const payload: DeployPayload = {
       appId: appId ?? null,
@@ -209,11 +210,12 @@ async function runStudioDeployment(
 
     const studioManifest = await uploadStudioSchema(options, {
       applicationId: workbench ? applicationId : undefined,
-      isExternal,
+      isExternal: isLegacyExternal,
     })
     // The studio was created (or resolved from `deployment.appId`) before the
     // build, so this only ships the deployment; plain studios use user-applications.
-    if (workbench && !isExternal && organizationId && applicationId) {
+    if (workbench && organizationId && applicationId) {
+      if (!mfManifest) throw new Error('The federated build produced no manifest.')
       await deployWorkbenchApp({
         access: toAccess(studioManifest),
         app: cliConfig.app,
@@ -221,7 +223,9 @@ async function runStudioDeployment(
         icon: appIcon,
         isApp: false,
         isAutoUpdating,
+        isExternal: isExternallyHosted,
         label: 'Deploying studio',
+        mfManifest,
         // Once the deployment is live, a metadata-sync failure must not delete
         // the studio.
         onDeployed: () => {
@@ -234,8 +238,15 @@ async function runStudioDeployment(
         visibility: workbench.visibility,
         workspaces: toWorkspaces(studioManifest),
       })
-      const url = getApplicationUrl({id: applicationId, organizationId, type: 'studio'})
+      const url = getApplicationUrl({
+        id: applicationId,
+        organizationId,
+        slug: workbench.slug,
+        type: 'studio',
+      })
       logWorkbenchStudioDeployed({applicationId, cliConfig, output, url})
+      if (isExternallyHosted)
+        logExternalHost({built: flags.build, organizationId, output, sourceDir})
       return {
         action: applicationCreated ? 'create' : 'update',
         application: workbenchApp ?? null,
@@ -480,8 +491,34 @@ function logWorkbenchStudioDeployed({
   output.log(`to avoid prompting for application id on next deploy.`)
 }
 
-function studioBuildSkipReason({build, isExternal}: {build: boolean; isExternal: boolean}) {
-  if (isExternal) return 'Build skipped for externally hosted studios'
+/** Tells the customer what their host must do for the Dashboard to load the studio from it. */
+function logExternalHost({
+  built,
+  organizationId,
+  output,
+  sourceDir,
+}: {
+  built: boolean
+  organizationId: string
+  output: DeployAppOptions['output']
+  sourceDir: string
+}): void {
+  const dir = `${relative(process.cwd(), sourceDir) || '.'}/`
+  output.log(`
+The Dashboard loads this studio from your host, which must:
+  1. Serve ${dir} unchanged at the root of its URL (/mf-manifest.json, /remoteEntry-*.js, /static/*)
+  2. Send Access-Control-Allow-Origin for ${getWorkbenchUrl(organizationId)}
+  3. Respond without cookies or a sign-in${built ? `\n\nThis deploy rebuilt ${dir}: copy it to your host before opening the studio in the Dashboard.` : ''}`)
+}
+
+function studioBuildSkipReason({
+  build,
+  isLegacyExternal,
+}: {
+  build: boolean
+  isLegacyExternal: boolean
+}) {
+  if (isLegacyExternal) return 'Build skipped for externally hosted studios'
   if (!build) return 'Build skipped (--no-build) — validating existing output directory'
   return
 }

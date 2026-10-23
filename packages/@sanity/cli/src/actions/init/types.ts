@@ -24,12 +24,14 @@ export interface InitOptions {
   bare: boolean
   datasetDefault: boolean
   fromCreate: boolean
+  install: boolean
   mcpMode: 'auto' | 'prompt' | 'skip'
   skillsMode: 'auto' | 'prompt' | 'skip'
   unattended: boolean
 
   argType?: string
   coupon?: string
+  dashboard?: boolean
   dataset?: string
   env?: string
   git?: boolean | string
@@ -49,7 +51,6 @@ export interface InitOptions {
   template?: string
   templateToken?: string
   typescript?: boolean
-  unstableWorkbench?: boolean
   visibility?: 'private' | 'public'
 }
 
@@ -64,12 +65,14 @@ interface InitCommandFlags {
   bare: boolean
   'dataset-default': boolean
   'from-create': boolean
+  install: boolean
   mcp: boolean
   'no-git': boolean
   skills: boolean
 
   coupon?: string
   'create-project'?: string
+  dashboard?: boolean
   dataset?: string
   env?: string
   git?: string
@@ -89,7 +92,6 @@ interface InitCommandFlags {
   template?: string
   'template-token'?: string
   typescript?: boolean
-  'unstable--workbench'?: boolean
   visibility?: string
 }
 
@@ -123,12 +125,14 @@ export function flagsToInitOptions(
     autoUpdates: flags['auto-updates'],
     bare: flags.bare,
     coupon: flags.coupon,
+    dashboard: flags.dashboard,
     dataset: flags.dataset,
     datasetDefault: flags['dataset-default'],
     env: flags.env,
     fromCreate: flags['from-create'],
     git: flags['no-git'] ? false : flags.git,
     importDataset: flags['import-dataset'],
+    install: flags.install,
     mcpMode,
     nextjsAddConfigFiles: flags['nextjs-add-config-files'],
     nextjsAppendEnv: flags['nextjs-append-env'],
@@ -147,7 +151,6 @@ export function flagsToInitOptions(
     templateToken: flags['template-token'],
     typescript: flags.typescript,
     unattended: isUnattended,
-    unstableWorkbench: flags['unstable--workbench'],
     visibility: narrowVisibility(flags.visibility),
   }
 }

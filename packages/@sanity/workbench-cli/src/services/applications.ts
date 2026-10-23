@@ -16,6 +16,9 @@ export interface Application {
   slug: string | null
   title: string
   type: ApplicationType
+
+  /** Set when the customer serves the build; such an application never receives a tarball. */
+  externalUrl?: string
 }
 
 interface BrettInterfaceBase {
@@ -66,10 +69,10 @@ export function getWorkbenchUrl(organizationId: string): string {
 
 /** Where a deployed application is served on its organization's workbench. */
 export function getApplicationUrl(
-  application: Pick<Application, 'id' | 'organizationId' | 'type'>,
+  application: Pick<Application, 'id' | 'organizationId' | 'slug' | 'type'>,
 ): string {
-  const segment = application.type === 'studio' ? 'studio' : 'application'
-  return `${getWorkbenchUrl(application.organizationId)}/${segment}/${application.id}`
+  const segment = application.type === 'studio' ? 'studios' : 'applications'
+  return `${getWorkbenchUrl(application.organizationId)}/${segment}/${application.slug ?? application.id}`
 }
 
 async function getClient() {
@@ -101,6 +104,8 @@ export async function listApplications(organizationId: string): Promise<Applicat
  * returned id, then ship it via {@link createDeployment}.
  */
 export async function createApplication(options: {
+  /** The origin a customer serves the build from; Brett then never hosts a bundle for it. */
+  externalUrl?: string
   isSingleton?: boolean
   name?: string
   organizationId: string
@@ -110,7 +115,8 @@ export async function createApplication(options: {
   type: ApplicationType
   visibility?: AppVisibility
 }): Promise<Application> {
-  const {isSingleton, name, organizationId, projectId, slug, title, type, visibility} = options
+  const {externalUrl, isSingleton, name, organizationId, projectId, slug, title, type, visibility} =
+    options
   const client = await getClient()
   return client.request({
     body: {
@@ -124,6 +130,7 @@ export async function createApplication(options: {
       // builder keeps forwarding it even though the CLI itself never sets it.
       ...(isSingleton === undefined ? {} : {isSingleton}),
       ...(visibility ? {visibility} : {}),
+      ...(externalUrl ? {externalUrl} : {}),
       // Studio config is set once, at create — it's immutable on redeploy.
       ...(projectId ? {config: {studio: {projectId}}} : {}),
     },
@@ -150,20 +157,34 @@ export async function updateApplication(
   await client.request({body: update, method: 'PATCH', url: `/applications/${applicationId}`})
 }
 
-/** Deploy a new active version to an existing application. */
+/**
+ * Deploy a new active version to an existing application. `mfManifest` is the
+ * build's federation manifest; `tarball` is omitted for an external application,
+ * whose build the customer serves themselves.
+ */
 export async function createDeployment(options: {
   access?: readonly BrettAccess[]
   applicationId: string
   interfaces: readonly BrettInterface[]
   isAutoUpdating: boolean
-  tarball: Gzip
+  mfManifest: Record<string, unknown>
+  tarball?: Gzip
   version: string
   workspaces?: readonly BrettWorkspace[]
 }): Promise<{id: string}> {
-  const {access, applicationId, interfaces, isAutoUpdating, tarball, version, workspaces} = options
+  const {
+    access,
+    applicationId,
+    interfaces,
+    isAutoUpdating,
+    mfManifest,
+    tarball,
+    version,
+    workspaces,
+  } = options
   const formData = new FormData()
   formData.append('isAutoUpdating', isAutoUpdating.toString())
-  appendDeploymentParts(formData, {access, interfaces, tarball, version, workspaces})
+  appendDeploymentParts(formData, {access, interfaces, mfManifest, tarball, version, workspaces})
   return request(`/applications/${applicationId}/deployments`, formData)
 }
 
@@ -182,13 +203,15 @@ function appendDeploymentParts(
   {
     access,
     interfaces,
+    mfManifest,
     tarball,
     version,
     workspaces,
   }: {
     access?: readonly BrettAccess[]
     interfaces: readonly BrettInterface[]
-    tarball: Gzip
+    mfManifest: Record<string, unknown>
+    tarball?: Gzip
     version: string
     workspaces?: readonly BrettWorkspace[]
   },
@@ -199,7 +222,11 @@ function appendDeploymentParts(
   if (workspaces?.length) appendJson(formData, 'workspaces', workspaces)
   // Per-deployment; forbidden for singletons, so callers omit it there.
   if (access?.length) appendJson(formData, 'access', access)
-  formData.append('tarball', tarball, {contentType: 'application/gzip', filename: 'app.tar.gz'})
+  appendJson(formData, 'mfManifest', mfManifest)
+  // Last: the server requires every field part to precede the tarball.
+  if (tarball) {
+    formData.append('tarball', tarball, {contentType: 'application/gzip', filename: 'app.tar.gz'})
+  }
 }
 
 /** Structured parts must arrive as JSON so the server parses them. */

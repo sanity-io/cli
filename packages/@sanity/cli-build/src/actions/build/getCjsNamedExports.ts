@@ -1,4 +1,3 @@
-// eslint-disable-next-line import-x/no-unresolved
 import {init, parse} from 'cjs-module-lexer'
 
 /** Memoizes the (Wasm) lexer initialization across calls. */

@@ -1,10 +1,16 @@
 import {RESOURCE_BINDINGS_ENTRY_IMPORT} from '@sanity/workbench-cli/build'
 
+// The user module (`sanity.config.*`, or the app's `App`) is the first import
+// after resource bindings. ESM evaluates static imports in source order, and
+// `react-dom` reads `__REACT_DEVTOOLS_GLOBAL_HOOK__` once at module init, so a
+// side-effect import at the top of the user module (for example
+// `react-devtools-cdt-mcp/register`) only runs before react-dom if the user
+// module is requested before `sanity` / `react-dom/client`.
 const entryModule = `
 // This file is auto-generated on 'sanity dev'
 // Modifications to this file is automatically discarded
-%RESOURCE_BINDINGS_IMPORT%import {renderStudio} from "sanity"
-import studioConfig from %STUDIO_CONFIG_LOCATION%
+%RESOURCE_BINDINGS_IMPORT%import studioConfig from %STUDIO_CONFIG_LOCATION%
+import {renderStudio} from "sanity"
 
 renderStudio(
   document.getElementById("sanity"),
@@ -30,9 +36,9 @@ renderStudio(
 const appEntryModule = `
 // This file is auto-generated on 'sanity dev'
 // Modifications to this file is automatically discarded
-%RESOURCE_BINDINGS_IMPORT%import {createRoot} from 'react-dom/client'
+%RESOURCE_BINDINGS_IMPORT%import App from %ENTRY%
+import {createRoot} from 'react-dom/client'
 import {createElement} from 'react'
-import App from %ENTRY%
 
 const root = createRoot(document.getElementById('root'))
 const element = createElement(App)

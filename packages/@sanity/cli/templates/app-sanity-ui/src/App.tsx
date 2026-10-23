@@ -4,6 +4,14 @@ import {Flex, Spinner} from '@sanity/ui'
 import {ExampleComponent} from './ExampleComponent'
 import {SanityUI} from './SanityUI'
 
+function Loading() {
+  return (
+    <Flex justify="center" align="center" height="fill">
+      <Spinner />
+    </Flex>
+  )
+}
+
 function App() {
   // apps can access many different projects or other sources of data
   const sanityConfigs: SanityConfig[] = [
@@ -12,14 +20,6 @@ function App() {
       dataset: '%dataset%',
     },
   ]
-
-  function Loading() {
-    return (
-      <Flex justify="center" align="center" width="100vw" height="fill">
-        <Spinner />
-      </Flex>
-    )
-  }
 
   return (
     <SanityUI>

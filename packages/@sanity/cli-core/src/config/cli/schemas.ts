@@ -1,11 +1,6 @@
 import {z} from 'zod/mini'
 
-import {
-  APP_VISIBILITIES,
-  type CliConfig,
-  type ReactCompilerConfig,
-  type TypeGenConfig,
-} from './types/cliConfig.js'
+import {APP_VISIBILITIES, type CliConfig, type ReactCompilerConfig} from './types/cliConfig.js'
 import {type UserViteConfig} from './types/userViteConfig'
 
 /**
@@ -36,6 +31,12 @@ export const cliConfigSchema = z.object({
     z.object({
       appId: z.optional(z.string()),
       autoUpdates: z.optional(z.boolean()),
+      studioHost: z.optional(
+        z.never({
+          error:
+            'deployment.studioHost is not supported. Move studioHost to the top level of sanity.cli.ts, or pass --url <hostname> to sanity deploy.',
+        }),
+      ),
     }),
   ),
 
@@ -93,5 +94,5 @@ export const cliConfigSchema = z.object({
 
   vite: z.optional(z.custom<UserViteConfig>()),
 
-  typegen: z.optional(z.custom<Partial<TypeGenConfig> & {enabled?: boolean}>()),
+  typegen: z.optional(z.custom<NonNullable<CliConfig['typegen']>>()),
 }) satisfies z.core.$ZodType<CliConfig>

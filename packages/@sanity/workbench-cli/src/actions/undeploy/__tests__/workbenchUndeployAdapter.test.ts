@@ -10,6 +10,10 @@ import {
   type ResolvedMediaLibraryConfig,
   resolveWorkbenchConfig,
 } from '../../../resolveWorkbenchConfig.js'
+import {
+  anInstallation,
+  installationsResponse,
+} from '../../deploy/__tests__/fixtures/installations.js'
 import {type DeployableWorkbenchApp, getWorkbench} from '../../deploy/getWorkbench.js'
 import {createWorkbenchUndeployAdapter} from '../workbenchUndeployAdapter.js'
 
@@ -68,7 +72,7 @@ const configAdapter = () =>
 function stubInstallations(configs: unknown[]) {
   mockRequest.mockImplementation(async ({url}: {url: string}) => {
     if (url === '/installations') {
-      return {data: [{application: {name: 'media-library'}, id: 'inst-1'}]}
+      return installationsResponse([anInstallation({id: 'inst-1', name: 'media-library'})])
     }
     if (url === '/installations/inst-1/configs') return {data: configs}
     throw new Error(`unexpected request to ${url}`)
@@ -118,7 +122,7 @@ describe('createWorkbenchUndeployAdapter — application', () => {
       services: [],
       title: 'My App',
       type: 'coreApp',
-      url: 'https://org-1.sanity.run/application/wb-app-1',
+      url: 'https://org-1.sanity.run/applications/my-app-x1',
       views: [{name: 'insights', surface: 'panel', title: 'Insights'}],
     })
   })
@@ -140,7 +144,7 @@ describe('createWorkbenchUndeployAdapter — application', () => {
     }).resolveTarget()
 
     expect(resolution.type === 'found' && resolution.target.url).toBe(
-      'https://org-1.sanity.run/studio/wb-studio-1',
+      'https://org-1.sanity.run/studios/my-studio',
     )
   })
 

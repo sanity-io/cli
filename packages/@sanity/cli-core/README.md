@@ -27,6 +27,24 @@ Browser environment mock. Note this depends on `jsdom` (~46 MB) and so has non-t
 | -------------------------- | ---------------------------------------------- |
 | `mockBrowserEnvironment()` | Set up a mocked browser environment via JSDOM. |
 
+## `@sanity/cli-core/commandPolicy`
+
+The contract for exposing commands to programmatic invocation sources, such as the remote MCP server.
+
+| Export                                     | Description                                                                          |
+| ------------------------------------------ | ------------------------------------------------------------------------------------ |
+| `allow`                                    | Policy stating every valid invocation of the command is safe.                        |
+| `deny`                                     | Policy stating no invocation is safe; the command behaves like an unknown one.       |
+| `conditionalDenyFlags(...names)`           | Policy refusing the named flags, which are also hidden from rendered help.           |
+| `conditionalPolicy(options)`               | `conditionalDenyFlags` plus an extra predicate on the parsed invocation.             |
+| `definePluginInvocationPolicies(policies)` | Type-checked identity helper for authoring a plugin's policy module.                 |
+| `isCommandPolicySet(value)`                | Whether a value is a usable policy table. Used by the host to verify plugin modules. |
+| `isConditionalInvocationPolicy(policy)`    | Type-guard narrowing a policy to its conditional form.                               |
+| `CommandPolicy`                            | One command's policy: a `kind` and a `validate` predicate.                           |
+| `CommandPolicySet`                         | A complete policy table, keyed by oclif command id.                                  |
+| `InvocationSource`                         | Where an invocation originates; selects the policy to enforce.                       |
+| `PluginInvocationPolicies`                 | The policies a plugin declares, keyed by invocation source.                          |
+
 ## `@sanity/cli-core/config`
 
 CLI, studio, and workspace configuration helpers.

@@ -1,5 +1,117 @@
 # Changelog
 
+## 3.11.1
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-core-v3.11.0...cli-core-v3.11.1)
+
+_2026-10-22_
+
+### Bug Fixes
+
+- **cli-core:** preserve source map comments inside dependency strings ([#1973](https://github.com/sanity-io/cli/pull/1973)) ([05902fc](https://github.com/sanity-io/cli/commit/05902fc50e2f90bed0f230d8a180607573257456))
+
+## 3.11.0
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-core-v3.10.0...cli-core-v3.11.0)
+
+_2026-10-21_
+
+### Features
+
+- **cli:** standardize json output and errors ([#1994](https://github.com/sanity-io/cli/pull/1994)) ([69ef7f7](https://github.com/sanity-io/cli/commit/69ef7f7a9713f0dc85fb15627a341732d833b848))
+
+## 3.10.0
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-core-v3.9.2...cli-core-v3.10.0)
+
+_2026-10-17_
+
+### Features
+
+- **tokens:** create organization tokens with org permissions and project roles ([#1989](https://github.com/sanity-io/cli/pull/1989)) ([9f33a2f](https://github.com/sanity-io/cli/commit/9f33a2f1f4308e3c31c2cf1cd4db9544cd3d65c3))
+
+## 3.9.2
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-core-v3.9.1...cli-core-v3.9.2)
+
+_2026-10-15_
+
+### Bug Fixes
+
+- `sanity deploy` no longer uploads an empty schema when `sanity.config` also exports `projectId` and `dataset` by name. The default export is now read first, like in v3. ([#1980](https://github.com/sanity-io/cli/pull/1980)) ([993a875](https://github.com/sanity-io/cli/commit/993a875214162529d9ba0a0ffb9ca6dcc4690941))
+
+## 3.9.1
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-core-v3.9.0...cli-core-v3.9.1)
+
+_2026-10-14_
+
+### Bug Fixes
+
+- **cli-core:** skip dependency source maps in the studio worker ([#1967](https://github.com/sanity-io/cli/pull/1967)) ([a31f941](https://github.com/sanity-io/cli/commit/a31f94133517fa18216712ce4d39f2324d1a6092))
+
+## 3.9.0
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-core-v3.8.2...cli-core-v3.9.0)
+
+_2026-10-08_
+
+### Features
+
+- **typegen:** generate types per dataset with typegen.resources (beta) ([#1952](https://github.com/sanity-io/cli/pull/1952)) ([68a314c](https://github.com/sanity-io/cli/commit/68a314c10669e5e606fa19202753320a8e6c27f1))
+
+## 3.8.2
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-core-v3.8.1...cli-core-v3.8.2)
+
+_2026-10-02_
+
+### Bug Fixes
+
+- **cli:** speed up startup by deferring heavy imports ([#1929](https://github.com/sanity-io/cli/pull/1929)) ([2d8c511](https://github.com/sanity-io/cli/commit/2d8c511936532b2cd9dfe9700afaa8a424785136))
+
+## 3.8.1
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-core-v3.8.0...cli-core-v3.8.1)
+
+_2026-09-24_
+
+### Bug Fixes
+
+- **cli-core:** restore CommonJS interop for studio dependency graphs, so minified UMD modules, `exports.default = obj` modules, and modules ending in the `module.exports.default = module.exports` interop footer (which every `@babel/runtime` helper uses) import correctly again ([#1864](https://github.com/sanity-io/cli/pull/1864)) ([3f16e1b](https://github.com/sanity-io/cli/commit/3f16e1b1e34d8925edbe16d4b478a76f3e234566))
+
+## 3.8.0
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-core-v3.7.0...cli-core-v3.8.0)
+
+_2026-09-18_
+
+### Features
+
+- let plugins declare which of their commands are safe for programmatic invocation ([#1825](https://github.com/sanity-io/cli/pull/1825)) ([6b7de5d](https://github.com/sanity-io/cli/commit/6b7de5d44104c4a7d3a631db803f672fc1e959a7))
+
+  Commands contributed by oclif plugins were unreachable from programmatic callers such as the MCP server, because the policy table only covered `@sanity/cli`'s own commands and only `SanityCommand` subclasses can run inside the CLI execution context. A plugin can now declare policies for the commands it contributes by pointing at a policy module from its package.json:
+
+  ```json
+  { "sanity": { "invocationPolicies": "./dist/invocationPolicies.js" } }
+  ```
+
+  The module exports an `invocationPolicies` table built from the new `@sanity/cli-core/commandPolicy` contract. Declaring a policy is a request, not a grant: entries for commands the plugin does not contribute are ignored, a plugin cannot take over a command the CLI already governs, and a command that does not extend `SanityCommand` is refused regardless of its policy. Plugins that declare nothing stay denied, so this changes no existing behaviour.
+
+### Bug Fixes
+
+- **deploy:** support explicit unattended app creation ([#1901](https://github.com/sanity-io/cli/pull/1901)) ([95e8624](https://github.com/sanity-io/cli/commit/95e8624e443aefc6cbeacbb11b12421b9ab803fd))
+
+## 3.7.0
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-core-v3.6.1...cli-core-v3.7.0)
+
+_2026-09-10_
+
+### Features
+
+- **cli-core:** accept numbers and Dates in `formatDateTime`, add `formatElapsed` for precise durations ([#1848](https://github.com/sanity-io/cli/pull/1848)) ([48fa623](https://github.com/sanity-io/cli/commit/48fa623dd56cf82bdb4bb3d5c76161face016715))
+
 ## 3.6.1
 
 [Compare changes](https://github.com/sanity-io/cli/compare/cli-core-v3.6.0...cli-core-v3.6.1)

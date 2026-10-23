@@ -60,7 +60,7 @@ describe('validateWorkbenchApp', () => {
 describe('formatWorkbenchAppErrors', () => {
   test('renders every error as a single message', () => {
     expect(formatWorkbenchAppErrors(['first', 'second'])).toBe(
-      'Invalid workbench app config:\n  - first\n  - second',
+      'Invalid Dashboard app config:\n  - first\n  - second',
     )
   })
 })

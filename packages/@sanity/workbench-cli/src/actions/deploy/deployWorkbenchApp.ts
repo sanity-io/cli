@@ -80,6 +80,7 @@ export async function createCoreApp(options: {
  * @internal
  */
 export async function createStudio(options: {
+  externalUrl?: string
   name?: string
   organizationId: string
   projectId: string | undefined
@@ -107,6 +108,9 @@ export async function createStudio(options: {
  * `onDeployed` fires the instant the deployment is live, before the metadata
  * sync — so a caller can disarm a create-time rollback that must not delete an
  * application once it has an active deployment.
+ *
+ * `isExternal` skips the tarball: the customer serves the build from the
+ * application's registered origin.
  * @internal
  */
 export async function deployWorkbenchApp(options: {
@@ -116,7 +120,9 @@ export async function deployWorkbenchApp(options: {
   icon?: string
   isApp: boolean
   isAutoUpdating: boolean
+  isExternal?: boolean
   label?: string
+  mfManifest: Record<string, unknown>
   onDeployed?: () => void
   /**
    * The address from config. Only `createApplication` used to send it, so an
@@ -136,7 +142,9 @@ export async function deployWorkbenchApp(options: {
     icon,
     isApp,
     isAutoUpdating,
+    isExternal = false,
     label = 'Deploying...',
+    mfManifest,
     onDeployed,
     slug,
     sourceDir,
@@ -145,7 +153,9 @@ export async function deployWorkbenchApp(options: {
     visibility,
     workspaces,
   } = options
-  const tarball = createTar({cwd: dirname(sourceDir)}, [basename(sourceDir)]).pipe(createGzip())
+  const tarball = isExternal
+    ? undefined
+    : createTar({cwd: dirname(sourceDir)}, [basename(sourceDir)]).pipe(createGzip())
 
   const spin = spinner(label).start()
   try {
@@ -157,6 +167,7 @@ export async function deployWorkbenchApp(options: {
         toBrettInterface(iface, version),
       ),
       isAutoUpdating,
+      mfManifest,
       tarball,
       version,
       workspaces,

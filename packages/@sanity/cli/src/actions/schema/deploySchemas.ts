@@ -1,11 +1,14 @@
 import {SchemaExtractionError} from '@sanity/cli-build/_internal/extract'
-import {type ManifestSchemaType} from '@sanity/cli-build/_internal/manifest'
+import {
+  type ManifestSchemaType,
+  type WorkspaceSchemaInput,
+} from '@sanity/cli-build/_internal/manifest'
 import {studioWorkerTask} from '@sanity/cli-core'
 import {type SchemaValidationProblemGroup} from '@sanity/types'
 import {type Workspace} from 'sanity'
 
 import {type ExtractWorkspaceWorkerData} from './types.js'
-import {updateWorkspacesSchemas, type WorkspaceSchemaInput} from './updateWorkspaceSchema.js'
+import {updateWorkspacesSchemas} from './updateWorkspaceSchema.js'
 
 interface DeploySchemasOptions {
   verbose: boolean

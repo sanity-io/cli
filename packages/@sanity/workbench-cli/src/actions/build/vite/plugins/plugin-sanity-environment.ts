@@ -45,9 +45,11 @@ export function sanityEnvironmentPlugin(options: EnvironmentOptions): Plugin {
       return {
         builder: {
           async buildApp(builder) {
-            // `emptyOutDir` is false on both environments and the CLI clears
-            // `dist` once up-front, so the SPA and federation outputs coexist
-            // without either build wiping the other's files.
+            // Both environments inherit the top-level `build.outDir` (`dist` by
+            // default, or the `outputDir` a caller such as Blueprints passes).
+            // `emptyOutDir` is false on both and the CLI clears the output dir
+            // once up-front, so the SPA and federation outputs coexist without
+            // either build wiping the other's files.
             if (clientInput) {
               await builder.build(builder.environments.client)
             }
@@ -62,7 +64,6 @@ export function sanityEnvironmentPlugin(options: EnvironmentOptions): Plugin {
                     assetsDir: 'static',
                     copyPublicDir: false,
                     emptyOutDir: false,
-                    outDir: `dist`,
                     rolldownOptions: {
                       input: {sanity: clientInput},
                       output,
@@ -77,7 +78,6 @@ export function sanityEnvironmentPlugin(options: EnvironmentOptions): Plugin {
               assetsDir: 'static',
               copyPublicDir: false,
               emptyOutDir: false,
-              outDir: `dist`,
               rolldownOptions: {input, output},
             },
             consumer: 'client',

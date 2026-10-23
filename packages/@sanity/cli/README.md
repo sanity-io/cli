@@ -135,11 +135,13 @@ Code for sanity cli
 - [`sanity tokens list`](#sanity-tokens-list)
 - [`sanity tokens rotate`](#sanity-tokens-rotate)
 - [`sanity typegen generate`](#sanity-typegen-generate)
-- [`sanity undeploy`](#sanity-undeploy)
+- [`sanity undeploy [APPID]`](#sanity-undeploy-appid)
 - [`sanity users invite [EMAIL]`](#sanity-users-invite-email)
 - [`sanity users list`](#sanity-users-list)
 - [`sanity versions`](#sanity-versions)
+- [`sanity whoami`](#sanity-whoami)
 - [`sanity workflows abort INSTANCEID`](#sanity-workflows-abort-instanceid)
+- [`sanity workflows blueprint generate`](#sanity-workflows-blueprint-generate)
 - [`sanity workflows definition delete NAME`](#sanity-workflows-definition-delete-name)
 - [`sanity workflows definition diff NAME`](#sanity-workflows-definition-diff-name)
 - [`sanity workflows definition list`](#sanity-workflows-definition-list)
@@ -244,17 +246,20 @@ EXAMPLES
 
 ## `sanity assets upload`
 
-Upload one local image or file to a Sanity dataset and print the asset document as JSON
+Upload one image or file to a Sanity dataset, from a local path or a URL, and print the asset document as JSON
 
 ```
 USAGE
-  $ sanity assets upload --file <path> [-p <id>] [-d <name>] [--content-type <mime-type>] [--filename <filename>]
-    [--type image|file]
+  $ sanity assets upload [-p <id>] [-d <name>] [--content-type <mime-type>] [--file <path>] [--filename <filename>]
+    [--from-url <url>] [--type image|file]
 
 FLAGS
-  --content-type=<mime-type>  MIME type of the asset, such as image/png or application/pdf
-  --file=<path>               (required) Path to the local file to upload
-  --filename=<filename>       Original filename stored on the asset document. Defaults to the local filename
+  --content-type=<mime-type>  MIME type of the asset, such as image/png or application/pdf. Only applies to --file
+  --file=<path>               Path to the local file to upload
+  --filename=<filename>       Original filename stored on the asset document. Defaults to the local filename when using
+                              --file
+  --from-url=<url>            https URL for Sanity to fetch the asset from, instead of uploading a local file. Must be
+                              reachable from the public internet without authentication
   --type=<option>             [default: image] Asset type to create
                               <options: image|file>
 
@@ -263,7 +268,7 @@ OVERRIDE FLAGS
   -p, --project-id=<id>  Project ID to upload the asset to (overrides CLI configuration)
 
 DESCRIPTION
-  Upload one local image or file to a Sanity dataset and print the asset document as JSON
+  Upload one image or file to a Sanity dataset, from a local path or a URL, and print the asset document as JSON
 
 EXAMPLES
   Upload an image using the configured project
@@ -274,6 +279,10 @@ EXAMPLES
 
     $ sanity assets upload --file ./brief.pdf --type file --content-type application/pdf --project-id abc123 \
       --dataset production
+
+  Have Sanity fetch an image from a public URL
+
+    $ sanity assets upload --from-url 'https://example.com/hero.png' --type image --dataset production
 ```
 
 ## `sanity backups disable [DATASET]`
@@ -1062,8 +1071,8 @@ USAGE
 ARGUMENTS
   KNOWLEDGEBASEID  Knowledge base ID
 
-FLAGS
-  --json  Output the knowledge base in JSON format
+GLOBAL FLAGS
+  --json  Format output as json.
 
 DESCRIPTION
   Get details of a knowledge base
@@ -1163,8 +1172,8 @@ ARGUMENTS
   KNOWLEDGEBASEID  Knowledge base ID
   IMPORTID         Import ID
 
-FLAGS
-  --json  Output the download URL in JSON format
+GLOBAL FLAGS
+  --json  Format output as json.
 
 DESCRIPTION
   Get a short-lived signed URL for the original uploaded bytes of a file import
@@ -1187,8 +1196,8 @@ ARGUMENTS
   KNOWLEDGEBASEID  Knowledge base ID
   IMPORTID         Import ID
 
-FLAGS
-  --json  Output the import in JSON format
+GLOBAL FLAGS
+  --json  Format output as json.
 
 DESCRIPTION
   Get details of an import
@@ -1214,8 +1223,8 @@ USAGE
 ARGUMENTS
   KNOWLEDGEBASEID  Knowledge base ID
 
-FLAGS
-  --json  Output imports in JSON format
+GLOBAL FLAGS
+  --json  Format output as json.
 
 DESCRIPTION
   List imports for a knowledge base
@@ -1243,8 +1252,10 @@ ARGUMENTS
   JOBID            Job ID
 
 FLAGS
-  --json   Output the job in JSON format
   --watch  Poll until the job reaches a terminal state
+
+GLOBAL FLAGS
+  --json  Format output as json.
 
 DESCRIPTION
   Get the status of a knowledge base job
@@ -1265,10 +1276,10 @@ List knowledge bases in an organization
 
 ```
 USAGE
-  $ sanity context list [--organization <id>] [--json]
+  $ sanity context list [--json] [--organization <id>]
 
-FLAGS
-  --json  Output knowledge bases in JSON format
+GLOBAL FLAGS
+  --json  Format output as json.
 
 OVERRIDE FLAGS
   --organization=<id>  Organization to list knowledge bases for (overrides CLI configuration)
@@ -2001,8 +2012,8 @@ Builds and deploys Sanity Studio or application to Sanity hosting
 
 ```
 USAGE
-  $ sanity deploy [SOURCEDIR] [--auto-updates] [--dry-run] [--external | --source-maps | --minify | --build]
-    [-j] [--schema-required] [--title <value>] [--url <value>] [--verbose] [-y]
+  $ sanity deploy [SOURCEDIR] [-j] [--auto-updates] [--build] [--create | --external | --url <value>]
+    [--dry-run] [--minify] [--schema-required] [--source-maps] [--title <value>] [--verbose] [-y]
 
 ARGUMENTS
   [SOURCEDIR]  Source directory
@@ -2012,14 +2023,15 @@ FLAGS
   -y, --yes                Unattended mode, answers "yes" to any "yes/no" prompt and otherwise uses defaults
       --[no-]auto-updates  Automatically update the studio to the latest version
       --[no-]build         Build the studio before deploying (use --no-build to deploy existing `dist/` output)
+      --create             Create a new App SDK app, even if the organization has other apps
       --dry-run            Report what would be deployed without uploading or creating anything
       --external           Register an externally hosted studio
       --[no-]minify        Minify built JavaScript (use --no-minify to skip for faster builds)
       --schema-required    Fail if schema deployment fails
       --source-maps        Enable source maps for built bundles (increases size of bundle)
-      --title=<value>      Title for a newly created application or studio. For apps it also skips the interactive title
-                           prompt, enabling unattended creation
-      --url=<value>        Studio URL for deployment. For external studios, the full URL. For hosted studios, the
+      --title=<value>      Title for a newly created application or studio. For apps, use --create to select creation
+                           when the organization already has apps
+      --url=<value>        Studio URL for deployment. For external deploys, the full URL. For hosted studios, the
                            hostname (e.g. "my-studio" or "my-studio.sanity.studio")
       --verbose            Enable verbose logging
 
@@ -2042,6 +2054,23 @@ EXAMPLES
   Register an externally hosted studio (studioHost contains full URL)
 
     $ sanity deploy --external
+
+  Register an externally hosted studio, served from the provided origin
+
+    $ sanity deploy --external --url https://apps.example.com
+
+  Create and deploy an App SDK app without prompts. Save application.id as deployment.appId, then omit --create on
+  later deploys
+
+    $ sanity deploy --create --title "My App" --yes --json
+
+  Preview a new App SDK deployment without creating or uploading anything
+
+    $ sanity deploy --create --title "My App" --dry-run --json
+
+  Deploy a studio without prompts using its hostname
+
+    $ sanity deploy --url my-studio --yes
 ```
 
 ## `sanity dev`
@@ -2511,8 +2540,8 @@ DESCRIPTION
 
   Open the emulator in your browser to interactively test your functions with the payload editor.
 
-  Optionally, set the host and port with the --host and --port flags. Port 8974 is reserved for the emulator's
-  live-reload WebSocket server. Function timeout can be configured with the --timeout flag.
+  Optionally, set the host and port with the --host and --port flags. The live-reload WebSocket server shares this host
+  and port. Function timeout can be configured with the --timeout flag.
 
   To invoke a function with the CLI, use 'functions test'.
 
@@ -2980,11 +3009,11 @@ Initialize a new Sanity Studio, project and/or app
 
 ```
 USAGE
-  $ sanity init [--json] [--auto-updates | --bare] [--coupon <code> | --project-plan <name>] [--dataset
-    <name> | --dataset-default] [--env <filename> | ] [--git <message> | ] [--import-dataset] [--mcp]
-    [--nextjs-add-config-files] [--nextjs-append-env] [--nextjs-embed-studio] [--organization <id>] [--output-path
-    <path> | ] [--overwrite-files] [--package-manager <manager> | ] [--project <id> |  | --project-name <name>]
-    [--provider <provider>] [--skills] [--template <template> | ] [--typescript | ] [--visibility <mode>] [-y]
+  $ sanity init [--json] [--auto-updates | --bare] [--coupon <code> | --project-plan <name>] [--dashboard
+    |  | --env <filename>] [--dataset <name> | --dataset-default] [--git <message> | ] [--import-dataset] [--install | ]
+    [--mcp] [--nextjs-add-config-files] [--nextjs-append-env] [--nextjs-embed-studio] [--organization <id>]
+    [--output-path <path> | ] [--overwrite-files] [--package-manager <manager> | ] [--project <id> |  | --project-name
+    <name>] [--provider <provider>] [--skills] [--template <template> | ] [--typescript | ] [--visibility <mode>] [-y]
 
 FLAGS
   -y, --yes                        Unattended mode, answers "yes" to any "yes/no" prompt and otherwise uses defaults
@@ -2992,11 +3021,13 @@ FLAGS
       --bare                       Skip the Studio initialization and only print the selected project ID and dataset
                                    name to stdout
       --coupon=<code>              Optionally select a coupon for a new project (cannot be used with --project-plan)
+      --dashboard                  Set up the project to run in the Sanity Dashboard (beta)
       --dataset=<name>             Dataset name for the studio
       --dataset-default            Set up a project with a public dataset named "production"
       --env=<filename>             Write environment variables to file
       --[no-]git=<message>         Specify a commit message for initial commit, or disable git init
       --[no-]import-dataset        Import template sample dataset
+      --[no-]install               Install dependencies after scaffolding
       --[no-]mcp                   Enable AI editor integration (MCP) setup
       --organization=<id>          Organization ID to use for the project (required for unattended project creation)
       --output-path=<path>         Path to write studio project to
@@ -3308,15 +3339,20 @@ Import a set of assets to the target media library.
 
 ```
 USAGE
-  $ sanity media import SOURCE [-p <id>] [--media-library-id <value>] [--replace-aspects]
+  $ sanity media import SOURCE [-p <id>] [--aspect <key=value>...] [--filename <filename>] [--media-library-id
+    <value>] [--replace-aspects]
 
 ARGUMENTS
-  SOURCE  Image file or folder to import from
+  SOURCE  Directory, archive, or asset URL to import from. An https URL imports one asset that Sanity fetches itself
 
 FLAGS
+  --aspect=<key=value>...     Aspect value to set on the imported asset, as key=value. Repeatable. Only applies when the
+                              source is a URL - directory and archive imports read aspects from their data.ndjson
+  --filename=<filename>       Original filename to store on the asset. Only applies when the source is a URL. Defaults
+                              to a name derived from the URL
   --media-library-id=<value>  The id of the target media library
   --replace-aspects           Replace existing aspect data. All versions will be replaced (e.g. published and draft
-                              aspect data)
+                              aspect data). Only applies to directory and archive imports
 
 OVERRIDE FLAGS
   -p, --project-id=<id>  Project ID to import media to (overrides CLI configuration)
@@ -3336,6 +3372,14 @@ EXAMPLES
   Import all assets from the "products" directory and replace aspects
 
     $ sanity media import products --replace-aspects
+
+  Have Sanity fetch a single asset from a public URL
+
+    $ sanity media import https://example.com/hero.png
+
+  Fetch an asset from a URL and set aspect data on it
+
+    $ sanity media import https://example.com/hero.png --aspect department=Brand
 ```
 
 ## `sanity migrations create [TITLE]`
@@ -3533,8 +3577,10 @@ USAGE
   $ sanity openapi list [--json] [-w]
 
 FLAGS
-  -w, --web   Open HTTP Reference in web browser
-      --json  Output JSON
+  -w, --web  Open HTTP Reference in web browser
+
+GLOBAL FLAGS
+  --json  Format output as json.
 
 DESCRIPTION
   List all available OpenAPI specifications
@@ -3711,7 +3757,7 @@ Create a new Sanity project
 
 ```
 USAGE
-  $ sanity projects create [PROJECTNAME] [--dataset <value>] [--dataset-visibility private|public] [--json]
+  $ sanity projects create [PROJECTNAME] [--json] [--dataset <value>] [--dataset-visibility private|public]
     [--organization <slug|id>] [-y]
 
 ARGUMENTS
@@ -3723,8 +3769,10 @@ FLAGS
       --dataset=<value>              Create a dataset. Prompts for visibility unless specified or --yes used
       --dataset-visibility=<option>  Dataset visibility: public or private
                                      <options: private|public>
-      --json                         Output in JSON format
       --organization=<slug|id>       Organization to create the project in
+
+GLOBAL FLAGS
+  --json  Format output as json.
 
 DESCRIPTION
   Create a new Sanity project
@@ -3909,11 +3957,13 @@ List all schemas in the current dataset.
 
 ```
 USAGE
-  $ sanity schemas list [--id <schema_id>] [--json]
+  $ sanity schemas list [--json] [--id <schema_id>]
 
 FLAGS
   --id=<schema_id>  Fetch a single schema by id
-  --json            Get schema as json
+
+GLOBAL FLAGS
+  --json  Format output as json.
 
 DESCRIPTION
   List all schemas in the current dataset.
@@ -4052,37 +4102,48 @@ EXAMPLES
 
 ## `sanity tokens create [LABEL]`
 
-Create a new API token for the project
+Create a new API token with access to an organization and its projects
 
 ```
 USAGE
-  $ sanity tokens create [LABEL] [-p <id>] [--expires-at 2027-01-01] [--json] [--role viewer] [-y]
+  $ sanity tokens create [LABEL] [--json] [-p <id>] [--organization <id>] [--expires-at 2027-01-01] [--grant
+    context=editor...] [--role viewer] [-y]
 
 ARGUMENTS
   [LABEL]  Label for the new token
 
 FLAGS
-  -y, --yes                    Skip prompts and use defaults (unattended mode)
-      --expires-at=2027-01-01  Date or timestamp the token expires (ISO 8601; tokens never expire by default)
-      --json                   Output as JSON
-      --role=viewer            Role to assign to the token (defaults to viewer in unattended mode)
+  -y, --yes                      Skip prompts and use defaults (unattended mode)
+      --expires-at=2027-01-01    Date or timestamp the token expires (ISO 8601; tokens never expire by default)
+      --grant=context=editor...  Access to grant, as <permission>[=<role>] or project:<projectId>=<role>[,<role>].
+                                 Permissions: context, blueprints, media-library, canvas, sdk-apps, access,
+                                 deploy-studios. Repeatable
+      --role=viewer              Role to assign on the project (defaults to viewer in unattended mode)
 
 OVERRIDE FLAGS
-  -p, --project-id=<id>  Project ID to create token in (overrides CLI configuration)
+  -p, --project-id=<id>    Project ID to create token in (overrides CLI configuration)
+      --organization=<id>  Organization to create an organization token in (overrides CLI configuration)
+
+GLOBAL FLAGS
+  --json  Format output as json.
 
 DESCRIPTION
-  Create a new API token for the project
+  Create a new API token with access to an organization and its projects
 
 EXAMPLES
-  Create a token with a label
+  Create a token, choosing its access interactively
 
     $ sanity tokens create "My API Token"
 
-  Create a token with editor role
+  Create an organization token with Context, Blueprints and project access
 
-    $ sanity tokens create "My API Token" --role=editor
+    $ sanity tokens create "CI Token" --grant context=developer --grant blueprints --grant project:abc123=editor
 
-  Create a token in unattended mode
+  Create a project token with editor role
+
+    $ sanity tokens create "My Token" --project-id abc123 --role=editor
+
+  Create a project token in unattended mode
 
     $ sanity tokens create "CI Token" --role=editor --yes
 
@@ -4093,33 +4154,38 @@ EXAMPLES
   Output token information as JSON
 
     $ sanity tokens create "API Token" --json
-
-  Create a token for a specific project
-
-    $ sanity tokens create "My Token" --project-id abc123 --role=editor
 ```
 
 ## `sanity tokens delete [TOKENID]`
 
-Delete an API token from the project
+Delete an API token from a project or organization
 
 ```
 USAGE
-  $ sanity tokens delete [TOKENID] [-p <id>] [-y]
+  $ sanity tokens delete [TOKENID] [--organization <id> | -p <id>] [-y]
 
 ARGUMENTS
   [TOKENID]  Token ID to delete (will prompt if not provided)
 
 FLAGS
-  -y, --yes  Skip confirmation prompt (unattended mode)
+  -y, --yes                Skip confirmation prompt (unattended mode)
+      --organization=<id>  Delete a token managed by this organization
 
 OVERRIDE FLAGS
   -p, --project-id=<id>  Project ID to delete token from (overrides CLI configuration)
 
 DESCRIPTION
-  Delete an API token from the project
+  Delete an API token from a project or organization
 
 EXAMPLES
+  Interactively select and delete an organization token
+
+    $ sanity tokens delete --organization org123
+
+  Delete an organization token without confirmation
+
+    $ sanity tokens delete silJ2lFmK6dONB --organization org123 --yes
+
   Interactively select and delete a token
 
     $ sanity tokens delete
@@ -4139,22 +4205,29 @@ EXAMPLES
 
 ## `sanity tokens list`
 
-List API tokens for the project
+List API tokens for a project or organization
 
 ```
 USAGE
-  $ sanity tokens list [-p <id>] [--json]
+  $ sanity tokens list [--json] [--organization <id> | -p <id>]
 
 FLAGS
-  --json  Output tokens in JSON format
+  --organization=<id>  List tokens managed by this organization
 
 OVERRIDE FLAGS
   -p, --project-id=<id>  Project ID to list tokens for (overrides CLI configuration)
 
+GLOBAL FLAGS
+  --json  Format output as json.
+
 DESCRIPTION
-  List API tokens for the project
+  List API tokens for a project or organization
 
 EXAMPLES
+  List tokens managed by an organization
+
+    $ sanity tokens list --organization org123
+
   List tokens for the project
 
     $ sanity tokens list
@@ -4178,7 +4251,9 @@ USAGE
 
 FLAGS
   -t, --token=<token>  Token to rotate (prefer standard input to keep it out of shell history)
-      --json           Output as JSON
+
+GLOBAL FLAGS
+  --json  Format output as json.
 
 DESCRIPTION
   Rotate an API token, replacing its secret with a new one
@@ -4233,6 +4308,9 @@ DESCRIPTION
   Note:
   - The `sanity schema extract` command is a prerequisite for extracting your Sanity Studio schema into a `schema.json`
   file, which is then used by the `sanity typegen generate` command to generate type definitions.
+  - To generate types for several datasets, list them in `typegen.resources` in `sanity.cli.ts` (beta). Each resource
+  uses its own `schema` file, or the schema bound to its dataset when `schema` is omitted. With `--watch`, a schema
+  bound to a dataset is fetched once, when the watcher starts. Restart it after deploying a schema.
 
 EXAMPLES
   Generate TypeScript type definitions from a Sanity Studio schema extracted using the `sanity schema extract`
@@ -4241,13 +4319,16 @@ EXAMPLES
     $ sanity typegen generate
 ```
 
-## `sanity undeploy`
+## `sanity undeploy [APPID]`
 
 Removes the deployed Sanity Studio/App from Sanity hosting
 
 ```
 USAGE
-  $ sanity undeploy [--dry-run] [-j] [-y]
+  $ sanity undeploy [APPID] [-j] [--dry-run] [-y]
+
+ARGUMENTS
+  [APPID]  ID of the application to undeploy. Overrides `deployment.appId` in sanity.cli.ts
 
 FLAGS
   -j, --json     Output the result as JSON
@@ -4261,6 +4342,10 @@ EXAMPLES
   Undeploy the studio or application after confirming
 
     $ sanity undeploy
+
+  Undeploy the studio or application with the given ID
+
+    $ sanity undeploy abc123
 
   Report what would be undeployed without deleting anything
 
@@ -4364,6 +4449,30 @@ EXAMPLES
   $ sanity versions
 ```
 
+## `sanity whoami`
+
+Show the user or API token the CLI is authenticated as
+
+```
+USAGE
+  $ sanity whoami [--json]
+
+GLOBAL FLAGS
+  --json  Format output as json.
+
+DESCRIPTION
+  Show the user or API token the CLI is authenticated as
+
+EXAMPLES
+  Show the currently authenticated user
+
+    $ sanity whoami
+
+  Output the current user as JSON, for scripts and agents
+
+    $ sanity whoami --json
+```
+
 ## `sanity workflows abort INSTANCEID`
 
 Abort an in-flight workflow instance — a hard stop: pending effects are cancelled, stage guards removed, and the instance is marked terminal where it stands.
@@ -4390,6 +4499,30 @@ EXAMPLES
   $ sanity workflows abort wf-instance.abc123
 
   $ sanity workflows abort wf-instance.abc123 --reason 'superseded by relaunch'
+```
+
+## `sanity workflows blueprint generate`
+
+Experimental: generate the Sanity Blueprints runtime the definitions require, next to sanity.workflow.ts. Writes the workflow resources, one function per derived need, the effect-handler registry, and a handler stub per declared effect. Covers every deployment in the config, because the emitted resources module declares them all. These flags and this output may change before the Blueprints backend accepts the sanity.workflow resource.
+
+```
+USAGE
+  $ sanity workflows blueprint generate [--check]
+
+FLAGS
+  --check  Experimental: verify the tree on disk still matches the definitions; write nothing and exit non-zero on any
+           difference. The CI drift gate.
+
+DESCRIPTION
+  Experimental: generate the Sanity Blueprints runtime the definitions require, next to sanity.workflow.ts. Writes the
+  workflow resources, one function per derived need, the effect-handler registry, and a handler stub per declared
+  effect. Covers every deployment in the config, because the emitted resources module declares them all. These flags and
+  this output may change before the Blueprints backend accepts the sanity.workflow resource.
+
+EXAMPLES
+  $ sanity workflows blueprint generate
+
+  $ sanity workflows blueprint generate --check
 ```
 
 ## `sanity workflows definition delete NAME`
@@ -4499,7 +4632,7 @@ DESCRIPTION
 
 ## `sanity workflows deploy`
 
-Validate, diff, and deploy workflow definitions to the resource bound by the selected deployment.
+Validate workflow definitions, check any generated runtime beside the config against them, then diff and deploy to the resource bound by the selected deployment. A generated runtime that no longer matches the definitions fails the deploy before anything is written; regenerate it with `sanity-workflows blueprint generate`.
 
 ```
 USAGE
@@ -4508,11 +4641,13 @@ USAGE
 
 FLAGS
   --all-tags            Deploy every deployment in the config, not just a selection.
-  --check               Validate definitions only; do not contact the dataset.
+  --check               Validate definitions and check any generated runtime against them; do not contact the dataset.
   --deployment=<value>  Deployment name — the unique identity of one deployment in the config.
-  --dry-run             Validate + diff against the deployed version; do not write.
+  --dry-run             Validate definitions, check any generated runtime against them, and diff against the deployed
+                        version; do not write.
   --only=<value>        Limit deploy/check/diff to a single workflow definition by name (deployments are selected with
-                        --deployment). Every targeted deployment must contain it.
+                        --deployment). Every targeted deployment must contain it. The generated-runtime check still
+                        covers the whole config, because the generated tree declares every deployment in it.
   --[no-]share-defs     Share the definition documents newly created by this deploy with Sanity — the full document,
                         verbatim (structure, names, filters, effect configuration, seeded values), plus its deployment
                         coordinates (project and dataset, or resource id); never content documents, instances, or your
@@ -4522,7 +4657,9 @@ FLAGS
                         an environment group).
 
 DESCRIPTION
-  Validate, diff, and deploy workflow definitions to the resource bound by the selected deployment.
+  Validate workflow definitions, check any generated runtime beside the config against them, then diff and deploy to the
+  resource bound by the selected deployment. A generated runtime that no longer matches the definitions fails the deploy
+  before anything is written; regenerate it with `sanity-workflows blueprint generate`.
 
 EXAMPLES
   $ sanity workflows deploy --deployment review-prod
@@ -4609,18 +4746,25 @@ List workflow instances in the configured dataset (in-flight by default).
 ```
 USAGE
   $ sanity workflows list [--tag <value>] [--include-completed] [--failed] [--definition <value>] [--document
-    <value>] [--limit <value>] [--json]
+    <value>] [--assignment-user <value>] [--assignment-role <value>...] [--assignment-state unrouted|routed|held...]
+    [--limit <value>] [--json]
 
 FLAGS
-  --definition=<value>  Only instances of this workflow definition (its `name`; the instance's `definition` field).
-  --document=<value>    Only instances that reference this document (resource-qualified GDR URI, e.g.
-                        "dataset:proj:ds:article-1").
-  --failed              Only instances with at least one failed activity.
-  --include-completed   Include completed/aborted instances (default: in-flight only).
-  --json                Emit structured JSON instead of rendered output.
-  --limit=<value>       [default: 50] Maximum rows to return.
-  --tag=<value>         Workflow environment tag (e.g. prod, test) — an optional query filter that also narrows which
-                        resources are searched; omit to span them all.
+  --assignment-role=<value>...    A literal project role held by --assignment-user. Repeat for multiple roles.
+  --assignment-state=<option>...  Assignment state to include: unrouted, routed (offered through a supplied role), or
+                                  held. Repeat for multiple states.
+                                  <options: unrouted|routed|held>
+  --assignment-user=<value>       Account-global user id used for viewer-scoped assignment filtering and counts.
+  --definition=<value>            Only instances of this workflow definition (its `name`; the instance's `definition`
+                                  field).
+  --document=<value>              Only instances that reference this document (resource-qualified GDR URI, e.g.
+                                  "dataset:proj:ds:article-1").
+  --failed                        Only instances with at least one failed activity.
+  --include-completed             Include completed/aborted instances (default: in-flight only).
+  --json                          Emit structured JSON instead of rendered output.
+  --limit=<value>                 [default: 50] Maximum rows to return.
+  --tag=<value>                   Workflow environment tag (e.g. prod, test) — an optional query filter that also
+                                  narrows which resources are searched; omit to span them all.
 
 DESCRIPTION
   List workflow instances in the configured dataset (in-flight by default).
@@ -4633,6 +4777,8 @@ EXAMPLES
   $ sanity workflows list --definition productLaunch
 
   $ sanity workflows list --document dataset:proj:ds:article-1
+
+  $ sanity workflows list --assignment-user gAda --assignment-role legal --assignment-state routed
 
   $ sanity workflows list --tag prod
 

@@ -59,6 +59,7 @@ describe('sanity init - studio (interactive)', {timeout: 120_000}, () => {
         'pnpm',
         '--no-mcp',
         '--no-git',
+        '--no-install',
       ],
       interactive: true,
     })
@@ -76,6 +77,8 @@ describe('sanity init - studio (interactive)', {timeout: 120_000}, () => {
     expect(output).not.toMatch(/Select.*package manager/i)
   })
 
+  // The next three keep a real install: they either drive the package manager
+  // prompt, assert on install artifacts, or wait on install progress output.
   test('walks through template, TypeScript, and package manager prompts', async () => {
     const session = await runCli({
       args: [
@@ -98,7 +101,7 @@ describe('sanity init - studio (interactive)', {timeout: 120_000}, () => {
     await session.waitForText(/Do you want to use TypeScript/i)
     session.sendKey('Enter')
 
-    await session.waitForText(/package manager|npm|yarn|pnpm/i)
+    await session.waitForText(/package manager|npm|yarn|pnpm/i, {timeout: 90_000})
     session.sendKey('Enter')
 
     await session.waitForExit(0, 90_000)
@@ -110,7 +113,9 @@ describe('sanity init - studio (interactive)', {timeout: 120_000}, () => {
   })
 
   test('auto-detects package manager from existing lockfile', async () => {
-    writeFileSync(`${tmp.path}/pnpm-lock.yaml`, 'lockfileVersion: 5.4\n')
+    // Detection only looks for the filename, but `sanity init` then runs a real
+    // `pnpm install` here, and pnpm >=12 rejects lockfile formats this old.
+    writeFileSync(`${tmp.path}/pnpm-lock.yaml`, "lockfileVersion: '9.0'\n")
 
     const session = await runCli({
       args: [

@@ -8,7 +8,12 @@ import {resolveWorkbenchConfig} from '../../resolveWorkbenchConfig.js'
 import {formatWorkbenchAppErrors, validateWorkbenchApp} from '../../validateWorkbenchApp.js'
 import {deriveConfigs} from './deriveConfigs.js'
 import {trackExposesSet} from './exposesSetId.js'
-import {type DevServerManifest, getRegisteredServers, registerDevServer} from './registry.js'
+import {
+  dashboardPath,
+  type DevServerManifest,
+  getRegisteredServers,
+  registerDevServer,
+} from './registry.js'
 import {startDevManifestWatcher} from './startDevManifestWatcher.js'
 
 interface DevServerRegistrationOptions {
@@ -41,6 +46,9 @@ interface DevServerRegistrationOptions {
 
 interface DevServerRegistrationHandle {
   close: () => Promise<void>
+
+  /** Where the Dashboard opens this server; unset when it can't open it there. */
+  path?: string
 }
 
 /**
@@ -106,13 +114,18 @@ export async function startDevServerRegistration(
       : undefined
 
   // Separate namespaces mean a shared id is a genuine duplicate, so the gate is
-  // a plain id match — no config-vs-app role left to reconcile.
-  const devServer = id ? getRegisteredServers().find((server) => server.id === id) : undefined
+  // an id match within the org — no config-vs-app role left to reconcile.
+  const organizationId = cliConfig.app?.organizationId
+  const devServer = id
+    ? getRegisteredServers().find(
+        (server) => server.id === id && server.organizationId === organizationId,
+      )
+    : undefined
 
   if (id && devServer) {
     output.error(
       `"${id}" is already served by another dev server running on port ${devServer.port}, ` +
-        "so the workbench can't tell them apart and this one stays out of it. Stop that server first.",
+        "so the Dashboard can't tell them apart and this one stays out of it. Stop that server first.",
       {exit: false},
     )
     return {close: async () => {}}
@@ -124,7 +137,7 @@ export async function startDevServerRegistration(
     id,
     interfaces,
     name,
-    organizationId: workbenchApp?.organizationId,
+    organizationId,
     port: appPort,
     projectId: cliConfig?.api?.projectId,
     reference,
@@ -181,5 +194,6 @@ export async function startDevServerRegistration(
       registration.release()
       await watcher.close()
     },
+    path: dashboardPath({id, interfaces}),
   }
 }

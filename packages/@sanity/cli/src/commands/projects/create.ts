@@ -34,6 +34,8 @@ export class CreateProjectCommand extends SanityCommand<typeof CreateProjectComm
 
   static override description = 'Create a new Sanity project'
 
+  static override enableJsonFlag = true
+
   static override examples = [
     {
       command: '<%= config.bin %> <%= command.id %>',
@@ -73,10 +75,6 @@ export class CreateProjectCommand extends SanityCommand<typeof CreateProjectComm
     'dataset-visibility': Flags.string({
       description: 'Dataset visibility: public or private',
       options: ['private', 'public'],
-    }),
-    json: Flags.boolean({
-      default: false,
-      description: 'Output in JSON format',
     }),
     organization: Flags.string({
       description: 'Organization to create the project in',
@@ -200,7 +198,7 @@ export class CreateProjectCommand extends SanityCommand<typeof CreateProjectComm
       return
     } catch (error) {
       debug(`Error creating dataset: ${error}`)
-      this.output.warn(`Project created but dataset creation failed: ${error}`)
+      this.output.logDiagnostic(`Warning: Project created but dataset creation failed: ${error}`)
       return
     }
   }
@@ -211,7 +209,7 @@ export class CreateProjectCommand extends SanityCommand<typeof CreateProjectComm
     dataset: DatasetResponse | undefined,
   ) {
     if (this.flags.json) {
-      this.output.log(JSON.stringify(project, null, 2))
+      this.logJson(project)
       return
     }
 

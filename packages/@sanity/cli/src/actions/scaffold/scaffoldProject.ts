@@ -134,6 +134,7 @@ export async function scaffoldProject({
     datasetDefault: true,
     fromCreate: false,
     git: false,
+    install: true,
     mcpMode: 'skip',
     outputPath: studioPath,
     packageManager: STUDIO_PACKAGE_MANAGERS.has(resolvedPackageManager)

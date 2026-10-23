@@ -1,8 +1,7 @@
 export const sdkAppDependencies = {
   dependencies: {
-    // change these to 'latest' as in studioDependencies.ts once SDK v3 is released
-    '@sanity/sdk': '^2',
-    '@sanity/sdk-react': '^2',
+    '@sanity/sdk': 'latest',
+    '@sanity/sdk-react': 'latest',
     react: '^19.2.4',
     'react-dom': '^19.2.4',
   },
@@ -13,6 +12,7 @@ export const sdkAppDependencies = {
     eslint: '^10.8.1',
     prettier: '^3.5',
     sanity: 'latest',
-    typescript: '^5.8', // Peer dependency of eslint-config-studio (implicitly)
+    // typescript-eslint (via eslint-config-studio) only supports TypeScript up to 6.0.x
+    typescript: '~6.0',
   },
 }

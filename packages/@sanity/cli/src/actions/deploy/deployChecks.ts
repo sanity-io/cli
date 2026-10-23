@@ -2,7 +2,7 @@ import {type CliConfig, exitCodes, getLocalPackageVersion} from '@sanity/cli-cor
 import {getErrorMessage} from '@sanity/cli-core/errors'
 import {getCoreAppUrl} from '@sanity/cli-core/util'
 import {spinner} from '@sanity/cli-core/ux'
-import {checkBuiltOutput} from '@sanity/workbench-cli/deploy'
+import {readBuiltManifest} from '@sanity/workbench-cli/build'
 
 import {resolveAppIdIssue} from '../../util/appId.js'
 import {type Check, type CheckReporter, runStep} from '../../util/checks.js'
@@ -24,6 +24,7 @@ import {
   type StudioDeployTargetResolution,
 } from './resolveDeployTarget.js'
 import {type DeployFlags} from './types.js'
+import {normalizeUrl, validateUrl} from './urlUtils.js'
 
 /**
  * Where a deploy resolves to, computed once from the deploy-target verdict. The
@@ -120,29 +121,81 @@ export function checkAppId(
   }
 }
 
-export async function checkBuild(
+/**
+ * The origin a federated studio deployed with --external is registered
+ * at. Only a first deploy registers one; a redeploy keeps the URL it has.
+ */
+export function checkExternalUrl(
+  reporter: DeployCheckReporter,
+  {appId, url}: {appId: string | undefined; url: string | undefined},
+): string | undefined {
+  if (appId) return undefined
+
+  if (!url) {
+    reporter.report({
+      exitCode: exitCodes.USAGE_ERROR,
+      message: 'A first external deploy needs the URL your host serves the build from',
+      solution: 'Pass it with --url, for example --url https://studio.example.com',
+      status: 'fail',
+    })
+    return undefined
+  }
+
+  const normalized = normalizeUrl(url)
+  const validation = validateUrl(normalized)
+  if (validation !== true) {
+    reporter.report({
+      exitCode: exitCodes.USAGE_ERROR,
+      message: validation,
+      solution:
+        'Pass --url with an http or https URL, for example --url https://studio.example.com',
+      status: 'fail',
+    })
+    return undefined
+  }
+
+  // The Dashboard loads the remote from the origin root, so a path would never be fetched.
+  const {hash, origin, pathname, search} = new URL(normalized)
+  if (pathname !== '/' || search || hash) {
+    reporter.report({
+      exitCode: exitCodes.USAGE_ERROR,
+      message: '--url must be an origin with no path, query or hash',
+      solution:
+        'Pass the origin your host serves the build from, for example --url https://studio.example.com',
+      status: 'fail',
+    })
+    return undefined
+  }
+
+  reporter.report({message: `Registers at ${origin}`, status: 'pass'})
+  return origin
+}
+
+export async function checkBuild<T>(
   reporter: DeployCheckReporter,
   {
     build,
     skipReason,
     successMessage,
-  }: {build: () => Promise<void>; skipReason: string | undefined; successMessage: string},
-): Promise<void> {
+  }: {build: () => Promise<T>; skipReason: string | undefined; successMessage: string},
+): Promise<T | undefined> {
   if (skipReason) {
     reporter.report({message: skipReason, status: 'skip'})
-    return
+    return undefined
   }
 
-  await runStep(reporter, {
+  const result = await runStep(reporter, {
     debug: deployDebug,
     formatError: (err) => `Build failed: ${getErrorMessage(err)}`,
     name: 'build',
     solution: 'Fix the build error above, then retry',
     work: async () => {
-      await build()
+      const result = await build()
       reporter.report({message: successMessage, status: 'pass'})
+      return result
     },
   })
+  return result ?? undefined
 }
 
 /**
@@ -157,11 +210,12 @@ export async function verifyOutputDir({
   isWorkbenchApp: boolean
   reporter: DeployCheckReporter
   sourceDir: string
-}): Promise<void> {
+}): Promise<Record<string, unknown> | undefined> {
   const spin = spinner('Verifying local content...').start()
-  const verifyBuild = isWorkbenchApp ? checkBuiltOutput : checkDir
+  let mfManifest: Record<string, unknown> | undefined
   try {
-    await verifyBuild(sourceDir)
+    if (isWorkbenchApp) mfManifest = await readBuiltManifest(sourceDir)
+    else await checkDir(sourceDir)
     spin.succeed()
   } catch (err) {
     spin.fail()
@@ -172,6 +226,7 @@ export async function verifyOutputDir({
       status: 'fail',
     })
   }
+  return mfManifest
 }
 
 /**
@@ -215,7 +270,8 @@ export function describeAppTarget(
       return {
         exitCode: exitCodes.USAGE_ERROR,
         message: `No \`deployment.appId\` configured (${resolution.existing.length} existing ${resolution.existing.length === 1 ? 'application' : 'applications'} to choose from)`,
-        solution: 'Add `deployment.appId` to sanity.cli.ts',
+        solution:
+          'Set `deployment.appId` in sanity.cli.ts to deploy to an existing app, or run `sanity deploy --create --title "<name>" --yes` to create a new one',
         status: 'fail',
       }
     }
@@ -290,26 +346,28 @@ export async function checkAppTarget(
   options:
     | {
         appId: string | undefined
-        isWorkbenchApp: true
-        organizationId?: string
-        slug?: string
+        create?: boolean
+        isWorkbenchApp?: false
+        organizationId: string | undefined
         title?: string
       }
     | {
         appId: string | undefined
-        isWorkbenchApp?: false
-        organizationId: string | undefined
+        hasAppView: boolean
+        isWorkbenchApp: true
+        organizationId?: string
+        slug?: string
         title?: string
       },
 ): Promise<DeployCheck | null> {
   const {title} = options
   if (options.isWorkbenchApp) {
-    const {appId, organizationId, slug} = options
+    const {appId, hasAppView, organizationId, slug} = options
     return runStep(reporter, {
       debug: deployDebug,
       name: 'target',
       work: async () => {
-        const resolution = await resolveWorkbenchApp({appId, organizationId, slug})
+        const resolution = await resolveWorkbenchApp({appId, hasAppView, organizationId, slug})
         const check = describeAppTarget(resolution, {title})
         reporter.report(check)
         return check
@@ -317,15 +375,18 @@ export async function checkAppTarget(
     })
   }
 
-  const {appId, organizationId} = options
+  const {appId, create, organizationId} = options
   return runStep(reporter, {
     debug: deployDebug,
     formatError: (err) => describeAppTargetError(err, organizationId),
     name: 'target',
     work: async () => {
-      const check = describeAppTarget(await resolveAppDeployTarget({appId, organizationId}), {
-        title,
-      })
+      const check = describeAppTarget(
+        await resolveAppDeployTarget({appId, create, organizationId}),
+        {
+          title,
+        },
+      )
       reporter.report(check)
       return check
     },
@@ -442,7 +503,7 @@ export async function checkStudioTarget(
   const resolve = options.isWorkbenchApp
     ? resolveWorkbenchStudio(options)
     : resolveStudioDeployTarget(options)
-  // Workbench studios always deploy to Sanity hosting, never an external URL.
+  // A workbench studio's target is its slug, even when its build is hosted externally.
   const isExternal = options.isWorkbenchApp ? false : options.isExternal
 
   return runStep(reporter, {

@@ -44,7 +44,9 @@ const errorHandlerScript = `
       // - If there are no subscribers, then we log the error to the console and render the error overlay.
       if (errorChannel.subscribers.length) {
         errorChannel.publish({error, params})
-      } else {
+      } else if (error) {
+        // Browsers fire some error events without an error object (a ResizeObserver loop,
+        // a cross-origin "Script error."), and there is nothing useful to show for them.
         console.error(error)
 
         _renderErrorOverlay(error, params)

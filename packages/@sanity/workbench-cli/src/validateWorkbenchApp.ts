@@ -19,5 +19,5 @@ export function validateWorkbenchApp(app: unknown): string[] {
  * @internal
  */
 export function formatWorkbenchAppErrors(errors: string[]): string {
-  return ['Invalid workbench app config:', ...errors.map((error) => `  - ${error}`)].join('\n')
+  return ['Invalid Dashboard app config:', ...errors.map((error) => `  - ${error}`)].join('\n')
 }

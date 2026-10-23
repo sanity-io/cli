@@ -1,9 +1,9 @@
 import {readdir, readFile, writeFile} from 'node:fs/promises'
 import {platform} from 'node:os'
-import {join} from 'node:path'
+import {join, relative, sep} from 'node:path'
 
 import {testCommand, testFixture} from '@sanity/cli-test'
-import {checkBuiltOutput} from '@sanity/workbench-cli/deploy'
+import {readBuiltManifest} from '@sanity/workbench-cli/build'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
 import {BuildCommand} from '../../../src/commands/build.js'
@@ -142,14 +142,14 @@ describe('#build studio', {timeout: (platform() === 'win32' ? 120 : 60) * 1000},
       expect(distFiles).not.toContain('sanity-resource-bindings.js')
 
       // The build output must satisfy the deploy gate: `sanity deploy` runs
-      // `checkBuiltOutput` (not the static-SPA check) and ships only if it finds
+      // `readBuiltManifest` (not the static-SPA check) and ships only if it finds
       // the federation manifest. Asserting it against the real dist here closes
       // the build→deploy seam that deploy.studio.test.ts can't — it mocks the
       // build away.
-      await expect(checkBuiltOutput(join(cwd, 'dist'))).resolves.toBeUndefined()
+      await expect(readBuiltManifest(join(cwd, 'dist'))).resolves.toEqual(manifest)
       // And the gate actually gates — a directory without the federation manifest
-      // is rejected, so the pass above isn't `checkBuiltOutput` silently no-opping.
-      await expect(checkBuiltOutput(cwd)).rejects.toThrow(/mf-manifest|federation/i)
+      // is rejected, so the pass above isn't `readBuiltManifest` silently no-opping.
+      await expect(readBuiltManifest(cwd)).rejects.toThrow(/mf-manifest|federation/i)
     },
   )
 
@@ -234,4 +234,104 @@ describe('#build studio', {timeout: (platform() === 'win32' ? 120 : 60) * 1000},
     const files = await readdir(join(cwd, 'dist'))
     expect(files).toContain('index.html')
   })
+
+  test('links code-split stylesheets by default', {timeout: 120_000}, async () => {
+    const cwd = await studioWithLocalCss()
+    const hrefs = await buildAndReadStylesheets(cwd)
+
+    expect(hrefs.some((href) => /\/static\/sanity-[^/"']+\.css$/.test(href))).toBe(true)
+    expect(hrefs.some((href) => /\/style-[^/"']+\.css$/.test(href))).toBe(false)
+    await expectLinkedCssFiles(cwd, hrefs)
+  })
+
+  test('links the combined stylesheet when cssCodeSplit is false', {timeout: 120_000}, async () => {
+    const cwd = await studioWithLocalCss()
+    await writeFile(
+      join(cwd, 'sanity.cli.ts'),
+      `import {defineCliConfig} from 'sanity/cli'\n` +
+        `export default defineCliConfig({\n` +
+        `  api: {projectId: 'ppsg7ml5', dataset: 'test'},\n` +
+        `  deployment: {autoUpdates: true},\n` +
+        `  vite: {build: {cssCodeSplit: false}},\n` +
+        `})\n`,
+    )
+
+    const hrefs = await buildAndReadStylesheets(cwd)
+    const cssFiles = await distCssFiles(cwd)
+
+    // Vite emits one combined asset (style-<hash>.css, under assetsDir) and
+    // does not attach it to importedCss. The document has to link it.
+    expect(cssFiles).toHaveLength(1)
+    expect(cssFiles[0]?.replaceAll('\\', '/')).toMatch(/style-[^/]+\.css$/)
+    expect(hrefs).toEqual([expect.stringMatching(/style-[^/"']+\.css$/)])
+    await expectLinkedCssFiles(cwd, hrefs)
+  })
 })
+
+const CSS_MARKER = 'sanity-css-code-split-marker'
+
+async function studioWithLocalCss(): Promise<string> {
+  const cwd = await testFixture('basic-studio')
+  process.chdir(cwd)
+  await writeFile(join(cwd, 'studio.css'), `.${CSS_MARKER} { color: #123456; }\n`)
+  const configPath = join(cwd, 'sanity.config.ts')
+  const source = await readFile(configPath, 'utf8')
+  await writeFile(configPath, `import './studio.css'\n${source}`)
+  return cwd
+}
+
+async function buildAndReadStylesheets(cwd: string): Promise<string[]> {
+  const {error, stderr} = await testCommand(BuildCommand, ['--yes'], {config: {root: cwd}})
+  if (error) throw error
+  expect(stderr).toContain('Build Sanity Studio')
+  const html = await readFile(join(cwd, 'dist', 'index.html'), 'utf8')
+  return localStylesheetHrefs(html)
+}
+
+function localStylesheetHrefs(html: string): string[] {
+  const hrefs: string[] = []
+  for (const tag of html.match(/<link\b[^>]*>/g) ?? []) {
+    if (!/\brel="stylesheet"/.test(tag)) continue
+    const href = /href="([^"]+)"/.exec(tag)?.[1]
+    if (!href || href.startsWith('http:') || href.startsWith('https:')) continue
+    hrefs.push(href)
+  }
+  return hrefs
+}
+
+async function expectLinkedCssFiles(cwd: string, hrefs: string[]): Promise<void> {
+  expect(hrefs.length).toBeGreaterThan(0)
+  const cssFiles = await distCssFiles(cwd)
+  expect(cssFiles.length).toBeGreaterThan(0)
+
+  let linkedMarker = false
+  for (const href of hrefs) {
+    const relativeHref = href.replace(/^\//, '')
+    expect(cssFiles.some((file) => file.replaceAll('\\', '/') === relativeHref)).toBe(true)
+    const css = await readFile(join(cwd, 'dist', relativeHref), 'utf8')
+    if (css.includes(CSS_MARKER)) linkedMarker = true
+  }
+  expect(linkedMarker).toBe(true)
+
+  for (const file of cssFiles) {
+    const posix = file.replaceAll('\\', '/')
+    expect(hrefs.some((href) => href.replace(/^\//, '') === posix)).toBe(true)
+  }
+}
+
+async function distCssFiles(cwd: string): Promise<string[]> {
+  return (await walkFiles(join(cwd, 'dist')))
+    .filter((file) => file.endsWith('.css'))
+    .map((file) => relative(join(cwd, 'dist'), file).split(sep).join('/'))
+}
+
+async function walkFiles(dir: string): Promise<string[]> {
+  const entries = await readdir(dir, {withFileTypes: true})
+  const files = await Promise.all(
+    entries.map((entry) => {
+      const full = join(dir, entry.name)
+      return entry.isDirectory() ? walkFiles(full) : [full]
+    }),
+  )
+  return files.flat()
+}

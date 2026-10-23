@@ -202,7 +202,9 @@ describe('bootstrapRemoteTemplate', () => {
       await bootstrapRemoteTemplate(baseOpts)
 
       expect(mocks.createToken).toHaveBeenCalledOnce()
-      expect(mocks.createToken).toHaveBeenCalledWith(expect.objectContaining({roleName: 'viewer'}))
+      expect(mocks.createToken).toHaveBeenCalledWith(
+        expect.objectContaining({roleNames: ['viewer']}),
+      )
     })
 
     test('creates a write token when the template requires one', async () => {
@@ -213,7 +215,9 @@ describe('bootstrapRemoteTemplate', () => {
       await bootstrapRemoteTemplate(baseOpts)
 
       expect(mocks.createToken).toHaveBeenCalledOnce()
-      expect(mocks.createToken).toHaveBeenCalledWith(expect.objectContaining({roleName: 'editor'}))
+      expect(mocks.createToken).toHaveBeenCalledWith(
+        expect.objectContaining({roleNames: ['editor']}),
+      )
     })
 
     test('does not create any tokens when the template requires none', async () => {

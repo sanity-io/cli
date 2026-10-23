@@ -51,3 +51,17 @@ export async function getTokenDetails(queryString: string) {
 
   return client.request<TokenDetails>({url: `/auth/fetch${queryString}`})
 }
+
+/**
+ * List the SSO providers configured for an organization. Members without
+ * organization read access only see enabled providers.
+ *
+ * @param organizationId - The ID of the organization
+ */
+export async function getOrganizationSSOProviders(organizationId: string) {
+  const client = await getGlobalCliClient({apiVersion: AUTH_API_VERSION, requireUser: true})
+
+  return client.request<SamlLoginProvider[]>({
+    url: `/auth/organizations/${organizationId}/providers`,
+  })
+}

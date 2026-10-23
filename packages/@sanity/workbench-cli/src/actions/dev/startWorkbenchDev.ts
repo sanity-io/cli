@@ -65,16 +65,12 @@ export async function startWorkbenchDev(
   } = options
 
   // The remote can't render itself, so it runs as a plain app server (not the
-  // shell) that still claims the lock and bridges the registry, so app
-  // `sanity dev`s register into it.
+  // shell) that still bridges the registry.
   if (process.env.SANITY_INTERNAL_IS_WORKBENCH_REMOTE === 'true') {
     const remote = await startAppServer({announceUrl: true, cliConfig, httpPort})
     if (!remote.started) return {close: async () => {}}
 
-    const addr = remote.server.httpServer?.address()
-    const port =
-      (typeof addr === 'object' && addr ? addr.port : remote.server.config.server.port) ?? httpPort
-    const coordinator = startWorkbenchRemoteCoordinator({httpHost, port, server: remote.server})
+    const coordinator = startWorkbenchRemoteCoordinator({server: remote.server})
 
     return {
       close: async () => {
@@ -93,7 +89,6 @@ export async function startWorkbenchDev(
     cliConfig,
     httpHost,
     httpPort,
-    mode: 'development',
     output,
     reactStrictMode,
     workDir,
@@ -122,6 +117,7 @@ export async function startWorkbenchDev(
   const {supervisor} = supervised
   closers.push(supervisor.close)
 
+  let dashboardAppPath: string | undefined
   try {
     // The deprecated-id check and manifest extractor are CLI-domain, injected here.
     checkForDeprecatedAppId()
@@ -135,6 +131,7 @@ export async function startWorkbenchDev(
       workDir,
     })
     closers.push(registration.close)
+    dashboardAppPath = registration.path
   } catch (err) {
     // Registration runs after both servers are up; a failure here would leak the
     // workbench lock and dev servers without this teardown.
@@ -143,12 +140,8 @@ export async function startWorkbenchDev(
   }
 
   if (workbench.workbenchAvailable) {
-    const workbenchUrl = `http://${toDisplayHost(workbench.httpHost)}:${workbench.workbenchPort}`
-    const addr = supervisor.server.httpServer?.address()
-    const port = typeof addr === 'object' && addr ? addr.port : supervisor.server.config.server.port
-    output.log(
-      `Workbench dev server started at ${styleText(['blue', 'underline'], workbenchUrl)} (app on port ${port})`,
-    )
+    const appUrl = `http://${toDisplayHost(workbench.httpHost)}:${workbench.workbenchPort}${dashboardAppPath ?? ''}`
+    output.log(`Dashboard dev server started at ${styleText(['blue', 'underline'], appUrl)}`)
   }
 
   installSignalHandlers()

@@ -1,24 +1,54 @@
+import {findBlueprintFile, readBlueprint} from '@sanity/blueprints/resolve'
 import {type CoreAppManifest} from '@sanity/cli-build/_internal/manifest'
 import {type CliConfig, type Output} from '@sanity/cli-core'
 import {resolveTitleUpdate} from '@sanity/cli-test/mocks/cli-build/manifest'
-import {afterEach, describe, expect, test, vi} from 'vitest'
+import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
 import {
+  createDeployment,
   updateUserApplication,
   type UserApplicationResolved,
 } from '../../../services/userApplications.js'
-import {logAppDeployed, syncApplicationMetadata} from '../deployApp.js'
+import {buildApp} from '../../build/buildApp.js'
+import {createMockOutput} from '../../dev/__tests__/testHelpers.js'
+import {type AspectSyncPlan} from '../../media/aspectSync/syncAspects.js'
+import {
+  deployApp,
+  logAppDeployed,
+  reportAspectSyncPlan,
+  syncApplicationMetadata,
+} from '../deployApp.js'
+import {type DeployCheck, type DeployCheckReporter} from '../deployChecks.js'
+import {findUserApplication} from '../findUserApplication.js'
+import {resolveAppDeployTarget} from '../resolveDeployTarget.js'
+import {type DeployAppOptions, type DeployFlags} from '../types.js'
 
 vi.mock(
   import('@sanity/cli-build/_internal/manifest'),
   () => import('@sanity/cli-test/mocks/cli-build/manifest'),
 )
 
+vi.mock(import('@sanity/blueprints/resolve'), async () => ({
+  findBlueprintFile: vi.fn(),
+  readBlueprint: vi.fn(),
+}))
+vi.mock('@sanity/cli-core', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@sanity/cli-core')>()),
+  getLocalPackageVersion: vi.fn(async () => '1.0.0'),
+}))
 vi.mock('../../../services/userApplications.js', () => ({
   createDeployment: vi.fn(),
   updateUserApplication: vi.fn(),
 }))
+vi.mock('../../build/buildApp.js', () => ({buildApp: vi.fn()}))
+vi.mock('../checkDir.js', () => ({checkDir: vi.fn()}))
+vi.mock('../findUserApplication.js', () => ({findUserApplication: vi.fn()}))
+vi.mock(import('../resolveDeployTarget.js'), async (importOriginal) => ({
+  ...(await importOriginal()),
+  resolveAppDeployTarget: vi.fn(),
+}))
 vi.mock('@sanity/cli-core/ux', async () => import('@sanity/cli-test/mocks/cli-core/ux'))
+vi.mock('tar', () => ({c: vi.fn(() => ({pipe: vi.fn()}))}))
 
 const mockOutput = () => ({log: vi.fn(), warn: vi.fn()}) as unknown as Output
 
@@ -44,25 +74,87 @@ describe('logAppDeployed', () => {
     expect(output.log).toHaveBeenCalledWith(expect.stringContaining('/@org-1/application/app-1'))
   })
 
-  test('creating without an appId warns that a redeploy creates another application', () => {
-    const output = mockOutput()
+  test.each([false, true])(
+    'creating with createRequested=%s explains how to redeploy',
+    (createRequested) => {
+      const output = mockOutput()
 
-    logAppDeployed({
-      applicationId: 'app-2',
-      cliConfig: {app: {organizationId: 'org-1'}} as CliConfig,
-      created: true,
-      organizationId: 'org-1',
-      output,
-      title: 'New App',
+      logAppDeployed({
+        applicationId: 'app-2',
+        cliConfig: {app: {organizationId: 'org-1'}} as CliConfig,
+        created: true,
+        createRequested,
+        organizationId: 'org-1',
+        output,
+        title: 'New App',
+      })
+
+      const logged = vi
+        .mocked(output.log)
+        .mock.calls.map((call) => call[0])
+        .join('\n')
+      expect(logged).toContain('Created a new application.')
+      expect(logged).toContain('Save `deployment.appId`')
+      expect(logged.includes('omit --create')).toBe(createRequested)
+      expect(logged).toContain("appId: 'app-2'")
+    },
+  )
+})
+
+function collectReports() {
+  const reports: DeployCheck[] = []
+  const reporter = {report: (check: DeployCheck) => reports.push(check)} as DeployCheckReporter
+  return {reporter, reports}
+}
+
+describe('reportAspectSyncPlan', () => {
+  const basePlan: AspectSyncPlan = {
+    documents: [
+      {_id: 'caption', _type: 'sanity.asset.aspect', definition: {}},
+      {_id: 'notes', _type: 'sanity.asset.aspect', definition: {}},
+    ],
+    mediaLibraryId: 'library-1',
+    staleIds: [],
+    strippedByField: {},
+  }
+
+  test('reports the upserts as a pass and nothing else for a clean plan', () => {
+    const {reporter, reports} = collectReports()
+
+    reportAspectSyncPlan(reporter, basePlan)
+
+    expect(reports).toEqual([
+      {
+        message: 'Will sync 2 aspect definitions to media library library-1',
+        status: 'pass',
+      },
+    ])
+  })
+
+  test('reports deletions prominently as a warning naming every stale id', () => {
+    const {reporter, reports} = collectReports()
+
+    reportAspectSyncPlan(reporter, {...basePlan, staleIds: ['legacy', 'oldAspect']})
+
+    const warning = reports.find((check) => check.status === 'warn')
+    expect(warning?.message).toContain(
+      'Will delete 2 stored aspect definitions with no matching config field: legacy, oldAspect',
+    )
+    expect(warning?.solution).toContain('aspects.<name> values on assets stay put')
+    expect(warning?.solution).toContain('sanity media pull-aspects')
+  })
+
+  test('reports stripped non-serializable values without warning', () => {
+    const {reporter, reports} = collectReports()
+
+    reportAspectSyncPlan(reporter, {
+      ...basePlan,
+      strippedByField: {notes: ['definition.components', 'definition.validation']},
     })
 
-    const logged = vi
-      .mocked(output.log)
-      .mock.calls.map((call) => call[0])
-      .join('\n')
-    expect(logged).toContain('Created a new application.')
-    expect(logged).toContain('creates another new application')
-    expect(logged).toContain("appId: 'app-2'")
+    const stripped = reports.find((check) => check.message.includes('non-serializable'))
+    expect(stripped?.status).toBe('pass')
+    expect(stripped?.message).toContain('notes (definition.components, definition.validation)')
   })
 })
 
@@ -156,5 +248,129 @@ describe('syncApplicationMetadata', () => {
       appType: 'coreApp',
       body: {dashboardStatus: 'unlisted', title: 'Renamed'},
     })
+  })
+})
+
+const mockFindBlueprintFile = vi.mocked(findBlueprintFile)
+const mockReadBlueprint = vi.mocked(readBlueprint)
+const mockFindUserApplication = vi.mocked(findUserApplication)
+
+type BlueprintInfo = Awaited<ReturnType<typeof readBlueprint>>
+
+const existingApp = {
+  appHost: 'my-app',
+  id: 'app-1',
+  organizationId: 'org-1',
+  title: 'My App',
+  type: 'coreApp',
+} as UserApplicationResolved
+
+/**
+ * A blueprint found at `/root/sanity.blueprint.ts`, declaring `resources`.
+ * A resource's `root` is resolved relative to that file, so `'.'` is the
+ * `/root` app these options deploy.
+ */
+function mockBlueprint(resources: Record<string, unknown>[]) {
+  mockFindBlueprintFile.mockReturnValue('/root/sanity.blueprint.ts')
+  mockReadBlueprint.mockResolvedValue({resources} as unknown as BlueprintInfo)
+}
+
+function deployOptions(flags: Partial<DeployFlags> = {}): DeployAppOptions {
+  return {
+    cliConfig: {app: {organizationId: 'org-1'}, deployment: {appId: 'app-1'}},
+    flags: {build: true, json: false, ...flags},
+    output: createMockOutput(),
+    projectRoot: {directory: '/root', path: '/root/sanity.cli.ts'},
+    sourceDir: '/root/dist',
+  } as unknown as DeployAppOptions
+}
+
+/** Stands in for the process exit a real run's `output.error` performs. */
+function failOnError(options: DeployAppOptions) {
+  return vi.mocked(options.output.error).mockImplementation(() => {
+    throw new Error('exit')
+  })
+}
+
+describe('deployApp (blueprint-managed app)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    // `clearAllMocks` keeps implementations, so reset the blueprint stubs back
+    // to "no blueprint next to the app" — otherwise one suite's blueprint
+    // blocks every deploy that follows it.
+    mockFindBlueprintFile.mockReset().mockReturnValue(undefined)
+    mockReadBlueprint.mockReset()
+    mockFindUserApplication.mockResolvedValue(existingApp)
+    // Only the dry run resolves a target; a real deploy goes through
+    // `findUserApplication` above.
+    vi.mocked(resolveAppDeployTarget).mockResolvedValue({
+      application: existingApp,
+      type: 'found',
+    })
+  })
+
+  test('an app referenced by a blueprint is blocked before anything is built or shipped', async () => {
+    const options = deployOptions()
+    const error = failOnError(options)
+    mockBlueprint([{name: 'app', root: '.', type: 'sanity.application'}])
+
+    await expect(deployApp(options)).rejects.toThrow('exit')
+
+    expect(error.mock.calls[0][0]).toBe(
+      'Using the `deploy` command for an app that is referenced by a blueprint is not allowed: ' +
+        'Deploy the app using the `blueprints deploy` command',
+    )
+    expect(error.mock.calls[0][1]).toEqual({exit: 1})
+    expect(mockFindUserApplication).not.toHaveBeenCalled()
+    expect(buildApp).not.toHaveBeenCalled()
+    expect(createDeployment).not.toHaveBeenCalled()
+  })
+
+  test('a blueprint referencing a different app does not block the deploy', async () => {
+    const options = deployOptions()
+    mockBlueprint([{name: 'app', root: './other-app', type: 'sanity.application'}])
+
+    await deployApp(options)
+
+    expect(options.output.error).not.toHaveBeenCalled()
+    expect(createDeployment).toHaveBeenCalledWith(expect.objectContaining({applicationId: 'app-1'}))
+  })
+
+  test('a blueprint studio at the same root does not block an app deploy', async () => {
+    const options = deployOptions()
+    mockBlueprint([{name: 'studio', root: '.', type: 'sanity.studio'}])
+
+    await deployApp(options)
+
+    expect(options.output.error).not.toHaveBeenCalled()
+    expect(createDeployment).toHaveBeenCalled()
+  })
+
+  test('no blueprint file allows the deploy to continue', async () => {
+    const options = deployOptions()
+
+    await deployApp(options)
+
+    expect(mockReadBlueprint).not.toHaveBeenCalled()
+    expect(createDeployment).toHaveBeenCalled()
+  })
+
+  test('a dry run collects the block as a failing check instead of deploying', async () => {
+    const options = deployOptions({'dry-run': true})
+    mockBlueprint([{name: 'app', root: '.', type: 'sanity.application'}])
+
+    await deployApp(options)
+
+    const planned = vi
+      .mocked(options.output.log)
+      .mock.calls.map((call) => call[0])
+      .join('\n')
+    expect(planned).toContain(
+      'Using the `deploy` command for an app that is referenced by a blueprint is not allowed',
+    )
+    expect(options.output.error).toHaveBeenCalledWith('Deploy blocked by failing checks.', {
+      exit: 1,
+    })
+    expect(createDeployment).not.toHaveBeenCalled()
   })
 })

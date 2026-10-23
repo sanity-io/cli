@@ -83,12 +83,14 @@ export const apiRoutes: ApiRouteEntry[] = [
       'applications/{applicationId}',
       'applications/{applicationId}/access',
       'applications/{applicationId}/deployments',
+      'applications/{applicationId}/embeddable',
       'applications/{applicationId}/installations',
       'applications/{applicationId}/interfaces',
       'applications/{applicationId}/workspaces',
       'deploy',
       'deploy/quickstart',
       'installations',
+      'installations/ai-features',
       'installations/catalog',
       'installations/defaults',
       'installations/{installationId}',
@@ -96,6 +98,7 @@ export const apiRoutes: ApiRouteEntry[] = [
       'installations/{installationId}/configs',
       'installations/{installationId}/configs/{configId}',
       'installations/{installationId}/interfaces',
+      'organizations/{organizationId}/applications/{applicationId}',
       'projects/{projectId}/user-applications',
       'projects/{projectId}/user-applications/{userApplicationId}',
       'projects/{projectId}/user-applications/{userApplicationId}/config/{configKey}',
@@ -122,12 +125,14 @@ export const apiRoutes: ApiRouteEntry[] = [
       'applications/{applicationId}',
       'applications/{applicationId}/access',
       'applications/{applicationId}/deployments',
+      'applications/{applicationId}/embeddable',
       'applications/{applicationId}/installations',
       'applications/{applicationId}/interfaces',
       'applications/{applicationId}/workspaces',
       'deploy',
       'deploy/quickstart',
       'installations',
+      'installations/ai-features',
       'installations/catalog',
       'installations/defaults',
       'installations/{installationId}',
@@ -135,6 +140,7 @@ export const apiRoutes: ApiRouteEntry[] = [
       'installations/{installationId}/configs',
       'installations/{installationId}/configs/{configId}',
       'installations/{installationId}/interfaces',
+      'organizations/{organizationId}/applications/{applicationId}',
       'projects/{projectId}/user-applications',
       'projects/{projectId}/user-applications/{userApplicationId}',
       'projects/{projectId}/user-applications/{userApplicationId}/config/{configKey}',
@@ -159,7 +165,9 @@ export const apiRoutes: ApiRouteEntry[] = [
     host: 'project',
     pathPatterns: [
       'assets/files/{dataset}',
+      'assets/files/{dataset}/from-url',
       'assets/images/{dataset}',
+      'assets/images/{dataset}/from-url',
       'assets/media-library-link/{dataset}'
     ],
     slug: 'assets',
@@ -177,6 +185,16 @@ export const apiRoutes: ApiRouteEntry[] = [
     title: 'Backups API reference'
   },
   {
+    defaultApiVersion: 'v1',
+    host: 'global',
+    pathPatterns: [
+      'projects/{project_id}/datasets/{dataset_name}/assets/{asset_id}/purges',
+      'projects/{project_id}/datasets/{dataset_name}/purges'
+    ],
+    slug: 'cdn-cache-purge',
+    title: 'CDN Cache Purge API Reference'
+  },
+  {
     defaultApiVersion: 'vX',
     host: 'global',
     pathPatterns: [
@@ -190,6 +208,7 @@ export const apiRoutes: ApiRouteEntry[] = [
     defaultApiVersion: 'v2025-02-19',
     host: 'global',
     pathPatterns: [
+      'projects/{projectId}/datasets/copy',
       'projects/{projectId}/datasets/{dataset}/copy'
     ],
     slug: 'copy',
@@ -216,7 +235,7 @@ export const apiRoutes: ApiRouteEntry[] = [
     title: 'Embeddings Index API reference (deprecated)'
   },
   {
-    defaultApiVersion: 'v2021-03-25',
+    defaultApiVersion: 'v2025-02-19',
     host: 'project',
     pathPatterns: [
       'data/export/{dataset}'
@@ -281,27 +300,7 @@ export const apiRoutes: ApiRouteEntry[] = [
     defaultApiVersion: 'v2025-02-19',
     host: 'global',
     pathPatterns: [
-      'media-libraries/{libraryId}/mutate',
-      'media-libraries/{libraryId}/query',
-      'media-libraries/{libraryId}/references/documents/{assetId}/to',
-      'media-libraries/{libraryId}/refsearch',
-      'media-libraries/{libraryId}/signing-keys',
-      'media-libraries/{libraryId}/signing-keys/{keyId}',
-      'media-libraries/{libraryId}/upload',
-      'media-libraries/{libraryId}/video/{videoId}/playback-info',
-      'media-libraries/{libraryId}/video/{videoId}/playback/{type}',
-      'media-libraries/{libraryId}/video/{videoId}/renditions/{name}',
-      'media-libraries/{libraryId}/video/{videoId}/subtitles',
-      'media-libraries/{libraryId}/video/{videoId}/subtitles/upload',
-      'media-libraries/{libraryId}/video/{videoId}/subtitles/{subtitleId}'
-    ],
-    slug: 'media-library',
-    title: 'Media Library API reference'
-  },
-  {
-    defaultApiVersion: 'v2025-02-19',
-    host: 'project',
-    pathPatterns: [
+      'media-libraries/{libraryId}/from-url',
       'media-libraries/{libraryId}/mutate',
       'media-libraries/{libraryId}/query',
       'media-libraries/{libraryId}/references/documents/{assetId}/to',
@@ -337,6 +336,7 @@ export const apiRoutes: ApiRouteEntry[] = [
       'projects/{projectId}/cors',
       'projects/{projectId}/cors/{id}',
       'projects/{projectId}/datasets',
+      'projects/{projectId}/datasets/copy',
       'projects/{projectId}/datasets/{datasetName}/tags/{tagIdentifier}',
       'projects/{projectId}/datasets/{name}',
       'projects/{projectId}/datasets/{name}/copy',
@@ -366,16 +366,19 @@ export const apiRoutes: ApiRouteEntry[] = [
     defaultApiVersion: 'v2021-10-04',
     host: 'global',
     pathPatterns: [
+      'auth/organizations/{organizationId}/providers/{providerId}/projects/{projectId}/role-mappings',
       'organizations/{organizationId}/acl',
       'organizations/{organizationId}/acl/{sanityUserId}',
       'organizations/{organizationId}/grants',
-      'organizations/{organizationId}/providers/{providerId}/projects/{projectId}/role-mappings',
       'projects/{projectId}/acl',
-      'projects/{projectId}/acl/{userId}',
+      'projects/{projectId}/acl/{projectUserId}',
       'projects/{projectId}/datasets/{datasetName}/acl',
       'projects/{projectId}/datasets/{datasetName}/grants',
       'projects/{projectId}/grants',
+      'projects/{projectId}/grants/{projectUserId}',
       'projects/{projectId}/permissionResourceSchemas',
+      'projects/{projectId}/permissionResources',
+      'projects/{projectId}/permissionResources/{resourceId}',
       'projects/{projectId}/roles',
       'projects/{projectId}/roles/{roleName}'
     ],
@@ -412,9 +415,11 @@ export const apiRoutes: ApiRouteEntry[] = [
     host: 'project',
     pathPatterns: [
       'hooks/projects/{projectId}',
+      'hooks/projects/{projectId}/attempts/{attemptId}',
       'hooks/projects/{projectId}/{id}',
       'hooks/projects/{projectId}/{id}/attempts',
-      'hooks/{id}/messages'
+      'hooks/projects/{projectId}/{id}/messages',
+      'hooks/projects/{projectId}/{id}/messages/{messageId}/attempts'
     ],
     slug: 'webhooks',
     title: 'Webhooks API reference'

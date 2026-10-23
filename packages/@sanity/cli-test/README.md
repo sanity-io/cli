@@ -73,6 +73,7 @@ Vitest global setup function that copies fixtures and installs dependencies. Thi
 **Parameters:**
 
 - `options.additionalFixtures` - Glob patterns for additional fixture directories from your local repo to set up alongside the default bundled fixtures (e.g., `['fixtures/*', 'dev/*']`). Only directories containing a `package.json` are included.
+- `options.ignoreWorkspace` - Give each fixture its own pnpm workspace so it installs its own `node_modules` even when the temp directory sits inside another workspace (defaults to `true`)
 - `options.tempDir` - Custom temp directory path (defaults to `process.cwd()/tmp`)
 
 **Note:** Fixtures are NOT built during setup. Tests that need built output should build explicitly.

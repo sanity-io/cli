@@ -1,0 +1,19 @@
+{
+  "name": "@sanity-test/fixture-plugin",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Stand-in for a third-party oclif plugin that declares invocation policies",
+  "type": "module",
+  "oclif": {
+    "commands": "./commands",
+    "topicSeparator": " ",
+    "topics": {
+      "fixtures": {
+        "description": "Commands contributed by the fixture plugin"
+      }
+    }
+  },
+  "sanity": {
+    "invocationPolicies": "./invocationPolicies.js"
+  }
+}
