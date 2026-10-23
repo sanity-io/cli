@@ -4,6 +4,14 @@ import {type Context} from '@sanity/client'
 import {waitForJob} from './waitForJob.js'
 
 /**
+ * Error message for a job that ended in a non-succeeded terminal state,
+ * e.g. "Build failed: <reason>"
+ */
+export function formatJobFailure(noun: string, job: Context.Job): string {
+  return `${noun} ${job.status}${job.error ? `: ${job.error}` : ''}`
+}
+
+/**
  * Watch a knowledge base job with a spinner until it reaches a terminal
  * state, updating the spinner text with the job status on each poll.
  *
