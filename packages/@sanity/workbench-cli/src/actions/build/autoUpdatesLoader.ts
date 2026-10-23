@@ -17,11 +17,7 @@ interface AutoUpdatesLoaderOptions {
   specifiers: string[]
 }
 
-/**
- * Loads the app's module CDN packages as its own instance, or its bundled copies when any of them
- * fails to load. The CDN bundles import each other and the page's shared packages by bare
- * specifier; shared packages resolve to the page's instances where the app has those too.
- */
+// Loads the app's CDN packages as its own instance; if any fails, the app uses its bundled copies.
 export function createAutoUpdatesLoader({
   appId,
   importModule,
@@ -70,7 +66,7 @@ export function createAutoUpdatesLoader({
         ),
         ownInstances: await findOwnInstances(shared, importModule),
       })
-      // All or nothing: a bundled package would pull in the bundled copies of the others.
+      // All or nothing: one bundled package would pull in bundled copies of the others.
       const loaded = await Promise.all(
         specifiers.map(async (specifier) => {
           const pkg = used.find(({name}) => name === packageOf(specifier))!
@@ -114,7 +110,7 @@ async function findOwnInstances(
           shared[name](),
           importModule(name).catch(() => {}),
         ])
-        // Module federation's namespace for a shared package can carry interop keys the page's lacks.
+        // Compare the page module's keys only: module federation adds interop keys like `__moduleExports`.
         if (
           documentModule &&
           Object.keys(documentModule).every((key) => module[key] === documentModule[key])

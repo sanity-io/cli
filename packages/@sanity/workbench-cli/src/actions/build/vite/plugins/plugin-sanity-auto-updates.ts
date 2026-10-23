@@ -1,15 +1,12 @@
 /*
- * Loads a federated app's module CDN packages (`sanity`, `@sanity/sdk*`) at runtime, keeping the
- * installed copy as a lazily loaded fallback:
+ * Wraps the app's imports of module CDN packages so they load at runtime, installed copy as fallback:
  *
- *   app code                    import {Studio} from 'sanity'
- *     -> wrapper module         const m = await load('sanity', () => import('sanity'))
- *                               export {m.Studio as Studio, ...}   names read from the installed copy
- *     -> load()                 module CDN, or the installed copy (see `createAutoUpdatesLoader`)
+ *   import {Studio} from 'sanity'
+ *     -> const m = await load('sanity', () => import('sanity'))
+ *        export {m.Studio as Studio, ...}   (export names read from the installed copy)
  *
- * Imports from inside the installed packages are not wrapped, so the fallback is self-contained.
- * `virtual:sanity/auto-updates` always resolves: the studio entry renders `Studio` with its
- * `studioProps()`, which are empty unless `sanity` came from the module CDN.
+ * Imports inside the installed packages stay unwrapped, so the fallback is self-contained.
+ * `virtual:sanity/auto-updates` always resolves; `studioProps()` is empty without the CDN.
  */
 import {readFile} from 'node:fs/promises'
 import path from 'node:path'
@@ -74,7 +71,7 @@ function wrapCdnImports(packages: ModuleCdnPackage[]): Plugin {
       return renderWrapper(specifier, await collectExports(this, installed.id))
     },
     name: 'sanity/auto-updates/wrap-cdn-imports',
-    // The loader loads every wrapped specifier up front, which is only known once the graph is complete.
+    // The loader imports every wrapped specifier up front; the list is complete only after the build.
     renderChunk(code) {
       const placeholder = new RegExp(`(["'\`])${SPECIFIERS_PLACEHOLDER}\\1`)
       if (!placeholder.test(code)) return null
