@@ -112,7 +112,12 @@ function start(args: string[] = []) {
 
 async function waitForPrompt(text: string) {
   while (!screen.includes(text)) {
-    if (finished) expect(screen, finished.error?.message ?? finished.stderr).toContain(text)
+    if (finished) {
+      throw new Error(
+        `Command exited before "${text}": ${finished.error?.message ?? finished.stderr}`,
+      )
+    }
+
     await once(rendered, 'render')
   }
 }
