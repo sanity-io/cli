@@ -186,7 +186,6 @@ export function isConfigOnlyServer(
   return Boolean(server.configs?.length) && !server.interfaces?.length
 }
 
-// Composed the way brett composes a deployed app's identity.
 export function localAppIdentity(
   app: Pick<WorkbenchApp, 'isSingleton' | 'name' | 'organizationId' | 'slug' | 'visibility'>,
 ): Pick<DevServerManifest, 'name' | 'organizationId' | 'reference' | 'slug' | 'visibility'> {
