@@ -144,8 +144,10 @@ async function queryAllPages<T extends {_id: string}>(options: {
   params: Record<string, unknown>
   /** GROQ projection, e.g. `{_id}`. Omitted, the whole documents return. */
   projection?: string
+  /** Request tag, e.g. `aspect-sync`. */
+  tag?: string
 }): Promise<T[]> {
-  const {filter, mediaLibraryId, params, projection = ''} = options
+  const {filter, mediaLibraryId, params, projection = '', tag} = options
   const client = await getMediaLibraryClient()
 
   const documents: T[] = []
@@ -160,6 +162,7 @@ async function queryAllPages<T extends {_id: string}>(options: {
       // `published` is this API version's default; pinned so a future default
       // change can never surface `drafts.*` duplicates of published documents.
       query: {perspective: 'published'},
+      tag,
       url: `/media-libraries/${mediaLibraryId}/query`,
     })
     const page = response?.result ?? []
@@ -186,6 +189,57 @@ export function getAspects(mediaLibraryId: string): Promise<StoredAspectDocument
     filter: '_type == $type',
     mediaLibraryId,
     params: {type: MEDIA_LIBRARY_ASSET_ASPECT_TYPE_NAME},
+  })
+}
+
+/**
+ * Fetch every stored aspect document `_id` of a media library. The consumer
+ * acts destructively on the result (mirror deletes), where a silently
+ * truncated list means reporting success while stale documents are left
+ * behind — `queryAllPages` reads to exhaustion.
+ *
+ * The `published` perspective pin matters doubly here: stale detection must
+ * never see draft ids. The sync's upserts write published documents and its
+ * deletes match ids exactly, so drafts (not normally used for aspect docs)
+ * are out of scope either way — a default-perspective read could flag a
+ * `drafts.*` id as stale and target it for deletion.
+ *
+ * @internal
+ */
+export async function getStoredAspectIds(mediaLibraryId: string): Promise<string[]> {
+  const documents = await queryAllPages<{_id: string}>({
+    filter: '_type == $type',
+    mediaLibraryId,
+    params: {type: MEDIA_LIBRARY_ASSET_ASPECT_TYPE_NAME},
+    projection: '{_id}',
+    tag: 'aspect-sync',
+  })
+  return documents.map((doc) => doc._id)
+}
+
+interface MutateAspectsResponse {
+  results?: Array<{id: string; operation: string}>
+}
+
+/**
+ * Apply one aspect-sync transaction — the upsert/delete mutation list built by
+ * `buildSyncMutations` — to a media library in a single request.
+ *
+ * @internal
+ */
+export async function mutateAspects(options: {
+  mediaLibraryId: string
+  mutations: unknown[]
+}): Promise<MutateAspectsResponse> {
+  const {mediaLibraryId, mutations} = options
+
+  const client = await getMediaLibraryClient()
+
+  return client.request<MutateAspectsResponse>({
+    body: {mutations},
+    method: 'POST',
+    tag: 'aspect-sync',
+    url: `/media-libraries/${mediaLibraryId}/mutate`,
   })
 }
 

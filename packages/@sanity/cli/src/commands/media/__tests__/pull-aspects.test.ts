@@ -161,6 +161,7 @@ describe('#media:pull-aspects', () => {
       `{name: 'credit', src: './src/fields/credit.tsx', title: 'Credit', public: true},`,
     )
     expect(stdout).toContain('the config app owns these definitions')
+    expect(stdout).toContain('not declared in sanity.cli.ts are deleted on deploy')
   })
 
   test('aggregates aspects across query pages — a capped response must not drop documents', async () => {

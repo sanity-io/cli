@@ -11,7 +11,7 @@ import {
 import {type AppVisibility, exitCodes} from '@sanity/cli-core'
 import {getErrorMessage} from '@sanity/cli-core/errors'
 import {getCoreAppUrl} from '@sanity/cli-core/util'
-import {spinner} from '@sanity/cli-core/ux'
+import {confirm, spinner} from '@sanity/cli-core/ux'
 import {resolveAppEntry} from '@sanity/workbench-cli/build'
 import {
   createCoreApp,
@@ -34,8 +34,15 @@ import {
   type UserApplicationResolved,
 } from '../../services/userApplications.js'
 import {getAppId} from '../../util/appId.js'
+import {runStep} from '../../util/checks.js'
 import {EXTERNAL_APP_NOT_SUPPORTED, NO_ORGANIZATION_ID} from '../../util/errorMessages.js'
+import {pluralize} from '../../util/pluralize.js'
 import {buildApp} from '../build/buildApp.js'
+import {
+  applyAspectSync,
+  type AspectSyncPlan,
+  planAspectSync,
+} from '../media/aspectSync/syncAspects.js'
 import {checkBlueprintManaged} from './blueprintManaged.js'
 import {createUserApplication} from './createUserApplication.js'
 import {
@@ -263,6 +270,44 @@ async function runAppDeployment(
       )
     }
 
+    // Plan the aspect-document sync in both modes, so the report — dry-run and
+    // real — shows what the sync will write and, prominently, what it will
+    // delete, before anything mutates. Gated on a resolved installation: when
+    // that check failed, a real run already exited and a dry run has reported
+    // the config as undeployable.
+    let aspectSyncPlan: AspectSyncPlan | undefined
+    // Gated on the `appType` discriminator, not the mere presence of a config:
+    // `ConfigSchema` is a union built to grow, and a future config type must
+    // not inherit the media-library aspect sync — and its deletions — by
+    // default.
+    if (configAppType === 'media-library' && organizationId && config && installationId) {
+      // runStep so an unexpected throw (network, API) becomes a fail check:
+      // a real run exits, a dry run records it and keeps reporting.
+      const planned = await runStep(reporter, {
+        debug: deployDebug,
+        formatError: (err) => `Planning the aspect-document sync failed: ${getErrorMessage(err)}`,
+        name: 'aspect sync plan',
+        work: () =>
+          planAspectSync({
+            fields: config.fields,
+            mediaLibraryId: flags['media-library-id'],
+            organizationId,
+            workDir,
+          }),
+      })
+      if (planned && 'failure' in planned) {
+        reporter.report({
+          exitCode: planned.failure.exitCode,
+          message: planned.failure.message,
+          solution: planned.failure.solution,
+          status: 'fail',
+        })
+      } else if (planned) {
+        aspectSyncPlan = planned.plan
+        reportAspectSyncPlan(reporter, aspectSyncPlan)
+      }
+    }
+
     const interfaces = deployApplication && workbench ? reportInterfaces(reporter, workbench) : null
 
     // Applied after the app is live (see below) so a failed deploy never leaves
@@ -288,14 +333,45 @@ async function runAppDeployment(
       version,
       ...toWorkbenchPayload(workbench, {config: configSummary, interfaces, title: appTitle}),
       ...(configSummary ? {config: configSummary} : {}),
+      ...(aspectSyncPlan
+        ? {
+            aspectSync: {
+              deleteIds: aspectSyncPlan.staleIds,
+              mediaLibraryId: aspectSyncPlan.mediaLibraryId,
+              upsertIds: aspectSyncPlan.documents.map((document) => document._id),
+            },
+          }
+        : {}),
     }
 
     // Dry run stops here — everything below mutates.
     if (dryRun) return {application: null, payload}
 
+    // Deleting stored definitions is the destructive part of a config deploy,
+    // so an interactive run confirms it before anything mutates. Unattended
+    // runs (--yes; forced in CI) proceed — the config is the source of truth
+    // and the dry-run report lists the deletions.
+    if (aspectSyncPlan && aspectSyncPlan.staleIds.length > 0 && !flags.yes) {
+      const staleCount = aspectSyncPlan.staleIds.length
+      const proceed = await confirm({
+        default: false,
+        message:
+          `Delete ${staleCount} stored aspect ${pluralize('definition', staleCount)} with no ` +
+          `matching config field (${aspectSyncPlan.staleIds.join(', ')})?`,
+      })
+      if (!proceed) {
+        output.error('Deploy cancelled — the stored aspect definitions are unchanged.', {
+          exit: exitCodes.USER_ABORT,
+        })
+      }
+    }
+
     // A config-only singleton ships no application, only its config.
     if (!deployApplication) {
       await deployApplicationConfig()
+      if (aspectSyncPlan) {
+        await runAspectSync(aspectSyncPlan, output)
+      }
       if (installationId && version) {
         return {application: null, installationId, payload}
       }
@@ -383,6 +459,72 @@ async function runAppDeployment(
     await rollbackApp?.()
     throw err
   }
+}
+
+/**
+ * Reports the planned aspect-document sync: the upserts as a pass, stripped
+ * non-serializable values as information, and — prominently, as a warning —
+ * the stored definitions the sync will delete because no config field matches
+ * them. Deploy is a mirror: the config owns the library's aspect namespace.
+ */
+export function reportAspectSyncPlan(reporter: DeployCheckReporter, plan: AspectSyncPlan): void {
+  const upserts = plan.documents.length
+  reporter.report({
+    message: `Will sync ${upserts} aspect ${pluralize('definition', upserts)} to media library ${plan.mediaLibraryId}`,
+    status: 'pass',
+  })
+
+  const strippedFields = Object.entries(plan.strippedByField)
+  if (strippedFields.length > 0) {
+    // Expected for fields with custom inputs, validation callbacks, or
+    // initial-value resolvers: the live config keeps those capabilities, only
+    // the stored mirror (read by Studio plugin mode and the dashboard) omits
+    // them. Reported so the capability gap is explicit, but not a warning.
+    const details = strippedFields
+      .map(([name, paths]) => `${name} (${paths.join(', ')})`)
+      .join('; ')
+    reporter.report({
+      message: `Stored definitions omit non-serializable values: ${details}`,
+      status: 'pass',
+    })
+  }
+
+  if (plan.staleIds.length > 0) {
+    reporter.report({
+      message: `Will delete ${plan.staleIds.length} stored aspect ${pluralize('definition', plan.staleIds.length)} with no matching config field: ${plan.staleIds.join(', ')}`,
+      solution:
+        'Definitions only — aspects.<name> values on assets stay put and resurface if a matching ' +
+        'field is added back. To keep a definition, declare a matching field in sanity.cli.ts ' +
+        '(generate one with `sanity media pull-aspects`)',
+      status: 'warn',
+    })
+  }
+}
+
+/**
+ * Applies the planned sync after the config itself deployed. A failure here
+ * leaves the config live but the stored mirror stale, so the error says so
+ * and points at the retry (deploys are idempotent).
+ */
+async function runAspectSync(
+  plan: AspectSyncPlan,
+  output: DeployAppOptions['output'],
+): Promise<void> {
+  try {
+    await applyAspectSync(plan)
+  } catch (err) {
+    throw new Error(
+      `The config deployed, but syncing its aspect documents to media library ${plan.mediaLibraryId} failed: ${getErrorMessage(err)}\nRun \`sanity deploy\` again to retry the sync.`,
+      {cause: err},
+    )
+  }
+  const deleted =
+    plan.staleIds.length > 0
+      ? ` (deleted ${plan.staleIds.length} stale ${pluralize('definition', plan.staleIds.length)})`
+      : ''
+  output.log(
+    `Synced ${plan.documents.length} aspect ${pluralize('definition', plan.documents.length)} to media library ${plan.mediaLibraryId}${deleted}`,
+  )
 }
 
 /**
