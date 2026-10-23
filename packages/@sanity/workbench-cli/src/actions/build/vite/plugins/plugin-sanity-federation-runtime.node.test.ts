@@ -47,11 +47,13 @@ function evaluateEntry(source: string) {
     createRoot: () => ({render: (element: Element) => rendered.push(element), unmount: () => {}}),
     React,
     Studio: 'Studio',
+    studioProps: () => ({unstable_importMapUrl: 'https://sanity-cdn.com/v1/modules/sanity'}),
   }
   const body = source
     .replace(/^import \* as React from 'react'$/m, 'const React = deps.React')
     .replace(/^import \{ createRoot \} from 'react-dom\/client'$/m, 'const {createRoot} = deps')
     .replace(/^import \{ Studio \} from 'sanity'$/m, 'const {Studio} = deps')
+    .replace(/^import \{ studioProps \} from .*$/m, 'const {studioProps} = deps')
     .replace(/^import config from .*$/m, 'const config = deps.config')
     .replaceAll(/^export /gm, '')
     .replaceAll('import.meta.hot', 'undefined')
@@ -72,7 +74,7 @@ function providerOf(element: Element): Element {
   return node
 }
 
-test('the studio entry renders Studio with the config and forwarded props', () => {
+test('the studio entry renders Studio with the config, the auto-updates props and forwarded props', () => {
   const source = emitEntry({isApp: false, studioConfigPath: '/studio/sanity.config.ts'})
   const mod = evaluateEntry(source)
 
@@ -87,7 +89,11 @@ test('the studio entry renders Studio with the config and forwarded props', () =
   // Render the bound App the way React would to reach the studio expression.
   const studio = (app.type as (props: unknown) => Element)(app.props)
   expect(studio.type).toBe('Studio')
-  expect(studio.props).toEqual({config: {projectId: 'abc123'}, scheme: 'dark'})
+  expect(studio.props).toEqual({
+    config: {projectId: 'abc123'},
+    scheme: 'dark',
+    unstable_importMapUrl: 'https://sanity-cdn.com/v1/modules/sanity',
+  })
 })
 
 test('the app entry renders the imported App with forwarded props', () => {
