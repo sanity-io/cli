@@ -1,9 +1,5 @@
-/**
- * Builds the vendor packages (`react`, `react-dom`, `styled-components`) into hashed ESM chunks in
- * `vendor/` for the `index.html` import map, and keeps them and the module CDN packages external.
- * Applies to auto-updating builds and to every workbench app's standalone page. The entries are
- * emitted rather than set as `input`, which module federation would bootstrap as app entries.
- */
+// Builds react, react-dom and styled-components as hashed ESM chunks in `vendor/` for the
+// `index.html` import map. Emitted, not `input`: module federation bootstraps every input as an app.
 import {esmExternalRequirePlugin, type Plugin} from 'vite'
 
 import {type AutoUpdatesBuildConfig} from '../autoUpdates.js'
