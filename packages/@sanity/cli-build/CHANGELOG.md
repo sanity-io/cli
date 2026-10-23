@@ -1,5 +1,16 @@
 # Changelog
 
+## 7.0.1
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-build-v7.0.0...cli-build-v7.0.1)
+
+_2026-10-23_
+
+### Bug Fixes
+
+- **build:** config-only builds verify sanity, not @sanity/sdk-react ([#2053](https://github.com/sanity-io/cli/pull/2053)) ([03a9b7a](https://github.com/sanity-io/cli/commit/03a9b7afd421acf844e772ee7401205d09495953))
+- **build:** link stylesheets when cssCodeSplit is false ([#2045](https://github.com/sanity-io/cli/pull/2045)) ([816726a](https://github.com/sanity-io/cli/commit/816726a207564cfde3e1aab6e35c58bb7793ebb8))
+
 ## 7.0.0
 
 [Compare changes](https://github.com/sanity-io/cli/compare/cli-build-v6.5.0...cli-build-v7.0.0)
