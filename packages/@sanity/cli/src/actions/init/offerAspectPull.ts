@@ -1,4 +1,4 @@
-import {access, mkdir, readFile, rm, writeFile} from 'node:fs/promises'
+import {mkdir, readFile, rm, writeFile} from 'node:fs/promises'
 import path from 'node:path'
 
 import {type Output} from '@sanity/cli-core'
@@ -74,19 +74,17 @@ export async function offerAspectPull({
   // files that no longer exist. On bail the scaffold stays a consistent,
   // working pair (example fields + their declarations), and the caller's
   // `!pulledAspects` branch already points at `sanity media pull-aspects`.
-  const configPath = await findCliConfig(outputPath)
+  // The template is `typescriptOnly`, so the scaffold always writes this file.
+  const configPath = path.join(outputPath, 'sanity.cli.ts')
   const entryLines = formatFieldEntries(modules, FIELDS_DIR.replaceAll(path.sep, '/')).split('\n')
 
-  const bail = (reason: string): false => {
+  const result = replaceFieldEntries(await readFile(configPath, 'utf8'), entryLines)
+  if (!result.ok) {
     output.warn(
-      `Could not seed the config from the existing aspects (${reason}) — the example fields are kept.`,
+      `Could not seed the config from the existing aspects (${result.reason}) — the example fields are kept.`,
     )
     return false
   }
-
-  if (!configPath) return bail('no sanity.cli.ts found')
-  const result = replaceFieldEntries(await readFile(configPath, 'utf8'), entryLines)
-  if (!result.ok) return bail(result.reason)
 
   // The example modules make way for the real ones: entries are replaced
   // wholesale in the config, so files left behind would just be orphans.
@@ -102,17 +100,4 @@ export async function offerAspectPull({
     `${logSymbols.success} Generated ${modules.length} field ${pluralize('module', modules.length)} from your media library and declared them in sanity.cli.ts`,
   )
   return true
-}
-
-/** The scaffolded CLI config path (`sanity.cli.ts` or `.js`), if present. */
-async function findCliConfig(outputPath: string): Promise<string | undefined> {
-  for (const filename of ['sanity.cli.ts', 'sanity.cli.js']) {
-    const candidate = path.join(outputPath, filename)
-    const exists = await access(candidate).then(
-      () => true,
-      () => false,
-    )
-    if (exists) return candidate
-  }
-  return undefined
 }

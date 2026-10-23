@@ -921,6 +921,9 @@ importers:
       '@eslint/compat':
         specifier: 'catalog:'
         version: 2.1.0(eslint@10.9.1(jiti@2.7.0)(supports-color@8.1.1))
+      '@oxc-project/types':
+        specifier: 0.152.0
+        version: 0.152.0
       '@repo/package.config':
         specifier: workspace:*
         version: link:../../@repo/package.config
