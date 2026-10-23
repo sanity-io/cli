@@ -35,7 +35,7 @@ export function getModuleCdnPackages(
 /**
  * @internal
  */
-export function getAutoUpdatesImportMap(packages: ModuleCdnPackage[] = []): Record<string, string> {
+export function getAutoUpdatesImportMap(packages: ModuleCdnPackage[]): Record<string, string> {
   return Object.fromEntries(
     packages.flatMap(({name, url}) => [
       [name, url],
@@ -85,6 +85,6 @@ function rewriteScopedPackage(pkgName: string) {
 /**
  * @internal
  */
-export function getAutoUpdatesCssUrls(packages: ModuleCdnPackage[] = []): string[] {
+export function getAutoUpdatesCssUrls(packages: ModuleCdnPackage[]): string[] {
   return packages.flatMap(({cssUrl}) => (cssUrl ? [cssUrl] : []))
 }

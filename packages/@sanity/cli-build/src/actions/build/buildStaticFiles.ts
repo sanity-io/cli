@@ -1,6 +1,5 @@
 import path from 'node:path'
 
-import {getLocalPackageVersion} from '@sanity/cli-core/package-manager'
 import {type CliConfig, type UserViteConfig} from '@sanity/cli-core/types'
 import {buildFederatedApp, type WorkbenchExposes} from '@sanity/workbench-cli/build'
 import {build} from 'vite'
@@ -81,19 +80,11 @@ export async function buildStaticFiles(
 
   const mode = 'production'
 
-  const sharesStyledComponents =
-    isWorkbenchApp && Boolean(await getLocalPackageVersion('styled-components', cwd))
-  const autoUpdates =
-    moduleCdnPackages || isWorkbenchApp
-      ? {
-          cssUrls: getAutoUpdatesCssUrls(moduleCdnPackages),
-          imports: getAutoUpdatesImportMap(moduleCdnPackages),
-          vendor: await resolveVendorBuildConfig({
-            cwd,
-            isApp: Boolean(isApp) && !sharesStyledComponents,
-          }),
-        }
-      : undefined
+  const autoUpdates = moduleCdnPackages && {
+    cssUrls: getAutoUpdatesCssUrls(moduleCdnPackages),
+    imports: getAutoUpdatesImportMap(moduleCdnPackages),
+    vendor: await resolveVendorBuildConfig({cwd, isApp: Boolean(isApp)}),
+  }
 
   /* Federation builds only produce the federation environment
    * (remote-entry, mf-manifest) — skip client-specific steps like
@@ -171,7 +162,10 @@ export async function buildStaticFiles(
     }
 
     buildDebug('Bundling federation environment')
-    await buildFederatedApp(viteConfig)
+    await buildFederatedApp(viteConfig, {
+      // Custom Vite hooks and auto-update externals resolve different dependencies in the two environments.
+      reuseStandaloneBuild: emitSpa && !extendViteConfig && !autoUpdates,
+    })
     buildDebug('Bundling complete')
     // TODO: add stats here
     return {chunks: []}

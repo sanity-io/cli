@@ -17,11 +17,6 @@ const mockResolveEntries = vi.hoisted(() => vi.fn())
 const mockCopyDir = vi.hoisted(() => vi.fn())
 const mockWriteFavicons = vi.hoisted(() => vi.fn())
 const mockResolveVendorBuildConfig = vi.hoisted(() => vi.fn())
-const mockGetLocalPackageVersion = vi.hoisted(() => vi.fn())
-
-vi.mock('@sanity/cli-core/package-manager', () => ({
-  getLocalPackageVersion: mockGetLocalPackageVersion,
-}))
 
 vi.mock('@sanity/workbench-cli/build', () => ({
   buildFederatedApp: mockBuildApp,
@@ -122,10 +117,15 @@ describe('buildStaticFiles', () => {
       // transforms like vanilla-extract never run on `.css.ts` files.
       const builderConfig = mockBuildApp.mock.calls[0][0]
       expect(builderConfig.plugins).toContainEqual(userPlugin)
+      expect(mockBuildApp).toHaveBeenCalledWith(builderConfig, {
+        reuseStandaloneBuild: false,
+      })
 
       // Federation builds must not call finalizeViteConfig; it forces a
       // Studio-specific entry the federation environment does not use.
       expect(mockFinalizeViteConfig).not.toHaveBeenCalled()
+
+      expect(mockBuildApp).toHaveBeenCalled()
     })
 
     test('never runs the legacy single-environment vite build', async () => {
@@ -138,7 +138,10 @@ describe('buildStaticFiles', () => {
 
       // The federation builder owns its environments; the legacy build bypasses sharing.
       expect(mockBuild).not.toHaveBeenCalled()
-      expect(mockBuildApp).toHaveBeenCalled()
+      expect(mockBuildApp).toHaveBeenCalledWith(defaultViteConfig, {
+        reuseStandaloneBuild: true,
+      })
+      expect(mockResolveVendorBuildConfig).not.toHaveBeenCalled()
     })
 
     test('threads schemaExtraction through so a federated studio still extracts its schema', async () => {
@@ -208,70 +211,29 @@ describe('buildStaticFiles', () => {
       expect(mockWriteFavicons).not.toHaveBeenCalled()
       expect(mockCopyDir).not.toHaveBeenCalled()
       expect(mockResolveEntries).toHaveBeenCalled()
-      expect(mockBuildApp).toHaveBeenCalledWith(defaultViteConfig)
+      expect(mockBuildApp).toHaveBeenCalledWith(defaultViteConfig, {
+        reuseStandaloneBuild: false,
+      })
     })
   })
 
-  describe('vendor packages', () => {
-    test('maps the vendor packages and the module CDN packages of an auto-updating build', async () => {
-      await buildStaticFiles({basePath: '/', cwd, moduleCdnPackages, outputDir})
+  test('builds the vendor packages of an auto-updating workbench app without reusing its standalone build', async () => {
+    await buildStaticFiles({basePath: '/', cwd, isWorkbenchApp: true, moduleCdnPackages, outputDir})
 
-      expect(mockResolveVendorBuildConfig).toHaveBeenCalledWith({cwd, isApp: false})
-      expect(mockGetViteConfig).toHaveBeenCalledWith(
-        expect.objectContaining({
-          autoUpdates: {
-            cssUrls: ['https://sanity-cdn.example/sanity/index.css'],
-            imports: {
-              sanity: 'https://sanity-cdn.example/sanity',
-              'sanity/': 'https://sanity-cdn.example/sanity/',
-            },
-            vendor,
+    expect(mockResolveVendorBuildConfig).toHaveBeenCalledWith({cwd, isApp: false})
+    expect(mockGetViteConfig).toHaveBeenCalledWith(
+      expect.objectContaining({
+        autoUpdates: {
+          cssUrls: ['https://sanity-cdn.example/sanity/index.css'],
+          imports: {
+            sanity: 'https://sanity-cdn.example/sanity',
+            'sanity/': 'https://sanity-cdn.example/sanity/',
           },
-        }),
-      )
-    })
-
-    test.each([
-      {isWorkbenchApp: false, moduleCdnPackages},
-      {isWorkbenchApp: true, moduleCdnPackages: undefined},
-    ])(
-      'fails the build when the vendor packages are unsupported (workbench app: $isWorkbenchApp)',
-      async (options) => {
-        mockResolveVendorBuildConfig.mockRejectedValueOnce(new Error('Unsupported react'))
-
-        await expect(buildStaticFiles({basePath: '/', cwd, outputDir, ...options})).rejects.toThrow(
-          'Unsupported react',
-        )
-      },
+          vendor,
+        },
+      }),
     )
-
-    test.each([
-      {sharesStyledComponents: true, styledComponents: '6.4.0'},
-      {sharesStyledComponents: false, styledComponents: undefined},
-    ])(
-      'maps the vendor packages of a workbench app without auto-updates, sharing styled-components: $sharesStyledComponents',
-      async ({sharesStyledComponents, styledComponents}) => {
-        mockGetLocalPackageVersion.mockResolvedValueOnce(styledComponents)
-
-        await buildStaticFiles({
-          basePath: '/',
-          cwd,
-          entry: './src/App',
-          isApp: true,
-          isWorkbenchApp: true,
-          outputDir,
-        })
-
-        expect(mockGetLocalPackageVersion).toHaveBeenCalledWith('styled-components', cwd)
-        expect(mockResolveVendorBuildConfig).toHaveBeenCalledWith({
-          cwd,
-          isApp: !sharesStyledComponents,
-        })
-        expect(mockGetViteConfig).toHaveBeenCalledWith(
-          expect.objectContaining({autoUpdates: {cssUrls: [], imports: {}, vendor}}),
-        )
-      },
-    )
+    expect(mockBuildApp).toHaveBeenCalledWith(defaultViteConfig, {reuseStandaloneBuild: false})
   })
 
   describe('isWorkbenchapp=false', () => {
@@ -306,7 +268,6 @@ describe('buildStaticFiles', () => {
       expect(mockWriteFavicons).toHaveBeenCalledWith(faviconBasePath, staticOutputPath)
       expect(mockBuild).toHaveBeenCalledWith(defaultViteConfig)
       expect(mockBuildApp).not.toHaveBeenCalled()
-      expect(mockResolveVendorBuildConfig).not.toHaveBeenCalled()
       // Should ignore non-chunk types
       expect(chunks).toHaveLength(1)
       expect(chunks[0].name).toEqual('chonkiboi')
