@@ -10,6 +10,7 @@ const projectId = getE2EProjectId()
 const organizationId = getE2EOrganizationId()
 const noMatchTerm = 'zz-no-such-entry'
 
+// Search prompts render the header before the results, so wait for a highlighted row before navigating
 // Matches the frame where the typed term is echoed and the highlighted row directly below contains `id`
 const highlightedAfterTyping = (prompt: string, id: string) =>
   new RegExp(`${prompt} ${id}\\s*\\n\\s*❯ [^\\n]*${id}`)
@@ -32,7 +33,7 @@ describe.skipIf(isRegistryMode)(
       await session.waitForText(highlightedAfterTyping('select an existing one', projectId))
       session.sendKey('Enter')
 
-      await session.waitForText(/Select dataset to use/)
+      await session.waitForText(/❯ Create new dataset/)
       await session.selectOption('production')
 
       await session.waitForExit(0)
@@ -54,6 +55,7 @@ describe.skipIf(isRegistryMode)(
 
       await session.waitForText(/Select dataset to use|Project name:/)
       expect(stripVTControlCharacters(session.getOutput())).not.toMatch(/Project name:/)
+      await session.waitForText(/❯ Create new dataset/)
       await session.selectOption('production')
 
       await session.waitForExit(0)
@@ -64,7 +66,7 @@ describe.skipIf(isRegistryMode)(
     test('filters organizations by search term when creating a project', async () => {
       const session = await runCli({args: ['init', '--bare'], interactive: true})
 
-      await session.waitForText(/Create a new project or select an existing one/)
+      await session.waitForText(/❯ Create new project/)
       await session.selectOption('Create new project')
 
       await session.waitForText(/Project name:/)
