@@ -115,7 +115,8 @@ describe('sanity init - app', {timeout: 120_000}, () => {
     await session.waitForText(/Configure a project for this app/i)
     await session.selectOption(new RegExp(`\\(${projectId}\\)`))
 
-    await session.waitForText(/Select dataset to use/i)
+    // The dataset picker renders its header before the results
+    await session.waitForText(/❯ Create new dataset/)
     await session.selectOption(dataset)
 
     await session.waitForText(/Package manager to use/i)
