@@ -72,25 +72,41 @@ interface MediaLibrariesResponse {
   data: MediaLibrary[]
 }
 
+/** One listing endpoint, scoped by either owner — only the query param differs. */
+async function listActiveMediaLibraries(
+  query: {organizationId: string} | {projectId: string},
+): Promise<MediaLibrary[]> {
+  const client = await getMediaLibraryClient()
+
+  const response = await client.request<MediaLibrariesResponse>({
+    method: 'GET',
+    query,
+    url: `/media-libraries`,
+  })
+
+  return response.data.filter((library) => library.status === 'active')
+}
+
 /**
- * Get a list of media libraries for a project
+ * Get a list of active media libraries for a project
  * @param projectId - The project ID
  * @returns A promise that resolves to the media libraries
  *
  * @internal
  */
-export async function getMediaLibraries(projectId: string): Promise<MediaLibrary[]> {
-  const client = await getMediaLibraryClient()
+export function getMediaLibraries(projectId: string): Promise<MediaLibrary[]> {
+  return listActiveMediaLibraries({projectId})
+}
 
-  const response = await client.request<MediaLibrariesResponse>({
-    method: 'GET',
-    query: {
-      projectId,
-    },
-    url: `/media-libraries`,
-  })
-
-  return response.data.filter((library) => library.status === 'active')
+/**
+ * Get a list of active media libraries for an organization
+ * @param organizationId - The organization ID
+ * @returns A promise that resolves to the active media libraries
+ *
+ * @internal
+ */
+export function getMediaLibrariesForOrganization(organizationId: string): Promise<MediaLibrary[]> {
+  return listActiveMediaLibraries({organizationId})
 }
 
 interface DeployAspectsOptions {
