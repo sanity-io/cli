@@ -36,15 +36,14 @@ Code for sanity cli
 - [`sanity context build KNOWLEDGEBASEID`](#sanity-context-build-knowledgebaseid)
 - [`sanity context create`](#sanity-context-create)
 - [`sanity context delete KNOWLEDGEBASEID`](#sanity-context-delete-knowledgebaseid)
+- [`sanity context documents content KNOWLEDGEBASEID DOCUMENTID`](#sanity-context-documents-content-knowledgebaseid-documentid)
+- [`sanity context documents delete KNOWLEDGEBASEID DOCUMENTID`](#sanity-context-documents-delete-knowledgebaseid-documentid)
+- [`sanity context documents get KNOWLEDGEBASEID DOCUMENTID`](#sanity-context-documents-get-knowledgebaseid-documentid)
+- [`sanity context documents list KNOWLEDGEBASEID`](#sanity-context-documents-list-knowledgebaseid)
 - [`sanity context entries get KNOWLEDGEBASEID PATH`](#sanity-context-entries-get-knowledgebaseid-path)
 - [`sanity context entries list KNOWLEDGEBASEID`](#sanity-context-entries-list-knowledgebaseid)
 - [`sanity context entries rebuild KNOWLEDGEBASEID PATH`](#sanity-context-entries-rebuild-knowledgebaseid-path)
 - [`sanity context get KNOWLEDGEBASEID`](#sanity-context-get-knowledgebaseid)
-- [`sanity context imports create KNOWLEDGEBASEID`](#sanity-context-imports-create-knowledgebaseid)
-- [`sanity context imports delete KNOWLEDGEBASEID IMPORTID`](#sanity-context-imports-delete-knowledgebaseid-importid)
-- [`sanity context imports download KNOWLEDGEBASEID IMPORTID`](#sanity-context-imports-download-knowledgebaseid-importid)
-- [`sanity context imports get KNOWLEDGEBASEID IMPORTID`](#sanity-context-imports-get-knowledgebaseid-importid)
-- [`sanity context imports list KNOWLEDGEBASEID`](#sanity-context-imports-list-knowledgebaseid)
 - [`sanity context issues apply KNOWLEDGEBASEID ISSUEID`](#sanity-context-issues-apply-knowledgebaseid-issueid)
 - [`sanity context issues dismiss KNOWLEDGEBASEID ISSUEID`](#sanity-context-issues-dismiss-knowledgebaseid-issueid)
 - [`sanity context issues get KNOWLEDGEBASEID ISSUEID`](#sanity-context-issues-get-knowledgebaseid-issueid)
@@ -54,7 +53,18 @@ Code for sanity cli
 - [`sanity context jobs get KNOWLEDGEBASEID JOBID`](#sanity-context-jobs-get-knowledgebaseid-jobid)
 - [`sanity context list`](#sanity-context-list)
 - [`sanity context query QUERY`](#sanity-context-query-query)
-- [`sanity context refresh KNOWLEDGEBASEID`](#sanity-context-refresh-knowledgebaseid)
+- [`sanity context sources create KNOWLEDGEBASEID`](#sanity-context-sources-create-knowledgebaseid)
+- [`sanity context sources delete KNOWLEDGEBASEID SOURCEID`](#sanity-context-sources-delete-knowledgebaseid-sourceid)
+- [`sanity context sources edit KNOWLEDGEBASEID SOURCEID`](#sanity-context-sources-edit-knowledgebaseid-sourceid)
+- [`sanity context sources get KNOWLEDGEBASEID SOURCEID`](#sanity-context-sources-get-knowledgebaseid-sourceid)
+- [`sanity context sources list KNOWLEDGEBASEID`](#sanity-context-sources-list-knowledgebaseid)
+- [`sanity context sources sync KNOWLEDGEBASEID SOURCEID`](#sanity-context-sources-sync-knowledgebaseid-sourceid)
+- [`sanity context sources syncs confirm KNOWLEDGEBASEID SOURCEID SYNCID`](#sanity-context-sources-syncs-confirm-knowledgebaseid-sourceid-syncid)
+- [`sanity context sources syncs discard KNOWLEDGEBASEID SOURCEID SYNCID`](#sanity-context-sources-syncs-discard-knowledgebaseid-sourceid-syncid)
+- [`sanity context sources syncs get KNOWLEDGEBASEID SOURCEID SYNCID`](#sanity-context-sources-syncs-get-knowledgebaseid-sourceid-syncid)
+- [`sanity context sources syncs list KNOWLEDGEBASEID SOURCEID`](#sanity-context-sources-syncs-list-knowledgebaseid-sourceid)
+- [`sanity context sources upload KNOWLEDGEBASEID SOURCEID`](#sanity-context-sources-upload-knowledgebaseid-sourceid)
+- [`sanity context sync KNOWLEDGEBASEID`](#sanity-context-sync-knowledgebaseid)
 - [`sanity context update KNOWLEDGEBASEID`](#sanity-context-update-knowledgebaseid)
 - [`sanity cors add ORIGIN`](#sanity-cors-add-origin)
 - [`sanity cors delete [ORIGIN]`](#sanity-cors-delete-origin)
@@ -984,7 +994,7 @@ EXAMPLES
 
 ## `sanity context build KNOWLEDGEBASEID`
 
-Build a knowledge base from its imported content
+Build a knowledge base from the documents its sources yield
 
 ```
 USAGE
@@ -998,7 +1008,7 @@ FLAGS
   --watch   Wait for the build to finish, exiting non-zero if it fails
 
 DESCRIPTION
-  Build a knowledge base from its imported content
+  Build a knowledge base from the documents its sources yield
 
 EXAMPLES
   Start a build and return the job ID
@@ -1068,6 +1078,144 @@ EXAMPLES
   Delete a knowledge base without confirmation prompt
 
     $ sanity context delete kb-abc123 --yes
+```
+
+## `sanity context documents content KNOWLEDGEBASEID DOCUMENTID`
+
+Print the markdown a document converted to, with the line numbers citations use, or download its original bytes
+
+```
+USAGE
+  $ sanity context documents content KNOWLEDGEBASEID DOCUMENTID [--json] [--chunk <chunkId> | --lines <from-to>] [--format
+    markdown|plain|raw] [-o <file>]
+
+ARGUMENTS
+  KNOWLEDGEBASEID  Knowledge base ID
+  DOCUMENTID       Document ID
+
+FLAGS
+  -o, --output=<file>    Write the content to this file instead of stdout
+      --chunk=<chunkId>  Only the lines of this chunk (chunk IDs are listed by `documents get --json`)
+      --format=<option>  markdown (the converted document, default), plain (markdown stripped to text) or raw (the bytes
+                         the source gave, before conversion)
+                         <options: markdown|plain|raw>
+      --lines=<from-to>  Only these lines, as `10-20`, or `10` for line 10 to the end
+
+GLOBAL FLAGS
+  --json  Format output as json.
+
+DESCRIPTION
+  Print the markdown a document converted to, with the line numbers citations use, or download its original bytes
+
+EXAMPLES
+  Print a document's markdown
+
+    $ sanity context documents content kb-abc123 document-def456
+
+  Print lines 10 to 20
+
+    $ sanity context documents content kb-abc123 document-def456 --lines 10-20
+
+  Download the original file
+
+    $ sanity context documents content kb-abc123 document-def456 --format raw --output handbook.pdf
+
+  Output the content with its line range and total line count as JSON
+
+    $ sanity context documents content kb-abc123 document-def456 --json
+```
+
+## `sanity context documents delete KNOWLEDGEBASEID DOCUMENTID`
+
+Delete a document from its source. A page still on the website comes back on the next sync unless the crawl options exclude it
+
+```
+USAGE
+  $ sanity context documents delete KNOWLEDGEBASEID DOCUMENTID [-y]
+
+ARGUMENTS
+  KNOWLEDGEBASEID  Knowledge base ID
+  DOCUMENTID       Document ID
+
+FLAGS
+  -y, --yes  Skip confirmation prompt (unattended mode)
+
+DESCRIPTION
+  Delete a document from its source. A page still on the website comes back on the next sync unless the crawl options
+  exclude it
+
+EXAMPLES
+  Delete a document after confirmation
+
+    $ sanity context documents delete kb-abc123 document-def456
+
+  Delete a document without confirmation prompt
+
+    $ sanity context documents delete kb-abc123 document-def456 --yes
+```
+
+## `sanity context documents get KNOWLEDGEBASEID DOCUMENTID`
+
+Get details of a document, with the chunks of its markdown
+
+```
+USAGE
+  $ sanity context documents get KNOWLEDGEBASEID DOCUMENTID [--json]
+
+ARGUMENTS
+  KNOWLEDGEBASEID  Knowledge base ID
+  DOCUMENTID       Document ID
+
+GLOBAL FLAGS
+  --json  Format output as json.
+
+DESCRIPTION
+  Get details of a document, with the chunks of its markdown
+
+EXAMPLES
+  Get details of a document
+
+    $ sanity context documents get kb-abc123 document-def456
+
+  Output the document, including its chunks, as JSON
+
+    $ sanity context documents get kb-abc123 document-def456 --json
+```
+
+## `sanity context documents list KNOWLEDGEBASEID`
+
+List the pages, dataset documents and files the sources of a knowledge base yield
+
+```
+USAGE
+  $ sanity context documents list KNOWLEDGEBASEID [--json] [--source <sourceId>] [--state active|deleted|missing]
+
+ARGUMENTS
+  KNOWLEDGEBASEID  Knowledge base ID
+
+FLAGS
+  --source=<sourceId>  Only list the documents of this source
+  --state=<option>     Only list documents in this state (without it, deleted documents are left out)
+                       <options: active|deleted|missing>
+
+GLOBAL FLAGS
+  --json  Format output as json.
+
+DESCRIPTION
+  List the pages, dataset documents and files the sources of a knowledge base yield
+
+EXAMPLES
+  List the documents of a knowledge base (deleted ones are left out)
+
+    $ sanity context documents list kb-abc123
+
+  List a website source's pages that its last sync didn't find
+
+    $ sanity context documents list kb-abc123 --source source-def456 --state missing
+
+  Output documents as JSON
+
+    $ sanity context documents list kb-abc123 --json
 ```
 
 ## `sanity context entries get KNOWLEDGEBASEID PATH`
@@ -1180,158 +1328,6 @@ EXAMPLES
     $ sanity context get kb-abc123 --json
 ```
 
-## `sanity context imports create KNOWLEDGEBASEID`
-
-Import content into a knowledge base
-
-```
-USAGE
-  $ sanity context imports create KNOWLEDGEBASEID [--content-type <mime>] [--file <path> | --text <value> | --url <url> |
-    --query <value>] [--sanity-dataset <name> ] [--sanity-project <id> ] [--title <value> ]
-
-ARGUMENTS
-  KNOWLEDGEBASEID  Knowledge base ID
-
-FLAGS
-  --content-type=<mime>    Content type of the import (--text: text/markdown or text/plain; --file: any MIME type,
-                           inferred from the file extension when omitted)
-  --file=<path>            Path to a local file to import
-  --query=<value>          GROQ query binding a Sanity dataset as a source
-  --sanity-dataset=<name>  Sanity dataset for a dataset import
-  --sanity-project=<id>    Sanity project ID for a dataset import
-  --text=<value>           Inline text content to import (requires --title)
-  --title=<value>          Title for an inline text import
-  --url=<url>              Website URL to crawl
-
-DESCRIPTION
-  Import content into a knowledge base
-
-EXAMPLES
-  Import inline text
-
-    $ sanity context imports create kb-abc123 --text "Refunds are processed within 5 days" --title "Refund policy"
-
-  Upload and import a local file
-
-    $ sanity context imports create kb-abc123 --file ./handbook.pdf
-
-  Crawl a website
-
-    $ sanity context imports create kb-abc123 --url https://example.com/docs
-
-  Bind a Sanity dataset as a source
-
-    $ sanity context imports create kb-abc123 --query '*[_type == "article"]' --sanity-project abc123 \
-      --sanity-dataset production
-```
-
-## `sanity context imports delete KNOWLEDGEBASEID IMPORTID`
-
-Delete an import from a knowledge base
-
-```
-USAGE
-  $ sanity context imports delete KNOWLEDGEBASEID IMPORTID [-y]
-
-ARGUMENTS
-  KNOWLEDGEBASEID  Knowledge base ID
-  IMPORTID         Import ID
-
-FLAGS
-  -y, --yes  Skip confirmation prompt (unattended mode)
-
-DESCRIPTION
-  Delete an import from a knowledge base
-
-EXAMPLES
-  Delete an import after confirmation
-
-    $ sanity context imports delete kb-abc123 import-def456
-
-  Delete an import without confirmation prompt
-
-    $ sanity context imports delete kb-abc123 import-def456 --yes
-```
-
-## `sanity context imports download KNOWLEDGEBASEID IMPORTID`
-
-Get a short-lived signed URL for the original uploaded bytes of a file import
-
-```
-USAGE
-  $ sanity context imports download KNOWLEDGEBASEID IMPORTID [--json]
-
-ARGUMENTS
-  KNOWLEDGEBASEID  Knowledge base ID
-  IMPORTID         Import ID
-
-GLOBAL FLAGS
-  --json  Format output as json.
-
-DESCRIPTION
-  Get a short-lived signed URL for the original uploaded bytes of a file import
-
-EXAMPLES
-  Get a download URL for an uploaded file
-
-    $ sanity context imports download kb-abc123 import-def456
-```
-
-## `sanity context imports get KNOWLEDGEBASEID IMPORTID`
-
-Get details of an import
-
-```
-USAGE
-  $ sanity context imports get KNOWLEDGEBASEID IMPORTID [--json]
-
-ARGUMENTS
-  KNOWLEDGEBASEID  Knowledge base ID
-  IMPORTID         Import ID
-
-GLOBAL FLAGS
-  --json  Format output as json.
-
-DESCRIPTION
-  Get details of an import
-
-EXAMPLES
-  Get details of a specific import
-
-    $ sanity context imports get kb-abc123 import-def456
-
-  Output the import as JSON
-
-    $ sanity context imports get kb-abc123 import-def456 --json
-```
-
-## `sanity context imports list KNOWLEDGEBASEID`
-
-List imports for a knowledge base
-
-```
-USAGE
-  $ sanity context imports list KNOWLEDGEBASEID [--json]
-
-ARGUMENTS
-  KNOWLEDGEBASEID  Knowledge base ID
-
-GLOBAL FLAGS
-  --json  Format output as json.
-
-DESCRIPTION
-  List imports for a knowledge base
-
-EXAMPLES
-  List all imports for a knowledge base
-
-    $ sanity context imports list kb-abc123
-
-  Output imports as JSON
-
-    $ sanity context imports list kb-abc123 --json
-```
-
 ## `sanity context issues apply KNOWLEDGEBASEID ISSUEID`
 
 Accept and apply issues to a knowledge base
@@ -1418,16 +1414,15 @@ List issues found by knowledge base builds
 
 ```
 USAGE
-  $ sanity context issues list KNOWLEDGEBASEID [--json] [--kind
-    add_entry|conflict|gap|merge_entry|remove_entry|split_entry|update_required] [--scope <path>] [--severity
-    critical|suggestion] [--status open|accepted|rejected]
+  $ sanity context issues list KNOWLEDGEBASEID [--json] [--kind add_entry|conflict|gap|remove_entry|update_required]
+    [--scope <path>] [--severity critical|suggestion] [--status open|accepted|rejected]
 
 ARGUMENTS
   KNOWLEDGEBASEID  Knowledge base ID
 
 FLAGS
   --kind=<option>      Only list issues of this kind
-                       <options: add_entry|conflict|gap|merge_entry|remove_entry|split_entry|update_required>
+                       <options: add_entry|conflict|gap|remove_entry|update_required>
   --scope=<path>       Only list issues about this entry path or anything under it (`*` for knowledge-base-wide issues)
   --severity=<option>  Only list issues of this severity
                        <options: critical|suggestion>
@@ -1614,24 +1609,382 @@ EXAMPLES
       "kb-abc123"}' --json
 ```
 
-## `sanity context refresh KNOWLEDGEBASEID`
+## `sanity context sources create KNOWLEDGEBASEID`
 
-Refresh a knowledge base: re-check sources and apply what changed
+Add a website, Sanity dataset or file to a knowledge base and start its first sync
 
 ```
 USAGE
-  $ sanity context refresh KNOWLEDGEBASEID
+  $ sanity context sources create KNOWLEDGEBASEID [--json] [--exclude-path <regex>...] [--ignore-query-params]
+    [--include-path <regex>...] [--max-depth <value>] [--page-limit <value>] [--sitemap-only] [-d <name> --query <groq>]
+    [-p <id> ] [--content-type <type>] [--dry-run] [--file <path> | --url <url> |  | --text <path|->] [--title <value>]
 
 ARGUMENTS
   KNOWLEDGEBASEID  Knowledge base ID
 
+FLAGS
+  -d, --dataset=<name>       Dataset to read documents from (with --query)
+  -p, --project-id=<id>      Project to read documents from (with --query)
+      --content-type=<type>  Format of --text content (markdown or plain, default markdown), or the MIME type of --file
+                             (inferred from the file extension when omitted)
+      --dry-run              Estimate what the crawl would fetch, grouped by path, without adding the source
+      --file=<path>          Local file to upload as a files source: a document, or a zip, tar or gzip archive of them
+      --query=<groq>         GROQ query selecting the documents of a Sanity dataset to read
+      --text=<path|->        Text or markdown to hold as a files source, read from a local file or `-` for stdin
+      --title=<value>        Title of a files source (defaults to the file name)
+      --url=<url>            Website URL to crawl
+
+CRAWL FLAGS
+  --exclude-path=<regex>...   Regular expression for URL paths to skip (repeatable)
+  --[no-]ignore-query-params  Treat URLs that differ only by query string as one page (on by default; turn it off when
+                              the query string selects different content, such as pagination)
+  --include-path=<regex>...   Regular expression for URL paths to crawl; only matching pages are included (repeatable)
+  --max-depth=<value>         How many levels deep the crawl goes from the root URL
+  --page-limit=<value>        Maximum number of pages to crawl
+  --[no-]sitemap-only         Crawl only the pages listed in the site's sitemap
+
+GLOBAL FLAGS
+  --json  Format output as json.
+
 DESCRIPTION
-  Refresh a knowledge base: re-check sources and apply what changed
+  Add a website, Sanity dataset or file to a knowledge base and start its first sync
 
 EXAMPLES
-  Start an incremental refresh
+  Crawl a website
 
-    $ sanity context refresh kb-abc123
+    $ sanity context sources create kb-abc123 --url https://example.com/docs
+
+  Estimate what a crawl limited to /docs/ would fetch, without adding it
+
+    $ sanity context sources create kb-abc123 --url https://example.com --include-path "^/docs/" --page-limit 500 \
+      --dry-run
+
+  Read the documents a GROQ query selects from a Sanity dataset
+
+    $ sanity context sources create kb-abc123 --query '*[_type == "article"]' --project-id abc123 --dataset \
+      production
+
+  Upload a local file
+
+    $ sanity context sources create kb-abc123 --file ./handbook.pdf
+
+  Add markdown from stdin
+
+    cat refunds.md | sanity context sources create kb-abc123 --text - --title "Refund policy"
+```
+
+## `sanity context sources delete KNOWLEDGEBASEID SOURCEID`
+
+Remove a source and its documents from a knowledge base, and their citations from its entries
+
+```
+USAGE
+  $ sanity context sources delete KNOWLEDGEBASEID SOURCEID [-y]
+
+ARGUMENTS
+  KNOWLEDGEBASEID  Knowledge base ID
+  SOURCEID         Source ID
+
+FLAGS
+  -y, --yes  Skip confirmation prompt (unattended mode)
+
+DESCRIPTION
+  Remove a source and its documents from a knowledge base, and their citations from its entries
+
+EXAMPLES
+  Delete a source after confirmation
+
+    $ sanity context sources delete kb-abc123 source-def456
+
+  Delete a source without confirmation prompt
+
+    $ sanity context sources delete kb-abc123 source-def456 --yes
+```
+
+## `sanity context sources edit KNOWLEDGEBASEID SOURCEID`
+
+Change a source's title, crawl options, dataset query or sync frequency
+
+```
+USAGE
+  $ sanity context sources edit KNOWLEDGEBASEID SOURCEID [--exclude-path <regex>...] [--ignore-query-params]
+    [--include-path <regex>...] [--max-depth <value>] [--page-limit <value>] [--sitemap-only] [--confirm-deletions]
+    [--query <groq>] [--sync-frequency weekly|monthly|off] [--title <value>]
+
+ARGUMENTS
+  KNOWLEDGEBASEID  Knowledge base ID
+  SOURCEID         Source ID
+
+FLAGS
+  --confirm-deletions        Apply crawl options that delete more than a fifth of the documents, or all of them
+  --query=<groq>             New GROQ query for a dataset source; a sync removes the documents it no longer returns
+  --sync-frequency=<option>  How often a website or dataset source syncs on its own
+                             <options: weekly|monthly|off>
+  --title=<value>            New source title
+
+CRAWL FLAGS
+  --exclude-path=<regex>...   Regular expression for URL paths to skip (repeatable)
+  --[no-]ignore-query-params  Treat URLs that differ only by query string as one page (on by default; turn it off when
+                              the query string selects different content, such as pagination)
+  --include-path=<regex>...   Regular expression for URL paths to crawl; only matching pages are included (repeatable)
+  --max-depth=<value>         How many levels deep the crawl goes from the root URL
+  --page-limit=<value>        Maximum number of pages to crawl
+  --[no-]sitemap-only         Crawl only the pages listed in the site's sitemap
+
+DESCRIPTION
+  Change a source's title, crawl options, dataset query or sync frequency
+
+EXAMPLES
+  Rename a source
+
+    $ sanity context sources edit kb-abc123 source-def456 --title "Product docs"
+
+  Sync a website or dataset every week
+
+    $ sanity context sources edit kb-abc123 source-def456 --sync-frequency weekly
+
+  Stop crawling the blog and delete its pages, however many there are
+
+    $ sanity context sources edit kb-abc123 source-def456 --exclude-path "^/blog/" --confirm-deletions
+```
+
+## `sanity context sources get KNOWLEDGEBASEID SOURCEID`
+
+Get details of a source
+
+```
+USAGE
+  $ sanity context sources get KNOWLEDGEBASEID SOURCEID [--json]
+
+ARGUMENTS
+  KNOWLEDGEBASEID  Knowledge base ID
+  SOURCEID         Source ID
+
+GLOBAL FLAGS
+  --json  Format output as json.
+
+DESCRIPTION
+  Get details of a source
+
+EXAMPLES
+  Get details of a source, including its latest sync
+
+    $ sanity context sources get kb-abc123 source-def456
+
+  Output the source as JSON
+
+    $ sanity context sources get kb-abc123 source-def456 --json
+```
+
+## `sanity context sources list KNOWLEDGEBASEID`
+
+List the websites, datasets and files a knowledge base reads
+
+```
+USAGE
+  $ sanity context sources list KNOWLEDGEBASEID [--json]
+
+ARGUMENTS
+  KNOWLEDGEBASEID  Knowledge base ID
+
+GLOBAL FLAGS
+  --json  Format output as json.
+
+DESCRIPTION
+  List the websites, datasets and files a knowledge base reads
+
+EXAMPLES
+  List the sources of a knowledge base
+
+    $ sanity context sources list kb-abc123
+
+  Output sources as JSON
+
+    $ sanity context sources list kb-abc123 --json
+```
+
+## `sanity context sources sync KNOWLEDGEBASEID SOURCEID`
+
+Sync a source: read its website or dataset again, or sync the file a files source holds
+
+```
+USAGE
+  $ sanity context sources sync KNOWLEDGEBASEID SOURCEID [--json] [--watch]
+
+ARGUMENTS
+  KNOWLEDGEBASEID  Knowledge base ID
+  SOURCEID         Source ID
+
+FLAGS
+  --watch  Wait for the sync to finish, exiting non-zero if it fails
+
+GLOBAL FLAGS
+  --json  Format output as json.
+
+DESCRIPTION
+  Sync a source: read its website or dataset again, or sync the file a files source holds
+
+EXAMPLES
+  Start a sync; a website or dataset sync waits for any running sync of it
+
+    $ sanity context sources sync kb-abc123 source-def456
+
+  Wait for the sync to finish (non-zero exit if it fails)
+
+    $ sanity context sources sync kb-abc123 source-def456 --watch
+```
+
+## `sanity context sources syncs confirm KNOWLEDGEBASEID SOURCEID SYNCID`
+
+Confirm a held sync: delete the documents it didn't find, and complete it
+
+```
+USAGE
+  $ sanity context sources syncs confirm KNOWLEDGEBASEID SOURCEID SYNCID
+
+ARGUMENTS
+  KNOWLEDGEBASEID  Knowledge base ID
+  SOURCEID         Source ID
+  SYNCID           ID of a held sync
+
+DESCRIPTION
+  Confirm a held sync: delete the documents it didn't find, and complete it
+
+EXAMPLES
+  Delete the documents a held sync did not find
+
+    $ sanity context sources syncs confirm kb-abc123 source-def456 sync-ghi789
+```
+
+## `sanity context sources syncs discard KNOWLEDGEBASEID SOURCEID SYNCID`
+
+Discard a held sync: complete it without deleting anything
+
+```
+USAGE
+  $ sanity context sources syncs discard KNOWLEDGEBASEID SOURCEID SYNCID
+
+ARGUMENTS
+  KNOWLEDGEBASEID  Knowledge base ID
+  SOURCEID         Source ID
+  SYNCID           ID of a held sync
+
+DESCRIPTION
+  Discard a held sync: complete it without deleting anything
+
+EXAMPLES
+  Keep the documents a held sync did not find
+
+    $ sanity context sources syncs discard kb-abc123 source-def456 sync-ghi789
+```
+
+## `sanity context sources syncs get KNOWLEDGEBASEID SOURCEID SYNCID`
+
+Get details of a sync
+
+```
+USAGE
+  $ sanity context sources syncs get KNOWLEDGEBASEID SOURCEID SYNCID [--json]
+
+ARGUMENTS
+  KNOWLEDGEBASEID  Knowledge base ID
+  SOURCEID         Source ID
+  SYNCID           Sync ID
+
+GLOBAL FLAGS
+  --json  Format output as json.
+
+DESCRIPTION
+  Get details of a sync
+
+EXAMPLES
+  Get details of a sync
+
+    $ sanity context sources syncs get kb-abc123 source-def456 sync-ghi789
+
+  Output the sync as JSON
+
+    $ sanity context sources syncs get kb-abc123 source-def456 sync-ghi789 --json
+```
+
+## `sanity context sources syncs list KNOWLEDGEBASEID SOURCEID`
+
+List the syncs of a source, newest first
+
+```
+USAGE
+  $ sanity context sources syncs list KNOWLEDGEBASEID SOURCEID [--json]
+
+ARGUMENTS
+  KNOWLEDGEBASEID  Knowledge base ID
+  SOURCEID         Source ID
+
+GLOBAL FLAGS
+  --json  Format output as json.
+
+DESCRIPTION
+  List the syncs of a source, newest first
+
+EXAMPLES
+  List the syncs of a source
+
+    $ sanity context sources syncs list kb-abc123 source-def456
+
+  Output syncs as JSON
+
+    $ sanity context sources syncs list kb-abc123 source-def456 --json
+```
+
+## `sanity context sources upload KNOWLEDGEBASEID SOURCEID`
+
+Upload a new file to a files source, replacing the one it holds, and sync it
+
+```
+USAGE
+  $ sanity context sources upload KNOWLEDGEBASEID SOURCEID --file <path> [--content-type <mime>]
+
+ARGUMENTS
+  KNOWLEDGEBASEID  Knowledge base ID
+  SOURCEID         ID of a files source
+
+FLAGS
+  --content-type=<mime>  MIME type of the file (inferred from the file extension when omitted)
+  --file=<path>          (required) Local file to upload: a document, or a zip, tar or gzip archive of them
+
+DESCRIPTION
+  Upload a new file to a files source, replacing the one it holds, and sync it
+
+EXAMPLES
+  Replace the file a source holds
+
+    $ sanity context sources upload kb-abc123 source-def456 --file ./handbook.pdf
+```
+
+## `sanity context sync KNOWLEDGEBASEID`
+
+Sync every website and dataset source of a knowledge base; files sources sync when you upload a file
+
+```
+USAGE
+  $ sanity context sync KNOWLEDGEBASEID [--json]
+
+ARGUMENTS
+  KNOWLEDGEBASEID  Knowledge base ID
+
+GLOBAL FLAGS
+  --json  Format output as json.
+
+DESCRIPTION
+  Sync every website and dataset source of a knowledge base; files sources sync when you upload a file
+
+EXAMPLES
+  Queue a sync of every website and dataset source
+
+    $ sanity context sync kb-abc123
+
+  Output the IDs of the sources queued to sync as JSON
+
+    $ sanity context sync kb-abc123 --json
 ```
 
 ## `sanity context update KNOWLEDGEBASEID`
@@ -1640,18 +1993,14 @@ Update a knowledge base
 
 ```
 USAGE
-  $ sanity context update KNOWLEDGEBASEID [--description <value>] [--refresh-enabled] [--refresh-frequency
-    weekly|monthly] [--title <value>]
+  $ sanity context update KNOWLEDGEBASEID [--description <value>] [--title <value>]
 
 ARGUMENTS
   KNOWLEDGEBASEID  Knowledge base ID
 
 FLAGS
-  --description=<value>         New knowledge base description
-  --[no-]refresh-enabled        Enable scheduled refresh (--no-refresh-enabled to disable)
-  --refresh-frequency=<option>  How often scheduled refresh runs
-                                <options: weekly|monthly>
-  --title=<value>               New knowledge base title
+  --description=<value>  New knowledge base description
+  --title=<value>        New knowledge base title
 
 DESCRIPTION
   Update a knowledge base
@@ -1661,13 +2010,9 @@ EXAMPLES
 
     $ sanity context update kb-abc123 --title "New title"
 
-  Enable weekly scheduled refresh
+  Change the description of a knowledge base
 
-    $ sanity context update kb-abc123 --refresh-enabled --refresh-frequency weekly
-
-  Disable scheduled refresh
-
-    $ sanity context update kb-abc123 --no-refresh-enabled
+    $ sanity context update kb-abc123 --description "Product docs and troubleshooting guides"
 ```
 
 ## `sanity cors add ORIGIN`

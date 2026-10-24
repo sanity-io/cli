@@ -21,41 +21,106 @@ export const knowledgeBase: Context.KnowledgeBase = {
   pipelineOutdated: false,
   publicId: 'kb-abc123',
   rebuildRecommended: null,
-  refreshEnabled: true,
-  refreshFrequency: 'weekly',
   refreshInFlight: false,
-  refreshNextRunAt: null,
   sourceUsage: null,
   state: 'ready',
   title: 'Support docs',
   updatedAt: '2026-08-02T00:00:00.000Z',
 }
 
-export const importItem: Context.ImportDetail = {
-  completedAt: '2026-08-01T01:00:00.000Z',
-  crawlOptions: null,
+export const latestSync: Context.Sync = {
   createdAt: '2026-08-01T00:00:00.000Z',
-  createdBy: null,
-  datasetSource: null,
-  distilledCount: 3,
+  documentsDeleted: 0,
+  documentsMissing: 0,
+  documentsSeen: 5,
+  documentsUnchanged: 1,
+  documentsUpserted: 4,
   error: null,
-  id: 'import-def456',
-  knowledgeBaseId: '00000000-0000-0000-0000-000000000001',
-  lastCheckedAt: null,
-  name: 'handbook.pdf',
+  finishedAt: '2026-08-01T01:00:00.000Z',
+  heldDeletions: null,
+  id: 'sync-ghi789',
+  mode: 'full',
+  partialReason: null,
+  sourceId: 'source-def456',
+  status: 'completed',
+  trigger: 'manual',
+}
+
+export const heldSync: Context.Sync = {
+  ...latestSync,
+  finishedAt: null,
+  heldDeletions: 12,
+  id: 'sync-held',
+  status: 'held',
+}
+
+const sourceStats = {
+  chunkCount: 40,
+  convertedDocumentCount: 4,
+  createdAt: '2026-08-01T00:00:00.000Z',
+  documentCount: 5,
+  failedDocumentCount: 0,
+  knowledgeBaseId: 'kb-abc123',
+  lastSyncedAt: '2026-08-01T01:00:00.000Z',
+  latestSync,
+  skippedDocumentCount: 1,
+  updatedAt: '2026-08-01T01:00:00.000Z',
+}
+
+export const webSource: Context.Source = {
+  ...sourceStats,
+  crawlOptions: {includePaths: ['^/docs/'], pageLimit: 100},
+  id: 'source-def456',
+  syncFrequency: 'weekly',
+  title: 'example.com',
+  type: 'web',
+  url: 'https://example.com/docs',
+}
+
+export const datasetSource: Context.Source = {
+  ...sourceStats,
+  id: 'source-dataset',
+  query: '*[_type == "article"]',
+  sanityDatasetId: 'production',
+  sanityProjectId: 'proj123',
+  syncFrequency: null,
+  title: 'proj123/production',
+  type: 'sanity-dataset',
+}
+
+export const filesSource: Context.Source = {
+  ...sourceStats,
+  filename: 'handbook.pdf',
+  id: 'source-files',
   sizeBytes: 1024,
-  sourceCount: 5,
-  sourceKind: 'file',
-  status: 'complete',
-  statusDetail: null,
-  totalDistillableCount: 4,
-  unsupportedCount: 1,
+  title: 'Handbook',
+  type: 'files',
+}
+
+export const contextDocument: Context.DocumentDetail = {
+  chunks: [{headingPath: ['Refunds'], id: 'chunk-1', lineEnd: 12, lineStart: 1}],
+  conversion: 'converted',
+  conversionError: null,
+  createdAt: '2026-08-01T00:00:00.000Z',
+  externalId: 'https://example.com/docs/refunds',
+  id: 'document-def456',
+  lastSeenAt: '2026-08-01T01:00:00.000Z',
+  mime: 'text/html',
+  sizeBytes: 2048,
+  sourceId: 'source-def456',
+  sourceType: 'web',
+  state: 'active',
+  title: 'Refunds',
+  updatedAt: '2026-08-01T01:00:00.000Z',
+  url: 'https://example.com/docs/refunds',
 }
 
 export const succeededJob: Context.Job = {
   completedAt: '2026-08-01T01:00:00.000Z',
   error: null,
   id: 'job-def456',
+  kind: 'build',
+  knowledgeBaseId: 'kb-abc123',
   startedAt: '2026-08-01T00:00:00.000Z',
   status: 'succeeded',
 }
@@ -67,7 +132,7 @@ export const issue: Context.IssueDoc = {
   _type: 'sanity.context.issue',
   _updatedAt: '2026-08-01T00:00:00Z',
   content: {
-    citedSourceIds: ['source-def456'],
+    citedDocumentIds: ['document-def456'],
     issue: 'The refunds entry says 5 days, but the source now says 10 days.',
     kind: 'update_required',
     scopePath: 'billing/refunds',
@@ -80,7 +145,7 @@ export const issue: Context.IssueDoc = {
   resolvedAt: null,
   resolvedBy: null,
   revisionId: null,
-  schemaVersion: 1,
+  schemaVersion: 2,
   status: 'open',
 }
 
@@ -113,10 +178,18 @@ export const entry: Context.EntryDoc = {
     {
       _key: 'citation-1',
       _type: 'sanity.context.citation',
-      filename: 'refunds.md',
-      sourceId: 'source-def456',
+      chunkId: 'chunk-1',
+      claims: ['refunds.window'],
+      documentId: 'document-def456',
+      lineEnd: 2,
+      lineStart: 2,
+      prefix: '',
+      quote: 'Refunds are processed within 10 days.',
+      suffix: '',
+      title: 'Refunds',
     },
   ],
+  documentIds: ['document-def456'],
   generatedAt: '2026-08-01T01:00:00Z',
   knowledgeBaseId: 'kb-abc123',
   path: 'billing/refunds',

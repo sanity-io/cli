@@ -31,22 +31,20 @@ describe('context get', () => {
     expect(stdout).toContain('ID:              kb-abc123')
     expect(stdout).toContain('Title:           Support docs')
     expect(stdout).toContain('State:           ready')
-    expect(stdout).toContain('Refresh:         enabled (weekly)')
+    expect(stdout).not.toContain('Refresh')
     expect(mockGet).toHaveBeenCalledWith('kb-abc123')
   })
 
-  test('formats pending changes and disabled refresh', async () => {
+  test('formats pending changes', async () => {
     mockGet.mockResolvedValue({
       ...knowledgeBase,
       pendingChanges: {added: 2, changed: 1, removed: 0},
-      refreshEnabled: false,
     })
 
     const {error, stdout} = await testCommand(GetKnowledgeBaseCommand, ['kb-abc123'])
 
     if (error) throw error
     expect(stdout).toContain('Pending changes: 2 added, 1 changed, 0 removed')
-    expect(stdout).toContain('Refresh:         disabled')
   })
 
   test('outputs JSON with --json', async () => {

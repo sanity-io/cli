@@ -72,13 +72,6 @@ export class GetKnowledgeBaseCommand extends SanityCommand<typeof GetKnowledgeBa
         {padTo},
       ),
     )
-    this.log(
-      formatKeyValue(
-        'Refresh',
-        knowledgeBase.refreshEnabled ? `enabled (${knowledgeBase.refreshFrequency})` : 'disabled',
-        {padTo},
-      ),
-    )
     this.log(formatKeyValue('Open issues', knowledgeBase.openIssueCount, {padTo}))
     this.log(formatKeyValue('Instructions', knowledgeBase.instructionCount, {padTo}))
     this.log(formatKeyValue('Created', knowledgeBase.createdAt, {padTo}))

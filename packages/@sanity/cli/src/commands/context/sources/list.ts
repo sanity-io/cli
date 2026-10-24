@@ -3,12 +3,12 @@ import {exitCodes, SanityCommand, subdebug} from '@sanity/cli-core'
 import {getErrorMessage} from '@sanity/cli-core/errors'
 import {isHttpError} from '@sanity/client'
 
-import {listImports} from '../../../services/context.js'
+import {listSources} from '../../../services/context.js'
 import {Table} from '../../../util/responsiveTable.js'
 
-const listImportsDebug = subdebug('context:imports:list')
+const listSourcesDebug = subdebug('context:sources:list')
 
-export class ListImportsCommand extends SanityCommand<typeof ListImportsCommand> {
+export class ListSourcesCommand extends SanityCommand<typeof ListSourcesCommand> {
   static override args = {
     knowledgeBaseId: Args.string({
       description: 'Knowledge base ID',
@@ -16,18 +16,18 @@ export class ListImportsCommand extends SanityCommand<typeof ListImportsCommand>
     }),
   }
 
-  static override description = 'List imports for a knowledge base'
+  static override description = 'List the websites, datasets and files a knowledge base reads'
 
   static override enableJsonFlag = true
 
   static override examples = [
     {
       command: '<%= config.bin %> <%= command.id %> kb-abc123',
-      description: 'List all imports for a knowledge base',
+      description: 'List the sources of a knowledge base',
     },
     {
       command: '<%= config.bin %> <%= command.id %> kb-abc123 --json',
-      description: 'Output imports as JSON',
+      description: 'Output sources as JSON',
     },
   ]
 
@@ -35,50 +35,50 @@ export class ListImportsCommand extends SanityCommand<typeof ListImportsCommand>
     const {knowledgeBaseId} = this.args
     const {json} = this.flags
 
-    let imports
+    let sources
     try {
-      imports = await listImports(knowledgeBaseId)
+      sources = await listSources(knowledgeBaseId)
     } catch (error) {
-      listImportsDebug('Error listing imports', error)
+      listSourcesDebug('Error listing sources', error)
       if (isHttpError(error) && error.statusCode === 404) {
         this.error(`Knowledge base "${knowledgeBaseId}" not found`, {
           exit: exitCodes.RUNTIME_ERROR,
         })
       }
-      this.error(`Failed to list imports: ${getErrorMessage(error)}`, {
+      this.error(`Failed to list sources: ${getErrorMessage(error)}`, {
         exit: exitCodes.RUNTIME_ERROR,
       })
     }
 
     if (json) {
-      this.logJson(imports)
+      this.logJson(sources)
       return
     }
 
-    if (imports.length === 0) {
-      this.log('No imports found')
+    if (sources.length === 0) {
+      this.log('No sources found')
       return
     }
 
     const table = new Table({
       columns: [
         {alignment: 'left', name: 'id', title: 'ID'},
-        {alignment: 'left', name: 'name', title: 'Name'},
-        {alignment: 'left', name: 'kind', title: 'Kind'},
-        {alignment: 'left', name: 'status', title: 'Status'},
-        {alignment: 'right', name: 'sources', title: 'Sources'},
-        {alignment: 'left', name: 'createdAt', title: 'Created'},
+        {alignment: 'left', name: 'title', title: 'Title'},
+        {alignment: 'left', name: 'type', title: 'Type'},
+        {alignment: 'right', name: 'documents', title: 'Documents'},
+        {alignment: 'left', name: 'sync', title: 'Latest sync'},
+        {alignment: 'left', name: 'lastSyncedAt', title: 'Last synced'},
       ],
     })
 
-    for (const {createdAt, id, name, sourceCount, sourceKind, status} of imports) {
+    for (const source of sources) {
       table.addRow({
-        createdAt,
-        id,
-        kind: sourceKind,
-        name: name ?? '-',
-        sources: sourceCount,
-        status,
+        documents: source.documentCount,
+        id: source.id,
+        lastSyncedAt: source.lastSyncedAt ?? '-',
+        sync: source.latestSync?.status ?? '-',
+        title: source.title,
+        type: source.type,
       })
     }
 
