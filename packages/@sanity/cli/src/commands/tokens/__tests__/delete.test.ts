@@ -515,7 +515,7 @@ describe('#tokens:delete', () => {
     test('rejects conflicting scopes', async () => {
       const {error} = await testCommand(
         DeleteTokensCommand,
-        ['token-api-123', '--organization', 'org-1', '--project-id', 'abc123', '--yes'],
+        ['token-api-123', '--organization', 'org-1', '--project', 'abc123', '--yes'],
         {mocks: defaultMocks},
       )
       expect(error?.message).toContain('cannot also be provided')

@@ -1,4 +1,4 @@
-import {Command, Config, Flags} from '@oclif/core'
+import {Args, Command, Config, Flags} from '@oclif/core'
 import {CLIError} from '@oclif/core/errors'
 import {afterEach, beforeEach, describe, expect, Mock, test, vi} from 'vitest'
 
@@ -13,18 +13,20 @@ function createMockedRunCommand<T extends typeof Command>(mocks: {
 }) {
   return class TestCommand extends SanityCommand<typeof TestCommand> {
     static override flags = {
-      project: Flags.string({
-        deprecated: {to: 'project-id'},
+      'legacy-project': Flags.string({
+        deprecated: {to: 'project'},
         description: 'Project ID to import to',
         hidden: true,
       }),
-      'project-id': Flags.string({
+      project: Flags.string({
+        aliases: ['project-id'],
         char: 'p',
+        deprecateAliases: true,
         helpValue: '<id>',
         parse: async (input: string) => {
           const trimmed = input.trim()
           if (trimmed === '') {
-            throw new Error('`--project-id` cannot be empty if provided')
+            throw new Error('`--project` cannot be empty if provided')
           }
           return trimmed
         },
@@ -61,6 +63,48 @@ function createUnattendedRequiredCommand(isInteractive: boolean) {
 describe('SanityCommand', () => {
   afterEach(() => {
     vi.clearAllMocks()
+  })
+
+  describe('deprecated flag aliases', () => {
+    class AliasCommand extends SanityCommand<typeof AliasCommand> {
+      static override args = {value: Args.string()}
+      static override flags = {
+        name: Flags.string({aliases: ['old-name'], deprecateAliases: true}),
+      }
+
+      public async run(): Promise<void> {
+        this.log(this.flags.name)
+      }
+    }
+
+    test.each([['--old-name', 'example'], ['--old-name=example']])(
+      'warns and uses the canonical value for %j',
+      async (...argv) => {
+        const stdout: string[] = []
+        const stderr: string[] = []
+        await runWithCliExecutionContext(
+          {stderr: (line) => stderr.push(line), stdout: (line) => stdout.push(line)},
+          () => AliasCommand.run(argv),
+        )
+
+        expect(stdout).toEqual(['example'])
+        expect(stderr.join('\n')).toContain('deprecated')
+        expect(stderr.join('\n')).toContain('--name')
+      },
+    )
+
+    test.each([['--name=example'], ['--name=example', '--', '--old-name=positional']])(
+      'does not warn for canonical flags or positional values: %j',
+      async (...argv) => {
+        const stderr: string[] = []
+        await runWithCliExecutionContext(
+          {stderr: (line) => stderr.push(line), stdout: () => {}},
+          () => AliasCommand.run(argv),
+        )
+
+        expect(stderr).toEqual([])
+      },
+    )
   })
 
   describe('unattended flag requirements', () => {
@@ -107,43 +151,43 @@ describe('SanityCommand', () => {
     beforeEach(() => {
       id = ''
     })
-    test('returns --project-id value if provided', async () => {
+    test('returns --project value if provided', async () => {
       const cmdClass = createMockedRunCommand({
         run: async function () {
           id = await this.getProjectId()
         },
       })
-      await cmdClass.run(['--project-id', 'torment nexus'])
+      await cmdClass.run(['--project', 'torment nexus'])
       expect(id).toEqual('torment nexus')
     })
 
-    test('supports deprecated flag (e.g. --project) value if specified and provided', async () => {
+    test('supports deprecated flag (e.g. --legacy-project) value if specified and provided', async () => {
       const cmdClass = createMockedRunCommand({
         run: async function () {
-          id = await this.getProjectId({deprecatedFlagName: 'project'})
+          id = await this.getProjectId({deprecatedFlagName: 'legacy-project'})
         },
       })
-      await cmdClass.run(['--project', 'oopsy daisy'])
+      await cmdClass.run(['--legacy-project', 'oopsy daisy'])
       expect(id).toEqual('oopsy daisy')
     })
 
-    test('supports deprecated short char flag (e.g. --project) value if specified and provided', async () => {
+    test('supports the -p short flag', async () => {
       const cmdClass = createMockedRunCommand({
         run: async function () {
-          id = await this.getProjectId({deprecatedFlagName: 'project'})
+          id = await this.getProjectId()
         },
       })
       await cmdClass.run(['-p', 'torment nexus'])
       expect(id).toEqual('torment nexus')
     })
 
-    test('--project-id takes precedence over deprecated --project', async () => {
+    test('--project takes precedence over deprecated --legacy-project', async () => {
       const cmdClass = createMockedRunCommand({
         run: async function () {
-          id = await this.getProjectId({deprecatedFlagName: 'project'})
+          id = await this.getProjectId({deprecatedFlagName: 'legacy-project'})
         },
       })
-      await cmdClass.run(['--project', 'bad', '--project-id', 'good'])
+      await cmdClass.run(['--legacy-project', 'bad', '--project', 'good'])
       expect(id).toEqual('good')
     })
 
@@ -206,7 +250,7 @@ describe('SanityCommand', () => {
       expect(fallback).not.toHaveBeenCalled()
     })
 
-    test('does not call fallback when --project-id flag is provided', async () => {
+    test('does not call fallback when --project flag is provided', async () => {
       const fallback = vi.fn(() => {
         throw new Error('fallback should not have been called!')
       })
@@ -215,7 +259,7 @@ describe('SanityCommand', () => {
           id = await this.getProjectId({fallback})
         },
       })
-      await cmdClass.run(['--project-id', 'torment nexus'])
+      await cmdClass.run(['--project', 'torment nexus'])
       expect(id).toEqual('torment nexus')
       expect(fallback).not.toHaveBeenCalled()
     })

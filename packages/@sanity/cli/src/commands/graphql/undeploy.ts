@@ -35,7 +35,7 @@ export class Undeploy extends SanityCommand<typeof Undeploy> {
       description: 'Undeploy GraphQL API without confirmation prompt',
     },
     {
-      command: '<%= config.bin %> <%= command.id %> --project-id abc123 --dataset production',
+      command: '<%= config.bin %> <%= command.id %> --project abc123 --dataset production',
       description: 'Undeploy GraphQL API for a specific project and dataset',
     },
   ]
@@ -47,7 +47,7 @@ export class Undeploy extends SanityCommand<typeof Undeploy> {
     }),
     api: Flags.string({
       description: 'Undeploy API with this ID',
-      exclusive: ['project-id', 'project'],
+      exclusive: ['project'],
       required: false,
     }),
     ...getDatasetFlag({description: 'Dataset to undeploy GraphQL API from', semantics: 'override'}),
@@ -56,12 +56,6 @@ export class Undeploy extends SanityCommand<typeof Undeploy> {
         description: 'Skip confirmation prompt',
       }),
     ),
-    project: Flags.string({
-      deprecated: {to: 'project-id'},
-      description: 'Project ID to delete GraphQL API for',
-      hidden: true,
-      required: false,
-    }),
     tag: Flags.string({
       default: 'default',
       description: 'Tag to undeploy GraphQL API from',
@@ -105,7 +99,6 @@ export class Undeploy extends SanityCommand<typeof Undeploy> {
     // Get projectId from config if not specified
     if (!projectId) {
       projectId = await this.getProjectId({
-        deprecatedFlagName: 'project',
         fallback: () =>
           promptForProject({
             requiredPermissions: [{grant: 'manage', permission: 'sanity.project.graphql'}],

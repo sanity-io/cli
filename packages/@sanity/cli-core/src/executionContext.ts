@@ -28,7 +28,7 @@ export type SanityEnvironment = 'production' | 'staging'
  * - project root resolution from the filesystem is disabled: commands never
  *   read (or execute) `sanity.config.ts`/`sanity.cli.ts` files found near the
  *   host process's cwd, so project context must come from explicit flags
- *   (e.g. `--project-id`)
+ *   (e.g. `--project`)
  *
  * The CLI binary never enters a context, so its behavior is unchanged.
  *

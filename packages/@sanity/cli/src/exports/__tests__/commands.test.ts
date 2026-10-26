@@ -127,7 +127,7 @@ describe('invokeSanityCli', () => {
 
     try {
       const result = await invoke({
-        args: `cors list --project-id ${projectId}`,
+        args: `cors list --project ${projectId}`,
         sanityEnv: 'production',
         source: 'mcp',
         token: 'invocation-token',
@@ -194,7 +194,7 @@ describe('invokeSanityCli', () => {
 
     try {
       const result = await invoke({
-        args: `users list --project-id ${projectId}`,
+        args: `users list --project ${projectId}`,
         config,
         source: 'mcp',
         token: 'user-token',
@@ -239,7 +239,7 @@ describe('invokeSanityCli', () => {
     mockApi({apiVersion: USERS_API_VERSION, uri: '/users/'}).reply(200, [])
 
     const result = await invoke({
-      args: `users list --project-id ${projectId}`,
+      args: `users list --project ${projectId}`,
       config,
       source: 'mcp',
       token: 'user-token',
@@ -258,7 +258,7 @@ describe('invokeSanityCli', () => {
       .reply(200, [corsOrigin('https://example.com')])
 
     const result = await invoke({
-      args: `cors list --project-id ${projectId}`,
+      args: `cors list --project ${projectId}`,
       config,
       source: 'mcp',
       token: 'user-token',
@@ -273,7 +273,7 @@ describe('invokeSanityCli', () => {
       .reply(200, [corsOrigin('https://example.com')])
 
     const result = await invoke({
-      args: ['cors', 'list', '--project-id', projectId],
+      args: ['cors', 'list', '--project', projectId],
       config,
       source: 'mcp',
       token: 'user-token',
@@ -288,7 +288,7 @@ describe('invokeSanityCli', () => {
       .reply(200, [corsOrigin('https://example.com')])
 
     const result = await invoke({
-      args: `sanity cors list --project-id "${projectId}"`,
+      args: `sanity cors list --project "${projectId}"`,
       config,
       source: 'mcp',
       token: 'user-token',
@@ -298,8 +298,8 @@ describe('invokeSanityCli', () => {
   })
 
   test.each([
-    ['double quotes', `cors list --project-id="${projectId}"`],
-    ['single quotes', `cors list --project-id='${projectId}'`],
+    ['double quotes', `cors list --project="${projectId}"`],
+    ['single quotes', `cors list --project='${projectId}'`],
   ])('strips %s glued to --flag= tokens like a shell would', async (_style, args) => {
     mockApi({apiVersion: CORS_API_VERSION, uri: `/projects/${projectId}/cors`})
       .matchHeader('authorization', 'Bearer user-token')
@@ -321,7 +321,7 @@ describe('invokeSanityCli', () => {
       .reply(200, [corsOrigin('https://example.com')])
 
     const result = await invoke({
-      args: `cors:list --project-id ${projectId}`,
+      args: `cors:list --project ${projectId}`,
       config,
       source: 'mcp',
       token: 'user-token',
@@ -346,14 +346,14 @@ describe('invokeSanityCli', () => {
 
     const [resultA, resultB] = await Promise.all([
       invoke({
-        args: 'cors list --project-id project-a',
+        args: 'cors list --project project-a',
         config,
         sanityEnv: 'production',
         source: 'mcp',
         token: 'token-a',
       }),
       invoke({
-        args: 'cors list --project-id project-b',
+        args: 'cors list --project project-b',
         config,
         sanityEnv: 'staging',
         source: 'mcp',
@@ -380,7 +380,7 @@ describe('invokeSanityCli', () => {
 
     const previousExitCode = process.exitCode
     const result = await invoke({
-      args: `cors list --project-id ${projectId}`,
+      args: `cors list --project ${projectId}`,
       config,
       source: 'mcp',
       token: 'bogus-token',
@@ -606,7 +606,7 @@ describe('invokeSanityCli', () => {
       "ProjectRootNotFoundError: Unable to determine project ID
       Code: PROJECT_ROOT_NOT_FOUND
       Try this:
-        * Providing a project ID: --project-id <project-id>
+        * Providing a project ID: --project <project-id>
         * Running this command from within a Sanity project directory
         * Running in an interactive terminal to get a project selection prompt
       Caused by: NonInteractiveError: Cannot run "select" prompt in a non-interactive environment. Provide the required value via flags or environment variables, or run in an interactive terminal.
@@ -658,7 +658,7 @@ describe('invokeSanityCli', () => {
       .reply(200, [corsOrigin('https://example.com')])
 
     const result = await invoke({
-      args: `cors list --project-id "${projectId}`,
+      args: `cors list --project "${projectId}`,
       config,
       source: 'mcp',
       token: 'user-token',
@@ -884,7 +884,7 @@ describe('invokeSanityCli', () => {
       expect(result.commandId).toBe('cors:list')
       expect(result.output).toContain('List CORS origins for the project')
       expect(result.output).toContain('USAGE')
-      expect(result.output).toContain('--project-id')
+      expect(result.output).toContain('--project')
     },
   )
 

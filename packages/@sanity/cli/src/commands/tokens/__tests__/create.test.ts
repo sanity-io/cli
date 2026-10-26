@@ -173,14 +173,14 @@ describe('#tokens:create', () => {
     )
   })
 
-  test('rejects a --project-id outside the organization before prompting', async () => {
+  test('rejects a --project outside the organization before prompting', async () => {
     mockedListProjects.mockResolvedValueOnce([
       {displayName: 'Website', id: testProjectId, organizationId: 'org-1'},
     ] as Awaited<ReturnType<typeof listProjects>>)
 
     const {error} = await testCommand(
       CreateTokenCommand,
-      ['CI', '--project-id=elsewhere', '--organization=org-1'],
+      ['CI', '--project=elsewhere', '--organization=org-1'],
       {mocks: defaultMocks},
     )
 
@@ -224,12 +224,12 @@ describe('#tokens:create', () => {
     })
   })
 
-  test('uses the explicit project grant role instead of adding viewer for --project-id', async () => {
+  test('uses the explicit project grant role instead of adding viewer for --project', async () => {
     const request = mockRobotCreation('/access/project/p1/robots')
 
     const {error} = await testCommand(
       CreateTokenCommand,
-      ['CI', '--project-id=p1', '--grant=project:p1=restricted-reader', '--yes'],
+      ['CI', '--project=p1', '--grant=project:p1=restricted-reader', '--yes'],
       {mocks: defaultMocks},
     )
 

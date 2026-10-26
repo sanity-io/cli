@@ -178,8 +178,7 @@ export abstract class SanityCommand<T extends typeof Command>
    * not interactive), it falls through to the standard error with suggestions.
    *
    * Optionally accepts a `deprecatedFlagName` for commands that have a deprecated
-   * flag (e.g. `--project`) that should be checked after `--project-id` but before
-   * the CLI config.
+   * flag that should be checked after `--project` but before the CLI config.
    *
    * @returns The project ID.
    */
@@ -187,19 +186,19 @@ export abstract class SanityCommand<T extends typeof Command>
     deprecatedFlagName?: string
     fallback?: () => Promise<string>
   }): Promise<string> {
-    const hasProjectFlag = this.ctor.flags != null && 'project-id' in this.ctor.flags
+    const hasProjectFlag = this.ctor.flags != null && 'project' in this.ctor.flags
 
-    // Check --project-id flag first
+    // Check --project flag first
     if (hasProjectFlag) {
       const flagProjectId =
-        'project-id' in this.flags && typeof this.flags['project-id'] === 'string'
-          ? this.flags['project-id']
+        'project' in this.flags && typeof this.flags.project === 'string'
+          ? this.flags.project
           : undefined
 
       if (flagProjectId) return flagProjectId
     }
 
-    // Check deprecated flag (e.g. --project) before CLI config
+    // Check deprecated flag before CLI config
     if (options?.deprecatedFlagName) {
       const deprecatedValue =
         options.deprecatedFlagName in this.flags &&
@@ -230,7 +229,7 @@ export abstract class SanityCommand<T extends typeof Command>
         throw new ProjectRootNotFoundError('Unable to determine project ID', {
           cause: err,
           suggestions: [
-            ...(hasProjectFlag ? ['Providing a project ID: --project-id <project-id>'] : []),
+            ...(hasProjectFlag ? ['Providing a project ID: --project <project-id>'] : []),
             'Running this command from within a Sanity project directory',
             'Running in an interactive terminal to get a project selection prompt',
           ],
@@ -240,7 +239,7 @@ export abstract class SanityCommand<T extends typeof Command>
 
     throw new ProjectRootNotFoundError('Unable to determine project ID', {
       suggestions: [
-        ...(hasProjectFlag ? ['Providing a project ID: --project-id <project-id>'] : []),
+        ...(hasProjectFlag ? ['Providing a project ID: --project <project-id>'] : []),
         'Running this command from within a Sanity project directory',
       ],
     })
@@ -432,7 +431,7 @@ export abstract class SanityCommand<T extends typeof Command>
    * Get the CLI config, returning an empty config if no project root is found.
    *
    * Use this instead of `getCliConfig()` in commands that can operate without a
-   * project directory (e.g. when `--project-id` and `--dataset` flags are provided).
+   * project directory (e.g. when `--project` and `--dataset` flags are provided).
    *
    * @returns The CLI config, or an empty config object if no project root is found.
    */
@@ -457,5 +456,25 @@ export abstract class SanityCommand<T extends typeof Command>
       context.stderr(`Warning: ${input instanceof Error ? input.message : input}`)
     }
     return input
+  }
+
+  protected override warnIfFlagDeprecated(flags: Record<string, unknown>): void {
+    super.warnIfFlagDeprecated(flags)
+
+    // oclif only warns for aliases passed as separate tokens, missing --alias=value.
+    const flagArgs = this.argv.slice(
+      0,
+      this.argv.includes('--') ? this.argv.indexOf('--') : undefined,
+    )
+    for (const name of Object.keys(flags)) {
+      const flag = this.ctor.flags?.[name]
+      if (!flag?.deprecateAliases) continue
+
+      for (const alias of flag.aliases ?? []) {
+        if (flagArgs.some((arg) => arg.startsWith(`--${alias}=`))) {
+          this.warn(`The --${alias} flag is deprecated. Use --${name} instead.`)
+        }
+      }
+    }
   }
 }
