@@ -81,9 +81,7 @@ describe('watchForWorkbenchOptIn', () => {
 
     await saveCliConfig(filename)
 
-    expect(output.log).toHaveBeenCalledWith(
-      `${filename} changed, restarting dev server in the local Dashboard`,
-    )
+    expect(output.log).toHaveBeenCalledWith(`${filename} changed, restarting dev server`)
     expect(closePlainServer).toHaveBeenCalledTimes(1)
     expect(startWorkbench).toHaveBeenCalledWith(optedIn)
     expect(closePlainServer.mock.invocationCallOrder[0]).toBeLessThan(

@@ -45,7 +45,7 @@ export function watchForWorkbenchOptIn({
       if (closed || !cliConfig) return
       if (!isWorkbenchApp(cliConfig.app) && !isWorkbenchConfig(cliConfig.app)) return
 
-      output.log(`${filename} changed, restarting dev server in the local Dashboard`)
+      output.log(`${filename} changed, restarting dev server`)
       handover = (async () => {
         await closeCurrent()
         closeCurrent = noop
