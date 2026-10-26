@@ -33,6 +33,7 @@ import {
   type ResourceTypesWatcher,
   watchResourceTypes,
 } from '../../actions/typegen/watchResourceTypes.js'
+import {TypegenResourcesTrace} from '../../telemetry/typegen.telemetry.js'
 
 const description = `Sanity TypeGen
 
@@ -188,6 +189,21 @@ export class TypegenGenerateCommand extends SanityCommand<typeof TypegenGenerate
   }
 
   /**
+   * Records that this run uses `typegen.resources`, which the codegen traces do not distinguish.
+   */
+  private logResourcesUsage(resources: TypegenResourcesConfig, mode: 'generate' | 'watch'): void {
+    const trace = this.telemetry.trace(TypegenResourcesTrace)
+    trace.start()
+    trace.log({
+      boundSchemaCount: resources.resources.filter((resource) => resource.schema === undefined)
+        .length,
+      mode,
+      resourceCount: resources.resources.length,
+    })
+    trace.complete()
+  }
+
+  /**
    * Prints the resources' configuration warnings, then locates every resource's schema, reporting
    * each one on the spinner.
    */
@@ -236,6 +252,7 @@ export class TypegenGenerateCommand extends SanityCommand<typeof TypegenGenerate
       trace.start()
 
       if (resources) {
+        this.logResourcesUsage(resources, 'generate')
         const resourceSpin = spinner({})
         spin = resourceSpin
         const resolved = await this.resolveResources(resources, resourceSpin, workDir, {
@@ -297,6 +314,9 @@ export class TypegenGenerateCommand extends SanityCommand<typeof TypegenGenerate
     try {
       const {config: typegenConfig, resources, workDir} = await this.getConfig()
       trace.start()
+      if (resources) {
+        this.logResourcesUsage(resources, 'watch')
+      }
 
       let resolve: () => void = () => {}
       const promise = new Promise<void>((res) => {
