@@ -25,7 +25,7 @@ import {
 
 import {SANITY_CACHE_DIR} from '../../constants.js'
 import {sanitySchemaExtractionPlugin} from '../schema/vite/plugin-schema-extraction.js'
-import {type AutoUpdatesBuildConfig, type ModuleCdnPackage} from './autoUpdates.js'
+import {type AutoUpdatesBuildConfig} from './autoUpdates.js'
 import {buildDebug} from './buildDebug.js'
 import {normalizeBasePath} from './normalizeBasePath.js'
 import {sanityBuildEntries} from './vite/plugin-sanity-build-entries.js'
@@ -98,8 +98,6 @@ interface ViteOptions {
    */
   minify?: boolean
 
-  moduleCdnPackages?: ModuleCdnPackage[]
-
   /**
    * Output directory (eg where to place the built files, if any)
    */
@@ -145,7 +143,6 @@ export async function getViteConfig(options: ViteOptions): Promise<InlineConfig>
     isWorkbenchApp,
     minify,
     mode,
-    moduleCdnPackages,
     outputDir,
     reactCompiler,
     schemaExtraction,
@@ -231,16 +228,12 @@ export async function getViteConfig(options: ViteOptions): Promise<InlineConfig>
             ...sharedPlugins,
             await workbenchVitePlugins({
               appId: workbenchAppId,
+              autoUpdates,
               cwd,
               entries,
               exposes,
               isApp,
               isBlueprints,
-              moduleCdn: moduleCdnPackages &&
-                autoUpdates && {
-                  packages: moduleCdnPackages,
-                  sharedSpecifiers: Object.values(autoUpdates.vendor.specifiersByChunkName),
-                },
             }),
             {
               ...sanityBuildEntries({autoUpdates, basePath, bridge: false, cwd, isApp}),

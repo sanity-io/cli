@@ -10,17 +10,27 @@ import {sanityAutoUpdates} from './plugin-sanity-auto-updates.js'
 const SDK_URL = 'https://sanity-cdn.com/v1/modules/by-app/app1/t1/%5E2.0.0/@sanity__sdk'
 const SDK_REACT_URL = 'https://sanity-cdn.com/v1/modules/by-app/app1/t1/%5E2.0.0/@sanity__sdk-react'
 
-const packages = [
-  {name: '@sanity/sdk', url: SDK_URL},
-  {name: '@sanity/sdk-react', url: SDK_REACT_URL},
-]
-const moduleCdn = {packages, sharedSpecifiers: ['react', 'react/jsx-runtime']}
-
-function createPlugin(): Plugin {
-  return sanityAutoUpdates(moduleCdn)[1]
+const autoUpdates = {
+  cssUrls: [`${SDK_URL}/index.css`],
+  imports: {
+    '@sanity/sdk': SDK_URL,
+    '@sanity/sdk-react': SDK_REACT_URL,
+    '@sanity/sdk-react/': `${SDK_REACT_URL}/`,
+    '@sanity/sdk/': `${SDK_URL}/`,
+  },
+  vendor: {
+    specifiersByChunkName: {'react/index': 'react', 'react/jsx-runtime': 'react/jsx-runtime'},
+  },
 }
 
-function evaluateAutoUpdatesModule(plugins: Plugin[], moduleUrl: (name: string) => unknown) {
+function createPlugin(): Plugin {
+  return sanityAutoUpdates(autoUpdates)[1]
+}
+
+function evaluateAutoUpdatesModule(
+  plugins: Plugin[],
+  importMapUrl: (specifier: string) => unknown,
+) {
   const loaded = (plugins[0].load as (id: string) => string)('\0virtual:sanity/auto-updates')
   const rendered =
     plugins[1] && (plugins[1].renderChunk as (code: string) => {code: string} | null)(loaded)
@@ -30,11 +40,18 @@ function evaluateAutoUpdatesModule(plugins: Plugin[], moduleUrl: (name: string) 
       'const {createAutoUpdatesLoader} = deps',
     )
     .replaceAll(/^export /gm, '')
-  const loaderOptions: {shared: Record<string, unknown>; specifiers: string[]}[] = []
+    .replaceAll('__SANITY_APP_ID__', '"app1"')
+  const loaderOptions: {
+    appId: string
+    cssUrls: string[]
+    imports: Record<string, string>
+    specifiers: string[]
+    vendor: Record<string, unknown>
+  }[] = []
   const createAutoUpdatesLoader = (options: (typeof loaderOptions)[number]) => {
     loaderOptions.push(options)
 
-    return {load: () => {}, moduleUrl}
+    return {importMapUrl, load: () => {}}
   }
   const {studioProps} = new Function('deps', `${body}\nreturn {studioProps}`)({
     createAutoUpdatesLoader,
@@ -70,18 +87,23 @@ describe('resolveId', () => {
   })
 })
 
-it('hands the loader the wrapped specifiers, and the studio its import map URL once loaded', () => {
-  const plugins = sanityAutoUpdates(moduleCdn)
+it('hands the loader the import map and wrapped specifiers, and the studio its import map URL once loaded', () => {
+  const plugins = sanityAutoUpdates(autoUpdates)
   const resolveId = plugins[1].resolveId as (source: string, importer: string) => unknown
   resolveId('@sanity/sdk', '/app/src/App.tsx')
   resolveId('@sanity/sdk-react', '/app/src/App.tsx')
   const loadedFrom = new Map<string, string>()
-  const {loaderOptions, studioProps} = evaluateAutoUpdatesModule(plugins, (name) =>
-    loadedFrom.get(name),
+  const {loaderOptions, studioProps} = evaluateAutoUpdatesModule(plugins, (specifier) =>
+    loadedFrom.get(specifier),
   )
 
-  expect(loaderOptions[0].specifiers).toEqual(['@sanity/sdk', '@sanity/sdk-react'])
-  expect(Object.keys(loaderOptions[0].shared)).toEqual(moduleCdn.sharedSpecifiers)
+  expect(loaderOptions[0]).toEqual({
+    appId: 'app1',
+    cssUrls: autoUpdates.cssUrls,
+    imports: autoUpdates.imports,
+    specifiers: ['@sanity/sdk', '@sanity/sdk-react'],
+    vendor: {react: expect.any(Function), 'react/jsx-runtime': expect.any(Function)},
+  })
   expect(studioProps()).toEqual({})
   const sanityUrl = 'https://sanity-cdn.com/v1/modules/by-app/app1/t1/%5E6.0.0/sanity'
   loadedFrom.set('sanity', sanityUrl)

@@ -1,12 +1,12 @@
 /*
- * Wraps the app's imports of module CDN packages so they load at runtime, installed copy as fallback:
+ * Wraps the app's imports of auto-updated packages so they load at runtime, installed copy as fallback:
  *
  *   import {Studio} from 'sanity'
  *     -> const m = await load('sanity', () => import('sanity'))
  *        export {m.Studio as Studio, ...}   (export names read from the installed copy)
  *
  * Imports inside the installed packages stay unwrapped, so the fallback is self-contained.
- * `virtual:sanity/auto-updates` always resolves; `studioProps()` is empty without the CDN.
+ * `virtual:sanity/auto-updates` always resolves; `studioProps()` is empty without auto-updates.
  */
 import {readFile} from 'node:fs/promises'
 import path from 'node:path'
@@ -14,7 +14,6 @@ import {fileURLToPath} from 'node:url'
 
 import {parseSync, type Plugin, type Rolldown} from 'vite'
 
-import {type ModuleCdnPackage} from '../../autoUpdatesLoader.js'
 import {FEDERATION_DIR_NAME} from '../constants.js'
 
 export const AUTO_UPDATES_ID = 'virtual:sanity/auto-updates'
@@ -27,28 +26,36 @@ const loaderPath = fileURLToPath(
   new URL('../../../../_exports/_internal_auto_updates.js', import.meta.url),
 )
 
-export interface ModuleCdn {
-  packages: ModuleCdnPackage[]
-  sharedSpecifiers: string[]
+// The build's `autoUpdates` config, as far as the remote uses it.
+export interface AutoUpdates {
+  imports: Record<string, string>
+  vendor: {specifiersByChunkName: Record<string, string>}
+
+  cssUrls?: string[]
 }
 
-export function sanityAutoUpdates(moduleCdn?: ModuleCdn): Plugin[] {
+export function sanityAutoUpdates(autoUpdates?: AutoUpdates): Plugin[] {
   return [
     {
       config: () => ({resolve: {alias: {[LOADER_ENTRY]: loaderPath}}}),
-      load: (id) => (id === RESOLVED_AUTO_UPDATES_ID ? renderAutoUpdatesModule(moduleCdn) : null),
+      load: (id) => (id === RESOLVED_AUTO_UPDATES_ID ? renderAutoUpdatesModule(autoUpdates) : null),
       name: 'sanity/auto-updates',
       resolveId: (source) => (source === AUTO_UPDATES_ID ? RESOLVED_AUTO_UPDATES_ID : null),
     },
-    ...(moduleCdn ? [wrapCdnImports(moduleCdn.packages)] : []),
+    ...(autoUpdates ? [wrapAutoUpdatedImports(autoUpdates.imports)] : []),
   ]
 }
 
-function wrapCdnImports(packages: ModuleCdnPackage[]): Plugin {
-  const isCdnImport = (source: string) =>
-    packages.some(({name}) => source === name || source.startsWith(`${name}/`))
+function wrapAutoUpdatedImports(imports: Record<string, string>): Plugin {
+  // Import map keys: `sanity` for the package, `sanity/` for its subpaths.
+  const isAutoUpdated = (source: string) =>
+    Object.keys(imports).some((key) =>
+      key.endsWith('/') ? source.startsWith(key) : source === key,
+    )
   const isInstalledCopy = (importer: string) =>
-    packages.some(({name}) => importer.includes(`/node_modules/${name}/`))
+    Object.keys(imports).some(
+      (key) => key.endsWith('/') && importer.includes(`/node_modules/${key}`),
+    )
   const wrapped = new Set<string>()
   let root = ''
 
@@ -70,7 +77,7 @@ function wrapCdnImports(packages: ModuleCdnPackage[]): Plugin {
 
       return renderWrapper(specifier, await collectExports(this, installed.id))
     },
-    name: 'sanity/auto-updates/wrap-cdn-imports',
+    name: 'sanity/auto-updates/wrap-imports',
     // The loader imports every wrapped specifier up front; the list is complete only after the build.
     renderChunk(code) {
       const placeholder = new RegExp(`(["'\`])${SPECIFIERS_PLACEHOLDER}\\1`)
@@ -85,7 +92,7 @@ function wrapCdnImports(packages: ModuleCdnPackage[]): Plugin {
       if (
         importer &&
         !importer.startsWith(WRAPPER_PREFIX) &&
-        isCdnImport(source) &&
+        isAutoUpdated(source) &&
         !isInstalledCopy(importer)
       ) {
         wrapped.add(source)
@@ -97,22 +104,23 @@ function wrapCdnImports(packages: ModuleCdnPackage[]): Plugin {
   }
 }
 
-function renderAutoUpdatesModule(moduleCdn: ModuleCdn | undefined): string {
-  if (!moduleCdn) return 'export const studioProps = () => ({})\n'
+function renderAutoUpdatesModule(autoUpdates: AutoUpdates | undefined): string {
+  if (!autoUpdates) return 'export const studioProps = () => ({})\n'
 
-  const shared = moduleCdn.sharedSpecifiers.map(
+  const vendor = Object.values(autoUpdates.vendor.specifiersByChunkName).map(
     (specifier) => `${JSON.stringify(specifier)}: () => import(${JSON.stringify(specifier)})`,
   )
 
   return `import {createAutoUpdatesLoader} from ${JSON.stringify(LOADER_ENTRY)}
-export const {load, moduleUrl} = createAutoUpdatesLoader({
-  appId: typeof __SANITY_APP_ID__ === 'string' ? __SANITY_APP_ID__ : undefined,
-  packages: ${JSON.stringify(moduleCdn.packages)},
-  shared: {${shared.join(', ')}},
+export const {importMapUrl, load} = createAutoUpdatesLoader({
+  appId: __SANITY_APP_ID__,
+  cssUrls: ${JSON.stringify(autoUpdates.cssUrls ?? [])},
+  imports: ${JSON.stringify(autoUpdates.imports)},
   specifiers: JSON.parse(${JSON.stringify(SPECIFIERS_PLACEHOLDER)}),
+  vendor: {${vendor.join(', ')}},
 })
 export const studioProps = () =>
-  moduleUrl('sanity') ? {unstable_importMapUrl: moduleUrl('sanity')} : {}
+  importMapUrl('sanity') ? {unstable_importMapUrl: importMapUrl('sanity')} : {}
 `
 }
 

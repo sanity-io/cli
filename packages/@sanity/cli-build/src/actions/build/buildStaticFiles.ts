@@ -122,7 +122,6 @@ export async function buildStaticFiles(
       isWorkbenchApp,
       minify,
       mode,
-      moduleCdnPackages,
       outputDir,
       reactCompiler,
       // Schema extraction is a build-time artifact, not a client-specific step,
