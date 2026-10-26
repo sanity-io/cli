@@ -31,6 +31,23 @@ async function getContextStoreClient(knowledgeBaseId: string) {
 }
 
 /**
+ * Drain a paginated Context list endpoint
+ */
+async function listAll<T>(
+  fetchPage: (cursor: string | undefined) => Promise<{data: T[]; nextCursor: string | null}>,
+): Promise<T[]> {
+  const items: T[] = []
+  let cursor: string | undefined
+  do {
+    const page = await fetchPage(cursor)
+    items.push(...page.data)
+    cursor = page.nextCursor ?? undefined
+  } while (cursor !== undefined)
+
+  return items
+}
+
+/**
  * Create a knowledge base in an organization
  */
 export async function createKnowledgeBase(
@@ -46,15 +63,7 @@ export async function createKnowledgeBase(
 export async function listKnowledgeBases(organizationId: string): Promise<Context.KnowledgeBase[]> {
   const client = await getContextClient()
 
-  const knowledgeBases: Context.KnowledgeBase[] = []
-  let cursor: string | undefined
-  do {
-    const page = await client.context.knowledgeBases.list({cursor, organizationId})
-    knowledgeBases.push(...page.data)
-    cursor = page.nextCursor ?? undefined
-  } while (cursor !== undefined)
-
-  return knowledgeBases
+  return listAll((cursor) => client.context.knowledgeBases.list({cursor, organizationId}))
 }
 
 /**
@@ -85,62 +94,189 @@ export async function deleteKnowledgeBase(knowledgeBaseId: string): Promise<void
 }
 
 /**
- * Import content into a knowledge base. File imports are staged and uploaded
- * to signed storage by the client.
+ * Add a source to a knowledge base. A `files` source with a `file` is created,
+ * uploaded to signed storage and synced by the client, which resolves with the
+ * source read again.
  */
-export async function createImport(
+export async function createSource(
   knowledgeBaseId: string,
-  params: Context.CreateFileImportParams | Context.CreateImportParams,
-): Promise<Context.JobAccepted> {
+  params: Context.CreateSourceParams,
+): Promise<Context.Source> {
   const client = await getContextClient(knowledgeBaseId)
-  return client.context.imports.create(params)
+  return client.context.sources.create(params)
 }
 
 /**
- * List all imports for a knowledge base (drains pagination)
+ * Estimate what a crawl of a website would fetch, without adding it as a source
  */
-export async function listImports(knowledgeBaseId: string): Promise<Context.Import[]> {
-  const client = await getContextClient(knowledgeBaseId)
-
-  const imports: Context.Import[] = []
-  let cursor: string | undefined
-  do {
-    const page = await client.context.imports.list({cursor})
-    imports.push(...page.data)
-    cursor = page.nextCursor ?? undefined
-  } while (cursor !== undefined)
-
-  return imports
-}
-
-/**
- * Get a single import by ID
- */
-export async function getImport(
+export async function previewWebSource(
   knowledgeBaseId: string,
-  importId: string,
-): Promise<Context.ImportDetail> {
+  params: Context.PreviewWebSourceParams,
+): Promise<Context.CrawlPreview> {
   const client = await getContextClient(knowledgeBaseId)
-  return client.context.imports.get({importId})
+  return client.context.sources.preview(params)
 }
 
 /**
- * Get a short-lived signed URL for an import's original uploaded bytes
+ * List all sources of a knowledge base (drains pagination)
  */
-export async function downloadImport(
+export async function listSources(knowledgeBaseId: string): Promise<Context.Source[]> {
+  const client = await getContextClient(knowledgeBaseId)
+  return listAll((cursor) => client.context.sources.list({cursor}))
+}
+
+/**
+ * Get a single source by ID
+ */
+export async function getSource(
   knowledgeBaseId: string,
-  importId: string,
-): Promise<Context.ImportDownloadResponse> {
+  sourceId: string,
+): Promise<Context.Source> {
   const client = await getContextClient(knowledgeBaseId)
-  return client.context.imports.download({importId})
+  return client.context.sources.get({sourceId})
 }
 
 /**
- * Delete an import from a knowledge base
+ * Change a source's title, crawl options, dataset query or sync frequency
  */
-export async function deleteImport(knowledgeBaseId: string, importId: string): Promise<void> {
+export async function editSource(
+  knowledgeBaseId: string,
+  sourceId: string,
+  params: Context.EditSourceParams,
+): Promise<Context.Source> {
   const client = await getContextClient(knowledgeBaseId)
-  await client.context.imports.delete({importId})
+  return client.context.sources.edit({sourceId, ...params})
+}
+
+/**
+ * Remove a source and its documents from a knowledge base
+ */
+export async function deleteSource(knowledgeBaseId: string, sourceId: string): Promise<void> {
+  const client = await getContextClient(knowledgeBaseId)
+  await client.context.sources.delete({sourceId})
+}
+
+/**
+ * Upload a file to a `files` source, replacing the file it holds, and sync it
+ */
+export async function uploadSourceFile(
+  knowledgeBaseId: string,
+  sourceId: string,
+  upload: Context.SourceFileUpload,
+): Promise<Context.SyncAccepted> {
+  const client = await getContextClient(knowledgeBaseId)
+  return client.context.sources.upload({sourceId, ...upload})
+}
+
+/**
+ * Sync one source: read its website or dataset again, or sync a `files`
+ * source's current file
+ */
+export async function syncSource(
+  knowledgeBaseId: string,
+  sourceId: string,
+): Promise<Context.SyncAccepted> {
+  const client = await getContextClient(knowledgeBaseId)
+  return client.context.sources.syncs.create({sourceId})
+}
+
+/**
+ * List all syncs of a source, newest first (drains pagination)
+ */
+export async function listSyncs(
+  knowledgeBaseId: string,
+  sourceId: string,
+): Promise<Context.Sync[]> {
+  const client = await getContextClient(knowledgeBaseId)
+  return listAll((cursor) => client.context.sources.syncs.list({cursor, sourceId}))
+}
+
+/**
+ * Get a single sync of a source by ID
+ */
+export async function getSync(
+  knowledgeBaseId: string,
+  sourceId: string,
+  syncId: string,
+): Promise<Context.Sync> {
+  const client = await getContextClient(knowledgeBaseId)
+  return client.context.sources.syncs.get({sourceId, syncId})
+}
+
+/**
+ * Confirm a held sync: delete the documents it didn't find, and complete it
+ */
+export async function confirmSync(
+  knowledgeBaseId: string,
+  sourceId: string,
+  syncId: string,
+): Promise<Context.Sync> {
+  const client = await getContextClient(knowledgeBaseId)
+  return client.context.sources.syncs.confirm({sourceId, syncId})
+}
+
+/**
+ * Discard a held sync: complete it without deleting anything
+ */
+export async function discardSync(
+  knowledgeBaseId: string,
+  sourceId: string,
+  syncId: string,
+): Promise<Context.Sync> {
+  const client = await getContextClient(knowledgeBaseId)
+  return client.context.sources.syncs.discard({sourceId, syncId})
+}
+
+/**
+ * Queue a sync of every website and dataset source of a knowledge base
+ */
+export async function syncKnowledgeBase(knowledgeBaseId: string): Promise<Context.SyncAllAccepted> {
+  const client = await getContextClient(knowledgeBaseId)
+  return client.context.sync()
+}
+
+/**
+ * List all documents of a knowledge base, optionally only those of one source
+ * or in one state (drains pagination)
+ */
+export async function listDocuments(
+  knowledgeBaseId: string,
+  filter: {source?: string; state?: Context.Document['state']},
+): Promise<Context.Document[]> {
+  const client = await getContextClient(knowledgeBaseId)
+  return listAll((cursor) => client.context.documents.list({cursor, ...filter}))
+}
+
+/**
+ * Get a single document with the chunks of its markdown
+ */
+export async function getDocument(
+  knowledgeBaseId: string,
+  documentId: string,
+): Promise<Context.DocumentDetail> {
+  const client = await getContextClient(knowledgeBaseId)
+  return client.context.documents.get({documentId})
+}
+
+/**
+ * Get a document's content as text (`markdown`, `plain`), as the JSON view with
+ * line numbers (`json`), or as the bytes its source gave (`raw`)
+ */
+export async function getDocumentContent<F extends 'json' | 'markdown' | 'plain' | 'raw'>(
+  knowledgeBaseId: string,
+  documentId: string,
+  options: {chunk?: string; format: F; lines?: string},
+): Promise<Context.DocumentContent<F>> {
+  const client = await getContextClient(knowledgeBaseId)
+  return client.context.documents.content({documentId, ...options})
+}
+
+/**
+ * Delete a document from its source
+ */
+export async function deleteDocument(knowledgeBaseId: string, documentId: string): Promise<void> {
+  const client = await getContextClient(knowledgeBaseId)
+  await client.context.documents.delete({documentId})
 }
 
 /**
@@ -162,17 +298,7 @@ export async function cancelKnowledgeBaseBuild(
 }
 
 /**
- * Run an incremental refresh: re-check sources and apply what changed
- */
-export async function refreshKnowledgeBase(
-  knowledgeBaseId: string,
-): Promise<{jobId: string; started: boolean}> {
-  const client = await getContextClient(knowledgeBaseId)
-  return client.context.refresh()
-}
-
-/**
- * Get an async job (build, import) by ID
+ * Get an async job (build, update, `files` sync) by ID
  */
 export async function getJob(knowledgeBaseId: string, jobId: string): Promise<Context.Job> {
   const client = await getContextClient(knowledgeBaseId)

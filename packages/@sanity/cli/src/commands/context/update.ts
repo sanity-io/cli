@@ -10,7 +10,7 @@ import {defineCommandTelemetry} from '../../util/telemetry/commandTelemetry.js'
 
 const updateContextDebug = subdebug('context:update')
 
-const UPDATE_FLAGS = ['title', 'description', 'refresh-enabled', 'refresh-frequency'] as const
+const UPDATE_FLAGS = ['title', 'description'] as const
 
 const flags = {
   description: Flags.string({
@@ -18,18 +18,6 @@ const flags = {
     description: 'New knowledge base description',
     required: false,
   }),
-  'refresh-enabled': Flags.boolean({
-    allowNo: true,
-    atLeastOne: [...UPDATE_FLAGS],
-    description: 'Enable scheduled refresh (--no-refresh-enabled to disable)',
-    required: false,
-  }),
-  'refresh-frequency': Flags.custom<'monthly' | 'weekly'>({
-    atLeastOne: [...UPDATE_FLAGS],
-    description: 'How often scheduled refresh runs',
-    options: ['weekly', 'monthly'],
-    required: false,
-  })(),
   title: Flags.string({
     atLeastOne: [...UPDATE_FLAGS],
     description: 'New knowledge base title',
@@ -54,12 +42,8 @@ export class UpdateKnowledgeBaseCommand extends SanityCommand<typeof UpdateKnowl
     },
     {
       command:
-        '<%= config.bin %> <%= command.id %> kb-abc123 --refresh-enabled --refresh-frequency weekly',
-      description: 'Enable weekly scheduled refresh',
-    },
-    {
-      command: '<%= config.bin %> <%= command.id %> kb-abc123 --no-refresh-enabled',
-      description: 'Disable scheduled refresh',
+        '<%= config.bin %> <%= command.id %> kb-abc123 --description "Product docs and troubleshooting guides"',
+      description: 'Change the description of a knowledge base',
     },
   ]
 
@@ -69,12 +53,7 @@ export class UpdateKnowledgeBaseCommand extends SanityCommand<typeof UpdateKnowl
 
   public async run(): Promise<void> {
     const {knowledgeBaseId} = this.args
-    const {
-      description,
-      'refresh-enabled': refreshEnabled,
-      'refresh-frequency': refreshFrequency,
-      title,
-    } = this.flags
+    const {description, title} = this.flags
 
     const params: Context.EditKnowledgeBaseParams = {}
     if (title !== undefined) {
@@ -90,12 +69,6 @@ export class UpdateKnowledgeBaseCommand extends SanityCommand<typeof UpdateKnowl
         this.error('Description cannot be empty', {exit: exitCodes.USAGE_ERROR})
       }
       params.description = trimmedDescription
-    }
-    if (refreshEnabled !== undefined) {
-      params.refreshEnabled = refreshEnabled
-    }
-    if (refreshFrequency !== undefined) {
-      params.refreshFrequency = refreshFrequency
     }
 
     const spin = spinner('Updating knowledge base').start()

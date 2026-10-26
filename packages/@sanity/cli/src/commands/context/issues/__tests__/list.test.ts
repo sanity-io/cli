@@ -86,9 +86,7 @@ describe('context issues list', () => {
       'add_entry',
       'conflict',
       'gap',
-      'merge_entry',
       'remove_entry',
-      'split_entry',
       'update_required',
     ])
   })

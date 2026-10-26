@@ -53,31 +53,6 @@ describe('context update', () => {
     })
   })
 
-  test('enables refresh with a frequency', async () => {
-    const {error} = await testCommand(UpdateKnowledgeBaseCommand, [
-      'kb-abc123',
-      '--refresh-enabled',
-      '--refresh-frequency',
-      'monthly',
-    ])
-
-    if (error) throw error
-    expect(mockEdit).toHaveBeenCalledWith('kb-abc123', {
-      refreshEnabled: true,
-      refreshFrequency: 'monthly',
-    })
-  })
-
-  test('disables refresh with --no-refresh-enabled', async () => {
-    const {error} = await testCommand(UpdateKnowledgeBaseCommand, [
-      'kb-abc123',
-      '--no-refresh-enabled',
-    ])
-
-    if (error) throw error
-    expect(mockEdit).toHaveBeenCalledWith('kb-abc123', {refreshEnabled: false})
-  })
-
   test('errors when no update flags are provided', async () => {
     const {error} = await testCommand(UpdateKnowledgeBaseCommand, ['kb-abc123'])
 
@@ -91,17 +66,6 @@ describe('context update', () => {
     expect(error).toBeInstanceOf(Error)
     expect(error?.message).toContain('Title cannot be empty')
     expect(error?.oclif?.exit).toBe(2)
-    expect(mockEdit).not.toHaveBeenCalled()
-  })
-
-  test('errors when --refresh-frequency has an invalid value', async () => {
-    const {error} = await testCommand(UpdateKnowledgeBaseCommand, [
-      'kb-abc123',
-      '--refresh-frequency',
-      'daily',
-    ])
-
-    expect(error).toBeInstanceOf(Error)
     expect(mockEdit).not.toHaveBeenCalled()
   })
 
@@ -143,15 +107,10 @@ describe('context update', () => {
         'kb-abc123',
         '--title=Internal docs',
         '--description=Secret plans',
-        '--refresh-frequency=weekly',
       ],
       UpdateKnowledgeBaseCommand.telemetry,
     )
 
-    expect(result.extraArguments).toEqual([
-      '--title',
-      '--description',
-      '--refresh-frequency=weekly',
-    ])
+    expect(result.extraArguments).toEqual(['--title', '--description'])
   })
 })

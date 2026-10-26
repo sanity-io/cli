@@ -19,7 +19,7 @@ export class BuildKnowledgeBaseCommand extends SanityCommand<typeof BuildKnowled
     }),
   }
 
-  static override description = 'Build a knowledge base from its imported content'
+  static override description = 'Build a knowledge base from the documents its sources yield'
 
   static override examples = [
     {

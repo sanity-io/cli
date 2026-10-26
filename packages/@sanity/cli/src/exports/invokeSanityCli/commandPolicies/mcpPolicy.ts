@@ -94,18 +94,16 @@ export const mcpPolicy: CommandPolicySet = {
   'context:build': conditionalDenyFlags('watch'),
   'context:create': allow,
   'context:delete': allow,
+  // --output writes the content to the local filesystem.
+  'context:documents:content': conditionalDenyFlags('output'),
+  'context:documents:delete': allow,
+  'context:documents:get': allow,
+  'context:documents:list': allow,
   'context:entries:get': allow,
   'context:entries:list': allow,
   // See context:build — --watch has no deadline and would hang the MCP tool call.
   'context:entries:rebuild': conditionalDenyFlags('watch'),
   'context:get': allow,
-  // --file reads the import payload from the local filesystem; text, URL and
-  // dataset imports are remote-only.
-  'context:imports:create': conditionalDenyFlags('file'),
-  'context:imports:delete': allow,
-  'context:imports:download': allow,
-  'context:imports:get': allow,
-  'context:imports:list': allow,
   // See context:build — --watch has no deadline and would hang the MCP tool call.
   'context:issues:apply': conditionalDenyFlags('watch'),
   'context:issues:dismiss': allow,
@@ -118,7 +116,22 @@ export const mcpPolicy: CommandPolicySet = {
   'context:jobs:get': conditionalDenyFlags('watch'),
   'context:list': allow,
   'context:query': allow,
-  'context:refresh': allow,
+  // --file reads the file to upload from the local filesystem, and --text reads
+  // its content from a local file or stdin; website and dataset sources are remote-only.
+  'context:sources:create': conditionalDenyFlags('file', 'text'),
+  'context:sources:delete': allow,
+  'context:sources:edit': allow,
+  'context:sources:get': allow,
+  'context:sources:list': allow,
+  // See context:build — --watch has no deadline and would hang the MCP tool call.
+  'context:sources:sync': conditionalDenyFlags('watch'),
+  'context:sources:syncs:confirm': allow,
+  'context:sources:syncs:discard': allow,
+  'context:sources:syncs:get': allow,
+  'context:sources:syncs:list': allow,
+  // Always reads the file to upload from the local filesystem.
+  'context:sources:upload': deny,
+  'context:sync': allow,
   'context:update': allow,
 
   'cors:add': allow,
