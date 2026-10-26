@@ -1,5 +1,27 @@
 # Change Log
 
+## 8.24.0
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-v8.23.0...cli-v8.24.0)
+
+_2026-10-26_
+
+### Features
+
+- **init:** search organizations, projects and datasets ([#1984](https://github.com/sanity-io/cli/pull/1984)) ([1debe1d](https://github.com/sanity-io/cli/commit/1debe1de70ae57fe4e482d0c7888e8618a9d2eb4))
+
+### Bug Fixes
+
+- `sanity codemod dashboard` now offers to upgrade sanity (and, in SDK apps, `@sanity/sdk` and `@sanity/sdk-react`) to the latest version when it's too old for the Dashboard, keeps pnpm catalogs intact, and says what to edit when it can't upgrade a catalog itself ([9682501](https://github.com/sanity-io/cli/commit/96825014ce0408b8e9fc0fe88d6eceb19ef21bd8))
+- **dependencies:** unpin runtime-cli ([#2062](https://github.com/sanity-io/cli/pull/2062)) ([5b31e6f](https://github.com/sanity-io/cli/commit/5b31e6f189c5bfd60df46f652dd33494c9b2e1c8))
+- **deps:** update dependency eventsource to ^5.1.3 ([#2069](https://github.com/sanity-io/cli/pull/2069)) ([6a2f464](https://github.com/sanity-io/cli/commit/6a2f464d2ad425a405e5b14e98bae67ede2ddb06))
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/cli-core bumped to 3.13.0
+
 ## 8.23.0
 
 [Compare changes](https://github.com/sanity-io/cli/compare/cli-v8.22.1...cli-v8.23.0)

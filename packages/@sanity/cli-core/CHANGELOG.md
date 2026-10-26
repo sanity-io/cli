@@ -1,5 +1,15 @@
 # Changelog
 
+## 3.13.0
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-core-v3.12.0...cli-core-v3.13.0)
+
+_2026-10-26_
+
+### Features
+
+- **init:** search organizations, projects and datasets ([#1984](https://github.com/sanity-io/cli/pull/1984)) ([1debe1d](https://github.com/sanity-io/cli/commit/1debe1de70ae57fe4e482d0c7888e8618a9d2eb4))
+
 ## 3.12.0
 
 [Compare changes](https://github.com/sanity-io/cli/compare/cli-core-v3.11.1...cli-core-v3.12.0)
