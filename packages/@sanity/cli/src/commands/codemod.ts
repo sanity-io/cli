@@ -90,7 +90,7 @@ export class CodemodCommand extends SanityCommand<typeof CodemodCommand> {
     // We use npx to run jscodeshift, so verify that it exists and works before using it
     this.ensureNpx()
 
-    const prepared = await mod.prepare?.({output: this.output, workDir})
+    const prepared = await mod.prepare?.({dry: dryRun, output: this.output, workDir})
     // jscodeshift JSON-parses option values, so encode them to keep strings like "2024" as strings
     const transformOptions = Object.entries(prepared?.options ?? {}).map(
       ([key, value]) => `--${key}=${JSON.stringify(value)}`,

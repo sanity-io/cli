@@ -12,6 +12,10 @@ interface ViteOutputBundle {
 
 interface ViteRenderedAsset {
   type: 'asset'
+
+  fileName?: string
+  name?: string | null
+  names?: string[]
 }
 
 interface ViteRenderedChunk {
@@ -22,10 +26,23 @@ interface ViteRenderedChunk {
   isEntry: boolean
   name: string
   type: 'chunk'
-  viteMetadata: ChunkMetadata
+
+  /**
+   * Populated by Vite when `build.cssCodeSplit` is true. Rolldown-based Vite
+   * (Vite 7/8 and `rolldown-vite`) may omit it, or leave `importedCss` empty,
+   * for the single stylesheet emitted when code splitting is disabled.
+   */
+  viteMetadata?: ChunkMetadata
 }
 
 const entryChunkId = '.sanity/runtime/app.js'
+
+/**
+ * Logical name Vite gives the single CSS asset emitted when
+ * `build.cssCodeSplit` is false. `assetFileNames` can change the file written
+ * to disk; `names` still carries this value.
+ */
+const CSS_BUNDLE_NAME = 'style.css'
 
 export function sanityBuildEntries(options: {
   autoUpdates?: AutoUpdatesBuildConfig
@@ -39,20 +56,12 @@ export function sanityBuildEntries(options: {
   isApp?: boolean
 }): Plugin {
   const {autoUpdates, basePath, bridge = true, cwd, isApp} = options
+  // Vite's default. `configResolved` replaces this with the resolved value,
+  // including a userland `vite` config that sets `build.cssCodeSplit: false`.
+  let cssCodeSplit = true
 
-  return {
-    apply: 'build',
-    name: 'sanity/server/build-entries',
-
-    buildStart() {
-      this.emitFile({
-        id: entryChunkId,
-        name: 'sanity',
-        type: 'chunk',
-      })
-    },
-
-    async generateBundle(_options, outputBundle) {
+  const generateBundle: Extract<Plugin['generateBundle'], {handler: unknown}> = {
+    async handler(_options, outputBundle) {
       const bundle = outputBundle as unknown as ViteOutputBundle
       const entryFile = Object.values(bundle).find(
         (file) =>
@@ -71,24 +80,7 @@ export function sanityBuildEntries(options: {
 
       const entryFileName = entryFile.fileName
       const entryPath = [basePath.replace(/\/+$/, ''), entryFileName].join('/')
-
-      let css: string[] = []
-      if (entryFile.viteMetadata?.importedCss) {
-        // Check all the top-level imports of the entryPoint to see if they have
-        // static CSS assets that need loading
-        css = [...entryFile.viteMetadata.importedCss]
-        for (const key of entryFile.imports) {
-          // Traverse all CSS assets that isn't loaded by the runtime and
-          // need <link> tags in the HTML template
-          const entry = bundle[key]
-          const importedCss =
-            entry && entry.type === 'chunk' ? entry.viteMetadata.importedCss : undefined
-
-          if (importedCss) {
-            css.push(...importedCss)
-          }
-        }
-      }
+      const css = collectStylesheets(entryFile, bundle, cssCodeSplit)
 
       // For auto-updating studios/apps the import map combines the vendor
       // chunks emitted by this very build (hashed filenames, resolved from the
@@ -125,4 +117,80 @@ export function sanityBuildEntries(options: {
       })
     },
   }
+
+  return {
+    apply: 'build',
+    name: 'sanity/server/build-entries',
+
+    configResolved(resolved) {
+      cssCodeSplit = resolved.build.cssCodeSplit
+      // `vite:css-post` emits the combined stylesheet during its own unordered
+      // `generateBundle`, so with `cssCodeSplit: false` this hook has to run
+      // after it. Default builds keep the normal order so user plugins with an
+      // unordered `generateBundle` (HTML minifiers, SRI) still see `index.html`.
+      generateBundle.order = cssCodeSplit ? undefined : 'post'
+    },
+
+    buildStart() {
+      this.emitFile({
+        id: entryChunkId,
+        name: 'sanity',
+        type: 'chunk',
+      })
+    },
+
+    generateBundle,
+  }
+}
+
+/**
+ * Stylesheets the document should link.
+ *
+ * With CSS code splitting, Vite records each chunk's styles on
+ * `viteMetadata.importedCss` (including the chunks the entry statically
+ * imports). With `cssCodeSplit: false`, Vite emits one combined asset instead
+ * and never adds it to `importedCss`. `vite:build-html` finds that asset by
+ * its bundle name (`style.css`); mirror that. Other CSS assets (e.g. `?url`
+ * imports) are not stylesheets for the document and must not be linked.
+ */
+function collectStylesheets(
+  entryFile: ViteRenderedChunk,
+  bundle: ViteOutputBundle,
+  cssCodeSplit: boolean,
+): string[] {
+  const css = collectImportedCss(entryFile, bundle)
+  if (cssCodeSplit) return css
+
+  const seen = new Set(css)
+  for (const fileName of collectCombinedStylesheets(bundle)) {
+    if (seen.has(fileName)) continue
+    seen.add(fileName)
+    css.push(fileName)
+  }
+  return css
+}
+
+function collectImportedCss(entryFile: ViteRenderedChunk, bundle: ViteOutputBundle): string[] {
+  const css = cssFilesFromChunk(entryFile)
+  for (const key of entryFile.imports) {
+    const imported = bundle[key]
+    if (imported?.type === 'chunk') css.push(...cssFilesFromChunk(imported))
+  }
+  return css
+}
+
+function cssFilesFromChunk(chunk: ViteRenderedChunk): string[] {
+  const imported = chunk.viteMetadata?.importedCss
+  if (!imported) return []
+  return [...imported]
+}
+
+function collectCombinedStylesheets(bundle: ViteOutputBundle): string[] {
+  return Object.values(bundle).flatMap((file) =>
+    file.type === 'asset' && file.fileName && isCombinedCssBundle(file) ? [file.fileName] : [],
+  )
+}
+
+function isCombinedCssBundle(asset: ViteRenderedAsset): boolean {
+  return asset.names ? asset.names.includes(CSS_BUNDLE_NAME) : asset.name === CSS_BUNDLE_NAME
 }

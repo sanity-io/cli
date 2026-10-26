@@ -4,7 +4,7 @@ import {getStudioWorkspaces, subdebug} from '@sanity/cli-core'
 import {type StudioManifest, type Workspace} from 'sanity'
 
 import {extractWorkspaceManifest} from '../manifest/extractWorkspaceManifest.js'
-import {type CreateWorkspaceManifest} from '../manifest/types.js'
+import {type CreateWorkspaceManifest, WorkspaceSchemaInput} from '../manifest/types.js'
 import {writeManifestFile} from '../manifest/writeManifestFile.js'
 import {type BuildStudioSchemasAndManifestsWorkerSuccess} from './buildStudioSchemasAndManifests.js'
 import {type BuildStudioSchemasAndManifestsWorkerData} from './types.js'
@@ -18,7 +18,7 @@ const debug = subdebug('buildStudioSchemasAndManifests.worker')
  */
 export async function workerBuildStudioSchemasAndManifests(
   options: BuildStudioSchemasAndManifestsWorkerData & {
-    workspaceManifestsHandler?: (workspaceManifests: CreateWorkspaceManifest[]) => Promise<void>
+    workspaceSchemaHandler?: (workspaces: WorkspaceSchemaInput[]) => Promise<void>
   },
 ): Promise<BuildStudioSchemasAndManifestsWorkerSuccess> {
   if (isMainThread) {
@@ -27,8 +27,16 @@ export async function workerBuildStudioSchemasAndManifests(
     )
   }
 
-  const {configPath, isExternal, outPath, projectId, verbose, workDir, workspaceManifestsHandler} =
-    options
+  const {
+    configPath,
+    isExternal,
+    outPath,
+    projectId,
+    schemaRequired,
+    verbose,
+    workDir,
+    workspaceSchemaHandler,
+  } = options
 
   debug('Building studio schemas and manifests from config path %s', configPath)
   const workspaces = await getStudioWorkspaces(configPath)
@@ -44,33 +52,57 @@ export async function workerBuildStudioSchemasAndManifests(
 
   debug('Handling build for %s', isExternal ? 'external' : 'internal')
 
-  let studioManifest: StudioManifest | null
+  async function workspaceManifestsHandler(
+    workspaceManifests: CreateWorkspaceManifest[],
+  ): Promise<WorkspaceSchemaInput[] | null> {
+    if (!isExternal || schemaRequired) {
+      const schemaInputs: WorkspaceSchemaInput[] = workspaceManifests.map((manifest) => ({
+        dataset: manifest.dataset,
+        manifestSchema: manifest.schema,
+        name: manifest.name,
+        projectId: manifest.projectId,
+        title: manifest.title,
+      }))
 
-  if (isExternal) {
-    ;[studioManifest] = await handleExternalStudio({
-      projectId,
-      verbose,
-      workDir,
-      workspaceManifests,
-      workspaceManifestsHandler,
-      workspaces,
-    })
-  } else {
-    ;[studioManifest] = await handleInternalStudio({
-      outPath,
-      projectId,
-      verbose,
-      workDir,
-      workspaceManifests,
-      workspaceManifestsHandler,
-      workspaces,
-    })
+      if (workspaceSchemaHandler) {
+        await workspaceSchemaHandler(schemaInputs)
+      }
+
+      return schemaInputs
+    }
+
+    return null
   }
+
+  const result = isExternal
+    ? await handleExternalStudio({
+        projectId,
+        verbose,
+        workDir,
+        workspaceManifests,
+        workspaceManifestsHandler,
+        workspaces,
+      })
+    : await handleInternalStudio({
+        outPath,
+        projectId,
+        verbose,
+        workDir,
+        workspaceManifests,
+        workspaceManifestsHandler,
+        workspaces,
+      })
+
   return {
-    studioManifest,
+    schemaInputs: result.schemaInputs,
+    studioManifest: result.studioManifest,
     type: 'success',
-    workspaceManifests,
   }
+}
+
+type HandleStudioResult = {
+  schemaInputs: WorkspaceSchemaInput[] | null
+  studioManifest: StudioManifest | null
 }
 
 /**
@@ -90,20 +122,22 @@ async function handleExternalStudio({
   verbose: boolean
   workDir: string
   workspaceManifests: CreateWorkspaceManifest[]
-  workspaceManifestsHandler?: (workspaceManifests: CreateWorkspaceManifest[]) => Promise<void>
+  workspaceManifestsHandler: (
+    workspaceManifests: CreateWorkspaceManifest[],
+  ) => Promise<WorkspaceSchemaInput[] | null>
   workspaces: Workspace[]
-}): Promise<[StudioManifest | null]> {
-  const [studioManifest] = await Promise.all([
+}): Promise<HandleStudioResult> {
+  const [studioManifest, schemaInputs] = await Promise.all([
     uploadSchemaToLexicon({
       projectId,
       verbose,
       workDir,
       workspaces,
     }),
-    workspaceManifestsHandler && workspaceManifestsHandler(workspaceManifests),
+    workspaceManifestsHandler(workspaceManifests),
   ])
 
-  return [studioManifest]
+  return {schemaInputs, studioManifest}
 }
 
 /**
@@ -129,19 +163,21 @@ async function handleInternalStudio({
   verbose: boolean
   workDir: string
   workspaceManifests: CreateWorkspaceManifest[]
-  workspaceManifestsHandler?: (workspaceManifests: CreateWorkspaceManifest[]) => Promise<void>
+  workspaceManifestsHandler: (
+    workspaceManifests: CreateWorkspaceManifest[],
+  ) => Promise<WorkspaceSchemaInput[] | null>
   workspaces: Workspace[]
-}): Promise<[StudioManifest | null]> {
-  const [studioManifest] = await Promise.all([
+}): Promise<HandleStudioResult> {
+  const [studioManifest, schemaInputs] = await Promise.all([
     uploadSchemaToLexicon({
       projectId,
       verbose,
       workDir,
       workspaces,
     }),
+    workspaceManifestsHandler(workspaceManifests),
     writeManifestFile({outPath, workDir, workspaceManifests}),
-    workspaceManifestsHandler && workspaceManifestsHandler(workspaceManifests),
   ])
 
-  return [studioManifest]
+  return {schemaInputs, studioManifest}
 }

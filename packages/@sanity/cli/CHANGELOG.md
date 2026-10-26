@@ -1,5 +1,76 @@
 # Change Log
 
+## 8.24.0
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-v8.23.0...cli-v8.24.0)
+
+_2026-10-26_
+
+### Features
+
+- **init:** search organizations, projects and datasets ([#1984](https://github.com/sanity-io/cli/pull/1984)) ([1debe1d](https://github.com/sanity-io/cli/commit/1debe1de70ae57fe4e482d0c7888e8618a9d2eb4))
+
+### Bug Fixes
+
+- `sanity codemod dashboard` now offers to upgrade sanity (and, in SDK apps, `@sanity/sdk` and `@sanity/sdk-react`) to the latest version when it's too old for the Dashboard, keeps pnpm catalogs intact, and says what to edit when it can't upgrade a catalog itself ([9682501](https://github.com/sanity-io/cli/commit/96825014ce0408b8e9fc0fe88d6eceb19ef21bd8))
+- **dependencies:** unpin runtime-cli ([#2062](https://github.com/sanity-io/cli/pull/2062)) ([5b31e6f](https://github.com/sanity-io/cli/commit/5b31e6f189c5bfd60df46f652dd33494c9b2e1c8))
+- **deps:** update dependency eventsource to ^5.1.3 ([#2069](https://github.com/sanity-io/cli/pull/2069)) ([6a2f464](https://github.com/sanity-io/cli/commit/6a2f464d2ad425a405e5b14e98bae67ede2ddb06))
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/cli-core bumped to 3.13.0
+
+## 8.23.0
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-v8.22.1...cli-v8.23.0)
+
+_2026-10-23_
+
+### Features
+
+- **deploy:** sync media-library aspect documents on config deploy (DAM-1821) ([#2018](https://github.com/sanity-io/cli/pull/2018)) ([fda50ee](https://github.com/sanity-io/cli/commit/fda50eebce218ccfccac0bbd9871a1d71327f367))
+- **init:** add unlisted media-library-config template ([#2015](https://github.com/sanity-io/cli/pull/2015)) ([532a7d1](https://github.com/sanity-io/cli/commit/532a7d1ba986f58811d57a2a7e6c0c9e2a378af5))
+- **media:** add sanity media prune-aspect-data (DAM-1877) ([#2019](https://github.com/sanity-io/cli/pull/2019)) ([3617575](https://github.com/sanity-io/cli/commit/361757532e72f2eef7a35a394e87e9299cc14807))
+- **media:** add sanity media pull-aspects ([#2016](https://github.com/sanity-io/cli/pull/2016)) ([76998d7](https://github.com/sanity-io/cli/commit/76998d79d03171504c006617a84cb143e758aa3d))
+- **media:** declare pulled aspects in sanity.cli.ts and offer init-time pull ([#2030](https://github.com/sanity-io/cli/pull/2030)) ([e66887a](https://github.com/sanity-io/cli/commit/e66887a4467b8d68907e5e4957eb8058bd1ed9d3))
+- **context:** add issue commands for knowledge bases ([#2004](https://github.com/sanity-io/cli/pull/2004)) ([1546ca9](https://github.com/sanity-io/cli/commit/1546ca91cb85e1691ff6133f514d6e86af02847e))
+- **context:** add entry commands for knowledge bases ([#2006](https://github.com/sanity-io/cli/pull/2006)) ([cd52e7b](https://github.com/sanity-io/cli/commit/cd52e7b3d37f8c68236490c516301790d05c0587))
+- **context:** add query command for knowledge base documents ([#2007](https://github.com/sanity-io/cli/pull/2007)) ([bcf5da3](https://github.com/sanity-io/cli/commit/bcf5da327b89ef0407080c5223960d1a3744e1f7))
+
+### Bug Fixes
+
+- **deploy:** prevent a blueprint-managed app from being deployed by the deploy command ([#2052](https://github.com/sanity-io/cli/pull/2052)) ([36753c0](https://github.com/sanity-io/cli/commit/36753c0d6cf9dfe08ae04f271d635f70d27e8b8e))
+- **exec:** run .cjs scripts without the Vite runner ([#2001](https://github.com/sanity-io/cli/pull/2001)) ([402149c](https://github.com/sanity-io/cli/commit/402149c4848d09a84c6e0a2297b13ba9ea8988ba))
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/cli-build bumped to 7.0.2
+    - @sanity/cli-core bumped to 3.12.0
+    - @sanity/workbench-cli bumped to 2.14.0
+
+## 8.22.1
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-v8.22.0...cli-v8.22.1)
+
+_2026-10-22_
+
+### Bug Fixes
+
+- Change to the schema/manifest build interface to return schemaInputs instead of the full unserializable object. ([#1997](https://github.com/sanity-io/cli/pull/1997)) ([10c9e7b](https://github.com/sanity-io/cli/commit/10c9e7bd7d1844572f8ab8292a0d0832ebbd2e99))
+- **schema:** make `sanity schema extract --watch` re-extract on changes ([#2014](https://github.com/sanity-io/cli/pull/2014)) ([f0c8d8b](https://github.com/sanity-io/cli/commit/f0c8d8b39f51a1504325147871f4008184947284))
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/cli-core bumped to 3.11.1
+    - @sanity/cli-build bumped to 7.0.0
+    - @sanity/workbench-cli bumped to 2.13.0
+
 ## 8.22.0
 
 [Compare changes](https://github.com/sanity-io/cli/compare/cli-v8.21.0...cli-v8.22.0)

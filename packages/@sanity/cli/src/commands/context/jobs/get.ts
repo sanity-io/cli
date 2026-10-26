@@ -4,7 +4,7 @@ import {exitCodes, SanityCommand, subdebug} from '@sanity/cli-core'
 import {getErrorMessage, JsonOutputError} from '@sanity/cli-core/errors'
 import {isHttpError} from '@sanity/client'
 
-import {watchJob} from '../../../actions/context/watchJob.js'
+import {formatJobFailure, watchJob} from '../../../actions/context/watchJob.js'
 import {formatKeyValue} from '../../../actions/debug/output.js'
 import {getJob} from '../../../services/context.js'
 
@@ -67,7 +67,7 @@ export class GetJobCommand extends SanityCommand<typeof GetJobCommand> {
     }
 
     const jobFailed = watch && job.status !== 'succeeded'
-    const failureMessage = `Job ${job.status}${job.error ? `: ${job.error}` : ''}`
+    const failureMessage = formatJobFailure('Job', job)
     if (json) {
       if (jobFailed) throw new JsonOutputError(failureMessage, job, exitCodes.RUNTIME_ERROR)
       this.logJson(job)

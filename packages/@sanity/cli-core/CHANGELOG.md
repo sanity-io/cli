@@ -1,5 +1,35 @@
 # Changelog
 
+## 3.13.0
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-core-v3.12.0...cli-core-v3.13.0)
+
+_2026-10-26_
+
+### Features
+
+- **init:** search organizations, projects and datasets ([#1984](https://github.com/sanity-io/cli/pull/1984)) ([1debe1d](https://github.com/sanity-io/cli/commit/1debe1de70ae57fe4e482d0c7888e8618a9d2eb4))
+
+## 3.12.0
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-core-v3.11.1...cli-core-v3.12.0)
+
+_2026-10-23_
+
+### Features
+
+- **deploy:** sync media-library aspect documents on config deploy (DAM-1821) ([#2018](https://github.com/sanity-io/cli/pull/2018)) ([fda50ee](https://github.com/sanity-io/cli/commit/fda50eebce218ccfccac0bbd9871a1d71327f367))
+
+## 3.11.1
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-core-v3.11.0...cli-core-v3.11.1)
+
+_2026-10-22_
+
+### Bug Fixes
+
+- **cli-core:** preserve source map comments inside dependency strings ([#1973](https://github.com/sanity-io/cli/pull/1973)) ([05902fc](https://github.com/sanity-io/cli/commit/05902fc50e2f90bed0f230d8a180607573257456))
+
 ## 3.11.0
 
 [Compare changes](https://github.com/sanity-io/cli/compare/cli-core-v3.10.0...cli-core-v3.11.0)

@@ -1,3 +1,7 @@
+import {mkdtemp, rm, writeFile} from 'node:fs/promises'
+import {tmpdir} from 'node:os'
+import path from 'node:path'
+
 import {
   type CliConfig,
   findPathForFiles,
@@ -7,11 +11,17 @@ import {
   type Output,
   tryFindStudioConfigPath,
 } from '@sanity/cli-core'
-import {input, select} from '@sanity/cli-core/ux'
+import {type PackageJson, readPackageJson} from '@sanity/cli-core/package-manager'
+import {confirm, input, select} from '@sanity/cli-core/ux'
+import {execa} from 'execa'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
 import {getOrganizationGrants, listOrganizations} from '../../../services/organizations.js'
 import {getProjectById} from '../../../services/projects.js'
+import {
+  getPackageManagerChoice,
+  type PackageManager,
+} from '../../../util/packageManager/packageManagerChoice.js'
 import {dashboard} from '../dashboard.js'
 
 vi.mock('@sanity/cli-core', async (importOriginal) => ({
@@ -22,10 +32,22 @@ vi.mock('@sanity/cli-core', async (importOriginal) => ({
   getStudioConfig: vi.fn(),
   tryFindStudioConfigPath: vi.fn(),
 }))
+vi.mock('@sanity/cli-core/package-manager', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@sanity/cli-core/package-manager')>()),
+  readPackageJson: vi.fn(),
+}))
 vi.mock('@sanity/cli-core/ux', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@sanity/cli-core/ux')>()),
+  confirm: vi.fn(),
   input: vi.fn(),
   select: vi.fn(),
+}))
+vi.mock('execa', () => ({execa: vi.fn()}))
+vi.mock('../../../util/packageManager/packageManagerChoice.js', async (importOriginal) => ({
+  ...(await importOriginal<
+    typeof import('../../../util/packageManager/packageManagerChoice.js')
+  >()),
+  getPackageManagerChoice: vi.fn(),
 }))
 vi.mock('../../../services/projects.js', () => ({getProjectById: vi.fn()}))
 vi.mock('../../../services/organizations.js', () => ({
@@ -51,9 +73,25 @@ function promptConfig(name: 'slug' | 'title'): InputConfig {
   return call[0]
 }
 
-function prepare(config: CliConfig) {
+// Each lookup of a package returns its next version: before, then after the upgrade
+function installed(versions: Record<string, string[]>) {
+  vi.mocked(getLocalPackageVersion).mockImplementation(
+    async (name) => versions[name]?.shift() ?? null,
+  )
+}
+
+function project(packageManager: PackageManager, declared: string) {
+  vi.mocked(getPackageManagerChoice).mockResolvedValue({chosen: packageManager})
+  vi.mocked(readPackageJson).mockResolvedValue({
+    dependencies: {'@sanity/sdk': declared, '@sanity/sdk-react': declared, sanity: declared},
+  } as unknown as PackageJson)
+  vi.mocked(execa).mockResolvedValue({failed: false} as never)
+  answerPrompts({slug: 'acme-app', title: 'Acme App'})
+}
+
+function prepare(config: CliConfig, {dir = workDir, dry = false} = {}) {
   vi.mocked(getCliConfig).mockResolvedValue(config)
-  return dashboard.prepare!({output, workDir})
+  return dashboard.prepare!({dry, output, workDir: dir})
 }
 
 describe('dashboard codemod prepare', () => {
@@ -67,6 +105,7 @@ describe('dashboard codemod prepare', () => {
 
   afterEach(() => {
     vi.resetAllMocks()
+    vi.unstubAllEnvs()
   })
 
   test('deployed studio: suggests the studio title, uses the project org and rejects the studio host as slug', async () => {
@@ -202,18 +241,216 @@ describe('dashboard codemod prepare', () => {
     expect(select).not.toHaveBeenCalled()
   })
 
-  test('warns when the installed sanity cannot import defineApplication', async () => {
-    vi.mocked(getLocalPackageVersion).mockResolvedValue('6.11.0')
-    answerPrompts({slug: 'acme-app', title: 'Acme App'})
+  describe('when required packages are too old', () => {
+    const sdkApp = {app: {organizationId: 'org-2'}}
 
-    await prepare({app: {organizationId: 'org-2'}})
+    test.each([
+      ['pnpm', 'catalog:', ['update', 'sanity', '--latest']],
+      ['pnpm', 'catalog:sanity', ['update', 'sanity', '--latest']],
+      ['npm', '^6.5.0', ['install', '--legacy-peer-deps', 'sanity@latest']],
+      ['bun', '^6.5.0', ['update', 'sanity@latest']],
+    ] as const)(
+      'upgrades with %s when sanity is declared as %j',
+      async (packageManager, declared, args) => {
+        installed({sanity: ['6.11.0', '6.20.0']})
+        project(packageManager, declared)
+        vi.mocked(confirm).mockResolvedValue(true)
 
-    expect(getLocalPackageVersion).toHaveBeenCalledWith('sanity', workDir)
-    expect(output.warn).toHaveBeenCalledWith(expect.stringContaining('needs 6.12.0 or later'))
+        await prepare(sdkApp)
+
+        expect(output.warn).toHaveBeenCalledExactlyOnceWith(
+          '`sanity dev` and `sanity deploy` will fail until you upgrade:\n  - sanity 6.11.0 (the Dashboard needs 6.20.0 or later)',
+        )
+        expect(execa).toHaveBeenCalledWith(
+          packageManager,
+          args,
+          expect.objectContaining({cwd: workDir}),
+        )
+      },
+    )
+
+    // Berry dropped `yarn upgrade`, and the agent only names yarn when the CLI was run through it
+    describe('picking the yarn upgrade verb', () => {
+      beforeEach(() => {
+        vi.stubEnv('npm_config_user_agent', 'npm/10.9.0 node/v22.11.0')
+        installed({sanity: ['6.11.0', '6.20.0']})
+        project('yarn', '^6.5.0')
+        vi.mocked(confirm).mockResolvedValue(true)
+      })
+
+      test.each([
+        ['up', 'a .yarnrc.yml marks it as Berry', {'.yarnrc.yml': 'nodeLinker: node-modules\n'}],
+        ['up', 'corepack pins Berry', {'package.json': '{"packageManager": "yarn@4.9.1"}'}],
+        ['upgrade', 'nothing marks it as Berry', {}],
+      ] as const)('runs `yarn %s` in a project where %s', async (verb, _reason, files) => {
+        const dir = await mkdtemp(path.join(tmpdir(), 'dashboard-codemod-'))
+        await Promise.all(
+          Object.entries({'package.json': '{}', 'yarn.lock': '', ...files}).map(([name, content]) =>
+            writeFile(path.join(dir, name), content),
+          ),
+        )
+
+        try {
+          await prepare(sdkApp, {dir})
+        } finally {
+          await rm(dir, {force: true, recursive: true})
+        }
+
+        expect(execa).toHaveBeenCalledWith(
+          'yarn',
+          [verb, 'sanity@latest'],
+          expect.objectContaining({cwd: dir}),
+        )
+      })
+
+      test('falls back to the user agent when the project says nothing', async () => {
+        vi.stubEnv('npm_config_user_agent', 'yarn/4.9.1 npm/? node/v22.11.0')
+
+        await prepare(sdkApp)
+
+        expect(execa).toHaveBeenCalledWith('yarn', ['up', 'sanity@latest'], expect.anything())
+      })
+    })
+
+    test('upgrades the SDK alongside sanity in an SDK app', async () => {
+      installed({
+        '@sanity/sdk': ['2.19.0', '3.9.1'],
+        '@sanity/sdk-react': ['2.19.0', '3.9.1'],
+        sanity: ['6.11.0', '6.20.0'],
+      })
+      project('pnpm', 'catalog:')
+      vi.mocked(confirm).mockResolvedValue(true)
+
+      await prepare(sdkApp)
+
+      expect(output.warn).toHaveBeenCalledExactlyOnceWith(
+        [
+          '`sanity dev` and `sanity deploy` will fail until you upgrade:',
+          '  - sanity 6.11.0 (the Dashboard needs 6.20.0 or later)',
+          '  - @sanity/sdk 2.19.0 (SDK apps need 3.9.1 or later)',
+          '  - @sanity/sdk-react 2.19.0 (SDK apps need 3.9.1 or later)',
+        ].join('\n'),
+      )
+      expect(execa).toHaveBeenCalledWith(
+        'pnpm',
+        ['update', 'sanity', '@sanity/sdk', '@sanity/sdk-react', '--latest'],
+        expect.anything(),
+      )
+    })
+
+    test('leaves the SDK alone in a studio', async () => {
+      vi.mocked(getProjectById).mockResolvedValue({organizationId: 'org-1'} as Awaited<
+        ReturnType<typeof getProjectById>
+      >)
+      installed({'@sanity/sdk': ['2.19.0'], sanity: ['6.11.0', '6.20.0']})
+      project('pnpm', 'catalog:')
+      vi.mocked(confirm).mockResolvedValue(true)
+
+      await prepare({api: {projectId: 'p1'}})
+
+      expect(getLocalPackageVersion).not.toHaveBeenCalledWith('@sanity/sdk', workDir)
+      expect(execa).toHaveBeenCalledWith(
+        'pnpm',
+        ['update', 'sanity', '--latest'],
+        expect.anything(),
+      )
+    })
+
+    test.each([
+      ['bun', 'the root package.json'],
+      ['yarn', '.yarnrc.yml'],
+    ] as const)(
+      'explains how to update a %s catalog instead of upgrading',
+      async (packageManager, file) => {
+        installed({'@sanity/sdk-react': ['2.19.0'], sanity: ['6.11.0']})
+        project(packageManager, 'catalog:')
+
+        await prepare(sdkApp)
+
+        expect(output.log).toHaveBeenCalledWith(
+          `${packageManager} can't upgrade catalog packages, so update them yourself: set sanity to ^6.20.0 or later, @sanity/sdk-react to ^3.9.1 or later in the catalog in ${file}, then run \`${packageManager} install\`.`,
+        )
+        expect(confirm).not.toHaveBeenCalled()
+        expect(execa).not.toHaveBeenCalled()
+      },
+    )
+
+    test('leaves pnpm catalog packages pinned by overrides to the user', async () => {
+      const dir = await mkdtemp(path.join(tmpdir(), 'dashboard-codemod-'))
+      await writeFile(
+        path.join(dir, 'pnpm-workspace.yaml'),
+        "catalog:\n  sanity: ^6.5.0\noverrides:\n  sanity: '6.5.0'\n",
+      )
+      await writeFile(
+        path.join(dir, 'package.json'),
+        JSON.stringify({pnpm: {overrides: {'@sanity/sdk@2': '2.19.0'}}}),
+      )
+      installed({
+        '@sanity/sdk': ['2.19.0'],
+        '@sanity/sdk-react': ['2.19.0', '3.9.1'],
+        sanity: ['6.5.0'],
+      })
+      project('pnpm', 'catalog:')
+      vi.mocked(confirm).mockResolvedValue(true)
+
+      try {
+        await prepare(sdkApp, {dir})
+      } finally {
+        await rm(dir, {force: true, recursive: true})
+      }
+
+      expect(output.log).toHaveBeenCalledWith(
+        "pnpm can't upgrade catalog packages that `overrides` pin, so update them yourself: set sanity to ^6.20.0 or later, @sanity/sdk to ^3.9.1 or later in the catalog and in `overrides`, then run `pnpm install`.",
+      )
+      expect(execa).toHaveBeenCalledWith(
+        'pnpm',
+        ['update', '@sanity/sdk-react', '--latest'],
+        expect.objectContaining({cwd: dir}),
+      )
+    })
+
+    test('only prints the upgrade command on a dry run', async () => {
+      installed({sanity: ['6.11.0']})
+      project('pnpm', 'catalog:')
+
+      await prepare(sdkApp, {dry: true})
+
+      expect(output.log).toHaveBeenCalledWith('Run `pnpm update sanity --latest` to upgrade.')
+      expect(confirm).not.toHaveBeenCalled()
+      expect(execa).not.toHaveBeenCalled()
+    })
+
+    test('prints the upgrade command when the user declines', async () => {
+      installed({sanity: ['6.11.0']})
+      project('npm', '^6.5.0')
+      vi.mocked(confirm).mockResolvedValue(false)
+
+      await prepare(sdkApp)
+
+      expect(output.log).toHaveBeenCalledWith(
+        'Run `npm install --legacy-peer-deps sanity@latest` to upgrade.',
+      )
+      expect(execa).not.toHaveBeenCalled()
+    })
+
+    test('warns about packages the upgrade left too old', async () => {
+      installed({
+        '@sanity/sdk': ['2.19.0', '3.9.1'],
+        sanity: ['6.11.0', '6.11.0'],
+      })
+      project('bun', '^6.5.0')
+      vi.mocked(confirm).mockResolvedValue(true)
+
+      await prepare(sdkApp)
+
+      expect(output.warn).toHaveBeenLastCalledWith(
+        'These are still too old after the upgrade. Upgrade them before you run `sanity dev` or `sanity deploy`:\n  - sanity 6.11.0 (the Dashboard needs 6.20.0 or later)',
+      )
+    })
   })
 
-  test.each(['6.12.0', null])('does not warn about sanity %s', async (installed) => {
-    vi.mocked(getLocalPackageVersion).mockResolvedValue(installed)
+  test.each(['6.20.0', null])('does not warn when installed packages are %s', async (version) => {
+    vi.mocked(getLocalPackageVersion).mockResolvedValue(version)
     answerPrompts({slug: 'acme-app', title: 'Acme App'})
 
     await prepare({app: {organizationId: 'org-2'}})

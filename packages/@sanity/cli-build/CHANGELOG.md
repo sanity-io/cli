@@ -1,5 +1,50 @@
 # Changelog
 
+## 7.0.2
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-build-v7.0.1...cli-build-v7.0.2)
+
+_2026-10-23_
+
+### Bug Fixes
+
+- **build:** keep default generateBundle order and skip ?url css links ([#2057](https://github.com/sanity-io/cli/pull/2057)) ([1a0408d](https://github.com/sanity-io/cli/commit/1a0408d06c1f5fb256ccc6a5817a680320e6eda6))
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/cli-core bumped to 3.12.0
+    - @sanity/workbench-cli bumped to 2.14.0
+
+## 7.0.1
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-build-v7.0.0...cli-build-v7.0.1)
+
+_2026-10-23_
+
+### Bug Fixes
+
+- **build:** config-only builds verify sanity, not @sanity/sdk-react ([#2053](https://github.com/sanity-io/cli/pull/2053)) ([03a9b7a](https://github.com/sanity-io/cli/commit/03a9b7afd421acf844e772ee7401205d09495953))
+- **build:** link stylesheets when cssCodeSplit is false ([#2045](https://github.com/sanity-io/cli/pull/2045)) ([816726a](https://github.com/sanity-io/cli/commit/816726a207564cfde3e1aab6e35c58bb7793ebb8))
+
+## 7.0.0
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-build-v6.5.0...cli-build-v7.0.0)
+
+_2026-10-22_
+
+### ⚠ BREAKING CHANGES
+
+- Change to the schema/manifest build interface to return schemaInputs instead of the full unserializable object. ([#1997](https://github.com/sanity-io/cli/pull/1997)) ([10c9e7b](https://github.com/sanity-io/cli/commit/10c9e7bd7d1844572f8ab8292a0d0832ebbd2e99))
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/cli-core bumped to 3.11.1
+    - @sanity/workbench-cli bumped to 2.13.0
+
 ## 6.5.0
 
 [Compare changes](https://github.com/sanity-io/cli/compare/cli-build-v6.4.5...cli-build-v6.5.0)

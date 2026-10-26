@@ -36,14 +36,24 @@ Code for sanity cli
 - [`sanity context build KNOWLEDGEBASEID`](#sanity-context-build-knowledgebaseid)
 - [`sanity context create`](#sanity-context-create)
 - [`sanity context delete KNOWLEDGEBASEID`](#sanity-context-delete-knowledgebaseid)
+- [`sanity context entries get KNOWLEDGEBASEID PATH`](#sanity-context-entries-get-knowledgebaseid-path)
+- [`sanity context entries list KNOWLEDGEBASEID`](#sanity-context-entries-list-knowledgebaseid)
+- [`sanity context entries rebuild KNOWLEDGEBASEID PATH`](#sanity-context-entries-rebuild-knowledgebaseid-path)
 - [`sanity context get KNOWLEDGEBASEID`](#sanity-context-get-knowledgebaseid)
 - [`sanity context imports create KNOWLEDGEBASEID`](#sanity-context-imports-create-knowledgebaseid)
 - [`sanity context imports delete KNOWLEDGEBASEID IMPORTID`](#sanity-context-imports-delete-knowledgebaseid-importid)
 - [`sanity context imports download KNOWLEDGEBASEID IMPORTID`](#sanity-context-imports-download-knowledgebaseid-importid)
 - [`sanity context imports get KNOWLEDGEBASEID IMPORTID`](#sanity-context-imports-get-knowledgebaseid-importid)
 - [`sanity context imports list KNOWLEDGEBASEID`](#sanity-context-imports-list-knowledgebaseid)
+- [`sanity context issues apply KNOWLEDGEBASEID ISSUEID`](#sanity-context-issues-apply-knowledgebaseid-issueid)
+- [`sanity context issues dismiss KNOWLEDGEBASEID ISSUEID`](#sanity-context-issues-dismiss-knowledgebaseid-issueid)
+- [`sanity context issues get KNOWLEDGEBASEID ISSUEID`](#sanity-context-issues-get-knowledgebaseid-issueid)
+- [`sanity context issues list KNOWLEDGEBASEID`](#sanity-context-issues-list-knowledgebaseid)
+- [`sanity context issues reopen KNOWLEDGEBASEID ISSUEID`](#sanity-context-issues-reopen-knowledgebaseid-issueid)
+- [`sanity context issues resolve KNOWLEDGEBASEID ISSUEID`](#sanity-context-issues-resolve-knowledgebaseid-issueid)
 - [`sanity context jobs get KNOWLEDGEBASEID JOBID`](#sanity-context-jobs-get-knowledgebaseid-jobid)
 - [`sanity context list`](#sanity-context-list)
+- [`sanity context query QUERY`](#sanity-context-query-query)
 - [`sanity context refresh KNOWLEDGEBASEID`](#sanity-context-refresh-knowledgebaseid)
 - [`sanity context update KNOWLEDGEBASEID`](#sanity-context-update-knowledgebaseid)
 - [`sanity cors add ORIGIN`](#sanity-cors-add-origin)
@@ -1060,6 +1070,89 @@ EXAMPLES
     $ sanity context delete kb-abc123 --yes
 ```
 
+## `sanity context entries get KNOWLEDGEBASEID PATH`
+
+Get an entry and its content
+
+```
+USAGE
+  $ sanity context entries get KNOWLEDGEBASEID PATH [--json]
+
+ARGUMENTS
+  KNOWLEDGEBASEID  Knowledge base ID
+  PATH             Entry path, as listed by `sanity context entries list`
+
+GLOBAL FLAGS
+  --json  Format output as json.
+
+DESCRIPTION
+  Get an entry and its content
+
+EXAMPLES
+  Print an entry and its content
+
+    $ sanity context entries get kb-abc123 billing/refunds
+
+  Output the entry, including citations, as JSON
+
+    $ sanity context entries get kb-abc123 billing/refunds --json
+```
+
+## `sanity context entries list KNOWLEDGEBASEID`
+
+List the entries a knowledge base build produced
+
+```
+USAGE
+  $ sanity context entries list KNOWLEDGEBASEID [--json]
+
+ARGUMENTS
+  KNOWLEDGEBASEID  Knowledge base ID
+
+GLOBAL FLAGS
+  --json  Format output as json.
+
+DESCRIPTION
+  List the entries a knowledge base build produced
+
+EXAMPLES
+  List all entries for a knowledge base
+
+    $ sanity context entries list kb-abc123
+
+  Output entries as JSON
+
+    $ sanity context entries list kb-abc123 --json
+```
+
+## `sanity context entries rebuild KNOWLEDGEBASEID PATH`
+
+Rebuild one entry from its sources
+
+```
+USAGE
+  $ sanity context entries rebuild KNOWLEDGEBASEID PATH [--watch]
+
+ARGUMENTS
+  KNOWLEDGEBASEID  Knowledge base ID
+  PATH             Entry path, as listed by `sanity context entries list`
+
+FLAGS
+  --watch  Wait for the rebuild to finish, exiting non-zero if it fails
+
+DESCRIPTION
+  Rebuild one entry from its sources
+
+EXAMPLES
+  Start a rebuild and return the job ID
+
+    $ sanity context entries rebuild kb-abc123 billing/refunds
+
+  Rebuild an entry and wait for it to finish (non-zero exit on failure)
+
+    $ sanity context entries rebuild kb-abc123 billing/refunds --watch
+```
+
 ## `sanity context get KNOWLEDGEBASEID`
 
 Get details of a knowledge base
@@ -1239,6 +1332,192 @@ EXAMPLES
     $ sanity context imports list kb-abc123 --json
 ```
 
+## `sanity context issues apply KNOWLEDGEBASEID ISSUEID`
+
+Accept and apply issues to a knowledge base
+
+```
+USAGE
+  $ sanity context issues apply KNOWLEDGEBASEID ISSUEID... [--watch]
+
+ARGUMENTS
+  KNOWLEDGEBASEID  Knowledge base ID
+  ISSUEID...       ID of an issue to accept and apply (pass several to apply them in one batch). Conflicts can't be
+                   applied; resolve them with `sanity context issues resolve`
+
+FLAGS
+  --watch  Wait for the apply to finish, exiting non-zero if it fails
+
+DESCRIPTION
+  Accept and apply issues to a knowledge base
+
+EXAMPLES
+  Accept and apply two issues in one batch
+
+    $ sanity context issues apply kb-abc123 issue.def456 issue.ghi789
+
+  Apply an issue and wait for it to finish (non-zero exit on failure)
+
+    $ sanity context issues apply kb-abc123 issue.def456 --watch
+```
+
+## `sanity context issues dismiss KNOWLEDGEBASEID ISSUEID`
+
+Dismiss an issue
+
+```
+USAGE
+  $ sanity context issues dismiss KNOWLEDGEBASEID ISSUEID
+
+ARGUMENTS
+  KNOWLEDGEBASEID  Knowledge base ID
+  ISSUEID          Issue ID
+
+DESCRIPTION
+  Dismiss an issue
+
+  Dismissing is permanent: dismissed issues can't be reopened.
+
+EXAMPLES
+  Dismiss an issue
+
+    $ sanity context issues dismiss kb-abc123 issue.def456
+```
+
+## `sanity context issues get KNOWLEDGEBASEID ISSUEID`
+
+Get details of an issue
+
+```
+USAGE
+  $ sanity context issues get KNOWLEDGEBASEID ISSUEID [--json]
+
+ARGUMENTS
+  KNOWLEDGEBASEID  Knowledge base ID
+  ISSUEID          Issue ID
+
+GLOBAL FLAGS
+  --json  Format output as json.
+
+DESCRIPTION
+  Get details of an issue
+
+EXAMPLES
+  Get details of a specific issue
+
+    $ sanity context issues get kb-abc123 issue.def456
+
+  Output the issue as JSON
+
+    $ sanity context issues get kb-abc123 issue.def456 --json
+```
+
+## `sanity context issues list KNOWLEDGEBASEID`
+
+List issues found by knowledge base builds
+
+```
+USAGE
+  $ sanity context issues list KNOWLEDGEBASEID [--json] [--kind
+    add_entry|conflict|gap|merge_entry|remove_entry|split_entry|update_required] [--scope <path>] [--severity
+    critical|suggestion] [--status open|accepted|rejected]
+
+ARGUMENTS
+  KNOWLEDGEBASEID  Knowledge base ID
+
+FLAGS
+  --kind=<option>      Only list issues of this kind
+                       <options: add_entry|conflict|gap|merge_entry|remove_entry|split_entry|update_required>
+  --scope=<path>       Only list issues about this entry path or anything under it (`*` for knowledge-base-wide issues)
+  --severity=<option>  Only list issues of this severity
+                       <options: critical|suggestion>
+  --status=<option>    Only list issues with this status (rejected = dismissed, accepted = resolved or applied)
+                       <options: open|accepted|rejected>
+
+GLOBAL FLAGS
+  --json  Format output as json.
+
+DESCRIPTION
+  List issues found by knowledge base builds
+
+EXAMPLES
+  List all issues for a knowledge base
+
+    $ sanity context issues list kb-abc123
+
+  List issues awaiting triage
+
+    $ sanity context issues list kb-abc123 --status open
+
+  List critical conflicts
+
+    $ sanity context issues list kb-abc123 --kind conflict --severity critical
+
+  List issues about entries under billing/
+
+    $ sanity context issues list kb-abc123 --scope billing
+
+  Output issues as JSON
+
+    $ sanity context issues list kb-abc123 --json
+```
+
+## `sanity context issues reopen KNOWLEDGEBASEID ISSUEID`
+
+Reopen a resolved conflict issue
+
+```
+USAGE
+  $ sanity context issues reopen KNOWLEDGEBASEID ISSUEID
+
+ARGUMENTS
+  KNOWLEDGEBASEID  Knowledge base ID
+  ISSUEID          Issue ID
+
+DESCRIPTION
+  Reopen a resolved conflict issue
+
+EXAMPLES
+  Return a resolved conflict issue to triage
+
+    $ sanity context issues reopen kb-abc123 issue.def456
+```
+
+## `sanity context issues resolve KNOWLEDGEBASEID ISSUEID`
+
+Resolve a conflict issue by choosing the correct side
+
+```
+USAGE
+  $ sanity context issues resolve KNOWLEDGEBASEID ISSUEID [--side <value>] [--watch]
+
+ARGUMENTS
+  KNOWLEDGEBASEID  Knowledge base ID
+  ISSUEID          Issue ID
+
+FLAGS
+  --side=<value>  Index of the correct side, as listed by `sanity context issues get`
+  --watch         Wait for the entry rewrite to finish, exiting non-zero if it fails
+
+DESCRIPTION
+  Resolve a conflict issue by choosing the correct side
+
+  Resolving also creates a standing instruction that future builds follow. `sanity context issues reopen` removes it.
+
+EXAMPLES
+  Interactively choose the correct side of a conflict
+
+    $ sanity context issues resolve kb-abc123 issue.def456
+
+  Choose side 1 and wait for the entry to be rewritten
+
+    $ sanity context issues resolve kb-abc123 issue.def456 --side 1 --watch
+
+  Keep the entry as it is (for a conflict on a single entry)
+
+    $ sanity context issues resolve kb-abc123 issue.def456 --side 0
+```
+
 ## `sanity context jobs get KNOWLEDGEBASEID JOBID`
 
 Get the status of a knowledge base job
@@ -1299,6 +1578,40 @@ EXAMPLES
   Output knowledge bases as JSON
 
     $ sanity context list --organization org-abc123 --json
+```
+
+## `sanity context query QUERY`
+
+Query an organization's Context documents with GROQ
+
+```
+USAGE
+  $ sanity context query QUERY [--json] [--organization <id>] [--params <json>]
+
+ARGUMENTS
+  QUERY  GROQ query to run against the organization's Context documents
+
+FLAGS
+  --params=<json>  Query parameters as a JSON object
+
+GLOBAL FLAGS
+  --json  Format output as json.
+
+OVERRIDE FLAGS
+  --organization=<id>  Organization to query (overrides CLI configuration)
+
+DESCRIPTION
+  Query an organization's Context documents with GROQ
+
+EXAMPLES
+  List open issues across all knowledge bases
+
+    $ sanity context query '*[_type == "sanity.context.issue" && status == "open"]{_id, knowledgeBaseId}'
+
+  List the entry paths of one knowledge base as plain JSON
+
+    $ sanity context query '*[_type == "sanity.context.entry" && knowledgeBaseId == $kb].path' --params '{"kb": \
+      "kb-abc123"}' --json
 ```
 
 ## `sanity context refresh KNOWLEDGEBASEID`

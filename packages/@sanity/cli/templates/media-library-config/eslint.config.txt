@@ -1,0 +1,52 @@
+import studio from '@sanity/eslint-config-studio'
+import tseslint from 'typescript-eslint'
+
+export default [
+  ...studio,
+  {
+    files: ['src/fields/**'],
+    // Flat config does not merge plugin registrations across config objects,
+    // so the plugin must be declared here even though the studio config also
+    // registers it (same module instance, so no redefinition conflict).
+    plugins: {'@typescript-eslint': tseslint.plugin},
+    rules: {
+      // The supported `sanity` surface for Media Library field modules.
+      // Custom inputs render in an isolated island root: imports outside
+      // this list have no provider there and fail at runtime with the
+      // field-failure card. Type-only imports are erased at build time and
+      // always safe.
+      '@typescript-eslint/no-restricted-imports': [
+        'error',
+        {
+          paths: [
+            {
+              name: 'sanity',
+              allowImportNames: [
+                'defineField',
+                'defineArrayMember',
+                'defineType',
+                'set',
+                'unset',
+                'setIfMissing',
+                'useFormValue',
+                'useGetFormValue',
+                'useCurrentLocale',
+                'useDateTimeFormat',
+              ],
+              allowTypeImports: true,
+              message:
+                'Not part of the supported Media Library field surface. Custom inputs render in an isolated island: this import has no provider there and will show the field-failure card at runtime. Call onChange with plain patches (set/unset), never PatchEvent.',
+            },
+          ],
+          patterns: [
+            {
+              group: ['sanity/*'],
+              message:
+                'Subpath imports from `sanity` are internals, not part of the supported Media Library field surface.',
+            },
+          ],
+        },
+      ],
+    },
+  },
+]
