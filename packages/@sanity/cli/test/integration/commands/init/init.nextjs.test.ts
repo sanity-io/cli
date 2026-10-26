@@ -75,9 +75,14 @@ vi.mock(import('@sanity/cli-core'), async (importOriginal) => {
   }
 })
 
-vi.mock(import('@sanity/cli-core/util'), () => ({
-  getSanityEnv: mocks.getSanityEnv,
-}))
+vi.mock(import('@sanity/cli-core/util'), async (importOriginal) => {
+  const actual = await importOriginal()
+
+  return {
+    ...actual,
+    getSanityEnv: mocks.getSanityEnv,
+  }
+})
 
 vi.mock(import('@sanity/cli-core/ux'), async (importActual) => {
   const actual = await importActual()
