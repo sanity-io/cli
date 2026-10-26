@@ -1,8 +1,9 @@
 import {type SanityOrgUser, subdebug} from '@sanity/cli-core'
-import {select, Separator} from '@sanity/cli-core/ux'
+import {search, Separator} from '@sanity/cli-core/ux'
 
 import {listOrganizations, type ProjectOrganization} from '../../../services/organizations.js'
 import {listProjects} from '../../../services/projects.js'
+import {searchChoices, searchTheme} from '../../../util/searchChoices.js'
 import {hasProjectAttachGrant} from '../../organizations/hasProjectAttachGrant.js'
 import {InitError} from '../initError.js'
 import {promptForProjectCreation} from './promptForProjectCreation.js'
@@ -137,9 +138,14 @@ export async function getOrCreateProject({
     value: project.id,
   }))
 
-  const selected = await select({
-    choices: [{name: 'Create new project', value: 'new'}, new Separator(), ...projectChoices],
+  const selected = await search({
     message: 'Create a new project or select an existing one',
+    source: searchChoices([
+      {name: 'Create new project', value: 'new'},
+      new Separator(),
+      ...projectChoices,
+    ]),
+    theme: searchTheme,
   })
 
   if (selected === 'new') {
