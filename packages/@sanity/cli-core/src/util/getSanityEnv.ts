@@ -1,4 +1,4 @@
-import {getCliExecutionContext} from '../executionContext'
+import {getCliExecutionContext} from '../executionContext.js'
 
 export function getSanityEnv() {
   const context = getCliExecutionContext()
