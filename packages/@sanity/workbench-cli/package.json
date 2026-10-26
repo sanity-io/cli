@@ -35,6 +35,10 @@
       "source": "./src/_exports/dev.ts",
       "default": "./dist/_exports/dev.js"
     },
+    "./dev-opt-in": {
+      "source": "./src/_exports/dev-opt-in.ts",
+      "default": "./dist/_exports/dev-opt-in.js"
+    },
     "./init": {
       "source": "./src/_exports/init.ts",
       "default": "./dist/_exports/init.js"
