@@ -3,6 +3,7 @@
 export {doImport} from '../util/doImport.js'
 export {getCoreAppUrl} from '../util/getCoreAppUrl.js'
 export {getSanityConfigDir, getSanityDataDir} from '../util/getSanityConfigDir.js'
+export {getSanityEnv} from '../util/getSanityEnv.js'
 export {getSanityEnvVar} from '../util/getSanityEnvVar.js'
 export {getSanityUrl} from '../util/getSanityUrl.js'
 export {getWorkspace} from '../util/getWorkspace.js'
