@@ -32,7 +32,7 @@ export function getExtractOptions(options: GetExtractOptions): ExtractOptions {
   } = options
   let outputPath: string
   if (pathFlag) {
-    const resolved = resolve(join(projectRoot.directory, pathFlag))
+    const resolved = resolve(projectRoot.directory, pathFlag)
     const isExistingDirectory = existsSync(resolved) && statSync(resolved).isDirectory()
 
     outputPath =
