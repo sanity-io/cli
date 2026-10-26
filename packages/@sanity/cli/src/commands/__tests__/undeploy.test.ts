@@ -8,6 +8,14 @@ import {afterEach, describe, expect, test, vi} from 'vitest'
 import {UndeployCommand} from '../undeploy.js'
 import {anInstallation, installationsResponse} from './fixtures/installations.js'
 
+// App/Studio backend tests use an application with no associated function stack.
+vi.mock('../../services/appFunctionCleanup.js', () => ({
+  createAppFunctionCleanupClient: async () => ({
+    destroy: vi.fn(),
+    inspect: vi.fn().mockResolvedValue(null),
+  }),
+}))
+
 vi.mock('@sanity/cli-core/ux', async () => {
   const actual = await vi.importActual<typeof import('@sanity/cli-core/ux')>('@sanity/cli-core/ux')
   return {

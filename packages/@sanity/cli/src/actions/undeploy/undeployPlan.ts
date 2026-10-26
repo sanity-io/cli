@@ -21,6 +21,7 @@ export function canUndeploy(plan: UndeployPlan): boolean {
 
 /** What an undeploy deletes, phrased for the human output. */
 export function undeployLabel(target: UndeployTarget | null, type: 'coreApp' | 'studio'): string {
+  if (target?.deletes === 'functionStack') return 'app function resources'
   if (target?.deletes === 'config') {
     return `installation config${target.title ? ` for "${target.title}"` : ''}`
   }
@@ -74,6 +75,9 @@ export function describeUndeployTarget(resolution: UndeployTargetResolution): Ch
   }
 
   const {target} = resolution
+  if (target.deletes === 'functionStack') {
+    return {message: `Cleans up app function resources for ${target.id}`, status: 'pass'}
+  }
   if (target.deletes === 'config') {
     return {
       message: target.title
