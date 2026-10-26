@@ -391,7 +391,7 @@ describe('#init: create new project', () => {
     }).reply(200, {id: 'test', metadata: {cliInitializedAt: ''}})
 
     mocks.search.mockResolvedValueOnce('project-123')
-    mocks.select.mockResolvedValueOnce('production')
+    mocks.search.mockResolvedValueOnce('production')
 
     const spinnerSpy = vi.spyOn(cliUX, 'spinner')
 
@@ -443,7 +443,7 @@ describe('#init: create new project', () => {
     }).reply(200, {id: 'test', metadata: {cliInitializedAt: ''}})
 
     mocks.search.mockResolvedValueOnce('project-123')
-    mocks.select.mockResolvedValueOnce('production')
+    mocks.search.mockResolvedValueOnce('production')
 
     const spinnerSpy = vi.spyOn(cliUX, 'spinner')
 
@@ -488,7 +488,7 @@ describe('#init: create new project', () => {
     }).reply(200, {id: 'test', metadata: {cliInitializedAt: ''}})
 
     mocks.search.mockResolvedValueOnce('project-123')
-    mocks.select.mockResolvedValueOnce('production')
+    mocks.search.mockResolvedValueOnce('production')
 
     const spinnerSpy = vi.spyOn(cliUX, 'spinner')
 
