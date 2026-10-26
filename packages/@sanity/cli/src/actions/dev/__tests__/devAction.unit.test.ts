@@ -13,10 +13,8 @@ const mockGetSharedServerConfig = vi.hoisted(() => vi.fn())
 const mockGetAppId = vi.hoisted(() => vi.fn())
 const mockCheckForDeprecatedAppId = vi.hoisted(() => vi.fn())
 
-// The workbench orchestration lives in workbench-cli and is imported lazily —
-// mock the single entry the dispatcher delegates to.
-vi.mock('@sanity/workbench-cli/dev', () => ({startWorkbenchDev: mockStartWorkbenchDev}))
-vi.mock('@sanity/workbench-cli/dev-opt-in', () => ({
+vi.mock('@sanity/workbench-cli/dev', () => ({
+  startWorkbenchDev: mockStartWorkbenchDev,
   watchForWorkbenchOptIn: mockWatchForWorkbenchOptIn,
 }))
 vi.mock('../servers/startAppDevServer.js', () => ({startAppDevServer: mockStartAppDevServer}))

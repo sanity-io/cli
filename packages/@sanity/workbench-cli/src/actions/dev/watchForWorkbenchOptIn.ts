@@ -1,7 +1,7 @@
 import {type CliConfig, getCliConfigUncached, type Output, subdebug} from '@sanity/cli-core'
 
 import {isWorkbenchApp, isWorkbenchConfig} from '../../defineApp.js'
-import {watchConfigFiles} from './watchConfigFiles.js'
+import {watchCliConfig} from './watchCliConfig.js'
 
 const devDebug = subdebug('dev')
 
@@ -34,10 +34,10 @@ export function watchForWorkbenchOptIn({
   let handover: Promise<void> | undefined
   let closed = false
 
-  const watcher = watchConfigFiles({
+  const watcher = watchCliConfig({
     dir: workDir,
     filenames: ['sanity.cli.js', 'sanity.cli.ts'],
-    onChange: async () => {
+    onChange: async (filename) => {
       // Mid-edit saves often don't load; the next save retries.
       const cliConfig = await getCliConfigUncached(workDir).catch((err) => {
         devDebug('Could not load CLI config while watching for the workbench opt-in: %O', err)
@@ -45,7 +45,7 @@ export function watchForWorkbenchOptIn({
       if (closed || !cliConfig) return
       if (!isWorkbenchApp(cliConfig.app) && !isWorkbenchConfig(cliConfig.app)) return
 
-      output.log('Dashboard config detected, restarting dev server')
+      output.log(`${filename} changed, restarting dev server in the local Dashboard`)
       handover = (async () => {
         await closeCurrent()
         closeCurrent = noop
@@ -58,8 +58,9 @@ export function watchForWorkbenchOptIn({
         watcher.close()
       } catch (err) {
         output.warn(
-          `Could not start the Dashboard dev server: ${err instanceof Error ? err.message : String(err)}. Save the CLI config to retry.`,
+          `Failed to start dev server: ${err instanceof Error ? err.message : String(err)}`,
         )
+        output.log(`No dev server is running. Save ${filename} to try again.`)
       } finally {
         handover = undefined
       }
@@ -74,7 +75,6 @@ export function watchForWorkbenchOptIn({
       // A handover in flight still assigns its close; wait so it isn't orphaned.
       await handover?.catch(() => {})
       await closeCurrent()
-      closeCurrent = noop
     },
   }
 }

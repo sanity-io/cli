@@ -3,7 +3,7 @@ import {basename, dirname} from 'node:path'
 import {findProjectRoot, type Output, subdebug} from '@sanity/cli-core'
 
 import {type DevServerConfig, type DevServerInterface} from './deriveConfigs.js'
-import {watchConfigFiles} from './watchConfigFiles.js'
+import {watchCliConfig} from './watchCliConfig.js'
 
 const devDebug = subdebug('dev')
 
@@ -83,7 +83,7 @@ export async function startDevManifestWatcher<T>({
 
   let closed = false
 
-  const watcher = watchConfigFiles({
+  const watcher = watchCliConfig({
     dir: dirname(configPath),
     filenames: [basename(configPath), ...(extraWatchFilenames ?? [])],
     onChange: async () => {

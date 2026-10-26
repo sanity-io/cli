@@ -2,6 +2,7 @@ import {SANITY_CACHE_DIR} from '@sanity/cli-build/_internal/build'
 import {extractCoreAppManifest} from '@sanity/cli-build/_internal/manifest'
 import {type CliConfig} from '@sanity/cli-core'
 import {isWorkbenchApp, isWorkbenchConfig} from '@sanity/workbench-cli'
+import {startWorkbenchDev, watchForWorkbenchOptIn} from '@sanity/workbench-cli/dev'
 
 import {checkForDeprecatedAppId} from '../../util/appId.js'
 import {determineIsApp} from '../../util/determineIsApp.js'
@@ -19,7 +20,7 @@ const noop = async () => {}
  * before workbench existed, and switches to the workbench if `sanity.cli.*` opts
  * in while it runs. A workbench app (via `defineApplication`) delegates to
  * `@sanity/workbench-cli`, injecting the CLI-domain pieces (app server, manifest
- * extraction, app id) and loading the package lazily so plain projects never do.
+ * extraction, app id).
  */
 export async function devAction(options: DevActionOptions): Promise<{close: () => Promise<void>}> {
   const {cliConfig, output, workDir} = options
@@ -34,9 +35,6 @@ export async function devAction(options: DevActionOptions): Promise<{close: () =
   const {httpPort} = getServerConfig(options)
   const result = await startAppServer(options, {announceUrl: true, cliConfig, httpPort})
   if (!result.started) return {close: noop}
-
-  // eslint-disable-next-line no-restricted-syntax
-  const {watchForWorkbenchOptIn} = await import('@sanity/workbench-cli/dev-opt-in')
 
   return watchForWorkbenchOptIn({
     closePlainServer: result.close,
@@ -59,14 +57,9 @@ function getServerConfig({cliConfig, flags, workDir}: DevActionOptions) {
   return getSharedServerConfig({cliConfig, flags: {host: flags.host, port: flags.port}, workDir})
 }
 
-async function startWorkbench(options: DevActionOptions): Promise<{close: () => Promise<void>}> {
+function startWorkbench(options: DevActionOptions): Promise<{close: () => Promise<void>}> {
   const {cliConfig, isApp, output, workDir} = options
   const {httpHost, httpPort} = getServerConfig(options)
-
-  // Lazy so a non-workbench `sanity dev` never loads the package. `doImport`
-  // is path-based and doesn't apply to a bare specifier.
-  // eslint-disable-next-line no-restricted-syntax
-  const {startWorkbenchDev} = await import('@sanity/workbench-cli/dev')
 
   return startWorkbenchDev({
     cacheDir: `${SANITY_CACHE_DIR}/vite`,

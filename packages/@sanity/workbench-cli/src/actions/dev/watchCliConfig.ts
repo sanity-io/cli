@@ -9,17 +9,18 @@ import {canonicalizeWatchDir} from './canonicalizeWatchDir.js'
  */
 const DEBOUNCE_MS = 250
 
-interface ConfigFileWatcher {
+interface CliConfigWatcher {
   /** Stop watching and drop any queued run. Idempotent. */
   close: () => void
   /** Run now, coalesced with config file events like any other change. */
   run: () => void
 }
 
-interface WatchConfigFilesOptions {
+interface WatchCliConfigOptions {
   dir: string
   filenames: Iterable<string>
-  onChange: () => Promise<void>
+  /** Receives the last changed filename; unset when `run()` fires before any change. */
+  onChange: (filename: string | undefined) => Promise<void>
   /** Receives `fs.watch` errors and any rejection from `onChange`. */
   onError: (err: unknown) => void
 }
@@ -31,18 +32,19 @@ interface WatchConfigFilesOptions {
  * Watches the parent directory and filters by filename, because a watch on the
  * file itself loses its target when an editor atomic-saves (delete + rename).
  */
-export function watchConfigFiles({
+export function watchCliConfig({
   dir,
   filenames,
   onChange,
   onError,
-}: WatchConfigFilesOptions): ConfigFileWatcher {
+}: WatchCliConfigOptions): CliConfigWatcher {
   const watchFilenames = new Set(filenames)
 
   let running = false
   let pending = false
   let closed = false
   let debounceTimer: ReturnType<typeof setTimeout> | undefined
+  let changedFilename: string | undefined
 
   const run = async () => {
     if (closed) return
@@ -54,7 +56,7 @@ export function watchConfigFiles({
 
     running = true
     try {
-      await onChange()
+      await onChange(changedFilename)
     } catch (err) {
       onError(err)
     } finally {
@@ -68,6 +70,7 @@ export function watchConfigFiles({
 
   const watcher = watch(canonicalizeWatchDir(dir), (_event, filename) => {
     if (!filename || !watchFilenames.has(filename)) return
+    changedFilename = filename
     clearTimeout(debounceTimer)
     debounceTimer = setTimeout(() => void run(), DEBOUNCE_MS)
   })

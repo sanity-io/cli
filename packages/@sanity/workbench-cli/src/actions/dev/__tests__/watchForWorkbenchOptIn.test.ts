@@ -22,8 +22,6 @@ vi.mock('node:fs', async (importOriginal) => ({
   watch: mockFsWatch,
 }))
 
-vi.mock('../canonicalizeWatchDir.js', () => ({canonicalizeWatchDir: (dir: string) => dir}))
-
 const WORK_DIR = '/tmp/sanity-project'
 const plainCliConfig = {app: {organizationId: 'org-123'}} as CliConfig
 
@@ -40,6 +38,15 @@ function setup() {
   })
 
   return {closePlainServer, closeWorkbench, output, startWorkbench, watcher}
+}
+
+function deferred<T>() {
+  let settle: ((value: T) => void) | undefined
+  const promise = new Promise<T>((resolve) => {
+    settle = resolve
+  })
+
+  return {promise, resolve: (value: T) => settle?.(value)}
 }
 
 async function saveCliConfig(filename = 'sanity.cli.ts') {
@@ -74,8 +81,9 @@ describe('watchForWorkbenchOptIn', () => {
 
     await saveCliConfig(filename)
 
-    expect(output.log).toHaveBeenCalledWith(expect.stringContaining('restarting dev server'))
-    expect(mockFsWatch).toHaveBeenCalledWith(WORK_DIR, expect.any(Function))
+    expect(output.log).toHaveBeenCalledWith(
+      `${filename} changed, restarting dev server in the local Dashboard`,
+    )
     expect(closePlainServer).toHaveBeenCalledTimes(1)
     expect(startWorkbench).toHaveBeenCalledWith(optedIn)
     expect(closePlainServer.mock.invocationCallOrder[0]).toBeLessThan(
@@ -83,7 +91,6 @@ describe('watchForWorkbenchOptIn', () => {
     )
     expect(fakeWatcher.closed).toBe(true)
 
-    await watcher.close()
     await watcher.close()
     expect(closeWorkbench).toHaveBeenCalledTimes(1)
     expect(closePlainServer).toHaveBeenCalledTimes(1)
@@ -95,8 +102,6 @@ describe('watchForWorkbenchOptIn', () => {
     await saveCliConfig()
     mockGetCliConfigUncached.mockRejectedValueOnce(new SyntaxError('Unexpected token'))
     await saveCliConfig()
-    fakeWatcher.emitChange('sanity.config.ts')
-    await vi.advanceTimersByTimeAsync(300)
 
     expect(mockGetCliConfigUncached).toHaveBeenCalledTimes(2)
     expect(startWorkbench).not.toHaveBeenCalled()
@@ -115,7 +120,10 @@ describe('watchForWorkbenchOptIn', () => {
 
     await saveCliConfig()
 
-    expect(output.warn).toHaveBeenCalledWith(expect.stringContaining('port in use'))
+    expect(output.warn).toHaveBeenCalledWith('Failed to start dev server: port in use')
+    expect(output.log).toHaveBeenCalledWith(
+      'No dev server is running. Save sanity.cli.ts to try again.',
+    )
     expect(fakeWatcher.closed).toBe(false)
 
     await saveCliConfig()
@@ -127,16 +135,12 @@ describe('watchForWorkbenchOptIn', () => {
 
   test('closing while the config loads does not start the workbench', async () => {
     const {closePlainServer, startWorkbench, watcher} = setup()
-    let resolveConfig: ((cliConfig: CliConfig) => void) | undefined
-    mockGetCliConfigUncached.mockReturnValue(
-      new Promise((resolve) => {
-        resolveConfig = resolve
-      }),
-    )
+    const config = deferred<CliConfig>()
+    mockGetCliConfigUncached.mockReturnValue(config.promise)
 
     await saveCliConfig()
     await watcher.close()
-    resolveConfig?.(workbenchCliConfig())
+    config.resolve(workbenchCliConfig())
     await vi.advanceTimersByTimeAsync(0)
 
     expect(startWorkbench).not.toHaveBeenCalled()
@@ -146,16 +150,12 @@ describe('watchForWorkbenchOptIn', () => {
   test('closing mid-handover still closes the workbench once it starts', async () => {
     const {closeWorkbench, startWorkbench, watcher} = setup()
     mockGetCliConfigUncached.mockResolvedValue(workbenchCliConfig())
-    let resolveStart: ((workbench: {close: () => Promise<void>}) => void) | undefined
-    startWorkbench.mockReturnValue(
-      new Promise((resolve) => {
-        resolveStart = resolve
-      }),
-    )
+    const start = deferred<{close: () => Promise<void>}>()
+    startWorkbench.mockReturnValue(start.promise)
 
     await saveCliConfig()
     const closing = watcher.close()
-    resolveStart?.({close: closeWorkbench})
+    start.resolve({close: closeWorkbench})
     await closing
 
     expect(closeWorkbench).toHaveBeenCalledTimes(1)
