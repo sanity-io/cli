@@ -5,16 +5,26 @@ import {getErrorMessage} from '@sanity/cli-core/errors'
 import {spinner} from '@sanity/cli-core/ux'
 import {type Context, isHttpError} from '@sanity/client'
 
-import {apiErrorCode} from '../../../actions/context/apiErrorCode.js'
+import {apiErrorCode, apiErrorNumberField} from '../../../actions/context/apiErrorCode.js'
 import {
   CRAWL_FLAG_NAMES,
   crawlFlags,
   crawlOptionsFromFlags,
 } from '../../../actions/context/crawlFlags.js'
 import {editSource, getSource} from '../../../services/context.js'
+import {pluralize} from '../../../util/pluralize.js'
 import {defineCommandTelemetry} from '../../../util/telemetry/commandTelemetry.js'
 
 const editSourceDebug = subdebug('context:sources:edit')
+
+function describeDeletions(error: unknown): string {
+  const deletions = apiErrorNumberField(error, 'deletions')
+  const documents = apiErrorNumberField(error, 'documents')
+  if (deletions === undefined || documents === undefined) {
+    return 'This change would delete documents from the source.'
+  }
+  return `This change would delete ${deletions} of the source's ${documents} ${pluralize('document', documents)}.`
+}
 
 const EDIT_FLAGS = ['title', 'query', 'sync-frequency', ...CRAWL_FLAG_NAMES]
 
@@ -134,7 +144,7 @@ export class EditSourceCommand extends SanityCommand<typeof EditSourceCommand> {
       }
       if (apiErrorCode(error) === 'sourceDeletionsUnconfirmed') {
         this.error(
-          `${getErrorMessage(error)}\nRun again with --confirm-deletions to apply the change and delete those documents.`,
+          `${describeDeletions(error)}\nRun again with --confirm-deletions to apply the change and delete those documents.`,
           {exit: exitCodes.RUNTIME_ERROR},
         )
       }

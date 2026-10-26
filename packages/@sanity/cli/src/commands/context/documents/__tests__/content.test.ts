@@ -50,6 +50,89 @@ describe('context documents content', () => {
     expect(stdout).toBe('# Refunds\nWithin 10 days.\n')
   })
 
+  test('numbers the lines from where the range starts', async () => {
+    mockDocumentsContent.mockResolvedValue({
+      chunkId: null,
+      content: 'Rule 1.1\n\nRule 1.2\n',
+      documentId: 'document-def456',
+      slice: {end: 10, start: 8},
+      totalLines: 385,
+    })
+
+    const {error, stdout} = await testCommand(DocumentContentCommand, [
+      'kb-abc123',
+      'document-def456',
+      '--lines',
+      '8-10',
+      '--line-numbers',
+    ])
+
+    if (error) throw error
+    expect(mockDocumentsContent).toHaveBeenCalledWith({
+      documentId: 'document-def456',
+      format: 'json',
+      lines: '8-10',
+    })
+    expect(stdout).toBe(' 8  Rule 1.1\n 9  \n10  Rule 1.2\n')
+  })
+
+  test('prints nothing numbered when no lines come back', async () => {
+    mockDocumentsContent.mockResolvedValue({
+      chunkId: null,
+      content: '',
+      documentId: 'document-def456',
+      slice: {end: 0, start: 0},
+      totalLines: 385,
+    })
+
+    const {error, stdout} = await testCommand(DocumentContentCommand, [
+      'kb-abc123',
+      'document-def456',
+      '--lines',
+      '900',
+      '--line-numbers',
+    ])
+
+    if (error) throw error
+    expect(stdout).toBe('')
+  })
+
+  test('refuses --line-numbers with --json', async () => {
+    const previousExitCode = process.exitCode
+    try {
+      const {stdout} = await testCommand(DocumentContentCommand, [
+        'kb-abc123',
+        'document-def456',
+        '--line-numbers',
+        '--json',
+      ])
+
+      expect(JSON.parse(stdout)).toMatchObject({
+        error: {message: expect.stringContaining('--line-numbers only applies to markdown')},
+      })
+      expect(process.exitCode).toBe(2)
+      expect(mockDocumentsContent).not.toHaveBeenCalled()
+    } finally {
+      process.exitCode = previousExitCode
+    }
+  })
+
+  test.each([[['--format', 'plain']], [['--format', 'raw', '--output', 'out.pdf']]])(
+    'refuses --line-numbers with %j',
+    async (extra) => {
+      const {error} = await testCommand(DocumentContentCommand, [
+        'kb-abc123',
+        'document-def456',
+        '--line-numbers',
+        ...extra,
+      ])
+
+      expect(error?.message).toContain('--line-numbers only applies to markdown, without --json.')
+      expect(error?.oclif?.exit).toBe(2)
+      expect(mockDocumentsContent).not.toHaveBeenCalled()
+    },
+  )
+
   test('passes the format and a line range', async () => {
     mockDocumentsContent.mockResolvedValue('Within 10 days.')
 

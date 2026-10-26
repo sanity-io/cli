@@ -39,6 +39,7 @@ describe('context sources list', () => {
     expect(stdout).toContain('sanity-dataset')
     expect(stdout).toContain('source-files')
     expect(stdout).toContain('completed')
+    expect(stdout).not.toContain('\u001B[')
   })
 
   test('outputs JSON with --json', async () => {

@@ -37,6 +37,7 @@ describe('context sources syncs get', () => {
     expect(stdout).toContain('Upserted:       4')
     expect(stdout).toContain('Held deletions: -')
     expect(stdout).not.toContain('Sync held')
+    expect(stdout).not.toContain('\u001B[')
   })
 
   test('tells how to settle a held sync', async () => {
@@ -57,6 +58,22 @@ describe('context sources syncs get', () => {
     expect(stdout).toContain(
       'sanity context sources syncs discard kb-abc123 source-def456 sync-held',
     )
+  })
+
+  test.each([
+    [1, "it would delete 1 document it didn't find"],
+    [null, "it would delete some documents it didn't find"],
+  ])('counts %s held deletions in words', async (heldDeletions, text) => {
+    mockSyncsGet.mockResolvedValue({...heldSync, heldDeletions})
+
+    const {error, stdout} = await testCommand(GetSyncCommand, [
+      'kb-abc123',
+      'source-def456',
+      'sync-held',
+    ])
+
+    if (error) throw error
+    expect(stdout).toContain(text)
   })
 
   test('hints a held sync without a deletion count', async () => {

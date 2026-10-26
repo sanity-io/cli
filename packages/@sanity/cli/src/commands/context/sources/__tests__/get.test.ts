@@ -31,8 +31,14 @@ describe('context sources get', () => {
     expect(mockSourcesGet).toHaveBeenCalledWith({sourceId: 'source-def456'})
     expect(stdout).toContain('Type:           web')
     expect(stdout).toContain('URL:            https://example.com/docs')
-    expect(stdout).toContain('Crawl options:')
+    expect(stdout).toContain(
+      ['  Crawl options:', '    Include paths:       ^/docs/', '    Page limit:          100'].join(
+        '\n',
+      ),
+    )
     expect(stdout).toContain('Sync frequency: weekly')
+    expect(stdout).toContain('Chunks:         40')
+    expect(stdout).not.toContain('\u001B[')
     expect(stdout).toContain('Documents:      5 (4 converted, 1 skipped, 0 failed)')
     expect(stdout).toContain('Latest sync:    sync-ghi789 (completed)')
   })
@@ -44,6 +50,41 @@ describe('context sources get', () => {
 
     if (error) throw error
     expect(stdout).toContain('Sync frequency: off')
+  })
+
+  test('prints every crawl option a website source sets, or the defaults', async () => {
+    mockSourcesGet.mockResolvedValueOnce({
+      ...webSource,
+      crawlOptions: {
+        excludePaths: ['^/blog/', '^/news/'],
+        ignoreQueryParameters: false,
+        includePaths: ['^/docs/'],
+        maxDepth: 3,
+        pageLimit: 100,
+        sitemapOnly: true,
+      },
+    })
+
+    const {error, stdout} = await testCommand(GetSourceCommand, ['kb-abc123', 'source-def456'])
+
+    if (error) throw error
+    expect(stdout).toContain(
+      [
+        '  Crawl options:',
+        '    Include paths:       ^/docs/',
+        '    Exclude paths:       ^/blog/, ^/news/',
+        '    Max depth:           3',
+        '    Page limit:          100',
+        '    Sitemap only:        true',
+        '    Ignore query params: false',
+        '  Sync frequency: weekly',
+      ].join('\n'),
+    )
+
+    mockSourcesGet.mockResolvedValueOnce({...webSource, crawlOptions: {}})
+    const defaults = await testCommand(GetSourceCommand, ['kb-abc123', 'source-def456'])
+    if (defaults.error) throw defaults.error
+    expect(defaults.stdout).toContain('Crawl options:  defaults')
   })
 
   test('prints a dataset source', async () => {

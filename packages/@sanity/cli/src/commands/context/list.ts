@@ -6,8 +6,8 @@ import {
   MissingOrganizationError,
   resolveOrganizationId,
 } from '../../actions/context/resolveOrganizationId.js'
+import {contextTable} from '../../actions/context/table.js'
 import {listKnowledgeBases} from '../../services/context.js'
-import {Table} from '../../util/responsiveTable.js'
 import {getOrganizationFlag} from '../../util/sharedFlags.js'
 
 const listContextDebug = subdebug('context:list')
@@ -79,7 +79,7 @@ export class ListKnowledgeBasesCommand extends SanityCommand<typeof ListKnowledg
       return
     }
 
-    const table = new Table({
+    const table = contextTable({
       columns: [
         {alignment: 'left', name: 'id', title: 'ID'},
         {alignment: 'left', name: 'title', title: 'Title'},

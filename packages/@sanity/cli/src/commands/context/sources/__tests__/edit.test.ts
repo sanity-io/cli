@@ -141,11 +141,14 @@ describe('context sources edit', () => {
   })
 
   test('tells how to apply crawl options that would delete many documents', async () => {
-    const conflict = httpError(409, 'The new crawl options would delete 40 of 50 documents')
+    const conflict = httpError(
+      409,
+      "This change would delete 40 of the source's 50 documents. Send it again with confirmDeletions set to true to apply it.",
+    )
     Object.assign(conflict, {
       response: {
         ...(conflict as unknown as {response: object}).response,
-        body: {code: 'sourceDeletionsUnconfirmed'},
+        body: {code: 'sourceDeletionsUnconfirmed', fields: {deletions: 40, documents: 50}},
       },
     })
     mockSourcesEdit.mockRejectedValue(conflict)
@@ -157,9 +160,31 @@ describe('context sources edit', () => {
       '^/docs/v2/',
     ])
 
-    expect(error?.message).toContain('would delete 40 of 50 documents')
+    expect(error?.message).toContain("This change would delete 40 of the source's 50 documents.")
     expect(error?.message).toContain('Run again with --confirm-deletions')
+    expect(error?.message).not.toContain('confirmDeletions')
     expect(error?.oclif?.exit).toBe(1)
+  })
+
+  test('tells how to apply a deletion it has no counts for, once', async () => {
+    const conflict = httpError(409, 'Send it again with confirmDeletions set to true to apply it.')
+    Object.assign(conflict, {
+      response: {
+        ...(conflict as unknown as {response: object}).response,
+        body: {code: 'sourceDeletionsUnconfirmed', fields: {deletions: '1'}},
+      },
+    })
+    mockSourcesEdit.mockRejectedValue(conflict)
+
+    const {error} = await testCommand(EditSourceCommand, [
+      'kb-abc123',
+      'source-def456',
+      '--include-path',
+      '^/docs/v2/',
+    ])
+
+    expect(error?.message).toContain('This change would delete documents from the source.')
+    expect(error?.message).not.toContain('confirmDeletions')
   })
 
   test('errors with a friendly message on 404', async () => {

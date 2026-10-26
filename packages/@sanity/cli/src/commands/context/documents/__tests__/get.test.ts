@@ -32,7 +32,9 @@ describe('context documents get', () => {
     expect(stdout).toContain('Title:       Refunds')
     expect(stdout).toContain('Source:      source-def456')
     expect(stdout).toContain('Conversion:  converted')
+    expect(stdout).toContain('Size:        2048')
     expect(stdout).toContain('Chunks:      1')
+    expect(stdout).not.toContain('\u001B[')
   })
 
   test('prints a conversion error and missing values', async () => {

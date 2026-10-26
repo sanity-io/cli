@@ -4,8 +4,8 @@ import {exitCodes, SanityCommand, subdebug} from '@sanity/cli-core'
 import {getErrorMessage} from '@sanity/cli-core/errors'
 import {type Context, isHttpError} from '@sanity/client'
 
+import {contextTable} from '../../../actions/context/table.js'
 import {listDocuments} from '../../../services/context.js'
-import {Table} from '../../../util/responsiveTable.js'
 
 const listDocumentsDebug = subdebug('context:documents:list')
 
@@ -88,7 +88,7 @@ export class ListDocumentsCommand extends SanityCommand<typeof ListDocumentsComm
       return
     }
 
-    const table = new Table({
+    const table = contextTable({
       columns: [
         {alignment: 'left', name: 'id', title: 'ID'},
         {alignment: 'left', name: 'title', title: 'Title'},

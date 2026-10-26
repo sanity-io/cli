@@ -1082,12 +1082,12 @@ EXAMPLES
 
 ## `sanity context documents content KNOWLEDGEBASEID DOCUMENTID`
 
-Print the markdown a document converted to, with the line numbers citations use, or download its original bytes
+Print the markdown a document converted to, optionally with the line numbers citations use, or download its original bytes
 
 ```
 USAGE
   $ sanity context documents content KNOWLEDGEBASEID DOCUMENTID [--json] [--chunk <chunkId> | --lines <from-to>] [--format
-    markdown|plain|raw] [-o <file>]
+    markdown|plain|raw] [--line-numbers] [-o <file>]
 
 ARGUMENTS
   KNOWLEDGEBASEID  Knowledge base ID
@@ -1096,16 +1096,18 @@ ARGUMENTS
 FLAGS
   -o, --output=<file>    Write the content to this file instead of stdout
       --chunk=<chunkId>  Only the lines of this chunk (chunk IDs are listed by `documents get --json`)
-      --format=<option>  markdown (the converted document, default), plain (markdown stripped to text) or raw (the bytes
-                         the source gave, before conversion)
+      --format=<option>  markdown (the converted document, default), plain (the same markdown, sent as text/plain) or
+                         raw (the bytes the source gave, before conversion)
                          <options: markdown|plain|raw>
+      --line-numbers     Number each line as citations number them
       --lines=<from-to>  Only these lines, as `10-20`, or `10` for line 10 to the end
 
 GLOBAL FLAGS
   --json  Format output as json.
 
 DESCRIPTION
-  Print the markdown a document converted to, with the line numbers citations use, or download its original bytes
+  Print the markdown a document converted to, optionally with the line numbers citations use, or download its original
+  bytes
 
 EXAMPLES
   Print a document's markdown
@@ -1115,6 +1117,10 @@ EXAMPLES
   Print lines 10 to 20
 
     $ sanity context documents content kb-abc123 document-def456 --lines 10-20
+
+  Print lines 10 to 20, each with its line number
+
+    $ sanity context documents content kb-abc123 document-def456 --lines 10-20 --line-numbers
 
   Download the original file
 
@@ -1627,7 +1633,8 @@ FLAGS
   -p, --project-id=<id>      Project to read documents from (with --query)
       --content-type=<type>  Format of --text content (markdown or plain, default markdown), or the MIME type of --file
                              (inferred from the file extension when omitted)
-      --dry-run              Estimate what the crawl would fetch, grouped by path, without adding the source
+      --dry-run              Estimate how many pages the site has under --url, grouped by path, without adding the
+                             source. The estimate does not apply the crawl flags
       --file=<path>          Local file to upload as a files source: a document, or a zip, tar or gzip archive of them
       --query=<groq>         GROQ query selecting the documents of a Sanity dataset to read
       --text=<path|->        Text or markdown to hold as a files source, read from a local file or `-` for stdin
@@ -1654,10 +1661,9 @@ EXAMPLES
 
     $ sanity context sources create kb-abc123 --url https://example.com/docs
 
-  Estimate what a crawl limited to /docs/ would fetch, without adding it
+  Estimate how many pages a crawl of /docs would find, without adding it
 
-    $ sanity context sources create kb-abc123 --url https://example.com --include-path "^/docs/" --page-limit 500 \
-      --dry-run
+    $ sanity context sources create kb-abc123 --url https://example.com/docs --dry-run
 
   Read the documents a GROQ query selects from a Sanity dataset
 
@@ -1941,7 +1947,7 @@ Upload a new file to a files source, replacing the one it holds, and sync it
 
 ```
 USAGE
-  $ sanity context sources upload KNOWLEDGEBASEID SOURCEID --file <path> [--content-type <mime>]
+  $ sanity context sources upload KNOWLEDGEBASEID SOURCEID --file <path> [--content-type <mime>] [--watch]
 
 ARGUMENTS
   KNOWLEDGEBASEID  Knowledge base ID
@@ -1950,6 +1956,8 @@ ARGUMENTS
 FLAGS
   --content-type=<mime>  MIME type of the file (inferred from the file extension when omitted)
   --file=<path>          (required) Local file to upload: a document, or a zip, tar or gzip archive of them
+  --watch                Wait for the sync to finish, exiting non-zero if it fails; a held sync prints how to confirm or
+                         discard it
 
 DESCRIPTION
   Upload a new file to a files source, replacing the one it holds, and sync it
@@ -1958,6 +1966,10 @@ EXAMPLES
   Replace the file a source holds
 
     $ sanity context sources upload kb-abc123 source-def456 --file ./handbook.pdf
+
+  Replace the file and wait for its sync to finish
+
+    $ sanity context sources upload kb-abc123 source-def456 --file ./handbook.pdf --watch
 ```
 
 ## `sanity context sync KNOWLEDGEBASEID`

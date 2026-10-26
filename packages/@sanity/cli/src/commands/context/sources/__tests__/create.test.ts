@@ -153,7 +153,9 @@ describe('context sources create', () => {
       url: 'https://example.com',
     })
     expect(mockSourcesCreate).not.toHaveBeenCalled()
-    expect(stdout).toContain('Pages: ~155')
+    expect(stdout).toContain('Pages found: ~155')
+    expect(stdout).toContain('Page limit:  500')
+    expect(stdout).toContain('before the crawl flags apply')
     expect(stdout).toContain('/docs/')
     expect(stdout).toContain('(other)')
   })
@@ -184,7 +186,9 @@ describe('context sources create', () => {
       '--dry-run',
     ])
     if (error) throw error
-    expect(stdout).toContain('Pages: more than 1000')
+    expect(stdout).toContain('Pages found: more than 1000')
+    expect(stdout).not.toContain('Page limit')
+    expect(stdout).not.toContain('before the crawl flags apply')
     expect(stdout).not.toContain('Path')
 
     const json = await testCommand(CreateSourceCommand, [

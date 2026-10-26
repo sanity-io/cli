@@ -3,6 +3,7 @@ import {exitCodes, SanityCommand, subdebug} from '@sanity/cli-core'
 import {getErrorMessage} from '@sanity/cli-core/errors'
 import {type Context, isHttpError} from '@sanity/client'
 
+import {type CrawlOptions} from '../../../actions/context/crawlFlags.js'
 import {formatKeyValue} from '../../../actions/debug/output.js'
 import {getSource} from '../../../services/context.js'
 
@@ -10,12 +11,34 @@ const getSourceDebug = subdebug('context:sources:get')
 
 const padTo = 14 // "Sync frequency" is the longest key
 
+function formatCrawlOptions(options: CrawlOptions | null | undefined): string[] {
+  const values: [string, boolean | number | string[] | undefined][] = [
+    ['Include paths', options?.includePaths],
+    ['Exclude paths', options?.excludePaths],
+    ['Max depth', options?.maxDepth],
+    ['Page limit', options?.pageLimit],
+    ['Sitemap only', options?.sitemapOnly],
+    ['Ignore query params', options?.ignoreQueryParameters],
+  ]
+  const set = values.filter(([, value]) => value !== undefined)
+  if (set.length === 0) return [formatKeyValue('Crawl options', 'defaults', {padTo})]
+  return [
+    formatKeyValue('Crawl options', '', {padTo}).trimEnd(),
+    ...set.map(([key, value]) =>
+      formatKeyValue(key, Array.isArray(value) ? value.join(', ') : String(value), {
+        indent: 4,
+        padTo: 19, // "Ignore query params"
+      }),
+    ),
+  ]
+}
+
 function formatSettings(source: Context.Source): string[] {
   switch (source.type) {
     case 'files': {
       return [
         formatKeyValue('File', source.filename ?? '-', {padTo}),
-        formatKeyValue('Size', source.sizeBytes ?? '-', {padTo}),
+        formatKeyValue('Size', String(source.sizeBytes ?? '-'), {padTo}),
       ]
     }
     case 'sanity-dataset': {
@@ -29,7 +52,7 @@ function formatSettings(source: Context.Source): string[] {
     case 'web': {
       return [
         formatKeyValue('URL', source.url, {padTo}),
-        formatKeyValue('Crawl options', source.crawlOptions, {padTo}),
+        ...formatCrawlOptions(source.crawlOptions),
         formatKeyValue('Sync frequency', source.syncFrequency ?? 'off', {padTo}),
       ]
     }
@@ -100,7 +123,7 @@ export class GetSourceCommand extends SanityCommand<typeof GetSourceCommand> {
         {padTo},
       ),
     )
-    this.log(formatKeyValue('Chunks', source.chunkCount, {padTo}))
+    this.log(formatKeyValue('Chunks', String(source.chunkCount), {padTo}))
     this.log(formatKeyValue('Latest sync', sync ? `${sync.id} (${sync.status})` : '-', {padTo}))
     this.log(formatKeyValue('Last synced', source.lastSyncedAt ?? '-', {padTo}))
     this.log(formatKeyValue('Created', source.createdAt, {padTo}))

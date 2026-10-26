@@ -3,8 +3,8 @@ import {exitCodes, SanityCommand, subdebug} from '@sanity/cli-core'
 import {getErrorMessage} from '@sanity/cli-core/errors'
 import {isHttpError} from '@sanity/client'
 
+import {contextTable} from '../../../../actions/context/table.js'
 import {listSyncs} from '../../../../services/context.js'
-import {Table} from '../../../../util/responsiveTable.js'
 
 const listSyncsDebug = subdebug('context:sources:syncs:list')
 
@@ -65,7 +65,7 @@ export class ListSyncsCommand extends SanityCommand<typeof ListSyncsCommand> {
       return
     }
 
-    const table = new Table({
+    const table = contextTable({
       columns: [
         {alignment: 'left', name: 'id', title: 'ID'},
         {alignment: 'left', name: 'status', title: 'Status'},

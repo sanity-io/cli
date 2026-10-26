@@ -4,12 +4,25 @@ import {Args, Flags} from '@oclif/core'
 import {type FlagInput} from '@oclif/core/interfaces'
 import {exitCodes, SanityCommand, subdebug} from '@sanity/cli-core'
 import {getErrorMessage} from '@sanity/cli-core/errors'
-import {isHttpError} from '@sanity/client'
+import {type Context, isHttpError} from '@sanity/client'
 
 import {getDocumentContent} from '../../../services/context.js'
 import {defineCommandTelemetry} from '../../../util/telemetry/commandTelemetry.js'
 
 const documentContentDebug = subdebug('context:documents:content')
+
+/**
+ * The lines of a JSON content view, each prefixed with its line number in the whole document
+ */
+function numberLines({content, slice}: Context.DocumentContent<'json'>): string {
+  if (slice.start === 0) return ''
+  const width = String(slice.end).length
+  return content
+    .split('\n')
+    .slice(0, slice.end - slice.start + 1)
+    .map((line, index) => `${String(slice.start + index).padStart(width)}  ${line}\n`)
+    .join('')
+}
 
 const flags = {
   chunk: Flags.string({
@@ -19,9 +32,13 @@ const flags = {
   }),
   format: Flags.custom<'markdown' | 'plain' | 'raw'>({
     description:
-      'markdown (the converted document, default), plain (markdown stripped to text) or raw (the bytes the source gave, before conversion)',
+      'markdown (the converted document, default), plain (the same markdown, sent as text/plain) or raw (the bytes the source gave, before conversion)',
     options: ['markdown', 'plain', 'raw'],
   })(),
+  'line-numbers': Flags.boolean({
+    default: false,
+    description: 'Number each line as citations number them',
+  }),
   lines: Flags.string({
     description: 'Only these lines, as `10-20`, or `10` for line 10 to the end',
     exclusive: ['chunk'],
@@ -55,7 +72,7 @@ export class DocumentContentCommand extends SanityCommand<typeof DocumentContent
   }
 
   static override description =
-    'Print the markdown a document converted to, with the line numbers citations use, or download its original bytes'
+    'Print the markdown a document converted to, optionally with the line numbers citations use, or download its original bytes'
 
   static override enableJsonFlag = true
 
@@ -67,6 +84,11 @@ export class DocumentContentCommand extends SanityCommand<typeof DocumentContent
     {
       command: '<%= config.bin %> <%= command.id %> kb-abc123 document-def456 --lines 10-20',
       description: 'Print lines 10 to 20',
+    },
+    {
+      command:
+        '<%= config.bin %> <%= command.id %> kb-abc123 document-def456 --lines 10-20 --line-numbers',
+      description: 'Print lines 10 to 20, each with its line number',
     },
     {
       command:
@@ -85,7 +107,14 @@ export class DocumentContentCommand extends SanityCommand<typeof DocumentContent
 
   public async run(): Promise<void> {
     const {documentId, knowledgeBaseId} = this.args
-    const {chunk, format = 'markdown', json, lines, output} = this.flags
+    const {
+      chunk,
+      format = 'markdown',
+      json,
+      'line-numbers': lineNumbers,
+      lines,
+      output,
+    } = this.flags
 
     if (json && (this.flags.format !== undefined || output !== undefined)) {
       this.error(
@@ -94,6 +123,11 @@ export class DocumentContentCommand extends SanityCommand<typeof DocumentContent
           exit: exitCodes.USAGE_ERROR,
         },
       )
+    }
+    if (lineNumbers && (json || format !== 'markdown')) {
+      this.error('--line-numbers only applies to markdown, without --json.', {
+        exit: exitCodes.USAGE_ERROR,
+      })
     }
     if (format === 'raw' && output === undefined && process.stdout.isTTY) {
       this.error('Raw content is binary. Write it to a file with --output, or pipe it.', {
@@ -111,7 +145,11 @@ export class DocumentContentCommand extends SanityCommand<typeof DocumentContent
         )
         return
       }
-      content = await getDocumentContent(knowledgeBaseId, documentId, {...options, format})
+      content = lineNumbers
+        ? numberLines(
+            await getDocumentContent(knowledgeBaseId, documentId, {...options, format: 'json'}),
+          )
+        : await getDocumentContent(knowledgeBaseId, documentId, {...options, format})
     } catch (error) {
       documentContentDebug('Error getting document content', error)
       if (isHttpError(error) && error.statusCode === 404) {

@@ -78,8 +78,8 @@ export class GetDocumentCommand extends SanityCommand<typeof GetDocumentCommand>
       ),
     )
     this.log(formatKeyValue('MIME type', document.mime ?? '-', {padTo}))
-    this.log(formatKeyValue('Size', document.sizeBytes ?? '-', {padTo}))
-    this.log(formatKeyValue('Chunks', document.chunks.length, {padTo}))
+    this.log(formatKeyValue('Size', String(document.sizeBytes ?? '-'), {padTo}))
+    this.log(formatKeyValue('Chunks', String(document.chunks.length), {padTo}))
     this.log(formatKeyValue('Last seen', document.lastSeenAt, {padTo}))
     this.log(formatKeyValue('Created', document.createdAt, {padTo}))
     this.log(formatKeyValue('Updated', document.updatedAt, {padTo}))

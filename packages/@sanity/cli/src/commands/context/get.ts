@@ -72,8 +72,8 @@ export class GetKnowledgeBaseCommand extends SanityCommand<typeof GetKnowledgeBa
         {padTo},
       ),
     )
-    this.log(formatKeyValue('Open issues', knowledgeBase.openIssueCount, {padTo}))
-    this.log(formatKeyValue('Instructions', knowledgeBase.instructionCount, {padTo}))
+    this.log(formatKeyValue('Open issues', String(knowledgeBase.openIssueCount), {padTo}))
+    this.log(formatKeyValue('Instructions', String(knowledgeBase.instructionCount), {padTo}))
     this.log(formatKeyValue('Created', knowledgeBase.createdAt, {padTo}))
     this.log(formatKeyValue('Updated', knowledgeBase.updatedAt, {padTo}))
   }

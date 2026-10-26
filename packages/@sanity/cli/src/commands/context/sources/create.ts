@@ -11,9 +11,9 @@ import {type Context, isHttpError} from '@sanity/client'
 
 import {crawlFlags, crawlOptionsFromFlags} from '../../../actions/context/crawlFlags.js'
 import {readSourceFile} from '../../../actions/context/sourceFile.js'
+import {contextTable} from '../../../actions/context/table.js'
 import {formatKeyValue} from '../../../actions/debug/output.js'
 import {createSource, previewWebSource} from '../../../services/context.js'
-import {Table} from '../../../util/responsiveTable.js'
 import {getDatasetFlag, getProjectIdFlag} from '../../../util/sharedFlags.js'
 import {defineCommandTelemetry} from '../../../util/telemetry/commandTelemetry.js'
 
@@ -54,7 +54,8 @@ const flags = {
   }),
   'dry-run': Flags.boolean({
     default: false,
-    description: 'Estimate what the crawl would fetch, grouped by path, without adding the source',
+    description:
+      'Estimate how many pages the site has under --url, grouped by path, without adding the source. The estimate does not apply the crawl flags',
   }),
   file: Flags.string({
     description:
@@ -103,8 +104,8 @@ export class CreateSourceCommand extends SanityCommand<typeof CreateSourceComman
     },
     {
       command:
-        '<%= config.bin %> <%= command.id %> kb-abc123 --url https://example.com --include-path "^/docs/" --page-limit 500 --dry-run',
-      description: 'Estimate what a crawl limited to /docs/ would fetch, without adding it',
+        '<%= config.bin %> <%= command.id %> kb-abc123 --url https://example.com/docs --dry-run',
+      description: 'Estimate how many pages a crawl of /docs would find, without adding it',
     },
     {
       command:
@@ -327,12 +328,26 @@ export class CreateSourceCommand extends SanityCommand<typeof CreateSourceComman
       return
     }
 
+    const padTo = 11 // "Pages found" is the longest key
     this.log(
-      formatKeyValue('Pages', `${preview.truncated ? 'more than ' : '~'}${preview.totalPages}`),
+      formatKeyValue(
+        'Pages found',
+        `${preview.truncated ? 'more than ' : '~'}${preview.totalPages}`,
+        {padTo},
+      ),
     )
+    const pageLimit = params.crawlOptions?.pageLimit
+    if (pageLimit !== undefined) {
+      this.log(formatKeyValue('Page limit', String(pageLimit), {padTo}))
+    }
+    if (params.crawlOptions) {
+      this.log(
+        'The estimate counts the pages under the URL before the crawl flags apply, so a crawl with them can fetch fewer.',
+      )
+    }
     if (preview.groups.length === 0) return
 
-    const table = new Table({
+    const table = contextTable({
       columns: [
         {alignment: 'left', name: 'prefix', title: 'Path'},
         {alignment: 'right', name: 'count', title: 'Pages'},
