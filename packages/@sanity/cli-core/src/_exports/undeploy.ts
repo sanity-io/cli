@@ -3,7 +3,17 @@
  * dry-run plan, the `--json` payloads, and the real run's confirmation prompt —
  * so the human and machine outputs can't drift.
  */
-export type UndeployTarget = UndeployApplicationTarget | UndeployConfigTarget
+export type UndeployTarget =
+  | UndeployApplicationTarget
+  | UndeployConfigTarget
+  | UndeployFunctionStackTarget
+
+/** Cleanup left behind after an SDK application has already been deleted. */
+export interface UndeployFunctionStackTarget extends UndeployTargetDetails {
+  deletes: 'functionStack'
+  /** The application ID whose resources are being cleaned up. */
+  id: string
+}
 
 /** An undeploy that deletes the application, along with all its deployments. */
 export interface UndeployApplicationTarget extends UndeployTargetDetails {
@@ -36,6 +46,9 @@ export interface UndeployPayload {
 
   /** Media-library config summary. */
   config?: string
+  functions?: {name: string}[]
+  functionStackId?: string
+  organizationId?: string
   services?: object[]
   views?: object[]
 }
