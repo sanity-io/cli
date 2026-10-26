@@ -57,7 +57,7 @@ afterEach(() => {
   document.head.replaceChildren()
   delete globals.esmsInitOptions
   delete globals.importShim
-  delete (globalThis as Record<symbol, unknown>)[Symbol.for('sanity.autoUpdates.instances.v1')]
+  delete (globalThis as Record<symbol, unknown>)[Symbol.for('sanity.autoUpdates.registry.v1')]
   vi.useRealTimers()
   vi.restoreAllMocks()
   vi.clearAllMocks()
@@ -121,11 +121,30 @@ test('fetches module CDN code with the app ID inlined', async () => {
   expect(defaultSourceHook).toHaveBeenCalledWith('https://example.com/other.mjs', {}, '')
 })
 
-test('gives every app its own instance on one es-module-shims', async () => {
-  await (await setup('app1')).load('sanity')
-  await (await setup('app2')).load('sanity')
+test('gives apps that load at the same time their own instance on one es-module-shims', async () => {
+  // es-module-shims evaluates once, with the first options it finds.
+  let options: unknown
+  Object.defineProperty(globalThis, 'esmsInitOptions', {
+    configurable: true,
+    get: () => options,
+    set: (value) => {
+      options ??= value
+    },
+  })
+  vi.stubGlobal(
+    'fetch',
+    vi.fn(async (url: string) => ({ok: true, text: async () => '__SANITY_APP_ID__', url})),
+  )
+  const apps = await Promise.all([setup('app1'), setup('app2')])
 
-  expect(importShim).toHaveBeenLastCalledWith('sanity/structure', inInstance('i1'))
+  await Promise.all(apps.map((app) => app.load('sanity')))
+
+  await expect(
+    source(inInstance('i0', 'sanity-cdn.com/x'), {}, '', vi.fn()),
+  ).resolves.toMatchObject({source: '"app1"'})
+  await expect(
+    source(inInstance('i1', 'sanity-cdn.com/x'), {}, '', vi.fn()),
+  ).resolves.toMatchObject({source: '"app2"'})
 })
 
 test('uses the bundled copy of every package when one fails to load', async () => {

@@ -11,10 +11,15 @@ interface Instance {
   vendorModules: Record<string, Module>
 }
 
+interface Registry {
+  importShim: Promise<ImportShim>
+  instances: Map<string, Instance>
+}
+
 interface Globals {
   esmsInitOptions?: object
   importShim?: ImportShim
-  [INSTANCES]?: Map<string, Instance>
+  [REGISTRY]?: Registry
 }
 
 interface AutoUpdatesLoaderOptions {
@@ -26,8 +31,8 @@ interface AutoUpdatesLoaderOptions {
 }
 
 // Bump when the registry, instance URL or re-export shape changes; mismatched remotes fall back.
-const INSTANCES_KEY = 'sanity.autoUpdates.instances.v1'
-const INSTANCES = Symbol.for(INSTANCES_KEY)
+const REGISTRY_KEY = 'sanity.autoUpdates.registry.v1'
+const REGISTRY = Symbol.for(REGISTRY_KEY)
 const INSTANCE_URL = /^https?:\/\/[^/]+\/~([^/]+)\/(.*)$/
 // Path prefix of vendor modules; module CDN paths start with a host name instead.
 const VENDOR_PATH = 'vendor/'
@@ -108,13 +113,12 @@ async function createInstance({
   vendor,
 }: Pick<AutoUpdatesLoaderOptions, 'appId' | 'imports' | 'vendor'>) {
   const globals = globalThis as Globals
-  const importShim = globals.importShim ?? (await loadImportShim(globals))
-  if (!globals[INSTANCES]) {
-    throw new Error('es-module-shims was loaded without the auto-updates hooks')
-  }
+  // Remotes can start loading at the same time; all of them share one es-module-shims and registry.
+  const registry = (globals[REGISTRY] ??= createRegistry(globals))
+  const importShim = await registry.importShim
 
-  const id = `i${globals[INSTANCES].size}`
-  globals[INSTANCES].set(id, {appId, vendor, vendorModules: {}})
+  const id = `i${registry.instances.size}`
+  registry.instances.set(id, {appId, vendor, vendorModules: {}})
   const prefix = `${location.origin}/~${id}/`
   importShim.addImportMap({
     scopes: {
@@ -135,9 +139,20 @@ async function createInstance({
   return (specifier: string) => importShim(specifier, prefix)
 }
 
-async function loadImportShim(globals: Globals): Promise<ImportShim> {
+function createRegistry(globals: Globals): Registry {
   const instances = new Map<string, Instance>()
-  globals[INSTANCES] = instances
+
+  return {importShim: loadImportShim(globals, instances), instances}
+}
+
+async function loadImportShim(
+  globals: Globals,
+  instances: Registry['instances'],
+): Promise<ImportShim> {
+  if (globals.importShim) {
+    throw new Error('es-module-shims was loaded without the auto-updates hooks')
+  }
+
   globals.esmsInitOptions = {
     shimMode: true,
     source: async (
@@ -179,7 +194,7 @@ async function loadImportShim(globals: Globals): Promise<ImportShim> {
 
 function reexport(id: string, specifier: string, module: Module): string {
   const names = Object.keys(module).filter((name) => name !== 'default')
-  return `const m = globalThis[Symbol.for(${JSON.stringify(INSTANCES_KEY)})].get(${JSON.stringify(id)}).vendorModules[${JSON.stringify(specifier)}]
+  return `const m = globalThis[Symbol.for(${JSON.stringify(REGISTRY_KEY)})].instances.get(${JSON.stringify(id)}).vendorModules[${JSON.stringify(specifier)}]
 ${'default' in module ? 'export default m.default\n' : ''}${names.map((name, index) => `const e${index} = m[${JSON.stringify(name)}]`).join('\n')}
 export {${names.map((name, index) => `e${index} as ${JSON.stringify(name)}`).join(', ')}}
 `
