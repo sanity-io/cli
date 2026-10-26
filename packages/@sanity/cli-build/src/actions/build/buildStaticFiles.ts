@@ -5,15 +5,13 @@ import {buildFederatedApp, type WorkbenchExposes} from '@sanity/workbench-cli/bu
 import {build} from 'vite'
 
 import {copyDir} from '../../util/copyDir.js'
-import {type ModuleCdnPackage} from './autoUpdates.js'
+import {type AutoUpdatesBuildConfig} from './autoUpdates.js'
 import {buildDebug} from './buildDebug.js'
-import {getAutoUpdatesCssUrls, getAutoUpdatesImportMap} from './getAutoUpdatesImportMap.js'
 import {
   getAppEnvironmentVariables,
   getStudioEnvironmentVariables,
 } from './getEnvironmentVariables.js'
 import {extendViteConfigWithUserConfig, finalizeViteConfig, getViteConfig} from './getViteConfig.js'
-import {resolveVendorBuildConfig} from './resolveVendorBuildConfig.js'
 import {writeFavicons} from './writeFavicons.js'
 import {resolveEntries, writeSanityRuntime} from './writeSanityRuntime.js'
 
@@ -33,6 +31,7 @@ interface StaticBuildOptions {
   outputDir: string
 
   appTitle?: string
+  autoUpdates?: AutoUpdatesBuildConfig
   entry?: string
   exposes?: WorkbenchExposes
   isApp?: boolean
@@ -41,7 +40,6 @@ interface StaticBuildOptions {
   /** Workbench app (opted in via `defineApplication`) — drives the federation build. */
   isWorkbenchApp?: boolean
   minify?: boolean
-  moduleCdnPackages?: ModuleCdnPackage[]
   profile?: boolean
   reactCompiler?: CliConfig['reactCompiler']
   schemaExtraction?: CliConfig['schemaExtraction']
@@ -61,6 +59,7 @@ export async function buildStaticFiles(
 ): Promise<{chunks: ChunkStats[]}> {
   const {
     appTitle,
+    autoUpdates,
     basePath,
     cwd,
     entry,
@@ -69,7 +68,6 @@ export async function buildStaticFiles(
     isBlueprints,
     isWorkbenchApp,
     minify = true,
-    moduleCdnPackages,
     outputDir,
     reactCompiler,
     schemaExtraction,
@@ -79,12 +77,6 @@ export async function buildStaticFiles(
   } = options
 
   const mode = 'production'
-
-  const autoUpdates = moduleCdnPackages && {
-    cssUrls: getAutoUpdatesCssUrls(moduleCdnPackages),
-    imports: getAutoUpdatesImportMap(moduleCdnPackages),
-    vendor: await resolveVendorBuildConfig({cwd, isApp: Boolean(isApp)}),
-  }
 
   /* Federation builds only produce the federation environment
    * (remote-entry, mf-manifest) — skip client-specific steps like

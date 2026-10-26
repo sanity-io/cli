@@ -4,14 +4,8 @@ import {afterEach, describe, expect, test, vi} from 'vitest'
 import {
   getAutoUpdatesCssUrls,
   getAutoUpdatesImportMap,
-  getModuleCdnPackages,
   getModuleUrl,
 } from '../getAutoUpdatesImportMap.js'
-
-const cdnImportMap = (...args: Parameters<typeof getModuleCdnPackages>) =>
-  getAutoUpdatesImportMap(getModuleCdnPackages(...args))
-const cdnCssUrls = (...args: Parameters<typeof getModuleCdnPackages>) =>
-  getAutoUpdatesCssUrls(getModuleCdnPackages(...args))
 
 afterEach(() => {
   vi.unstubAllEnvs()
@@ -19,7 +13,7 @@ afterEach(() => {
 
 describe('getAutoUpdateImportMap() without app id', () => {
   test('works with sanity package', () => {
-    const autoUpdatesImportMap = cdnImportMap([{name: 'sanity', version: '3.2.0'}], {
+    const autoUpdatesImportMap = getAutoUpdatesImportMap([{name: 'sanity', version: '3.2.0'}], {
       baseUrl: 'https://sanity-cdn.com',
       timestamp: 1_755_770_630,
     })
@@ -30,7 +24,7 @@ describe('getAutoUpdateImportMap() without app id', () => {
   })
   test('works with scoped packages', () => {
     expect(
-      cdnImportMap([{name: '@sanity/vision', version: '4.2.0'}], {
+      getAutoUpdatesImportMap([{name: '@sanity/vision', version: '4.2.0'}], {
         baseUrl: 'https://sanity-cdn.com',
         timestamp: 1_755_770_630,
       }),
@@ -43,7 +37,7 @@ describe('getAutoUpdateImportMap() without app id', () => {
   })
   test('works with sdk packages', () => {
     expect(
-      cdnImportMap(
+      getAutoUpdatesImportMap(
         [
           {name: '@sanity/sdk', version: '1.0.0'},
           {name: '@sanity/sdk-react', version: '1.3.0'},
@@ -64,7 +58,7 @@ describe('getAutoUpdateImportMap() without app id', () => {
 
 describe('getAutoUpdateImportMap() with app id', () => {
   test('works with sanity package', () => {
-    const autoUpdatesImportMap = cdnImportMap([{name: 'sanity', version: '3.2.0'}], {
+    const autoUpdatesImportMap = getAutoUpdatesImportMap([{name: 'sanity', version: '3.2.0'}], {
       appId: 'foo321bar123',
       baseUrl: 'https://sanity-cdn.com',
       timestamp: 1_755_770_630,
@@ -77,7 +71,7 @@ describe('getAutoUpdateImportMap() with app id', () => {
   })
   test('works with scoped packages', () => {
     expect(
-      cdnImportMap([{name: '@sanity/vision', version: '4.2.0'}], {
+      getAutoUpdatesImportMap([{name: '@sanity/vision', version: '4.2.0'}], {
         appId: 'foo321bar123',
         baseUrl: 'https://sanity-cdn.com',
         timestamp: 1_755_770_630,
@@ -91,7 +85,7 @@ describe('getAutoUpdateImportMap() with app id', () => {
   })
   test('works with sdk packages', () => {
     expect(
-      cdnImportMap(
+      getAutoUpdatesImportMap(
         [
           {name: '@sanity/sdk', version: '1.0.0'},
           {name: '@sanity/sdk-react', version: '1.3.0'},
@@ -113,7 +107,7 @@ describe('getAutoUpdateImportMap() with app id', () => {
 
 describe('getAutoUpdatesCssUrls() without app id', () => {
   test('generates CSS URLs for packages with cssFile', () => {
-    const cssUrls = cdnCssUrls(
+    const cssUrls = getAutoUpdatesCssUrls(
       [
         {cssFile: 'index.css', name: 'sanity', version: '3.2.0'},
         {cssFile: 'index.css', name: '@sanity/vision', version: '3.2.0'},
@@ -127,7 +121,7 @@ describe('getAutoUpdatesCssUrls() without app id', () => {
   })
 
   test('skips packages without cssFile', () => {
-    const cssUrls = cdnCssUrls(
+    const cssUrls = getAutoUpdatesCssUrls(
       [
         {cssFile: 'index.css', name: 'sanity', version: '3.2.0'},
         {name: '@sanity/vision', version: '3.2.0'},
@@ -140,7 +134,7 @@ describe('getAutoUpdatesCssUrls() without app id', () => {
   })
 
   test('returns empty array when no packages have cssFile', () => {
-    const cssUrls = cdnCssUrls(
+    const cssUrls = getAutoUpdatesCssUrls(
       [
         {name: 'sanity', version: '3.2.0'},
         {name: '@sanity/vision', version: '3.2.0'},
@@ -153,7 +147,7 @@ describe('getAutoUpdatesCssUrls() without app id', () => {
 
 describe('getAutoUpdatesCssUrls() with app id', () => {
   test('generates CSS URLs using by-app URL pattern', () => {
-    const cssUrls = cdnCssUrls(
+    const cssUrls = getAutoUpdatesCssUrls(
       [
         {cssFile: 'index.css', name: 'sanity', version: '3.2.0'},
         {cssFile: 'index.css', name: '@sanity/vision', version: '3.2.0'},

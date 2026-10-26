@@ -16,7 +16,6 @@ const mockWriteSanityRuntime = vi.hoisted(() => vi.fn())
 const mockResolveEntries = vi.hoisted(() => vi.fn())
 const mockCopyDir = vi.hoisted(() => vi.fn())
 const mockWriteFavicons = vi.hoisted(() => vi.fn())
-const mockResolveVendorBuildConfig = vi.hoisted(() => vi.fn())
 
 vi.mock('@sanity/workbench-cli/build', () => ({
   buildFederatedApp: mockBuildApp,
@@ -40,10 +39,6 @@ vi.mock('../getViteConfig.js', () => ({
   getViteConfig: mockGetViteConfig,
 }))
 
-vi.mock('../resolveVendorBuildConfig.js', () => ({
-  resolveVendorBuildConfig: mockResolveVendorBuildConfig,
-}))
-
 vi.mock('../writeFavicons.js', () => ({
   writeFavicons: mockWriteFavicons,
 }))
@@ -56,23 +51,10 @@ vi.mock('../writeSanityRuntime.js', () => ({
 const cwd = '/test/cwd'
 const outputDir = '/test/cwd/dist'
 const defaultViteConfig: InlineConfig = {plugins: [{name: 'sanity-default'}], root: cwd}
-const vendor = {
-  entries: {'react/index': '/pkg/react/index.js'},
-  namesByChunkName: {'react/index': ['useState']},
-  specifiersByChunkName: {'react/index': 'react'},
-}
-const moduleCdnPackages = [
-  {
-    cssUrl: 'https://sanity-cdn.example/sanity/index.css',
-    name: 'sanity',
-    url: 'https://sanity-cdn.example/sanity',
-  },
-]
 
 describe('buildStaticFiles', () => {
   beforeEach(() => {
     mockGetViteConfig.mockResolvedValue(defaultViteConfig)
-    mockResolveVendorBuildConfig.mockResolvedValue(vendor)
     mockExtendViteConfigWithUserConfig.mockImplementation(async (_env, base, user) =>
       typeof user === 'function' ? user(base, _env) : {...base, ...user},
     )
@@ -141,7 +123,18 @@ describe('buildStaticFiles', () => {
       expect(mockBuildApp).toHaveBeenCalledWith(defaultViteConfig, {
         reuseStandaloneBuild: true,
       })
-      expect(mockResolveVendorBuildConfig).not.toHaveBeenCalled()
+    })
+
+    test('builds an auto-updating workbench app without reusing its standalone build', async () => {
+      const autoUpdates = {
+        imports: {sanity: 'https://sanity-cdn.example/sanity'},
+        vendor: {entries: {}, namesByChunkName: {}, specifiersByChunkName: {}},
+      }
+
+      await buildStaticFiles({autoUpdates, basePath: '/', cwd, isWorkbenchApp: true, outputDir})
+
+      expect(mockGetViteConfig).toHaveBeenCalledWith(expect.objectContaining({autoUpdates}))
+      expect(mockBuildApp).toHaveBeenCalledWith(defaultViteConfig, {reuseStandaloneBuild: false})
     })
 
     test('threads schemaExtraction through so a federated studio still extracts its schema', async () => {
@@ -215,25 +208,6 @@ describe('buildStaticFiles', () => {
         reuseStandaloneBuild: false,
       })
     })
-  })
-
-  test('builds the vendor packages of an auto-updating workbench app without reusing its standalone build', async () => {
-    await buildStaticFiles({basePath: '/', cwd, isWorkbenchApp: true, moduleCdnPackages, outputDir})
-
-    expect(mockResolveVendorBuildConfig).toHaveBeenCalledWith({cwd, isApp: false})
-    expect(mockGetViteConfig).toHaveBeenCalledWith(
-      expect.objectContaining({
-        autoUpdates: {
-          cssUrls: ['https://sanity-cdn.example/sanity/index.css'],
-          imports: {
-            sanity: 'https://sanity-cdn.example/sanity',
-            'sanity/': 'https://sanity-cdn.example/sanity/',
-          },
-          vendor,
-        },
-      }),
-    )
-    expect(mockBuildApp).toHaveBeenCalledWith(defaultViteConfig, {reuseStandaloneBuild: false})
   })
 
   describe('isWorkbenchapp=false', () => {
