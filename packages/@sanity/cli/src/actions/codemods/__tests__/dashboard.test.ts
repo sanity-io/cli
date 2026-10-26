@@ -105,6 +105,7 @@ describe('dashboard codemod prepare', () => {
 
   afterEach(() => {
     vi.resetAllMocks()
+    vi.unstubAllEnvs()
   })
 
   test('deployed studio: suggests the studio title, uses the project org and rejects the studio host as slug', async () => {
@@ -267,6 +268,49 @@ describe('dashboard codemod prepare', () => {
         )
       },
     )
+
+    // Berry dropped `yarn upgrade`, and the agent only names yarn when the CLI was run through it
+    describe('picking the yarn upgrade verb', () => {
+      beforeEach(() => {
+        vi.stubEnv('npm_config_user_agent', 'npm/10.9.0 node/v22.11.0')
+        installed({sanity: ['6.11.0', '6.20.0']})
+        project('yarn', '^6.5.0')
+        vi.mocked(confirm).mockResolvedValue(true)
+      })
+
+      test.each([
+        ['up', 'a .yarnrc.yml marks it as Berry', {'.yarnrc.yml': 'nodeLinker: node-modules\n'}],
+        ['up', 'corepack pins Berry', {'package.json': '{"packageManager": "yarn@4.9.1"}'}],
+        ['upgrade', 'nothing marks it as Berry', {}],
+      ] as const)('runs `yarn %s` in a project where %s', async (verb, _reason, files) => {
+        const dir = await mkdtemp(path.join(tmpdir(), 'dashboard-codemod-'))
+        await Promise.all(
+          Object.entries({'package.json': '{}', 'yarn.lock': '', ...files}).map(([name, content]) =>
+            writeFile(path.join(dir, name), content),
+          ),
+        )
+
+        try {
+          await prepare(sdkApp, {dir})
+        } finally {
+          await rm(dir, {force: true, recursive: true})
+        }
+
+        expect(execa).toHaveBeenCalledWith(
+          'yarn',
+          [verb, 'sanity@latest'],
+          expect.objectContaining({cwd: dir}),
+        )
+      })
+
+      test('falls back to the user agent when the project says nothing', async () => {
+        vi.stubEnv('npm_config_user_agent', 'yarn/4.9.1 npm/? node/v22.11.0')
+
+        await prepare(sdkApp)
+
+        expect(execa).toHaveBeenCalledWith('yarn', ['up', 'sanity@latest'], expect.anything())
+      })
+    })
 
     test('upgrades the SDK alongside sanity in an SDK app', async () => {
       installed({

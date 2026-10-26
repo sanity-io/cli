@@ -47,6 +47,12 @@ async function findOutdated(packages: RequiredPackage[], workDir: string) {
   })
 }
 
+// corepack's `packageManager: "yarn@4.9.1"` names the major even without a .yarnrc.yml
+function declaredYarnMajor(field: unknown) {
+  const match = typeof field === 'string' ? /^yarn@(\d+)/.exec(field) : null
+  return match ? Number.parseInt(match[1], 10) : undefined
+}
+
 function listOutdated(packages: Awaited<ReturnType<typeof findOutdated>>) {
   return packages
     .map(({min, name, neededBy, version}) => `  - ${name} ${version} (${neededBy} ${min} or later)`)
@@ -164,17 +170,15 @@ export const dashboard: CodeMod = {
       )
 
       const {chosen: packageManager} = await getPackageManagerChoice(workDir, {interactive: false})
-      const {dependencies, devDependencies} = await readPackageJson(
-        path.join(workDir, 'package.json'),
-        {skipSchemaValidation: true},
-      )
+      const {root, yarnBerry} = await detectWorkspace(workDir)
+      const [{dependencies, devDependencies}, rootManifest] = await Promise.all([
+        readPackageJson(path.join(workDir, 'package.json'), {skipSchemaValidation: true}),
+        readFile(path.join(root, 'package.json'), 'utf8').then(JSON.parse, () => null),
+      ])
       let pnpmOverrides: string[] = []
       if (packageManager === 'pnpm') {
-        const {root} = await detectWorkspace(workDir)
-        const [workspaceConfig, rootManifest] = await Promise.all([
-          readFile(path.join(root, 'pnpm-workspace.yaml'), 'utf8').then(yaml.parse, () => null),
-          readFile(path.join(root, 'package.json'), 'utf8').then(JSON.parse, () => null),
-        ])
+        const workspacePath = path.join(root, 'pnpm-workspace.yaml')
+        const workspaceConfig = await readFile(workspacePath, 'utf8').then(yaml.parse, () => null)
         pnpmOverrides = Object.keys({
           ...rootManifest?.pnpm?.overrides,
           ...workspaceConfig?.overrides,
@@ -204,13 +208,18 @@ export const dashboard: CodeMod = {
       if (upgradable.length > 0) {
         const names = upgradable.map(({name}) => name)
         const latest = names.map((name) => `${name}@latest`)
+        // Berry dropped `yarn upgrade`, and the user agent only names yarn when the CLI itself was
+        // run through yarn, so take the project's own signals first
+        const isYarnBerry =
+          yarnBerry ||
+          (declaredYarnMajor(rootManifest?.packageManager) ?? getYarnMajorVersion() ?? 1) >= 2
         // pnpm keeps `catalog:` and bumps the catalog entry only with `update --latest`
         const command = {
           bun: ['bun', 'update', ...latest],
           manual: undefined,
           npm: ['npm', 'install', '--legacy-peer-deps', ...latest],
           pnpm: ['pnpm', 'update', ...names, '--latest'],
-          yarn: ['yarn', (getYarnMajorVersion() ?? 1) >= 2 ? 'up' : 'upgrade', ...latest],
+          yarn: ['yarn', isYarnBerry ? 'up' : 'upgrade', ...latest],
         }[packageManager]
 
         if (!command) {
