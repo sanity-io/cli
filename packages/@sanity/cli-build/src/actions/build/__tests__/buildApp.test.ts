@@ -7,6 +7,7 @@ import {type Output} from '@sanity/cli-core/types'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
 import {buildApp, type BuildAppEventListener, type BuildOptions} from '../buildApp.js'
+import {resolveVendorBuildConfig} from '../resolveVendorBuildConfig.js'
 
 function buildOptions(
   overrides: Partial<BuildOptions> & Pick<BuildOptions, 'output'>,
@@ -110,6 +111,22 @@ describe('#buildApp', () => {
   afterEach(() => {
     vi.clearAllMocks()
   })
+
+  test.each([
+    {isApp: false, styledComponents: '6.1.18'},
+    {isApp: true, styledComponents: undefined},
+  ])(
+    'provides styled-components as a vendor package when installed ($styledComponents)',
+    async ({isApp, styledComponents}) => {
+      mockedGetLocalPackageVersion.mockImplementation(async (name) =>
+        name === 'styled-components' ? styledComponents : '1.0.0',
+      )
+
+      await buildApp(buildOptions({autoUpdatesEnabled: true, output: createMockOutput()}))
+
+      expect(resolveVendorBuildConfig).toHaveBeenCalledWith({cwd: expect.any(String), isApp})
+    },
+  )
 
   test('outputs included environment variables', async () => {
     const output = createMockOutput()
