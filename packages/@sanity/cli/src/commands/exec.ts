@@ -52,9 +52,13 @@ export class ExecCommand extends SanityCommand<typeof ExecCommand> {
   public async run(): Promise<void> {
     const {args, argv, flags} = await this.parse(ExecCommand)
     const {directory: workDir} = await this.getProjectRoot()
+    const separatorIndex = this.argv.indexOf('--')
+    // oclif may reorder duplicate unparsed tokens, so preserve raw arguments after the separator.
+    const extraArguments =
+      separatorIndex === -1 ? (argv as string[]).slice(1) : this.argv.slice(separatorIndex + 1)
 
     await execScript({
-      extraArguments: (argv as string[]).slice(1), // Remove the script path from argv
+      extraArguments,
       flags,
       scriptPath: args.script,
       workDir,

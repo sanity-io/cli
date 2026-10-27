@@ -123,6 +123,29 @@ describe('#exec', {timeout: 15 * 1000}, () => {
       expect(data.argv).toEqual([process.argv[0], scriptPath, '--dry-run', 'positional-argument'])
     })
 
+    test.skipIf(isWindowsNode24OrUp)(
+      'preserves the order of duplicate script arguments',
+      async (t) => {
+        const scriptArguments = ['--alias', 'prod', '--tag', 'prod', '--name', 'x']
+        const {error, stderr, stdout} = await testCommand(ExecCommand, [
+          scriptPath,
+          '--',
+          ...scriptArguments,
+        ])
+        t.onTestFailed(() => {
+          // eslint-disable-next-line no-console
+          console.log(stdout)
+          // eslint-disable-next-line no-console
+          console.warn(stderr)
+        })
+
+        if (error) throw error
+
+        const data = JSON.parse(stdout.trim())
+        expect(data.argv).toEqual([process.argv[0], scriptPath, ...scriptArguments])
+      },
+    )
+
     test.skipIf(isWindowsNode24OrUp)('resolves TypeScript path aliases', async (t) => {
       await mkdir(join(exampleDir, 'test-alias'))
       await writeFile(
