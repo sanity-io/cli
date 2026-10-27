@@ -221,7 +221,7 @@ describe('#buildApp', () => {
       expect(mockedBuildStaticFiles).not.toHaveBeenCalled()
     })
 
-    test('skips the SDK auto-update machinery', async () => {
+    test('ignores auto-updates, since sanity renders the config', async () => {
       const output = createMockOutput()
       const compareDependencyVersions = vi
         .fn()
@@ -240,8 +240,10 @@ describe('#buildApp', () => {
       )
 
       expect(compareDependencyVersions).not.toHaveBeenCalled()
+      expect(resolveVendorBuildConfig).not.toHaveBeenCalled()
       expect(output.error).not.toHaveBeenCalled()
-      expect(mockedBuildStaticFiles).toHaveBeenCalled()
+      expect(mockedBuildStaticFiles).toHaveBeenCalledOnce()
+      expect(mockedBuildStaticFiles.mock.calls[0][0].autoUpdates).toBeUndefined()
     })
 
     // The scaffolded template's real-world shape: auto-updates on by default,

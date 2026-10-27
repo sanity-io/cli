@@ -206,7 +206,7 @@ export async function buildApp(
   trace.start()
 
   let autoUpdates
-  if (autoUpdatesEnabled) {
+  if (autoUpdatesEnabled && !isMediaLibraryConfigBuild) {
     autoUpdates = {
       cssUrls: autoUpdatesCssUrls,
       imports: autoUpdatesImports,
