@@ -1,19 +1,13 @@
 // @vitest-environment jsdom
 import {afterEach, beforeEach, expect, test, vi} from 'vitest'
 
-type SourceHook = (
-  url: string,
-  fetchOpts: RequestInit,
-  parent: string,
-  defaultSourceHook: (url: string) => unknown,
-) => Promise<{source: string; type: string; url?: string}>
+import {createAutoUpdatesLoader} from '../autoUpdatesLoader.js'
 
-const importShim = Object.assign(vi.fn(), {addImportMap: vi.fn()})
-const globals = globalThis as unknown as {
-  esmsInitOptions?: {source: SourceHook}
-  importShim?: typeof importShim
+type Instance = {
+  source: (path: string, fetchOpts: RequestInit) => Promise<{source: string; url?: string}>
 }
 
+const HOST = Symbol.for('sanity.autoUpdates.host.v1')
 const NOW = 1_800_000_000
 // The app ID's `t9` segment must survive the timestamp refresh.
 const SANITY_URL = 'https://sanity-cdn.com/v1/modules/by-app/t9app/t100/%5E6.17.0/sanity'
@@ -21,11 +15,11 @@ const CURRENT_SANITY_URL = SANITY_URL.replace('/t100', `/t${NOW}`)
 const DIRECTORY = 'https://modules.sanity-cdn.com/modules/v1/sanity/6.20.0/bare/'
 const react = {default: {}, useState() {}}
 const bundled = {source: 'bundled'}
+const importShim = Object.assign(vi.fn(), {addImportMap: vi.fn()})
+const instances = new Map<string, Instance>()
 const inInstance = (id: string, path = '') => `${location.origin}/~${id}/${path}`
-let source: SourceHook
 
-async function setup(appId = 't9app') {
-  const {createAutoUpdatesLoader} = await import('../autoUpdatesLoader.js')
+function setup(appId = 't9app') {
   const loader = createAutoUpdatesLoader({
     appId,
     cssUrls: [`${SANITY_URL}/index.css`],
@@ -42,22 +36,15 @@ async function setup(appId = 't9app') {
 
 beforeEach(() => {
   vi.useFakeTimers({now: NOW * 1000, toFake: ['Date']})
-  vi.resetModules()
-  // es-module-shims reads its options once, when it evaluates.
-  vi.doMock('es-module-shims', () => {
-    source = globals.esmsInitOptions!.source
-    globals.importShim = importShim
-    return {}
-  })
+  Object.assign(globalThis, {[HOST]: {instances, loadImportShim: async () => importShim}})
   importShim.mockImplementation(async (specifier: string) => ({specifier}))
   vi.spyOn(console, 'warn').mockImplementation(() => {})
 })
 
 afterEach(() => {
   document.head.replaceChildren()
-  delete globals.esmsInitOptions
-  delete globals.importShim
-  delete (globalThis as Record<symbol, unknown>)[Symbol.for('sanity.autoUpdates.registry.v1')]
+  delete (globalThis as Record<symbol, unknown>)[HOST]
+  instances.clear()
   vi.useRealTimers()
   vi.restoreAllMocks()
   vi.clearAllMocks()
@@ -65,7 +52,7 @@ afterEach(() => {
 })
 
 test("loads the auto-updated packages as the app's own instance, from current module CDN URLs", async () => {
-  const {importMapUrl, load} = await setup()
+  const {importMapUrl, load} = setup()
 
   await expect(load('sanity/structure')).resolves.toEqual({specifier: 'sanity/structure'})
 
@@ -87,17 +74,16 @@ test("loads the auto-updated packages as the app's own instance, from current mo
 })
 
 test("serves the app's vendor modules as re-exports", async () => {
-  await (await setup()).load('sanity')
+  await setup().load('sanity')
 
-  const {source: reexport} = await source(inInstance('i0', 'vendor/react'), {}, '', vi.fn())
+  const {source} = await instances.get('i0')!.source('vendor/react', {})
 
-  expect(reexport).toContain('export default m.default')
-  expect(reexport).toContain('export {e0 as "useState"}')
-  expect(new Function(`${reexport.replaceAll(/^export .*$/gm, '')}\nreturn m`)()).toBe(react)
+  expect(source).toContain('export default m.default')
+  expect(source).toContain('export {e0 as "useState"}')
+  expect(new Function(`${source.replaceAll(/^export .*$/gm, '')}\nreturn m`)()).toBe(react)
 })
 
-test('fetches module CDN code with the app ID inlined', async () => {
-  await (await setup()).load('sanity')
+test('fetches module CDN code with the app ID of the app that loads it', async () => {
   vi.stubGlobal(
     'fetch',
     vi.fn(async () => ({
@@ -107,44 +93,16 @@ test('fetches module CDN code with the app ID inlined', async () => {
       url: `${DIRECTORY}dist-B.mjs`,
     })),
   )
-  const defaultSourceHook = vi.fn()
+  await Promise.all([setup('app1').load('sanity'), setup('app2').load('sanity')])
 
-  const loaded = await source(inInstance('i0', 'sanity-cdn.com/x'), {}, '', defaultSourceHook)
+  const loaded = await instances.get('i1')!.source('sanity-cdn.com/x', {})
 
   expect(fetch).toHaveBeenCalledWith('https://sanity-cdn.com/x', {})
   expect(loaded).toEqual({
-    source: 'var a=e=>e??(typeof "t9app"==`string`?"t9app":void 0),b=globalThis.__SANITY_APP_ID__',
+    source: 'var a=e=>e??(typeof "app2"==`string`?"app2":void 0),b=globalThis.__SANITY_APP_ID__',
     type: 'js',
-    url: inInstance('i0', `${DIRECTORY.replace('https://', '')}dist-B.mjs`),
+    url: inInstance('i1', `${DIRECTORY.replace('https://', '')}dist-B.mjs`),
   })
-  await source('https://example.com/other.mjs', {}, '', defaultSourceHook)
-  expect(defaultSourceHook).toHaveBeenCalledWith('https://example.com/other.mjs', {}, '')
-})
-
-test('gives apps that load at the same time their own instance on one es-module-shims', async () => {
-  // es-module-shims evaluates once, with the first options it finds.
-  let options: unknown
-  Object.defineProperty(globalThis, 'esmsInitOptions', {
-    configurable: true,
-    get: () => options,
-    set: (value) => {
-      options ??= value
-    },
-  })
-  vi.stubGlobal(
-    'fetch',
-    vi.fn(async (url: string) => ({ok: true, text: async () => '__SANITY_APP_ID__', url})),
-  )
-  const apps = await Promise.all([setup('app1'), setup('app2')])
-
-  await Promise.all(apps.map((app) => app.load('sanity')))
-
-  await expect(
-    source(inInstance('i0', 'sanity-cdn.com/x'), {}, '', vi.fn()),
-  ).resolves.toMatchObject({source: '"app1"'})
-  await expect(
-    source(inInstance('i1', 'sanity-cdn.com/x'), {}, '', vi.fn()),
-  ).resolves.toMatchObject({source: '"app2"'})
 })
 
 test('uses the bundled copy of every package when one fails to load', async () => {
@@ -152,20 +110,15 @@ test('uses the bundled copy of every package when one fails to load', async () =
     if (specifier === 'sanity/structure') throw new TypeError('Failed to fetch')
     return {specifier}
   })
-  const {importMapUrl, load} = await setup()
+  const {importMapUrl, load} = setup()
 
   await expect(load('sanity')).resolves.toBe(bundled)
   expect(importMapUrl('sanity')).toBeUndefined()
   expect(document.querySelectorAll('link')).toHaveLength(0)
 })
 
-test('uses the bundled copy when another script loaded es-module-shims', async () => {
-  globals.importShim = importShim
-  const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+test('uses the bundled copy in a Workbench that does not load auto-updating apps', async () => {
+  delete (globalThis as Record<symbol, unknown>)[HOST]
 
-  await expect((await setup()).load('sanity')).resolves.toBe(bundled)
-  expect(warn).toHaveBeenCalledWith(
-    expect.any(String),
-    new Error('es-module-shims was loaded without the auto-updates hooks'),
-  )
+  await expect(setup().load('sanity')).resolves.toBe(bundled)
 })
