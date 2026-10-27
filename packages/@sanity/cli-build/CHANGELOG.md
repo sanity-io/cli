@@ -1,5 +1,22 @@
 # Changelog
 
+## 7.0.3
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-build-v7.0.2...cli-build-v7.0.3)
+
+_2026-10-27_
+
+### Bug Fixes
+
+- **schema:** honor absolute `--path` in `schemas extract` ([#2034](https://github.com/sanity-io/cli/pull/2034)) ([5ffe2fc](https://github.com/sanity-io/cli/commit/5ffe2fcf186939cd1dd42748c101cbd47ace4184))
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/cli-core bumped to 3.14.0
+    - @sanity/workbench-cli bumped to 2.14.1
+
 ## 7.0.2
 
 [Compare changes](https://github.com/sanity-io/cli/compare/cli-build-v7.0.1...cli-build-v7.0.2)

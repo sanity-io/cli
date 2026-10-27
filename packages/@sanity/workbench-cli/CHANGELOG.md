@@ -1,5 +1,21 @@
 # @sanity/workbench-cli
 
+## 2.14.1
+
+[Compare changes](https://github.com/sanity-io/cli/compare/workbench-cli-v2.14.0...workbench-cli-v2.14.1)
+
+_2026-10-27_
+
+### Bug Fixes
+
+- **cli:** pick up defineApplication without a dev restart ([#2070](https://github.com/sanity-io/cli/pull/2070)) ([bbd878c](https://github.com/sanity-io/cli/commit/bbd878c512bdd9157d4b5ab483f494104fc4dc88))
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/cli-core bumped to 3.14.0
+
 ## 2.14.0
 
 [Compare changes](https://github.com/sanity-io/cli/compare/workbench-cli-v2.13.0...workbench-cli-v2.14.0)
