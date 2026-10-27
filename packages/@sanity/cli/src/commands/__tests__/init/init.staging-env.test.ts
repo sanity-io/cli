@@ -17,8 +17,8 @@ const mocks = vi.hoisted(() => ({
   select: vi.fn(),
 }))
 
-vi.mock('@sanity/cli-core', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@sanity/cli-core')>()
+vi.mock(import('@sanity/cli-core'), async (importOriginal) => {
+  const actual = await importOriginal()
 
   return {
     ...actual,
@@ -64,7 +64,16 @@ vi.mock('@sanity/cli-core', async (importOriginal) => {
   }
 })
 
-vi.mock('@sanity/cli-core/ux', async () => {
+vi.mock(import('@sanity/cli-core/util'), async (importOriginal) => {
+  const actual = await importOriginal()
+
+  return {
+    ...actual,
+    getSanityEnv: mocks.getSanityEnv,
+  }
+})
+
+vi.mock(import('@sanity/cli-core/ux'), async () => {
   const actual = await vi.importActual('@sanity/cli-core/ux')
   return {
     ...actual,
@@ -72,11 +81,11 @@ vi.mock('@sanity/cli-core/ux', async () => {
   }
 })
 
-vi.mock('../../../util/detectFramework.js', () => ({
+vi.mock(import('../../../util/detectFramework.js'), () => ({
   detectFrameworkRecord: vi.fn().mockResolvedValue(undefined),
 }))
 
-vi.mock('../../../util/getProjectDefaults.js', () => ({
+vi.mock(import('../../../util/getProjectDefaults.js'), () => ({
   getProjectDefaults: vi.fn().mockResolvedValue({
     author: undefined,
     description: '',
@@ -86,7 +95,7 @@ vi.mock('../../../util/getProjectDefaults.js', () => ({
   }),
 }))
 
-vi.mock('../../../actions/mcp/setupMCP.js', () => ({
+vi.mock(import('../../../actions/mcp/setupMCP.js'), () => ({
   setupMCP: vi.fn().mockResolvedValue({
     alreadyConfiguredEditors: [],
     configuredEditors: ['Cursor'],
@@ -97,35 +106,31 @@ vi.mock('../../../actions/mcp/setupMCP.js', () => ({
   }),
 }))
 
-vi.mock('../../../actions/mcp/detectAvailableEditors.js', () => ({
+vi.mock(import('../../../actions/mcp/detectAvailableEditors.js'), () => ({
   detectAvailableEditors: vi.fn().mockResolvedValue([]),
 }))
 
-vi.mock('../../../actions/skills/setupSkills.js', () => ({
+vi.mock(import('../../../actions/skills/setupSkills.js'), () => ({
   setupSkills: vi.fn().mockResolvedValue({
     installedAgents: [],
     skipped: true,
   }),
 }))
 
-vi.mock('../../../util/packageManager/installPackages.js', () => ({
+vi.mock(import('../../../util/packageManager/installPackages.js'), () => ({
   installDeclaredPackages: mocks.installDeclaredPackages.mockResolvedValue(undefined),
 }))
 
-vi.mock('../../../actions/init/env/createOrAppendEnvVars.js', () => ({
+vi.mock(import('../../../actions/init/env/createOrAppendEnvVars.js'), () => ({
   createOrAppendEnvVars: mocks.createOrAppendEnvVars,
 }))
 
-vi.mock('../../../actions/init/bootstrapTemplate.js', () => ({
+vi.mock(import('../../../actions/init/bootstrapTemplate.js'), () => ({
   bootstrapTemplate: mocks.bootstrapTemplate,
 }))
 
-vi.mock('../../../actions/init/git.js', () => ({
+vi.mock(import('../../../actions/init/git.js'), () => ({
   tryGitInit: vi.fn().mockResolvedValue(undefined),
-}))
-
-vi.mock('../../../util/getSanityEnv.js', () => ({
-  getSanityEnv: mocks.getSanityEnv,
 }))
 
 const setupInitSuccessMocks = () => {

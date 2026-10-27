@@ -119,6 +119,22 @@ describe('getGlobalCliClient', () => {
     expect(mockCreateClient).not.toHaveBeenCalled()
   })
 
+  test('uses default apiHost when SANITY_INTERNAL_ENV=production', async () => {
+    mockCreateClient.mockResolvedValue({})
+    mockGetCliToken.mockResolvedValue('stored-token')
+    vi.stubEnv('SANITY_INTERNAL_ENV', 'production')
+
+    await getGlobalCliClient({
+      apiVersion: '2021-06-07',
+    })
+
+    expect(mockCreateClient).not.toHaveBeenCalledWith(
+      expect.objectContaining({
+        apiHost: expect.anything(),
+      }),
+    )
+  })
+
   test('uses staging apiHost when SANITY_INTERNAL_ENV=staging', async () => {
     mockCreateClient.mockResolvedValue({})
     mockGetCliToken.mockResolvedValue('stored-token')
@@ -131,6 +147,22 @@ describe('getGlobalCliClient', () => {
     expect(mockCreateClient).toHaveBeenCalledWith(
       expect.objectContaining({
         apiHost: 'https://api.sanity.work',
+      }),
+    )
+  })
+
+  test('uses given apiHost when SANITY_INTERNAL_ENV is not staging/production', async () => {
+    mockCreateClient.mockResolvedValue({})
+    mockGetCliToken.mockResolvedValue('stored-token')
+    vi.stubEnv('SANITY_INTERNAL_ENV', 'http://api.sanity.local:50002')
+
+    await getGlobalCliClient({
+      apiVersion: '2021-06-07',
+    })
+
+    expect(mockCreateClient).toHaveBeenCalledWith(
+      expect.objectContaining({
+        apiHost: 'http://api.sanity.local:50002',
       }),
     )
   })
@@ -341,6 +373,23 @@ describe('getProjectCliClient', () => {
     expect(mockCreateClient).toHaveBeenCalledWith(
       expect.not.objectContaining({
         apiHost: expect.anything(),
+      }),
+    )
+  })
+
+  test('uses given apiHost when SANITY_INTERNAL_ENV is not staging/production', async () => {
+    mockCreateClient.mockResolvedValue({})
+    mockGetCliToken.mockResolvedValue('stored-token')
+    vi.stubEnv('SANITY_INTERNAL_ENV', 'http://api.sanity.local:50002')
+
+    await getProjectCliClient({
+      apiVersion: '2021-06-07',
+      projectId: 'test-project',
+    })
+
+    expect(mockCreateClient).toHaveBeenCalledWith(
+      expect.objectContaining({
+        apiHost: 'http://api.sanity.local:50002',
       }),
     )
   })
