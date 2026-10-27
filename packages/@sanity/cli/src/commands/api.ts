@@ -13,6 +13,7 @@ import {apiRoutes} from '../generated/apiRoutes.js'
 import {promptForProject} from '../prompts/promptForProject.js'
 import {type ApiResponse, performApiRequest} from '../services/api.js'
 import {getDatasetFlag, getProjectIdFlag} from '../util/sharedFlags.js'
+import {defineCommandTelemetry} from '../util/telemetry/commandTelemetry.js'
 
 const apiDebug = subdebug('api')
 
@@ -154,6 +155,10 @@ specific token instead - for example in CI or when the CLI is not logged in
       helpValue: '<token>',
     }),
   }
+
+  static telemetry = defineCommandTelemetry(this.flags, {
+    redact: ['token', 'header', 'field', 'raw-field', 'input'],
+  })
 
   /**
    * Read the raw body for `--input`, or the content referenced by a `@-`

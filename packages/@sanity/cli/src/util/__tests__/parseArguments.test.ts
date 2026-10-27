@@ -4,143 +4,139 @@ import {describe, expect, test} from 'vitest'
 import {parseArguments} from '../parseArguments.js'
 import {defineCommandTelemetry} from '../telemetry/commandTelemetry.js'
 
-describe('parseArguments', () => {
-  const flags = {
-    dataset: Flags.string(),
-    file: Flags.string(),
-    format: Flags.string({
-      aliases: ['output-format', 'p'],
-      char: 'f',
-      charAliases: ['o'],
-    }),
-    header: Flags.string({char: 'H', multiple: true}),
-    token: Flags.string({char: 't'}),
-  }
+const flags = {
+  dataset: Flags.string({char: 'd'}),
+  file: Flags.string(),
+  format: Flags.string({aliases: ['output-format', 'r'], char: 'f', charAliases: ['o']}),
+  header: Flags.string({char: 'H', multiple: true}),
+  'project-id': Flags.string({char: 'p'}),
+  quiet: Flags.boolean({char: 'q'}),
+  token: Flags.string({aliases: ['auth-token'], char: 't'}),
+  watch: Flags.boolean({allowNo: true}),
+}
+const command = {
+  flags,
+  id: 'documents:validate',
+  telemetry: defineCommandTelemetry(flags, {redact: ['file', 'header', 'token']}),
+}
+const parse = (args: string[]) => parseArguments(['node', 'sanity', ...args], command)
 
-  const commandTelemetry = defineCommandTelemetry(flags, {
-    redact: ['file', 'format', 'header', 'token'],
+describe('parseArguments', () => {
+  test('uses resolved command identity instead of positional input', () => {
+    const result = parse(['document', 'validate', '/Users/jane/private.ndjson'])
+    expect(result.groupOrCommand).toBe('documents')
+    expect(result.argsWithoutOptions).toEqual(['validate'])
+    expect(JSON.stringify(result)).not.toContain('jane')
   })
 
-  test('reads process argv by default', () => {
-    const originalArgv = process.argv
-    process.argv = ['node', 'sanity', 'documents', 'validate']
+  test('fails closed without a resolved command', () => {
+    const result = parseArguments(['node', 'sanity', 'secret', '--token=secret'])
+    expect(result.groupOrCommand).toBe('unknown')
+    expect(result.argsWithoutOptions).toEqual([])
+    expect(result.extraArguments).toEqual([])
+    expect(JSON.stringify(result)).not.toContain('secret')
+  })
 
-    try {
-      expect(parseArguments().groupOrCommand).toBe('documents')
-    } finally {
-      process.argv = originalArgv
+  test('preserves non-sensitive inline values', () => {
+    expect(
+      parse(['documents', 'validate', '--dataset=production', '--format=json']).extraArguments,
+    ).toEqual(['--dataset=production', '--format=json'])
+  })
+
+  test.each([
+    ['--token=private-secret'],
+    ['--token', 'private-secret'],
+    ['-tprivate-secret'],
+    ['-t=private-secret'],
+    ['-t', 'private-secret'],
+    ['--auth-token=private-secret'],
+    ['-qtprivate-secret'],
+    ['--token', '--format=private-secret'],
+    ['--token', '-private-secret'],
+  ])('redacts option syntax %j', (...args) => {
+    const result = parse(args)
+    expect(JSON.stringify(result)).not.toContain('private-secret')
+    expect(result.extraArguments).toContain('--token')
+  })
+
+  test.each([
+    {
+      args: ['-dproduction', '-ppr0j1234'],
+      expected: ['--dataset=production', '--project-id=pr0j1234'],
+    },
+    {
+      args: ['-d=production', '-p=pr0j1234'],
+      expected: ['--dataset=production', '--project-id=pr0j1234'],
+    },
+    {args: ['-d', 'production', '-p', 'pr0j1234'], expected: ['--dataset', '--project-id']},
+    {
+      args: ['-qdproduction', '-fjson', '-f=yaml'],
+      expected: ['--quiet', '--dataset=production', '--format=json', '--format=yaml'],
+    },
+  ])('canonicalizes resolved option names for $args', ({args, expected}) => {
+    expect(parse(args).extraArguments).toEqual(expected)
+  })
+
+  test('handles repeated headers and consumes dash-leading values', () => {
+    expect(
+      parse(['-HAuthorization: Bearer private', '--header=-private', '-H', '--format=private'])
+        .extraArguments,
+    ).toEqual(['--header', '--header', '--header'])
+  })
+
+  test('does not collect script arguments after the separator', () => {
+    expect(
+      parse(['--format=json', '--', '--token=private', '--format=private', 'private'])
+        .extraArguments,
+    ).toEqual(['--format=json'])
+  })
+
+  test('does not reinterpret an unknown flag or its value', () => {
+    expect(parse(['--dataset=production', '--unknown', '--format=private']).extraArguments).toEqual(
+      ['--dataset=production'],
+    )
+    expect(parse(['-xftprivate']).extraArguments).toEqual([])
+  })
+
+  test('handles short boolean groups without exposing an attached option value', () => {
+    expect(parse(['-qqtprivate']).extraArguments).toEqual(['--quiet', '--quiet', '--token'])
+  })
+
+  test('does not match long options against a short flag prefix', () => {
+    expect(parse(['--tokenize=private']).extraArguments).toEqual([])
+  })
+
+  test('recognizes non-sensitive aliases and boolean negation', () => {
+    expect(
+      parse(['--output-format=json', '-ojson', '-rjson', '--no-watch']).extraArguments,
+    ).toEqual(['--format=json', '--format=json', '--format=json', '--no-watch'])
+  })
+
+  test('does not log an invalid value attached to a boolean', () => {
+    expect(parse(['--quiet=private']).extraArguments).toEqual(['--quiet'])
+  })
+
+  test('does not retain query literals, emails, URL signatures or local paths', () => {
+    for (const value of [
+      '*[_type == "private"]',
+      'private@example.test',
+      'https://example.test/?sig=private',
+      '/Users/private/file',
+    ]) {
+      expect(JSON.stringify(parse(['documents', 'validate', value]))).not.toContain('private')
     }
   })
 
-  test('preserves the full process argv contract', () => {
-    const argv = ['/path/to/node', '/path/to/sanity', 'documents', 'validate']
-    const result = parseArguments(argv)
-
-    expect(result.argv).toBe(argv)
-    expect(result.groupOrCommand).toBe('documents')
-    expect(result.argsWithoutOptions).toEqual(['validate'])
+  test('does not mutate command input', () => {
+    const args = ['node', 'sanity', 'documents', 'validate', '--token=private', '--', 'private']
+    const original = [...args]
+    parseArguments(args, command)
+    expect(args).toEqual(original)
   })
 
-  test('preserves option telemetry by default', () => {
-    const result = parseArguments([
-      'node',
-      'sanity',
-      'documents',
-      'validate',
-      '--dataset=production',
-      '--file=/Users/jane/private.ndjson',
-      '-tsecret-token',
-    ])
-
-    expect(result.extraArguments).toEqual([
-      '--dataset=production',
-      '--file=/Users/jane/private.ndjson',
-      '-tsecret-token',
-    ])
-  })
-
-  test('redacts declared inline and concatenated option values', () => {
-    const result = parseArguments(
-      [
-        'node',
-        'sanity',
-        'documents',
-        'validate',
-        '--file=/Users/jane/private.ndjson',
-        '--header=Authorization: Bearer secret-token',
-        '-tsecret-token',
-      ],
-      commandTelemetry,
-    )
-
-    expect(result.extraArguments).toEqual(['--file', '--header', '--token'])
-    expect(result.extraArguments.join(' ')).not.toContain('jane')
-    expect(result.extraArguments.join(' ')).not.toContain('secret-token')
-  })
-
-  test('uses the canonical name when redacting aliases', () => {
-    const result = parseArguments(
-      [
-        'node',
-        'sanity',
-        'documents',
-        'validate',
-        '--output-format=private-format',
-        '-fprivate-format',
-        '-oprivate-format',
-        '-pprivate-format',
-      ],
-      commandTelemetry,
-    )
-
-    expect(result.extraArguments).toEqual(['--format', '--format', '--format', '--format'])
-  })
-
-  test('redacts the canonical syntax when the flag definition is missing', () => {
-    const result = parseArguments(
-      ['node', 'sanity', 'documents', 'validate', '--missing=private-value'],
-      defineCommandTelemetry(flags as Record<string, (typeof flags)[keyof typeof flags]>, {
-        redact: ['missing'],
-      }),
-    )
-
-    expect(result.extraArguments).toEqual(['--missing'])
-  })
-
-  test('does not match long options against short flag syntax', () => {
-    const result = parseArguments(
-      ['node', 'sanity', 'documents', 'validate', '--file=public', '--tokenize=public'],
-      defineCommandTelemetry(flags, {redact: ['format', 'token']}),
-    )
-
-    expect(result.extraArguments).toEqual(['--file=public', '--tokenize=public'])
-  })
-
-  test('keeps the existing name-only telemetry for spaced option values', () => {
-    const result = parseArguments(
-      ['node', 'sanity', 'documents', 'validate', '--file', 'private.ndjson', '-t', 'secret'],
-      commandTelemetry,
-    )
-
-    expect(result.extraArguments).toEqual(['--file', '--token'])
-  })
-
-  test('preserves forwarded argument telemetry', () => {
-    const result = parseArguments(
-      ['node', 'sanity', 'exec', 'script.ts', '--', '--token=forwarded-secret'],
-      commandTelemetry,
-    )
-
-    expect(result.extraArguments).toEqual([
-      '--token=forwarded-secret',
-      '--',
-      '--token=forwarded-secret',
-    ])
-  })
-
-  test('detects help from full process argv', () => {
-    const result = parseArguments(['/path/to/node', '/path/to/sanity', 'help', 'dataset'])
-
-    expect(result.coreOptions.help).toBe(true)
+  test('uses command identity for help and version', () => {
+    expect(parseArguments([], {id: 'help'}).coreOptions.help).toBe(true)
+    expect(parseArguments([], {id: 'version'}).coreOptions.version).toBe(true)
+    expect(parse(['help', '--file=version']).coreOptions.help).toBe(false)
   })
 })

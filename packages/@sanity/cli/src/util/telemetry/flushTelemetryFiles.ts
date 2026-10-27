@@ -18,6 +18,7 @@ import {
 import {cleanupOldTelemetryFiles} from './cleanupOldTelemetryFiles.js'
 import {findTelemetryFiles} from './findTelemetryFiles.js'
 import {readNDJSON} from './readNDJSON.js'
+import {sanitizeTelemetryEvent, telemetryError} from './sanitizeTelemetryEvent.js'
 import {telemetryStoreDebug} from './telemetryStoreDebug.js'
 
 interface FlushTelemetryFilesOptions {
@@ -55,7 +56,7 @@ export async function flushTelemetryFiles(options: FlushTelemetryFilesOptions): 
             telemetryStoreDebug(`Deleted file ${reason}: %s`, filePath)
           }),
           catchError((error) => {
-            telemetryStoreDebug('Error deleting file %s: %o', filePath, error)
+            telemetryStoreDebug('Error deleting file %s: %o', filePath, telemetryError(error))
             // of() is not same as of(undefined) in rxjs
             // eslint-disable-next-line unicorn/no-useless-undefined
             return of(undefined)
@@ -94,7 +95,7 @@ export async function flushTelemetryFiles(options: FlushTelemetryFilesOptions): 
                     telemetryStoreDebug('File %s no longer exists, skipping', filePath)
                     return of([])
                   }
-                  telemetryStoreDebug('Error reading file %s: %o', filePath, error)
+                  telemetryStoreDebug('Error reading file %s: %o', filePath, telemetryError(error))
                   return of([])
                 }),
                 map((events) => ({events, filePath})),
@@ -152,7 +153,20 @@ export async function flushTelemetryFiles(options: FlushTelemetryFilesOptions): 
       // Send events and then delete all files (including empty ones)
       telemetryStoreDebug('Sending %d events to backend', allEvents.length)
 
-      return defer(() => from(options.sendEvents(allEvents))).pipe(
+      return defer(() =>
+        from(
+          options.sendEvents(
+            allEvents.flatMap((event) => {
+              try {
+                return [sanitizeTelemetryEvent(event)]
+              } catch {
+                telemetryStoreDebug('Skipping malformed telemetry event')
+                return []
+              }
+            }),
+          ),
+        ),
+      ).pipe(
         tap(() => {
           telemetryStoreDebug('Successfully sent events, deleting %d files', filesToDelete.length)
         }),
@@ -164,7 +178,7 @@ export async function flushTelemetryFiles(options: FlushTelemetryFilesOptions): 
     }),
     map(() => undefined as void),
     catchError((error) => {
-      telemetryStoreDebug('Error during standalone flush operation: %o', error)
+      telemetryStoreDebug('Error during standalone flush operation: %o', telemetryError(error))
       throw error
     }),
   )

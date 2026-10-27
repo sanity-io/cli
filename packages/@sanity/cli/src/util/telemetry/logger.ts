@@ -72,7 +72,7 @@ export function createLogger<UserProperties>(
   }
 
   const updateUserProperties = (properties: UserProperties) => {
-    telemetryStoreDebug('Updating user properties: %o', properties)
+    telemetryStoreDebug('Updating user properties')
     const userPropsEvent: TelemetryEvent = {
       createdAt: new Date().toISOString(),
       properties,

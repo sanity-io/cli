@@ -183,7 +183,7 @@ describe('context query', () => {
         '--params={"email": "jane@example.com"}',
         '--organization=org-abc123',
       ],
-      QueryContextCommand.telemetry,
+      QueryContextCommand,
     )
 
     expect(parsed.extraArguments).toEqual(['--params', '--organization=org-abc123'])

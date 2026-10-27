@@ -11,6 +11,7 @@ import camelCase from 'lodash-es/camelCase.js'
 
 import {getMediaLibraryConfig} from '../../actions/media/getMediaLibraryConfig.js'
 import {NO_MEDIA_LIBRARY_ASPECTS_PATH} from '../../util/errorMessages.js'
+import {defineCommandTelemetry} from '../../util/telemetry/commandTelemetry.js'
 
 const createAspectDebug = subdebug('media:create-aspect')
 
@@ -28,6 +29,8 @@ export class MediaCreateAspectCommand extends SanityCommand<typeof MediaCreateAs
     name: Flags.string({description: 'Aspect name. Defaults to the title in camel case'}),
     title: requiredWhenUnattended(Flags.string({description: 'Aspect title'})),
   }
+
+  static telemetry = defineCommandTelemetry(this.flags, {redact: ['name', 'title']})
 
   public async run(): Promise<void> {
     const cliConfig = await this.getCliConfig()
