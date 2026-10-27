@@ -1,5 +1,19 @@
 # Changelog
 
+## 3.14.0
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-core-v3.13.0...cli-core-v3.14.0)
+
+_2026-10-27_
+
+### Features
+
+- allow sanity internal env to be used for a local override ([#2071](https://github.com/sanity-io/cli/pull/2071)) ([ba0ff29](https://github.com/sanity-io/cli/commit/ba0ff292d273a659db06eb0906da1db8d1ba1afb))
+
+### Bug Fixes
+
+- standardize on --project over --project-id ([#2073](https://github.com/sanity-io/cli/pull/2073)) ([f2bdd54](https://github.com/sanity-io/cli/commit/f2bdd549a01ba954ad4fabd5323924017a756362))
+
 ## 3.13.0
 
 [Compare changes](https://github.com/sanity-io/cli/compare/cli-core-v3.12.0...cli-core-v3.13.0)
