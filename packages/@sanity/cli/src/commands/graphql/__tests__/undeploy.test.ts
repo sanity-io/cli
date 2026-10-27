@@ -230,8 +230,8 @@ describe('graphql undeploy', () => {
     expect(stderr).toContain('Both --api and --dataset specified, using --dataset staging')
   })
 
-  test('errors when both --api and --project-id are specified', async () => {
-    const {error} = await testCommand(Undeploy, ['--api', 'ios', '--project-id', 'test-project'], {
+  test('errors when both --api and --project are specified', async () => {
+    const {error} = await testCommand(Undeploy, ['--api', 'ios', '--project', 'test-project'], {
       mocks: defaultMocks,
     })
 
@@ -325,7 +325,7 @@ describe('graphql undeploy', () => {
       token: 'test-token',
     }
 
-    test('works with --project-id and --dataset flags when no project root', async () => {
+    test('works with --project and --dataset flags when no project root', async () => {
       mockConfirm.mockResolvedValueOnce(true)
 
       mockApi({
@@ -337,7 +337,7 @@ describe('graphql undeploy', () => {
 
       const {error, stdout} = await testCommand(
         Undeploy,
-        ['--project-id', 'flag-project', '--dataset', 'staging'],
+        ['--project', 'flag-project', '--dataset', 'staging'],
         {mocks: {...noProjectRootMocks, isInteractive: true}},
       )
 
@@ -345,8 +345,8 @@ describe('graphql undeploy', () => {
       expect(stdout).toBe('GraphQL API deleted\n')
     })
 
-    test('errors when no project root with --project-id but no --dataset', async () => {
-      const {error} = await testCommand(Undeploy, ['--project-id', 'flag-project', '--force'], {
+    test('errors when no project root with --project but no --dataset', async () => {
+      const {error} = await testCommand(Undeploy, ['--project', 'flag-project', '--force'], {
         mocks: noProjectRootMocks,
       })
 

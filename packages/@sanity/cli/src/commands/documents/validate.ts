@@ -35,7 +35,7 @@ export class ValidateDocumentsCommand extends SanityCommand<typeof ValidateDocum
       description: 'Report out info level validation markers too',
     },
     {
-      command: '<%= config.bin %> <%= command.id %> --project-id abc123 --dataset production',
+      command: '<%= config.bin %> <%= command.id %> --project abc123 --dataset production',
       description: 'Validate documents in a specific project and dataset',
     },
   ]
@@ -94,7 +94,7 @@ export class ValidateDocumentsCommand extends SanityCommand<typeof ValidateDocum
       level,
       'max-custom-validation-concurrency': maxCustomValidationConcurrency,
       'max-fetch-concurrency': maxFetchConcurrency,
-      'project-id': projectId,
+      project: projectId,
       workspace,
     } = flags
     const unattendedMode = this.isUnattended()

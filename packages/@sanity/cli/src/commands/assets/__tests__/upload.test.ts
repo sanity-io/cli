@@ -130,7 +130,7 @@ describe('#assets:upload', () => {
         'file',
         '--filename',
         'public-name.pdf',
-        '--project-id',
+        '--project',
         'other-project',
         '--dataset',
         'staging',

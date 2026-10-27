@@ -925,7 +925,7 @@ describe('#documents:create', () => {
       token: 'test-token',
     }
 
-    test('works with --project-id and --dataset flags when no project root', async () => {
+    test('works with --project and --dataset flags when no project root', async () => {
       const mockDoc = {_id: 'test-doc', _type: 'post', title: 'Test Post'}
       const mockTransaction = vi.fn().mockReturnValue({
         commit: vi.fn().mockResolvedValue({results: [{id: 'test-doc', operation: 'create'}]}),
@@ -936,7 +936,7 @@ describe('#documents:create', () => {
 
       const {error, stdout} = await testCommand(
         CreateDocumentCommand,
-        ['test-doc.json', '--project-id', 'my-project', '--dataset', 'production'],
+        ['test-doc.json', '--project', 'my-project', '--dataset', 'production'],
         {mocks: noProjectRootMocks},
       )
 
@@ -951,10 +951,10 @@ describe('#documents:create', () => {
       )
     })
 
-    test('errors when no project root with --project-id but no --dataset', async () => {
+    test('errors when no project root with --project but no --dataset', async () => {
       const {error} = await testCommand(
         CreateDocumentCommand,
-        ['test-doc.json', '--project-id', 'my-project'],
+        ['test-doc.json', '--project', 'my-project'],
         {mocks: noProjectRootMocks},
       )
 

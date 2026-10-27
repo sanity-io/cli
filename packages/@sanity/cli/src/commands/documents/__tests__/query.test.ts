@@ -237,14 +237,14 @@ describe('#documents:query', () => {
       vi.unstubAllEnvs()
     })
 
-    test('works with --project-id and --dataset flags when no project root', async () => {
+    test('works with --project and --dataset flags when no project root', async () => {
       const mockResults = [{_id: 'doc1', _type: 'post', title: 'Hello'}]
 
       mockFetch.mockResolvedValue(mockResults)
 
       const {error, stdout} = await testCommand(
         QueryDocumentCommand,
-        ['*[_type == "post"]', '--project-id', 'flag-project', '--dataset', 'staging'],
+        ['*[_type == "post"]', '--project', 'flag-project', '--dataset', 'staging'],
         {
           mocks: noProjectRootMocks,
         },
@@ -259,10 +259,10 @@ describe('#documents:query', () => {
       )
     })
 
-    test('errors when no project root with --project-id but no --dataset', async () => {
+    test('errors when no project root with --project but no --dataset', async () => {
       const {error} = await testCommand(
         QueryDocumentCommand,
-        ['*[_type == "post"]', '--project-id', 'flag-project'],
+        ['*[_type == "post"]', '--project', 'flag-project'],
         {
           mocks: noProjectRootMocks,
         },

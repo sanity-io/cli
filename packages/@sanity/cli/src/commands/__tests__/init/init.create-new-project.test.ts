@@ -577,7 +577,7 @@ describe('#init: create new project', () => {
       expect(mocks.importDatasetRun).toHaveBeenCalledWith(
         expect.arrayContaining([
           'https://public.sanity.io/moviesdb-2018-03-06.tar.gz',
-          '--project-id',
+          '--project',
           'project-123',
           '--dataset',
           'production',

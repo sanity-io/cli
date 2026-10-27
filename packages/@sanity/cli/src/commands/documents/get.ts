@@ -37,7 +37,7 @@ export class GetDocumentCommand extends SanityCommand<typeof GetDocumentCommand>
       description: 'Get document from a specific dataset',
     },
     {
-      command: '<%= config.bin %> <%= command.id %> myDocId --project-id abc123',
+      command: '<%= config.bin %> <%= command.id %> myDocId --project abc123',
       description: 'Get a document from a specific project',
     },
   ]

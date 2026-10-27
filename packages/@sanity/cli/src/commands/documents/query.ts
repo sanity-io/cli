@@ -41,7 +41,7 @@ export class QueryDocumentCommand extends SanityCommand<typeof QueryDocumentComm
     },
     {
       command:
-        '<%= config.bin %> <%= command.id %> \'*[_type == "post"]\' --project-id abc123 --dataset production',
+        '<%= config.bin %> <%= command.id %> \'*[_type == "post"]\' --project abc123 --dataset production',
       description: 'Query documents in a specific project and dataset',
     },
   ]
@@ -60,11 +60,6 @@ export class QueryDocumentCommand extends SanityCommand<typeof QueryDocumentComm
       default: false,
       description: 'Colorize JSON output',
     }),
-    project: Flags.string({
-      deprecated: {to: 'project-id'},
-      description: 'Project ID to query',
-      hidden: true,
-    }),
   }
 
   static override hiddenAliases: string[] = ['document:query']
@@ -77,7 +72,6 @@ export class QueryDocumentCommand extends SanityCommand<typeof QueryDocumentComm
     const cliConfig = await this.tryGetCliConfig()
 
     const projectId = await this.getProjectId({
-      deprecatedFlagName: 'project',
       fallback: () => promptForProject({}),
     })
 

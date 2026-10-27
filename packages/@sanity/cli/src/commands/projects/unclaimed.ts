@@ -1,10 +1,10 @@
-import {Flags} from '@oclif/core'
 import {exitCodes, SanityCommand} from '@sanity/cli-core'
 import {logSymbols} from '@sanity/cli-core/ux'
 
 import {formatKeyValue, sectionHeader} from '../../actions/debug/output.js'
 import {getProjectClaimStatus} from '../../services/projects.js'
 import {Table} from '../../util/responsiveTable.js'
+import {getProjectIdFlag} from '../../util/sharedFlags.js'
 import {
   readUnclaimedProjects,
   removeUnclaimedProject,
@@ -24,14 +24,15 @@ export class UnclaimedProjectsCommand extends SanityCommand<typeof UnclaimedProj
       description: 'List locally recorded unclaimed projects',
     },
     {
-      command: '<%= config.bin %> <%= command.id %> --project-id abc123',
+      command: '<%= config.bin %> <%= command.id %> --project abc123',
       description: 'Show recovery details for one project',
     },
   ]
 
   static override flags = {
-    'project-id': Flags.string({
+    ...getProjectIdFlag({
       description: 'Project ID to recover',
+      semantics: 'specify',
     }),
   }
 
@@ -51,7 +52,7 @@ export class UnclaimedProjectsCommand extends SanityCommand<typeof UnclaimedProj
       return
     }
 
-    const projectId = this.flags['project-id']
+    const projectId = this.flags.project
     if (projectId) {
       const record = records.find((candidate) => candidate.projectId === projectId)
       if (!record) {

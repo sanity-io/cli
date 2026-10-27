@@ -12,7 +12,7 @@
  * import {invokeSanityCli} from '@sanity/cli/invokeSanityCli'
  *
  * const {exitCode, output} = await invokeSanityCli({
- *   args: 'cors list --project-id abc123',
+ *   args: 'cors list --project abc123',
  *   source: 'mcp',
  *   token: extra.authInfo.token,
  * })

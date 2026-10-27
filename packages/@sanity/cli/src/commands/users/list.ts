@@ -31,7 +31,7 @@ export class List extends SanityCommand<typeof List> {
       description: 'List all users, sorted by role',
     },
     {
-      command: '<%= config.bin %> <%= command.id %> --project-id abc123',
+      command: '<%= config.bin %> <%= command.id %> --project abc123',
       description: 'List users for a specific project',
     },
   ]

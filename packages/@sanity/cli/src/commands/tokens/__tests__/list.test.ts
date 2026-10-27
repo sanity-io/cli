@@ -446,7 +446,7 @@ describe('#tokens:list', () => {
     test('rejects conflicting scope flags', async () => {
       const {error} = await testCommand(
         TokensListCommand,
-        ['--organization', 'org-1', '--project-id', 'abc123'],
+        ['--organization', 'org-1', '--project', 'abc123'],
         {mocks: defaultMocks},
       )
       expect(error?.message).toContain('cannot also be provided')
