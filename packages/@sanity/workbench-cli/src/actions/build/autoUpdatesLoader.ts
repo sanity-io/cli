@@ -1,13 +1,10 @@
 type Module = Record<string, unknown>
 
 // Workbench's `load`, contract version 1: it loads the app's imports as the app's own copy, with its
-// app ID, and returns undefined for an app it didn't prepare.
+// app ID and vendor modules, and returns undefined for an app it didn't prepare.
 type Load = (
   appId: string,
-  request: {
-    imports: Record<string, string>
-    source: (url: string) => Promise<{code: string; url: string}>
-  },
+  request: {imports: Record<string, string>; vendor: Record<string, () => Promise<Module>>},
 ) => Promise<((specifier: string) => Promise<Module>) | undefined>
 
 interface AutoUpdatesLoaderOptions {
@@ -18,9 +15,6 @@ interface AutoUpdatesLoaderOptions {
   vendor: Record<string, () => Promise<Module>>
 }
 
-const VENDOR_KEY = 'sanity.autoUpdates.vendor'
-// `.invalid` never resolves, so these URLs only ever reach `source`.
-const VENDOR_ORIGIN = 'https://vendor.invalid/'
 const TIMESTAMP = /\/t\d+(?=\/|$)/
 
 // Loads the app's auto-updated packages from the module CDN as its own instance; if any fails,
@@ -59,10 +53,16 @@ export function createAutoUpdatesLoader({
   }
 
   async function prepare(): Promise<boolean> {
-    if (typeof document === 'undefined') return false
-
     try {
-      const importModule = await loadInWorkbench({appId, imports: currentImports, vendor})
+      const workbench = (
+        globalThis as {[key: symbol]: {versions?: Record<number, Load>} | undefined}
+      )[Symbol.for('sanity.autoUpdates')]
+      const workbenchLoad = workbench?.versions?.[1]
+      if (!workbenchLoad) throw new Error('This Workbench does not load auto-updating apps')
+
+      const importModule = await workbenchLoad(appId, {imports: currentImports, vendor})
+      if (!importModule) throw new Error(`Workbench did not prepare ${appId} for auto-updates`)
+
       // All or nothing: one bundled package would pull in bundled copies of the others.
       const loaded = await Promise.all(
         specifiers.map(async (specifier) => [specifier, await importModule(specifier)] as const),
@@ -86,52 +86,4 @@ export function createAutoUpdatesLoader({
 
     return true
   }
-}
-
-async function loadInWorkbench({
-  appId,
-  imports,
-  vendor,
-}: Pick<AutoUpdatesLoaderOptions, 'appId' | 'imports' | 'vendor'>) {
-  const workbench = (globalThis as {[key: symbol]: {versions?: Record<number, Load>} | undefined})[
-    Symbol.for('sanity.autoUpdates')
-  ]
-  const load = workbench?.versions?.[1]
-  if (!load) throw new Error('This Workbench does not load auto-updating apps')
-
-  const vendorModules: Record<string, Module> = {}
-  const registry = ((globalThis as {[key: symbol]: unknown})[Symbol.for(VENDOR_KEY)] ??= new Map())
-  ;(registry as Map<string, Record<string, Module>>).set(appId, vendorModules)
-  const importModule = await load(appId, {
-    imports: {
-      ...imports,
-      ...Object.fromEntries(
-        Object.keys(vendor).map((specifier) => [specifier, VENDOR_ORIGIN + specifier]),
-      ),
-    },
-    async source(url) {
-      if (url.startsWith(VENDOR_ORIGIN)) {
-        const specifier = url.slice(VENDOR_ORIGIN.length)
-        vendorModules[specifier] = await vendor[specifier]()
-
-        return {code: reexport(appId, specifier, vendorModules[specifier]), url}
-      }
-
-      const response = await fetch(url)
-      if (!response.ok) throw new Error(`${response.url} responded with ${response.status}`)
-
-      return {code: await response.text(), url: response.url}
-    },
-  })
-  if (!importModule) throw new Error(`Workbench did not prepare ${appId} for auto-updates`)
-
-  return importModule
-}
-
-function reexport(appId: string, specifier: string, module: Module): string {
-  const names = Object.keys(module).filter((name) => name !== 'default')
-  return `const m = globalThis[Symbol.for(${JSON.stringify(VENDOR_KEY)})].get(${JSON.stringify(appId)})[${JSON.stringify(specifier)}]
-${'default' in module ? 'export default m.default\n' : ''}${names.map((name, index) => `const e${index} = m[${JSON.stringify(name)}]`).join('\n')}
-export {${names.map((name, index) => `e${index} as ${JSON.stringify(name)}`).join(', ')}}
-`
 }
