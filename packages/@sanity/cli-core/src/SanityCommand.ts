@@ -28,6 +28,7 @@ import {type Output} from './types.js'
 import {isInteractive} from './util/isInteractive.js'
 import {isUnattendedInvocation, isUnattended as resolveIsUnattended} from './util/isUnattended.js'
 import {hasJsonFlagInArgv, toRelayableErrorJson} from './util/jsonInvocation.js'
+import {createTerminalStatus, finishTerminalStatus} from './ux/terminalStatus.js'
 
 type Flags<T extends typeof Command> = Interfaces.InferredFlags<
   (typeof SanityCommand)['baseFlags'] & T['flags']
@@ -107,6 +108,9 @@ export abstract class SanityCommand<T extends typeof Command>
    * @returns The telemetry store.
    */
   protected telemetry!: CLITelemetryStore
+
+  private terminalStatus = createTerminalStatus()
+
   /**
    * Report real command errors to the CLI command trace.
    * User aborts (SIGINT, ExitPromptError) are not reported — the trace is left
@@ -153,6 +157,19 @@ export abstract class SanityCommand<T extends typeof Command>
         err instanceof CLIError ? err.oclif.exit : (err.exitCode ?? exitCodes.RUNTIME_ERROR)
     }
     return super.catch(err)
+  }
+
+  protected override async finally(err?: CommandError): Promise<void> {
+    await super.finally(err)
+    const code =
+      err?.exitCode ??
+      (err as (CommandError & Partial<Interfaces.OclifError>) | undefined)?.oclif?.exit
+    const cancelled =
+      err?.name === 'ExitPromptError' ||
+      err?.message === 'SIGINT' ||
+      code === exitCodes.USER_ABORT ||
+      code === exitCodes.SIGINT
+    finishTerminalStatus(cancelled ? 'idle' : err && code !== exitCodes.SUCCESS ? 'error' : 'done')
   }
 
   /**
@@ -261,6 +278,7 @@ export abstract class SanityCommand<T extends typeof Command>
   }
 
   public async init(): Promise<void> {
+    this.terminalStatus.update({state: 'working'})
     const {args, flags} = await this.parse({
       args: this.ctor.args,
       baseFlags: (super.ctor as typeof SanityCommand).baseFlags,
