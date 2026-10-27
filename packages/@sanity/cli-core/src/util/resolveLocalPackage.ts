@@ -1,3 +1,4 @@
+import {createRequire} from 'node:module'
 import {resolve} from 'node:path'
 import {pathToFileURL} from 'node:url'
 
@@ -53,7 +54,7 @@ export function resolveLocalPackagePath(packageName: string, workDir: string): U
   const fakeCliConfigUrl = pathToFileURL(resolve(workDir, 'sanity.cli.mjs'))
 
   try {
-    return moduleResolve(packageName, fakeCliConfigUrl)
+    return resolvePackageUrl(packageName, fakeCliConfigUrl)
   } catch (error) {
     throw new Error(
       `Failed to resolve package "${packageName}" from "${workDir}": ${error instanceof Error ? error.message : String(error)}`,
@@ -85,7 +86,7 @@ export async function resolveLocalPackageFrom<T = unknown>(
   parentUrl: URL,
 ): Promise<T> {
   try {
-    const packageUrl = moduleResolve(packageName, parentUrl)
+    const packageUrl = resolvePackageUrl(packageName, parentUrl)
     const module = await doImport(packageUrl.href)
     return module as T
   } catch (error) {
@@ -94,4 +95,22 @@ export async function resolveLocalPackageFrom<T = unknown>(
       {cause: error},
     )
   }
+}
+
+/**
+ * Resolve a package relative to an arbitrary parent URL.
+ *
+ * Yarn patches CommonJS resolution to support Plug'n'Play, while
+ * `import-meta-resolve` only searches for `node_modules`. Keep using the ESM
+ * resolver for standard installs so conditional exports retain their existing
+ * `import` semantics.
+ *
+ * @internal
+ */
+export function resolvePackageUrl(packageName: string, parentUrl: URL): URL {
+  if (process.versions.pnp) {
+    return pathToFileURL(createRequire(parentUrl).resolve(packageName))
+  }
+
+  return moduleResolve(packageName, parentUrl)
 }
