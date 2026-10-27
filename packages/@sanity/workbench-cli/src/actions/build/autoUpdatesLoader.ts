@@ -1,11 +1,16 @@
 type Module = Record<string, unknown>
 
-// Workbench's `load`, contract version 1: it loads the app's imports as the app's own copy, with its
-// app ID and vendor modules, and returns undefined for an app it didn't prepare.
+// Workbench's `load`, contract version 1: it loads every specifier as the app's own copy, with its
+// app ID and vendor modules, links the stylesheets, and returns undefined for an app it didn't prepare.
 type Load = (
   appId: string,
-  request: {imports: Record<string, string>; vendor: Record<string, () => Promise<Module>>},
-) => Promise<((specifier: string) => Promise<Module>) | undefined>
+  request: {
+    imports: Record<string, string>
+    specifiers: string[]
+    styles: string[]
+    vendor: Record<string, () => Promise<Module>>
+  },
+) => Promise<{modules: Record<string, Module>} | undefined>
 
 interface AutoUpdatesLoaderOptions {
   appId: string
@@ -17,7 +22,7 @@ interface AutoUpdatesLoaderOptions {
 
 const TIMESTAMP = /\/t\d+(?=\/|$)/
 
-// Loads the app's auto-updated packages from the module CDN as its own instance; if any fails,
+// Loads the app's auto-updated packages from the module server as its own copy; if any fails,
 // the app uses the bundled copies of all of them.
 export function createAutoUpdatesLoader({
   appId,
@@ -34,11 +39,11 @@ export function createAutoUpdatesLoader({
       url.replace(TIMESTAMP, timestamp),
     ]),
   )
-  const modules = new Map<string, Module>()
+  let modules: Record<string, Module> | undefined
   let ready: Promise<boolean> | undefined
 
   return {
-    importMapUrl: (specifier: string) => (modules.size > 0 ? currentImports[specifier] : undefined),
+    importMapUrl: (specifier: string) => (modules ? currentImports[specifier] : undefined),
     load,
   }
 
@@ -46,8 +51,8 @@ export function createAutoUpdatesLoader({
     ready ??= prepare()
     if (!(await ready)) return bundled()
 
-    const module = modules.get(specifier)
-    if (!module) throw new Error(`${specifier} was not loaded from the module CDN`)
+    const module = modules?.[specifier]
+    if (!module) throw new Error(`${specifier} was not loaded from the module server`)
 
     return module
   }
@@ -60,30 +65,22 @@ export function createAutoUpdatesLoader({
       const workbenchLoad = workbench?.versions?.[1]
       if (!workbenchLoad) throw new Error('This Workbench does not load auto-updating apps')
 
-      const importModule = await workbenchLoad(appId, {imports: currentImports, vendor})
-      if (!importModule) throw new Error(`Workbench did not prepare ${appId} for auto-updates`)
+      const result = await workbenchLoad(appId, {
+        imports: currentImports,
+        specifiers,
+        styles: cssUrls.map((url) => url.replace(TIMESTAMP, timestamp)),
+        vendor,
+      })
+      if (!result) throw new Error(`Workbench did not prepare ${appId} for auto-updates`)
 
-      // All or nothing: one bundled package would pull in bundled copies of the others.
-      const loaded = await Promise.all(
-        specifiers.map(async (specifier) => [specifier, await importModule(specifier)] as const),
-      )
-      for (const [specifier, module] of loaded) modules.set(specifier, module)
+      modules = result.modules
+
+      return true
     } catch (error) {
       // eslint-disable-next-line no-console -- the app keeps working, but no longer auto-updates
-      console.warn('Failed to load from the module CDN, using the bundled copy', error)
+      console.warn('Failed to load from the module server, using the bundled copy', error)
 
       return false
     }
-
-    for (const href of cssUrls.map((url) => url.replace(TIMESTAMP, timestamp))) {
-      if ([...document.querySelectorAll('link')].some((link) => link.href === href)) continue
-
-      const link = document.createElement('link')
-      link.rel = 'stylesheet'
-      link.href = href
-      document.head.append(link)
-    }
-
-    return true
   }
 }

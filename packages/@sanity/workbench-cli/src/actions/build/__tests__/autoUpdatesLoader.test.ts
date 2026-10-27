@@ -1,5 +1,4 @@
-// @vitest-environment jsdom
-import {afterEach, beforeEach, expect, test, vi} from 'vitest'
+import {afterEach, beforeEach, expect, type MockInstance, test, vi} from 'vitest'
 
 import {createAutoUpdatesLoader} from '../autoUpdatesLoader.js'
 
@@ -10,8 +9,9 @@ const SANITY_URL = 'https://sanity-cdn.com/v1/modules/by-app/t9app/t100/%5E6.17.
 const CURRENT_SANITY_URL = SANITY_URL.replace('/t100', `/t${NOW}`)
 const bundled = {source: 'bundled'}
 const vendor = {react: async () => ({})}
-const importModule = vi.fn(async (specifier: string) => ({specifier}))
-const load = vi.fn(async (_appId: string, _request: object) => importModule)
+const modules = {sanity: {source: 'cdn'}, 'sanity/structure': {source: 'cdn structure'}}
+const load = vi.fn(async (_appId: string, _request: object) => ({modules}))
+let warn: MockInstance
 
 function setup() {
   const loader = createAutoUpdatesLoader({
@@ -31,50 +31,50 @@ function setup() {
 beforeEach(() => {
   vi.useFakeTimers({now: NOW * 1000, toFake: ['Date']})
   Object.assign(globalThis, {[KEY]: {versions: {1: load}}})
-  vi.spyOn(console, 'warn').mockImplementation(() => {})
+  warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
 })
 
 afterEach(() => {
-  document.head.replaceChildren()
   delete (globalThis as Record<symbol, unknown>)[KEY]
   vi.useRealTimers()
   vi.restoreAllMocks()
   vi.clearAllMocks()
-  vi.unstubAllGlobals()
 })
 
-test('loads the auto-updated packages through Workbench, from current module CDN URLs', async () => {
+test('loads the auto-updated packages through Workbench, from current module server URLs', async () => {
   const {importMapUrl, load: loadModule} = setup()
 
-  await expect(loadModule('sanity/structure')).resolves.toEqual({specifier: 'sanity/structure'})
+  const [sanity, structure] = await Promise.all([
+    loadModule('sanity'),
+    loadModule('sanity/structure'),
+  ])
 
-  expect(load).toHaveBeenCalledWith('t9app', {
+  expect(sanity).toBe(modules.sanity)
+  expect(structure).toBe(modules['sanity/structure'])
+
+  expect(load).toHaveBeenCalledExactlyOnceWith('t9app', {
     imports: {sanity: CURRENT_SANITY_URL, 'sanity/': `${CURRENT_SANITY_URL}/`},
+    specifiers: ['sanity', 'sanity/structure'],
+    styles: [`${CURRENT_SANITY_URL}/index.css`],
     vendor,
   })
-  expect(importModule).toHaveBeenCalledWith('sanity')
-  expect([...document.querySelectorAll('link')].map((link) => link.href)).toEqual([
-    `${CURRENT_SANITY_URL}/index.css`,
-  ])
   expect(importMapUrl('sanity')).toBe(CURRENT_SANITY_URL)
-})
-
-test('uses the bundled copy of every package when one fails to load', async () => {
-  importModule
-    .mockImplementationOnce(async (specifier) => ({specifier}))
-    .mockRejectedValueOnce(new TypeError('Failed to fetch'))
-  const {importMapUrl, load: loadModule} = setup()
-
-  await expect(loadModule('sanity')).resolves.toBe(bundled)
-  expect(importMapUrl('sanity')).toBeUndefined()
-  expect(document.querySelectorAll('link')).toHaveLength(0)
 })
 
 test.each([
   {versions: undefined, when: 'Workbench offers no contract version 1'},
-  {versions: {1: async () => undefined}, when: "Workbench didn't prepare the app"},
-])('uses the bundled copy when $when', async ({versions}) => {
+  {versions: {1: vi.fn(async () => undefined)}, when: "Workbench didn't prepare the app"},
+  {
+    versions: {1: vi.fn(() => Promise.reject(new TypeError('Failed to fetch')))},
+    when: 'Workbench fails to load the packages',
+  },
+])('uses the bundled copy of every package when $when', async ({versions}) => {
   Object.assign(globalThis, {[KEY]: versions && {versions}})
+  const {importMapUrl, load: loadModule} = setup()
 
-  await expect(setup().load('sanity')).resolves.toBe(bundled)
+  await expect(loadModule('sanity')).resolves.toBe(bundled)
+  await expect(loadModule('sanity/structure')).resolves.toBe(bundled)
+  expect(importMapUrl('sanity')).toBeUndefined()
+  expect(warn).toHaveBeenCalledOnce()
+  if (versions) expect(versions[1]).toHaveBeenCalledOnce()
 })
