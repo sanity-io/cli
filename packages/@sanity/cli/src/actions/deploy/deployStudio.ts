@@ -38,7 +38,7 @@ import {deployDebug} from './deployDebug.js'
 import {listDeploymentFiles, reportInterfaces} from './deploymentPlan.js'
 import {type DeployPayload, type DeployResult, runDeploy} from './deployRunner.js'
 import {deployStudioSchemasAndManifests} from './deployStudioSchemasAndManifests.js'
-import {findUserApplicationForStudio} from './findUserApplication.js'
+import {findUserApplicationForStudio, selectWorkbenchAppId} from './findUserApplication.js'
 import {type DeployAppOptions} from './types.js'
 
 const STUDIO_PACKAGE = 'sanity'
@@ -99,6 +99,7 @@ async function runStudioDeployment(
   let studioCreated = false
   let workbenchApp: {externalUrl?: string} | undefined
   let externalUrl: string | undefined
+  let targetAppId = appId
   if (workbench) {
     reporter.report(
       organizationId
@@ -109,16 +110,17 @@ async function runStudioDeployment(
             status: 'fail',
           },
     )
+    targetAppId = await selectWorkbenchAppId({appId, flags, organizationId, type: 'studio'})
     workbenchApp = (
       await checkStudioTarget(reporter, {
-        appId,
+        appId: targetAppId,
         isWorkbenchApp: true,
         organizationId,
         slug: workbench.slug,
         title: appTitle,
       })
     )?.application
-    if (isExternal) externalUrl = checkExternalUrl(reporter, {appId, url: flags.url})
+    if (isExternal) externalUrl = checkExternalUrl(reporter, {appId: targetAppId, url: flags.url})
   } else {
     ;({application, created: studioCreated} = await resolveStudioApplication(options, {
       dryRun,
@@ -145,7 +147,7 @@ async function runStudioDeployment(
 
   // Create the studio before the build so the bundle carries its real id. A
   // redeploy already has it from `deployment.appId`; a dry run skips creation.
-  let applicationId = appId
+  let applicationId = targetAppId
   let applicationCreated = false
   let rollbackApp: (() => Promise<void>) | undefined
   if (!dryRun && workbench && organizationId && !applicationId) {

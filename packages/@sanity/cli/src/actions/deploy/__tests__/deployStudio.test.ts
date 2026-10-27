@@ -1,6 +1,7 @@
 import {findBlueprintFile, readBlueprint} from '@sanity/blueprints/resolve'
 import {SchemaExtractionError} from '@sanity/cli-build/_internal/extract'
 import {type CliConfig, exitCodes, type Output} from '@sanity/cli-core'
+import {select} from '@sanity/cli-core/ux'
 import {readBuiltManifest} from '@sanity/workbench-cli/build'
 import {
   createStudio,
@@ -275,6 +276,52 @@ describe('deployStudio (federated studio)', () => {
     expect(mockBuildStudio).not.toHaveBeenCalled()
   })
 
+  test("without `deployment.appId`, offers the organization's studios and redeploys the pick", async () => {
+    const studio = {
+      id: 'studio-9',
+      organizationId: 'org-1',
+      slug: 'my-studio',
+      title: 'Holder',
+      type: 'studio' as const,
+    }
+    mockListApplications.mockResolvedValue([
+      studio,
+      {id: 'app-1', organizationId: 'org-1', slug: 'an-app', title: 'An App', type: 'coreApp'},
+    ])
+    mockGetApplication.mockResolvedValue(studio)
+    vi.mocked(select).mockResolvedValue('studio-9')
+
+    await deployStudio(deployOptions({flags: {json: false}}))
+
+    expect(vi.mocked(select).mock.calls[0][0].choices).toEqual([
+      {name: 'New application deployment', value: 'NEW_APP'},
+      expect.anything(),
+      {name: 'Holder', value: 'studio-9'},
+    ])
+    expect(mockCreateStudio).not.toHaveBeenCalled()
+    expect(mockBuildStudio).toHaveBeenCalledWith(
+      expect.objectContaining({applicationId: 'studio-9'}),
+    )
+    expect(mockDeployWorkbenchApp).toHaveBeenCalledWith(
+      expect.objectContaining({applicationId: 'studio-9'}),
+    )
+  })
+
+  test('--yes keeps the taken-slug failure without prompting', async () => {
+    const options = deployOptions({flags: {yes: true}})
+    const error = vi.mocked(options.output.error).mockImplementation(() => {
+      throw new Error('exit')
+    })
+    mockListApplications.mockResolvedValue([
+      {id: 'studio-9', organizationId: 'org-1', slug: 'my-studio', title: 'Holder', type: 'studio'},
+    ])
+
+    await expect(deployStudio(options)).rejects.toThrow('exit')
+
+    expect(error.mock.calls[0][0]).toContain('already exists at slug "my-studio"')
+    expect(vi.mocked(select)).not.toHaveBeenCalled()
+  })
+
   test('reports schema extraction errors without validation details', async () => {
     const options = deployOptions()
     vi.mocked(deployStudioSchemasAndManifests).mockRejectedValue(
@@ -444,5 +491,26 @@ describe('deployStudio --external (federated studio)', () => {
     )
     const logged = vi.mocked(options.output.log).mock.calls.map(([line]) => line)
     expect(logged.join('\n')).not.toContain('copy it to your host')
+  })
+
+  test('a picked external studio redeploys without --url', async () => {
+    const studio = {
+      externalUrl: 'https://studio.example.com',
+      id: 'studio-9',
+      organizationId: 'org-1',
+      slug: 'my-studio',
+      title: 'My Studio',
+      type: 'studio' as const,
+    }
+    mockListApplications.mockResolvedValue([studio])
+    mockGetApplication.mockResolvedValue(studio)
+    vi.mocked(select).mockResolvedValue('studio-9')
+
+    await deployStudio(deployOptions({flags: {...externalFlags, url: undefined}}))
+
+    expect(mockCreateStudio).not.toHaveBeenCalled()
+    expect(mockDeployWorkbenchApp).toHaveBeenCalledWith(
+      expect.objectContaining({applicationId: 'studio-9', isExternal: true}),
+    )
   })
 })

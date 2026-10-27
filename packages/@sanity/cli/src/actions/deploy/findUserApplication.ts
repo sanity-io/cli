@@ -7,6 +7,7 @@
 import {type CliConfig, exitCodes, type Output} from '@sanity/cli-core'
 import {getErrorMessage} from '@sanity/cli-core/errors'
 import {select, Separator, spinner} from '@sanity/cli-core/ux'
+import {type Application, listApplications} from '@sanity/workbench-cli/deploy'
 
 import {
   createUserApplication,
@@ -18,6 +19,7 @@ import {createFailFastReporter} from '../../util/checks.js'
 import {describeAppTarget, describeAppTargetError, describeStudioTarget} from './deployChecks.js'
 import {deployDebug} from './deployDebug.js'
 import {resolveAppDeployTarget, resolveStudioDeployTarget} from './resolveDeployTarget.js'
+import {type DeployFlags} from './types.js'
 
 interface FindUserApplicationOptions {
   cliConfig: CliConfig
@@ -59,7 +61,10 @@ export async function findUserApplication(
   }
   if (resolution.type === 'needs-input' && !unattended) {
     spin.info('No application ID configured')
-    return promptForExistingApp(resolution.existing)
+    const selected = await promptForExistingApp(
+      resolution.existing.map((app) => ({name: app.title ?? app.appHost, value: app.appHost})),
+    )
+    return resolution.existing.find((app) => app.appHost === selected) ?? null
   }
 
   spin.clear()
@@ -216,11 +221,31 @@ async function createFromConfiguredHost({
   }
 }
 
-async function promptForExistingApp(
-  existing: UserApplicationResolved[],
-): Promise<UserApplicationResolved | null> {
-  const choices = existing.map((app) => ({name: app.title ?? app.appHost, value: app.appHost}))
+/** The plain app selector for a workbench deploy without `deployment.appId`; undefined creates one. */
+export async function selectWorkbenchAppId({
+  appId,
+  flags,
+  organizationId,
+  type,
+}: {
+  appId: string | undefined
+  flags: DeployFlags
+  organizationId: string | undefined
+  type: Application['type']
+}): Promise<string | undefined> {
+  // --yes also covers dry runs and CI; --no-build fails a first deploy regardless of the pick
+  if (appId || !organizationId || flags.yes || !flags.build) return appId
 
+  const existing = (await listApplications(organizationId)).filter((app) => app.type === type)
+
+  if (existing.length === 0) return undefined
+
+  return promptForExistingApp(existing.map((app) => ({name: app.title, value: app.id})))
+}
+
+async function promptForExistingApp(
+  choices: {name: string; value: string}[],
+): Promise<string | undefined> {
   const selected = await select({
     choices: [
       {name: 'New application deployment', value: 'NEW_APP'},
@@ -232,11 +257,7 @@ async function promptForExistingApp(
     pageSize: 10,
   })
 
-  if (selected === 'NEW_APP') {
-    return null
-  }
-
-  return existing.find((app) => app.appHost === selected)!
+  return selected === 'NEW_APP' ? undefined : selected
 }
 
 async function promptForExistingStudio({

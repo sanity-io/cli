@@ -57,7 +57,7 @@ import {
 import {deployDebug} from './deployDebug.js'
 import {listDeploymentFiles, reportInterfaces} from './deploymentPlan.js'
 import {type DeployPayload, type DeployResult, runDeploy} from './deployRunner.js'
-import {findUserApplication} from './findUserApplication.js'
+import {findUserApplication, selectWorkbenchAppId} from './findUserApplication.js'
 import {type DeployAppOptions} from './types.js'
 
 const APP_PACKAGE = '@sanity/sdk-react'
@@ -147,6 +147,7 @@ async function runAppDeployment(
   let application: UserApplicationResolved | null = null
   let appCreated = false
   let workbenchApp: object | undefined
+  let targetAppId = appId
   if (flags.external) {
     reporter.report({
       message: EXTERNAL_APP_NOT_SUPPORTED,
@@ -154,9 +155,10 @@ async function runAppDeployment(
       status: 'fail',
     })
   } else if (deployApplication && workbench) {
+    targetAppId = await selectWorkbenchAppId({appId, flags, organizationId, type: 'coreApp'})
     workbenchApp = (
       await checkAppTarget(reporter, {
-        appId,
+        appId: targetAppId,
         hasAppView,
         isWorkbenchApp: true,
         organizationId,
@@ -185,7 +187,7 @@ async function runAppDeployment(
 
   // Create the app before the build so the bundle carries its real id. A
   // redeploy already has it from `deployment.appId`; a dry run skips creation.
-  let applicationId = appId
+  let applicationId = targetAppId
   let applicationCreated = false
   let rollbackApp: (() => Promise<void>) | undefined
   if (!dryRun && deployApplication && workbench && organizationId && !applicationId) {
