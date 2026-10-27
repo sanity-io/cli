@@ -14,6 +14,7 @@ import {
   getApplicationUrl,
   getWorkbench,
   getWorkbenchUrl,
+  selectWorkbenchAppId,
   toWorkbenchPayload,
 } from '@sanity/workbench-cli/deploy'
 import {type StudioManifest} from 'sanity'
@@ -38,7 +39,7 @@ import {deployDebug} from './deployDebug.js'
 import {listDeploymentFiles, reportInterfaces} from './deploymentPlan.js'
 import {type DeployPayload, type DeployResult, runDeploy} from './deployRunner.js'
 import {deployStudioSchemasAndManifests} from './deployStudioSchemasAndManifests.js'
-import {findUserApplicationForStudio, selectWorkbenchAppId} from './findUserApplication.js'
+import {findUserApplicationForStudio} from './findUserApplication.js'
 import {type DeployAppOptions} from './types.js'
 
 const STUDIO_PACKAGE = 'sanity'

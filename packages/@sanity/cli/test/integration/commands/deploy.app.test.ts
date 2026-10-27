@@ -763,19 +763,33 @@ describe('#deploy app', () => {
       title: 'Taken App',
       type: 'coreApp',
     }
+    const studio = {
+      id: 'studio_1',
+      organizationId,
+      slug: 'a-studio',
+      title: 'A Studio',
+      type: 'studio',
+    }
 
     let cwd: string
+
+    // The selector lists inside the workbench package, out of `mockListApplications`' reach
+    function mockSelectorList(apps: object[]) {
+      mockApi({
+        apiVersion: 'vX',
+        query: {limit: 'none', organizationId},
+        uri: '/applications',
+      }).reply(200, {data: apps})
+    }
 
     beforeEach(async () => {
       cwd = await testFixture('basic-app')
       process.cwd = () => cwd
-      mockListApplications.mockResolvedValue([
-        takenApp,
-        {id: 'studio_1', organizationId, slug: 'a-studio', title: 'A Studio', type: 'studio'},
-      ])
+      mockListApplications.mockResolvedValue([takenApp, studio])
     })
 
     test('an interactive deploy offers the existing apps and redeploys the pick', async () => {
+      mockSelectorList([takenApp, studio])
       mockApi({apiVersion: 'vX', uri: '/applications/app_taken'}).reply(200, takenApp)
       mockSelect.mockResolvedValue('app_taken')
 
@@ -785,15 +799,7 @@ describe('#deploy app', () => {
       })
 
       if (error) throw error
-      expect(mockSelect).toHaveBeenCalledWith(
-        expect.objectContaining({
-          choices: [
-            {name: 'New application deployment', value: 'NEW_APP'},
-            expect.anything(),
-            {name: 'Taken App', value: 'app_taken'},
-          ],
-        }),
-      )
+      expect(mockSelect).toHaveBeenCalledTimes(1)
       expect(mockCreateCoreApp).not.toHaveBeenCalled()
       expect(mockBuildApp).toHaveBeenCalledWith(
         expect.objectContaining({applicationId: 'app_taken'}),
@@ -805,7 +811,9 @@ describe('#deploy app', () => {
     })
 
     test('picking a new deployment creates the app at the configured slug', async () => {
-      mockListApplications.mockResolvedValue([{...takenApp, slug: 'other-slug'}])
+      const apps = [{...takenApp, slug: 'other-slug'}]
+      mockListApplications.mockResolvedValue(apps)
+      mockSelectorList(apps)
       mockSelect.mockResolvedValue('NEW_APP')
       mockCreateCoreApp.mockResolvedValue({
         application: {...takenApp, id: 'app_new'},
@@ -826,7 +834,8 @@ describe('#deploy app', () => {
     })
 
     test('an interactive deploy without apps of its type creates without prompting', async () => {
-      mockListApplications.mockResolvedValue([{...takenApp, slug: 'other-slug', type: 'studio'}])
+      mockListApplications.mockResolvedValue([studio])
+      mockSelectorList([studio])
       mockCreateCoreApp.mockResolvedValue({application: {...takenApp, id: 'app_new'}})
 
       const {error} = await testCommand(DeployCommand, [], {
@@ -872,18 +881,15 @@ describe('#deploy app', () => {
       expect(mockSelect).not.toHaveBeenCalled()
     })
 
-    test('--dry-run --json never prompts and reports the existing app id with its fix', async () => {
-      const {stdout} = await testCommand(DeployCommand, ['--dry-run', '--json'], {
+    test('an interactive --dry-run never prompts and reports the existing app id with its fix', async () => {
+      const {error, stdout} = await testCommand(DeployCommand, ['--dry-run'], {
         config: {root: cwd},
         mocks: {cliConfig: {app}, isInteractive: true},
       })
 
-      const plan = JSON.parse(stdout)
-      expect(plan.canDeploy).toBe(false)
-      expect(plan.reason).toContain('(app ID app_taken)')
-      expect(Object.values(plan.errors)).toContain(
-        "Add `deployment: {appId: 'app_taken'}` to sanity.cli.ts to redeploy it",
-      )
+      expect(error?.message).toContain('Deploy blocked')
+      expect(stdout).toContain('(app ID app_taken)')
+      expect(stdout).toContain("Add `deployment: {appId: 'app_taken'}` to sanity.cli.ts")
       expect(mockSelect).not.toHaveBeenCalled()
     })
   })

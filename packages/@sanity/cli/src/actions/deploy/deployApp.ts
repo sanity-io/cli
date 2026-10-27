@@ -22,6 +22,7 @@ import {
   getWorkbenchUrl,
   resolveInstallationId,
   resolveWorkbenchConfig,
+  selectWorkbenchAppId,
   summarizeConfig,
   toWorkbenchPayload,
 } from '@sanity/workbench-cli/deploy'
@@ -57,7 +58,7 @@ import {
 import {deployDebug} from './deployDebug.js'
 import {listDeploymentFiles, reportInterfaces} from './deploymentPlan.js'
 import {type DeployPayload, type DeployResult, runDeploy} from './deployRunner.js'
-import {findUserApplication, selectWorkbenchAppId} from './findUserApplication.js'
+import {findUserApplication} from './findUserApplication.js'
 import {type DeployAppOptions} from './types.js'
 
 const APP_PACKAGE = '@sanity/sdk-react'
