@@ -277,17 +277,17 @@ describe('setupTelemetry integration test', () => {
 
   test.each([
     {
-      expected: ['--dataset', '--project-id'],
+      expected: ['--dataset', '--project'],
       flags: ['-dprivate', '-pprivate'],
       id: 'documents:validate',
     },
     {
-      expected: ['--dataset', '--project-id'],
+      expected: ['--dataset', '--project'],
       flags: ['-d=private', '-p=private'],
       id: 'documents:validate',
     },
     {
-      expected: ['--dataset', '--project-id'],
+      expected: ['--dataset', '--project'],
       flags: ['-d', 'private', '-p', 'private'],
       id: 'documents:validate',
     },

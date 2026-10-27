@@ -128,11 +128,6 @@ export class ImportDatasetCommand extends SanityCommand<typeof ImportDatasetComm
       description: 'Project ID to import to',
       semantics: 'override',
     }),
-    project: Flags.string({
-      deprecated: {to: 'project-id'},
-      description: 'Project ID to import to',
-      hidden: true,
-    }),
     replace: Flags.boolean({
       default: false,
       description: 'Replace documents with the same IDs',
@@ -189,7 +184,6 @@ export class ImportDatasetCommand extends SanityCommand<typeof ImportDatasetComm
     } = flags
 
     const projectId = await this.getProjectId({
-      deprecatedFlagName: 'project',
       fallback: () => promptForProject({}),
     })
 

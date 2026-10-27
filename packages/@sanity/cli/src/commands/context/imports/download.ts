@@ -1,5 +1,4 @@
-import {Args, Flags} from '@oclif/core'
-import {type FlagInput} from '@oclif/core/interfaces'
+import {Args} from '@oclif/core'
 import {exitCodes, SanityCommand, subdebug} from '@sanity/cli-core'
 import {getErrorMessage} from '@sanity/cli-core/errors'
 import {isHttpError} from '@sanity/client'
@@ -25,19 +24,14 @@ export class DownloadImportCommand extends SanityCommand<typeof DownloadImportCo
   static override description =
     'Get a short-lived signed URL for the original uploaded bytes of a file import'
 
+  static override enableJsonFlag = true
+
   static override examples = [
     {
       command: '<%= config.bin %> <%= command.id %> kb-abc123 import-def456',
       description: 'Get a download URL for an uploaded file',
     },
   ]
-
-  static override flags = {
-    json: Flags.boolean({
-      default: false,
-      description: 'Output the download URL in JSON format',
-    }),
-  } satisfies FlagInput
 
   public async run(): Promise<void> {
     const {importId, knowledgeBaseId} = this.args
@@ -59,7 +53,7 @@ export class DownloadImportCommand extends SanityCommand<typeof DownloadImportCo
     }
 
     if (json) {
-      this.log(JSON.stringify(download, null, 2))
+      this.logJson(download)
       return
     }
 

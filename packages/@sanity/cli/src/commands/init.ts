@@ -5,6 +5,7 @@ import {SanityCommand} from '@sanity/cli-core'
 import {initAction} from '../actions/init/initAction.js'
 import {InitError} from '../actions/init/initError.js'
 import {flagsToInitOptions} from '../actions/init/types.js'
+import {getProjectIdFlag} from '../util/sharedFlags.js'
 import {defineCommandTelemetry} from '../util/telemetry/commandTelemetry.js'
 
 export class InitCommand extends SanityCommand<typeof InitCommand> {
@@ -157,11 +158,10 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
       helpValue: '<manager>',
       options: ['npm', 'yarn', 'pnpm'],
     }),
-    project: Flags.string({
-      aliases: ['project-id'],
+    ...getProjectIdFlag({
       description: 'Project ID to use for the studio',
       exclusive: ['create-project', 'project-name'],
-      helpValue: '<id>',
+      semantics: 'specify',
     }),
     'project-name': Flags.string({
       description: 'Create a new project with the given name',

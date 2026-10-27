@@ -89,6 +89,7 @@ describe('ValidateDocumentsCommand', () => {
   test('calls validateDocuments with all flags and does not error if return is not error', async () => {
     const ndjsonFilePath = path.join('some', 'file')
     const dataset = 'staging'
+    const projectId = 'flag-project'
     const workspace = 'homeoffice'
     const level = 'info'
     const maxCustomValidationConcurrency = 10
@@ -99,6 +100,8 @@ describe('ValidateDocumentsCommand', () => {
       ndjsonFilePath,
       '--dataset',
       dataset,
+      '--project',
+      projectId,
       '--workspace',
       workspace,
       '--level',
@@ -117,6 +120,7 @@ describe('ValidateDocumentsCommand', () => {
         maxCustomValidationConcurrency,
         maxFetchConcurrency,
         ndjsonFilePath: expect.stringContaining(ndjsonFilePath),
+        projectId,
         studioHost: cliConfig.studioHost,
         workspace,
       }),

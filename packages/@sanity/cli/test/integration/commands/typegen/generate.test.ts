@@ -270,8 +270,14 @@ describe('#typegen:generate --watch with typegen.resources', {timeout: 60 * 1000
     const output = join(cwd, 'src', 'staging.types.ts')
 
     const {promise, stop} = startWatching()
+    const capture = process.stderr.write
+    let logged = ''
+    process.stderr.write = ((chunk: string | Uint8Array, ...rest: never[]) => {
+      logged += chunk.toString()
+      return capture.call(process.stderr, chunk, ...rest)
+    }) as typeof process.stderr.write
     try {
-      await new Promise((resolve) => setTimeout(resolve, 1500))
+      await waitUntil(async () => logged.includes('Schema file not found'))
       expect(existsSync(output)).toBe(false)
 
       await writeFile(join(cwd, 'staging.schema.json'), schema)

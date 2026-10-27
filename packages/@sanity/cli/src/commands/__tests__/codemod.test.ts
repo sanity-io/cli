@@ -16,6 +16,17 @@ vi.mock('@sanity/cli-core', async (importOriginal) => {
   }
 })
 
+const mockDashboardPrepare = vi.hoisted(() => vi.fn())
+
+vi.mock('../../actions/codemods/dashboard.js', () => ({
+  dashboard: {
+    description: '',
+    filename: 'dashboard.js',
+    prepare: mockDashboardPrepare,
+    purpose: 'Move an existing Studio or SDK app onto the Dashboard',
+  },
+}))
+
 vi.mock('node:child_process')
 vi.mock('node:fs')
 
@@ -67,6 +78,7 @@ describe('#codemod', () => {
     expect(stdout).toContain('reactIconsV3')
     expect(stdout).toContain('partsTypeDirective')
     expect(stdout).toContain('deskRename')
+    expect(stdout).toContain('dashboard')
   })
 
   test('validates codemod exists', async () => {
@@ -176,6 +188,48 @@ describe('#codemod', () => {
     })
   })
 
+  describe('prepare step', () => {
+    test('passes prepared options to the transform and targets only the prepared paths', async () => {
+      const {spawnMock} = setupBasicMocks()
+      mockDashboardPrepare.mockResolvedValue({
+        options: {slug: 'acme-dashboard', title: '2024'},
+        paths: ['/project/sanity.cli.ts'],
+      })
+
+      await testCommand(CodemodCommand, ['dashboard'])
+
+      const args = spawnMock.mock.calls[0][1] as string[]
+      // JSON-encoded so jscodeshift's JSON.parse keeps "2024" a string
+      expect(args).toEqual(expect.arrayContaining(['--slug="acme-dashboard"', '--title="2024"']))
+      expect(args.at(-1)).toBe('/project/sanity.cli.ts')
+      expect(args).not.toContain(process.cwd())
+    })
+
+    test.each([
+      [['dashboard'], false],
+      [['dashboard', '--dry'], true],
+    ])('tells prepare whether %j is a dry run', async (args, dry) => {
+      setupBasicMocks()
+      mockDashboardPrepare.mockResolvedValue({options: {}, paths: ['/project/sanity.cli.ts']})
+
+      await testCommand(CodemodCommand, args)
+
+      expect(mockDashboardPrepare).toHaveBeenCalledWith(expect.objectContaining({dry}))
+    })
+
+    test('does not run the transform when prepare fails', async () => {
+      const {spawnMock} = setupBasicMocks()
+      mockDashboardPrepare.mockRejectedValue(
+        new Error('This project is already a Dashboard application.'),
+      )
+
+      const {error} = await testCommand(CodemodCommand, ['dashboard'])
+
+      expect(error?.message).toContain('This project is already a Dashboard application.')
+      expect(spawnMock).not.toHaveBeenCalled()
+    })
+  })
+
   describe('react-icons verification', () => {
     test('runs verification for reactIconsV3 codemod', async () => {
       const {spawnMock} = setupBasicMocks()
@@ -208,6 +262,20 @@ describe('#codemod', () => {
   })
 
   describe('process management', () => {
+    test.each([0, 1])(
+      'exits with code %i once jscodeshift closes asynchronously',
+      async (exitCode) => {
+        const {childProcess} = setupBasicMocks()
+        childProcess.on.mockImplementation((event, cb) => {
+          if (event === 'close') setImmediate(() => cb(exitCode))
+        })
+
+        const {error} = await testCommand(CodemodCommand, ['partsTypeDirective'])
+
+        expect(error?.oclif?.exit ?? 0).toBe(exitCode)
+      },
+    )
+
     test('handles child process exit with non-zero code', async () => {
       setupBasicMocks({exitCode: 1})
 

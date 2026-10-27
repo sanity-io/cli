@@ -1,7 +1,9 @@
-import {Command, Flags} from '@oclif/core'
+import {Args, Command, Config, Flags} from '@oclif/core'
+import {CLIError} from '@oclif/core/errors'
 import {afterEach, beforeEach, describe, expect, Mock, test, vi} from 'vitest'
 
 import {requiredWhenUnattended} from '../_exports/flags.js'
+import {JsonOutputError} from '../errors/JsonOutputError.js'
 import {runWithCliExecutionContext} from '../executionContext.js'
 import {SanityCommand} from '../SanityCommand.js'
 
@@ -11,18 +13,20 @@ function createMockedRunCommand<T extends typeof Command>(mocks: {
 }) {
   return class TestCommand extends SanityCommand<typeof TestCommand> {
     static override flags = {
-      project: Flags.string({
-        deprecated: {to: 'project-id'},
+      'legacy-project': Flags.string({
+        deprecated: {to: 'project'},
         description: 'Project ID to import to',
         hidden: true,
       }),
-      'project-id': Flags.string({
+      project: Flags.string({
+        aliases: ['project-id'],
         char: 'p',
+        deprecateAliases: true,
         helpValue: '<id>',
         parse: async (input: string) => {
           const trimmed = input.trim()
           if (trimmed === '') {
-            throw new Error('`--project-id` cannot be empty if provided')
+            throw new Error('`--project` cannot be empty if provided')
           }
           return trimmed
         },
@@ -61,6 +65,48 @@ describe('SanityCommand', () => {
     vi.clearAllMocks()
   })
 
+  describe('deprecated flag aliases', () => {
+    class AliasCommand extends SanityCommand<typeof AliasCommand> {
+      static override args = {value: Args.string()}
+      static override flags = {
+        name: Flags.string({aliases: ['old-name'], deprecateAliases: true}),
+      }
+
+      public async run(): Promise<void> {
+        this.log(this.flags.name)
+      }
+    }
+
+    test.each([['--old-name', 'example'], ['--old-name=example']])(
+      'warns and uses the canonical value for %j',
+      async (...argv) => {
+        const stdout: string[] = []
+        const stderr: string[] = []
+        await runWithCliExecutionContext(
+          {stderr: (line) => stderr.push(line), stdout: (line) => stdout.push(line)},
+          () => AliasCommand.run(argv),
+        )
+
+        expect(stdout).toEqual(['example'])
+        expect(stderr.join('\n')).toContain('deprecated')
+        expect(stderr.join('\n')).toContain('--name')
+      },
+    )
+
+    test.each([['--name=example'], ['--name=example', '--', '--old-name=positional']])(
+      'does not warn for canonical flags or positional values: %j',
+      async (...argv) => {
+        const stderr: string[] = []
+        await runWithCliExecutionContext(
+          {stderr: (line) => stderr.push(line), stdout: () => {}},
+          () => AliasCommand.run(argv),
+        )
+
+        expect(stderr).toEqual([])
+      },
+    )
+  })
+
   describe('unattended flag requirements', () => {
     test('allows the flag to be omitted in interactive mode', async () => {
       await expect(createUnattendedRequiredCommand(true).run([])).resolves.toBeUndefined()
@@ -78,9 +124,11 @@ describe('SanityCommand', () => {
     test('requires the flag when invoked with --json', async () => {
       const output: string[] = []
 
-      await runWithCliExecutionContext({stdout: (line) => output.push(line)}, () =>
-        createUnattendedRequiredCommand(true).run(['--json']),
-      )
+      await expect(
+        runWithCliExecutionContext({stdout: (line) => output.push(line)}, () =>
+          createUnattendedRequiredCommand(true).run(['--json']),
+        ),
+      ).rejects.toThrow('Missing required flag name')
 
       expect(output.join('\n')).toContain('Missing required flag name')
     })
@@ -103,43 +151,43 @@ describe('SanityCommand', () => {
     beforeEach(() => {
       id = ''
     })
-    test('returns --project-id value if provided', async () => {
+    test('returns --project value if provided', async () => {
       const cmdClass = createMockedRunCommand({
         run: async function () {
           id = await this.getProjectId()
         },
       })
-      await cmdClass.run(['--project-id', 'torment nexus'])
+      await cmdClass.run(['--project', 'torment nexus'])
       expect(id).toEqual('torment nexus')
     })
 
-    test('supports deprecated flag (e.g. --project) value if specified and provided', async () => {
+    test('supports deprecated flag (e.g. --legacy-project) value if specified and provided', async () => {
       const cmdClass = createMockedRunCommand({
         run: async function () {
-          id = await this.getProjectId({deprecatedFlagName: 'project'})
+          id = await this.getProjectId({deprecatedFlagName: 'legacy-project'})
         },
       })
-      await cmdClass.run(['--project', 'oopsy daisy'])
+      await cmdClass.run(['--legacy-project', 'oopsy daisy'])
       expect(id).toEqual('oopsy daisy')
     })
 
-    test('supports deprecated short char flag (e.g. --project) value if specified and provided', async () => {
+    test('supports the -p short flag', async () => {
       const cmdClass = createMockedRunCommand({
         run: async function () {
-          id = await this.getProjectId({deprecatedFlagName: 'project'})
+          id = await this.getProjectId()
         },
       })
       await cmdClass.run(['-p', 'torment nexus'])
       expect(id).toEqual('torment nexus')
     })
 
-    test('--project-id takes precedence over deprecated --project', async () => {
+    test('--project takes precedence over deprecated --legacy-project', async () => {
       const cmdClass = createMockedRunCommand({
         run: async function () {
-          id = await this.getProjectId({deprecatedFlagName: 'project'})
+          id = await this.getProjectId({deprecatedFlagName: 'legacy-project'})
         },
       })
-      await cmdClass.run(['--project', 'bad', '--project-id', 'good'])
+      await cmdClass.run(['--legacy-project', 'bad', '--project', 'good'])
       expect(id).toEqual('good')
     })
 
@@ -202,7 +250,7 @@ describe('SanityCommand', () => {
       expect(fallback).not.toHaveBeenCalled()
     })
 
-    test('does not call fallback when --project-id flag is provided', async () => {
+    test('does not call fallback when --project flag is provided', async () => {
       const fallback = vi.fn(() => {
         throw new Error('fallback should not have been called!')
       })
@@ -211,7 +259,7 @@ describe('SanityCommand', () => {
           id = await this.getProjectId({fallback})
         },
       })
-      await cmdClass.run(['--project-id', 'torment nexus'])
+      await cmdClass.run(['--project', 'torment nexus'])
       expect(id).toEqual('torment nexus')
       expect(fallback).not.toHaveBeenCalled()
     })
@@ -256,6 +304,31 @@ describe('SanityCommand', () => {
         JSON.stringify({origins: ['https://example.com']}, null, 2),
       ])
       expect(err).toEqual(['Warning: careful now', 'Warning: warned error', 'diagnostics'])
+    })
+
+    test('logDiagnostic survives JSON mode, where log, warn and logToStderr do not', async () => {
+      const out: string[] = []
+      const err: string[] = []
+      const cmdClass = createMockedRunCommand({
+        run: async function () {
+          this.log('suppressed')
+          this.warn('also suppressed')
+          this.logToStderr('suppressed too')
+          this.logDiagnostic('could not read dataset "test"')
+          this.logJson([{id: 'kept'}])
+        },
+      })
+      cmdClass.enableJsonFlag = true
+
+      await runWithCliExecutionContext(
+        {stderr: (line) => err.push(line), stdout: (line) => out.push(line)},
+        () => cmdClass.run(['--json']),
+      )
+
+      // The payload has to stay parseable on its own, with the diagnostic kept
+      // to the other stream rather than dropped.
+      expect(JSON.parse(out.join('\n'))).toEqual([{id: 'kept'}])
+      expect(err).toEqual(['could not read dataset "test"'])
     })
 
     test('concurrent invocations with different sinks do not cross-talk', async () => {
@@ -350,7 +423,7 @@ describe('SanityCommand', () => {
       }
     })
 
-    test('under an execution context with --json, the error is logged as JSON instead of thrown', async () => {
+    test('under an execution context with --json, the error is logged as JSON and thrown to preserve its exit status', async () => {
       const out: string[] = []
       const previousExitCode = process.exitCode
       const cmdClass = createMockedRunCommand({
@@ -360,12 +433,195 @@ describe('SanityCommand', () => {
       })
       cmdClass.enableJsonFlag = true
 
-      await runWithCliExecutionContext({stderr: () => {}, stdout: (line) => out.push(line)}, () =>
-        cmdClass.run(['--json']),
-      )
+      await expect(
+        runWithCliExecutionContext({stderr: () => {}, stdout: (line) => out.push(line)}, () =>
+          cmdClass.run(['--json']),
+        ),
+      ).rejects.toThrow('kaboom')
 
       expect(out.join('\n')).toContain('kaboom')
       expect(process.exitCode).toBe(previousExitCode)
     })
+  })
+})
+
+describe('JSON command output', () => {
+  class JsonCommand extends SanityCommand<typeof JsonCommand> {
+    static override enableJsonFlag = true
+    static override flags = {
+      json: Flags.boolean({char: 'j'}),
+      name: Flags.string({char: 'n'}),
+      yes: Flags.boolean({char: 'y'}),
+    }
+    public async run(): Promise<void> {}
+  }
+
+  test.each([
+    {argv: ['--json'], expected: true},
+    {argv: ['-j'], expected: true},
+    {argv: ['-yj'], expected: true},
+    {argv: ['-jy'], expected: true},
+    {argv: ['-nj'], expected: false},
+    {argv: ['--name', '-j'], expected: false},
+    {argv: ['--', '-j'], expected: false},
+    {argv: ['--', '--json'], expected: false},
+    {argv: [], expected: false},
+  ])('recognizes JSON mode before parsing $argv', ({argv, expected}) => {
+    const command = new JsonCommand(argv, {} as Config)
+    expect(command.jsonEnabled()).toBe(expected)
+  })
+
+  test.each([
+    {argv: [], expected: false},
+    {argv: ['--json'], expected: true},
+  ])('settles flags.json to $expected for $argv', async ({argv, expected}) => {
+    // `parse` records the answer either way, so `jsonEnabled` can read it back
+    // rather than rescanning argv on every log line for the rest of the run.
+    let seen: unknown
+    const cmdClass = createMockedRunCommand({
+      run: async function () {
+        seen = (this.flags as {json?: boolean}).json
+      },
+    })
+    cmdClass.enableJsonFlag = true
+
+    await cmdClass.run(argv)
+
+    expect(seen).toBe(expected)
+  })
+
+  test('keeps a JSON request that only the parser can resolve', async () => {
+    // A flag alias is invisible to the pre-parse argv scan but resolved by
+    // oclif, so stamping the scan's answer over the parsed one would discard
+    // it. Asserted through a real parse, since that is where they meet.
+    let seen: unknown
+    const cmdClass = createMockedRunCommand({
+      run: async function () {
+        seen = this.jsonEnabled()
+      },
+    })
+    cmdClass.enableJsonFlag = true
+    cmdClass.flags = {json: Flags.boolean({aliases: ['as-json']})} as never
+
+    await cmdClass.run(['--as-json'])
+
+    expect(seen).toBe(true)
+  })
+
+  test.each([1, 2, 3, 130])('preserves exit code %s for terminal JSON failures', async (exit) => {
+    class FailingCommand extends JsonCommand {
+      public override async run(): Promise<void> {
+        throw new CLIError('Failed', {exit})
+      }
+    }
+    const previousExitCode = process.exitCode
+    const log = vi.spyOn(FailingCommand.prototype, 'logJson').mockImplementation(() => {})
+    try {
+      await FailingCommand.run(['--json'])
+      expect(process.exitCode).toBe(exit)
+      expect(log).toHaveBeenCalledExactlyOnceWith(
+        expect.objectContaining({
+          error: expect.objectContaining({message: 'Failed'}),
+        }),
+      )
+    } finally {
+      process.exitCode = previousExitCode
+      log.mockRestore()
+    }
+  })
+
+  test.each(['SIGINT', 'ExitPromptError'])('reports %s as JSON with exit 130', async (name) => {
+    class AbortedCommand extends JsonCommand {
+      public override async run(): Promise<void> {
+        throw Object.assign(new Error(name), {name})
+      }
+    }
+    const previousExitCode = process.exitCode
+    const log = vi.spyOn(AbortedCommand.prototype, 'logJson').mockImplementation(() => {})
+    try {
+      await AbortedCommand.run(['--json'])
+      expect(process.exitCode).toBe(130)
+      expect(log).toHaveBeenCalledExactlyOnceWith(
+        expect.objectContaining({
+          error: expect.objectContaining({message: 'Aborted by user'}),
+        }),
+      )
+    } finally {
+      process.exitCode = previousExitCode
+      log.mockRestore()
+    }
+  })
+
+  test.each([0, 1])('does not append an error to a report followed by exit %s', async (exit) => {
+    class ReportCommand extends JsonCommand {
+      public override async run(): Promise<void> {
+        this.logJson({checks: [], passed: exit === 0})
+        this.exit(exit)
+      }
+    }
+    const previousExitCode = process.exitCode
+    const log = vi.spyOn(ReportCommand.prototype, 'logJson').mockImplementation(() => {})
+    try {
+      await ReportCommand.run(['--json'])
+      expect(process.exitCode).toBe(exit)
+      expect(log).toHaveBeenCalledExactlyOnceWith({checks: [], passed: exit === 0})
+    } finally {
+      process.exitCode = previousExitCode
+      log.mockRestore()
+    }
+  })
+
+  test('preserves a command-specific failure payload', async () => {
+    const command = new JsonCommand([], {} as Config)
+    const payload = {deployed: false, reason: 'Build failed'}
+    expect(command.toErrorJson(new JsonOutputError('Build failed', payload, 1))).toEqual(payload)
+  })
+
+  test('environment-selected JSON mode reaches parsed flags', async () => {
+    let observed: {json: unknown; unattended: boolean} | undefined
+    class EnvCommand extends SanityCommand<typeof EnvCommand> {
+      static override enableJsonFlag = true
+      public override async run(): Promise<void> {
+        const {flags} = await this.parse(EnvCommand)
+        this.flags = flags as typeof this.flags
+        observed = {json: flags.json, unattended: this.isUnattended()}
+      }
+    }
+    const config = await Config.load()
+    const env = vi
+      .spyOn(config, 'scopedEnvVar')
+      .mockImplementation((key) => (key === 'CONTENT_TYPE' ? 'json' : undefined))
+    try {
+      await new EnvCommand([], config).run()
+      expect(observed).toEqual({json: true, unattended: true})
+    } finally {
+      env.mockRestore()
+    }
+  })
+
+  /**
+   * `SANITY_CONTENT_TYPE` belongs to whatever process is embedding the CLI. A
+   * programmatic invocation decides from its own argv, so that a host which
+   * happens to export the variable cannot reshape output for every caller.
+   */
+  test('ignores the environment under an execution context, but still honours argv', async () => {
+    class EnvCommand extends SanityCommand<typeof EnvCommand> {
+      static override enableJsonFlag = true
+      public override async run(): Promise<void> {}
+    }
+    const config = await Config.load()
+    const env = vi
+      .spyOn(config, 'scopedEnvVar')
+      .mockImplementation((key) => (key === 'CONTENT_TYPE' ? 'json' : undefined))
+    try {
+      expect(new EnvCommand([], config).jsonEnabled()).toBe(true)
+
+      await runWithCliExecutionContext({}, () => {
+        expect(new EnvCommand([], config).jsonEnabled()).toBe(false)
+        expect(new EnvCommand(['--json'], config).jsonEnabled()).toBe(true)
+      })
+    } finally {
+      env.mockRestore()
+    }
   })
 })

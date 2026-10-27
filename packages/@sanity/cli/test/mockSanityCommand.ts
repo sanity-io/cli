@@ -13,6 +13,8 @@ export function createMockSanityCommand() {
     SanityCmdIsUnattended: vi.fn(),
     SanityCmdOutputError: vi.fn(() => undefined as never),
     SanityCmdOutputLog: vi.fn(),
+    SanityCmdOutputLogDiagnostic: vi.fn(),
+    SanityCmdOutputLogJson: vi.fn(),
     SanityCmdOutputWarn: vi.fn(),
     SanityCmdResolveIsInteractive: vi.fn(),
   }
@@ -27,6 +29,8 @@ export function createMockSanityCommand() {
       output: Output = {
         error: mocks.SanityCmdOutputError,
         log: mocks.SanityCmdOutputLog,
+        logDiagnostic: mocks.SanityCmdOutputLogDiagnostic,
+        logJson: mocks.SanityCmdOutputLogJson,
         warn: mocks.SanityCmdOutputWarn,
       }
       public exit(code?: number) {
@@ -58,6 +62,9 @@ export function createMockSanityCommand() {
       }
       public isUnattended() {
         return mocks.SanityCmdIsUnattended()
+      }
+      public logJson(value: unknown) {
+        mocks.SanityCmdOutputLogJson(value)
       }
       public resolveIsInteractive() {
         return mocks.SanityCmdResolveIsInteractive()

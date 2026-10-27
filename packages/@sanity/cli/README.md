@@ -36,14 +36,24 @@ Code for sanity cli
 - [`sanity context build KNOWLEDGEBASEID`](#sanity-context-build-knowledgebaseid)
 - [`sanity context create`](#sanity-context-create)
 - [`sanity context delete KNOWLEDGEBASEID`](#sanity-context-delete-knowledgebaseid)
+- [`sanity context entries get KNOWLEDGEBASEID PATH`](#sanity-context-entries-get-knowledgebaseid-path)
+- [`sanity context entries list KNOWLEDGEBASEID`](#sanity-context-entries-list-knowledgebaseid)
+- [`sanity context entries rebuild KNOWLEDGEBASEID PATH`](#sanity-context-entries-rebuild-knowledgebaseid-path)
 - [`sanity context get KNOWLEDGEBASEID`](#sanity-context-get-knowledgebaseid)
 - [`sanity context imports create KNOWLEDGEBASEID`](#sanity-context-imports-create-knowledgebaseid)
 - [`sanity context imports delete KNOWLEDGEBASEID IMPORTID`](#sanity-context-imports-delete-knowledgebaseid-importid)
 - [`sanity context imports download KNOWLEDGEBASEID IMPORTID`](#sanity-context-imports-download-knowledgebaseid-importid)
 - [`sanity context imports get KNOWLEDGEBASEID IMPORTID`](#sanity-context-imports-get-knowledgebaseid-importid)
 - [`sanity context imports list KNOWLEDGEBASEID`](#sanity-context-imports-list-knowledgebaseid)
+- [`sanity context issues apply KNOWLEDGEBASEID ISSUEID`](#sanity-context-issues-apply-knowledgebaseid-issueid)
+- [`sanity context issues dismiss KNOWLEDGEBASEID ISSUEID`](#sanity-context-issues-dismiss-knowledgebaseid-issueid)
+- [`sanity context issues get KNOWLEDGEBASEID ISSUEID`](#sanity-context-issues-get-knowledgebaseid-issueid)
+- [`sanity context issues list KNOWLEDGEBASEID`](#sanity-context-issues-list-knowledgebaseid)
+- [`sanity context issues reopen KNOWLEDGEBASEID ISSUEID`](#sanity-context-issues-reopen-knowledgebaseid-issueid)
+- [`sanity context issues resolve KNOWLEDGEBASEID ISSUEID`](#sanity-context-issues-resolve-knowledgebaseid-issueid)
 - [`sanity context jobs get KNOWLEDGEBASEID JOBID`](#sanity-context-jobs-get-knowledgebaseid-jobid)
 - [`sanity context list`](#sanity-context-list)
+- [`sanity context query QUERY`](#sanity-context-query-query)
 - [`sanity context refresh KNOWLEDGEBASEID`](#sanity-context-refresh-knowledgebaseid)
 - [`sanity context update KNOWLEDGEBASEID`](#sanity-context-update-knowledgebaseid)
 - [`sanity cors add ORIGIN`](#sanity-cors-add-origin)
@@ -189,8 +199,8 @@ FLAGS
       --project-hosted            Force the request to the project API host (<projectId>.api.sanity.io)
 
 OVERRIDE FLAGS
-  -d, --dataset=<name>   Dataset for {dataset} placeholders (overrides CLI configuration)
-  -p, --project-id=<id>  Project ID for {projectId} placeholders and project-hosted APIs (overrides CLI configuration)
+  -d, --dataset=<name>  Dataset for {dataset} placeholders (overrides CLI configuration)
+  -p, --project=<id>    Project ID for {projectId} placeholders and project-hosted APIs (overrides CLI configuration)
 
 DESCRIPTION
   Make an authenticated HTTP request to a Sanity API
@@ -264,8 +274,8 @@ FLAGS
                               <options: image|file>
 
 OVERRIDE FLAGS
-  -d, --dataset=<name>   Dataset to upload the asset to (overrides CLI configuration)
-  -p, --project-id=<id>  Project ID to upload the asset to (overrides CLI configuration)
+  -d, --dataset=<name>  Dataset to upload the asset to (overrides CLI configuration)
+  -p, --project=<id>    Project ID to upload the asset to (overrides CLI configuration)
 
 DESCRIPTION
   Upload one image or file to a Sanity dataset, from a local path or a URL, and print the asset document as JSON
@@ -277,8 +287,8 @@ EXAMPLES
 
   Upload a file with explicit project, dataset, and MIME type
 
-    $ sanity assets upload --file ./brief.pdf --type file --content-type application/pdf --project-id abc123 \
-      --dataset production
+    $ sanity assets upload --file ./brief.pdf --type file --content-type application/pdf --project abc123 --dataset \
+      production
 
   Have Sanity fetch an image from a public URL
 
@@ -297,7 +307,7 @@ ARGUMENTS
   [DATASET]  Dataset name to disable backup for
 
 OVERRIDE FLAGS
-  -p, --project-id=<id>  Project ID to disable backups for (overrides CLI configuration)
+  -p, --project=<id>  Project ID to disable backups for (overrides CLI configuration)
 
 DESCRIPTION
   Disable backup for a dataset
@@ -331,7 +341,7 @@ FLAGS
   --overwrite            Allows overwriting of existing backup file
 
 OVERRIDE FLAGS
-  -p, --project-id=<id>  Project ID to download backup from (overrides CLI configuration)
+  -p, --project=<id>  Project ID to download backup from (overrides CLI configuration)
 
 DESCRIPTION
   Download a dataset backup to a local file
@@ -366,7 +376,7 @@ ARGUMENTS
   [DATASET]  Dataset name to enable backup for
 
 OVERRIDE FLAGS
-  -p, --project-id=<id>  Project ID to enable backups for (overrides CLI configuration)
+  -p, --project=<id>  Project ID to enable backups for (overrides CLI configuration)
 
 DESCRIPTION
   Enable backup for a dataset
@@ -398,7 +408,7 @@ FLAGS
       --before=<value>  Only return backups before this date (exclusive, YYYY-MM-DD format)
 
 OVERRIDE FLAGS
-  -p, --project-id=<id>  Project ID to list backups for (overrides CLI configuration)
+  -p, --project=<id>  Project ID to list backups for (overrides CLI configuration)
 
 DESCRIPTION
   List available backups for a dataset
@@ -1060,6 +1070,89 @@ EXAMPLES
     $ sanity context delete kb-abc123 --yes
 ```
 
+## `sanity context entries get KNOWLEDGEBASEID PATH`
+
+Get an entry and its content
+
+```
+USAGE
+  $ sanity context entries get KNOWLEDGEBASEID PATH [--json]
+
+ARGUMENTS
+  KNOWLEDGEBASEID  Knowledge base ID
+  PATH             Entry path, as listed by `sanity context entries list`
+
+GLOBAL FLAGS
+  --json  Format output as json.
+
+DESCRIPTION
+  Get an entry and its content
+
+EXAMPLES
+  Print an entry and its content
+
+    $ sanity context entries get kb-abc123 billing/refunds
+
+  Output the entry, including citations, as JSON
+
+    $ sanity context entries get kb-abc123 billing/refunds --json
+```
+
+## `sanity context entries list KNOWLEDGEBASEID`
+
+List the entries a knowledge base build produced
+
+```
+USAGE
+  $ sanity context entries list KNOWLEDGEBASEID [--json]
+
+ARGUMENTS
+  KNOWLEDGEBASEID  Knowledge base ID
+
+GLOBAL FLAGS
+  --json  Format output as json.
+
+DESCRIPTION
+  List the entries a knowledge base build produced
+
+EXAMPLES
+  List all entries for a knowledge base
+
+    $ sanity context entries list kb-abc123
+
+  Output entries as JSON
+
+    $ sanity context entries list kb-abc123 --json
+```
+
+## `sanity context entries rebuild KNOWLEDGEBASEID PATH`
+
+Rebuild one entry from its sources
+
+```
+USAGE
+  $ sanity context entries rebuild KNOWLEDGEBASEID PATH [--watch]
+
+ARGUMENTS
+  KNOWLEDGEBASEID  Knowledge base ID
+  PATH             Entry path, as listed by `sanity context entries list`
+
+FLAGS
+  --watch  Wait for the rebuild to finish, exiting non-zero if it fails
+
+DESCRIPTION
+  Rebuild one entry from its sources
+
+EXAMPLES
+  Start a rebuild and return the job ID
+
+    $ sanity context entries rebuild kb-abc123 billing/refunds
+
+  Rebuild an entry and wait for it to finish (non-zero exit on failure)
+
+    $ sanity context entries rebuild kb-abc123 billing/refunds --watch
+```
+
 ## `sanity context get KNOWLEDGEBASEID`
 
 Get details of a knowledge base
@@ -1071,8 +1164,8 @@ USAGE
 ARGUMENTS
   KNOWLEDGEBASEID  Knowledge base ID
 
-FLAGS
-  --json  Output the knowledge base in JSON format
+GLOBAL FLAGS
+  --json  Format output as json.
 
 DESCRIPTION
   Get details of a knowledge base
@@ -1172,8 +1265,8 @@ ARGUMENTS
   KNOWLEDGEBASEID  Knowledge base ID
   IMPORTID         Import ID
 
-FLAGS
-  --json  Output the download URL in JSON format
+GLOBAL FLAGS
+  --json  Format output as json.
 
 DESCRIPTION
   Get a short-lived signed URL for the original uploaded bytes of a file import
@@ -1196,8 +1289,8 @@ ARGUMENTS
   KNOWLEDGEBASEID  Knowledge base ID
   IMPORTID         Import ID
 
-FLAGS
-  --json  Output the import in JSON format
+GLOBAL FLAGS
+  --json  Format output as json.
 
 DESCRIPTION
   Get details of an import
@@ -1223,8 +1316,8 @@ USAGE
 ARGUMENTS
   KNOWLEDGEBASEID  Knowledge base ID
 
-FLAGS
-  --json  Output imports in JSON format
+GLOBAL FLAGS
+  --json  Format output as json.
 
 DESCRIPTION
   List imports for a knowledge base
@@ -1237,6 +1330,192 @@ EXAMPLES
   Output imports as JSON
 
     $ sanity context imports list kb-abc123 --json
+```
+
+## `sanity context issues apply KNOWLEDGEBASEID ISSUEID`
+
+Accept and apply issues to a knowledge base
+
+```
+USAGE
+  $ sanity context issues apply KNOWLEDGEBASEID ISSUEID... [--watch]
+
+ARGUMENTS
+  KNOWLEDGEBASEID  Knowledge base ID
+  ISSUEID...       ID of an issue to accept and apply (pass several to apply them in one batch). Conflicts can't be
+                   applied; resolve them with `sanity context issues resolve`
+
+FLAGS
+  --watch  Wait for the apply to finish, exiting non-zero if it fails
+
+DESCRIPTION
+  Accept and apply issues to a knowledge base
+
+EXAMPLES
+  Accept and apply two issues in one batch
+
+    $ sanity context issues apply kb-abc123 issue.def456 issue.ghi789
+
+  Apply an issue and wait for it to finish (non-zero exit on failure)
+
+    $ sanity context issues apply kb-abc123 issue.def456 --watch
+```
+
+## `sanity context issues dismiss KNOWLEDGEBASEID ISSUEID`
+
+Dismiss an issue
+
+```
+USAGE
+  $ sanity context issues dismiss KNOWLEDGEBASEID ISSUEID
+
+ARGUMENTS
+  KNOWLEDGEBASEID  Knowledge base ID
+  ISSUEID          Issue ID
+
+DESCRIPTION
+  Dismiss an issue
+
+  Dismissing is permanent: dismissed issues can't be reopened.
+
+EXAMPLES
+  Dismiss an issue
+
+    $ sanity context issues dismiss kb-abc123 issue.def456
+```
+
+## `sanity context issues get KNOWLEDGEBASEID ISSUEID`
+
+Get details of an issue
+
+```
+USAGE
+  $ sanity context issues get KNOWLEDGEBASEID ISSUEID [--json]
+
+ARGUMENTS
+  KNOWLEDGEBASEID  Knowledge base ID
+  ISSUEID          Issue ID
+
+GLOBAL FLAGS
+  --json  Format output as json.
+
+DESCRIPTION
+  Get details of an issue
+
+EXAMPLES
+  Get details of a specific issue
+
+    $ sanity context issues get kb-abc123 issue.def456
+
+  Output the issue as JSON
+
+    $ sanity context issues get kb-abc123 issue.def456 --json
+```
+
+## `sanity context issues list KNOWLEDGEBASEID`
+
+List issues found by knowledge base builds
+
+```
+USAGE
+  $ sanity context issues list KNOWLEDGEBASEID [--json] [--kind
+    add_entry|conflict|gap|merge_entry|remove_entry|split_entry|update_required] [--scope <path>] [--severity
+    critical|suggestion] [--status open|accepted|rejected]
+
+ARGUMENTS
+  KNOWLEDGEBASEID  Knowledge base ID
+
+FLAGS
+  --kind=<option>      Only list issues of this kind
+                       <options: add_entry|conflict|gap|merge_entry|remove_entry|split_entry|update_required>
+  --scope=<path>       Only list issues about this entry path or anything under it (`*` for knowledge-base-wide issues)
+  --severity=<option>  Only list issues of this severity
+                       <options: critical|suggestion>
+  --status=<option>    Only list issues with this status (rejected = dismissed, accepted = resolved or applied)
+                       <options: open|accepted|rejected>
+
+GLOBAL FLAGS
+  --json  Format output as json.
+
+DESCRIPTION
+  List issues found by knowledge base builds
+
+EXAMPLES
+  List all issues for a knowledge base
+
+    $ sanity context issues list kb-abc123
+
+  List issues awaiting triage
+
+    $ sanity context issues list kb-abc123 --status open
+
+  List critical conflicts
+
+    $ sanity context issues list kb-abc123 --kind conflict --severity critical
+
+  List issues about entries under billing/
+
+    $ sanity context issues list kb-abc123 --scope billing
+
+  Output issues as JSON
+
+    $ sanity context issues list kb-abc123 --json
+```
+
+## `sanity context issues reopen KNOWLEDGEBASEID ISSUEID`
+
+Reopen a resolved conflict issue
+
+```
+USAGE
+  $ sanity context issues reopen KNOWLEDGEBASEID ISSUEID
+
+ARGUMENTS
+  KNOWLEDGEBASEID  Knowledge base ID
+  ISSUEID          Issue ID
+
+DESCRIPTION
+  Reopen a resolved conflict issue
+
+EXAMPLES
+  Return a resolved conflict issue to triage
+
+    $ sanity context issues reopen kb-abc123 issue.def456
+```
+
+## `sanity context issues resolve KNOWLEDGEBASEID ISSUEID`
+
+Resolve a conflict issue by choosing the correct side
+
+```
+USAGE
+  $ sanity context issues resolve KNOWLEDGEBASEID ISSUEID [--side <value>] [--watch]
+
+ARGUMENTS
+  KNOWLEDGEBASEID  Knowledge base ID
+  ISSUEID          Issue ID
+
+FLAGS
+  --side=<value>  Index of the correct side, as listed by `sanity context issues get`
+  --watch         Wait for the entry rewrite to finish, exiting non-zero if it fails
+
+DESCRIPTION
+  Resolve a conflict issue by choosing the correct side
+
+  Resolving also creates a standing instruction that future builds follow. `sanity context issues reopen` removes it.
+
+EXAMPLES
+  Interactively choose the correct side of a conflict
+
+    $ sanity context issues resolve kb-abc123 issue.def456
+
+  Choose side 1 and wait for the entry to be rewritten
+
+    $ sanity context issues resolve kb-abc123 issue.def456 --side 1 --watch
+
+  Keep the entry as it is (for a conflict on a single entry)
+
+    $ sanity context issues resolve kb-abc123 issue.def456 --side 0
 ```
 
 ## `sanity context jobs get KNOWLEDGEBASEID JOBID`
@@ -1252,8 +1531,10 @@ ARGUMENTS
   JOBID            Job ID
 
 FLAGS
-  --json   Output the job in JSON format
   --watch  Poll until the job reaches a terminal state
+
+GLOBAL FLAGS
+  --json  Format output as json.
 
 DESCRIPTION
   Get the status of a knowledge base job
@@ -1274,10 +1555,10 @@ List knowledge bases in an organization
 
 ```
 USAGE
-  $ sanity context list [--organization <id>] [--json]
+  $ sanity context list [--json] [--organization <id>]
 
-FLAGS
-  --json  Output knowledge bases in JSON format
+GLOBAL FLAGS
+  --json  Format output as json.
 
 OVERRIDE FLAGS
   --organization=<id>  Organization to list knowledge bases for (overrides CLI configuration)
@@ -1297,6 +1578,40 @@ EXAMPLES
   Output knowledge bases as JSON
 
     $ sanity context list --organization org-abc123 --json
+```
+
+## `sanity context query QUERY`
+
+Query an organization's Context documents with GROQ
+
+```
+USAGE
+  $ sanity context query QUERY [--json] [--organization <id>] [--params <json>]
+
+ARGUMENTS
+  QUERY  GROQ query to run against the organization's Context documents
+
+FLAGS
+  --params=<json>  Query parameters as a JSON object
+
+GLOBAL FLAGS
+  --json  Format output as json.
+
+OVERRIDE FLAGS
+  --organization=<id>  Organization to query (overrides CLI configuration)
+
+DESCRIPTION
+  Query an organization's Context documents with GROQ
+
+EXAMPLES
+  List open issues across all knowledge bases
+
+    $ sanity context query '*[_type == "sanity.context.issue" && status == "open"]{_id, knowledgeBaseId}'
+
+  List the entry paths of one knowledge base as plain JSON
+
+    $ sanity context query '*[_type == "sanity.context.entry" && knowledgeBaseId == $kb].path' --params '{"kb": \
+      "kb-abc123"}' --json
 ```
 
 ## `sanity context refresh KNOWLEDGEBASEID`
@@ -1371,7 +1686,7 @@ FLAGS
       --[no-]credentials  Allow credentials (token/cookie) to be sent from this origin
 
 OVERRIDE FLAGS
-  -p, --project-id=<id>  Project ID to add CORS origin to (overrides CLI configuration)
+  -p, --project=<id>  Project ID to add CORS origin to (overrides CLI configuration)
 
 DESCRIPTION
   Add a CORS origin to the project
@@ -1391,7 +1706,7 @@ EXAMPLES
 
   Add a CORS origin for a specific project
 
-    $ sanity cors add https://myapp.com --project-id abc123
+    $ sanity cors add https://myapp.com --project abc123
 ```
 
 ## `sanity cors delete [ORIGIN]`
@@ -1406,7 +1721,7 @@ ARGUMENTS
   [ORIGIN]  Origin to delete (will prompt if not provided)
 
 OVERRIDE FLAGS
-  -p, --project-id=<id>  Project ID to delete CORS origin from (overrides CLI configuration)
+  -p, --project=<id>  Project ID to delete CORS origin from (overrides CLI configuration)
 
 DESCRIPTION
   Delete a CORS origin from the project
@@ -1422,7 +1737,7 @@ EXAMPLES
 
   Delete a CORS origin from a specific project
 
-    $ sanity cors delete --project-id abc123
+    $ sanity cors delete --project abc123
 ```
 
 ## `sanity cors list`
@@ -1434,7 +1749,7 @@ USAGE
   $ sanity cors list [-p <id>]
 
 OVERRIDE FLAGS
-  -p, --project-id=<id>  Project ID to list CORS origins for (overrides CLI configuration)
+  -p, --project=<id>  Project ID to list CORS origins for (overrides CLI configuration)
 
 DESCRIPTION
   List CORS origins for the project
@@ -1446,7 +1761,7 @@ EXAMPLES
 
   List CORS origins for a specific project
 
-    $ sanity cors list --project-id abc123
+    $ sanity cors list --project abc123
 ```
 
 ## `sanity datasets alias create [ALIASNAME] [TARGETDATASET]`
@@ -1462,7 +1777,7 @@ ARGUMENTS
   [TARGETDATASET]  Target dataset name to link the alias to
 
 OVERRIDE FLAGS
-  -p, --project-id=<id>  Project ID to create dataset alias in (overrides CLI configuration)
+  -p, --project=<id>  Project ID to create dataset alias in (overrides CLI configuration)
 
 DESCRIPTION
   Create a dataset alias for the project
@@ -1470,7 +1785,7 @@ DESCRIPTION
 EXAMPLES
   Create alias in a specific project
 
-    $ sanity datasets alias create --project-id abc123 conference conf-2025
+    $ sanity datasets alias create --project abc123 conference conf-2025
 
   Create an alias with interactive prompts
 
@@ -1500,7 +1815,7 @@ FLAGS
   --force  Skip confirmation prompt and delete immediately
 
 OVERRIDE FLAGS
-  -p, --project-id=<id>  Project ID to delete dataset alias from (overrides CLI configuration)
+  -p, --project=<id>  Project ID to delete dataset alias from (overrides CLI configuration)
 
 DESCRIPTION
   Delete a dataset alias from the project
@@ -1531,7 +1846,7 @@ FLAGS
   --force  Skip confirmation prompt when relinking existing alias
 
 OVERRIDE FLAGS
-  -p, --project-id=<id>  Project ID to link dataset alias in (overrides CLI configuration)
+  -p, --project=<id>  Project ID to link dataset alias in (overrides CLI configuration)
 
 DESCRIPTION
   Link a dataset alias to a dataset in the project
@@ -1569,7 +1884,7 @@ FLAGS
   --force  Skip confirmation prompt and unlink immediately
 
 OVERRIDE FLAGS
-  -p, --project-id=<id>  Project ID to unlink dataset alias in (overrides CLI configuration)
+  -p, --project=<id>  Project ID to unlink dataset alias in (overrides CLI configuration)
 
 DESCRIPTION
   Unlink a dataset alias from its dataset in the project
@@ -1611,7 +1926,7 @@ FLAGS
   --skip-history           Don't preserve document history on copy
 
 OVERRIDE FLAGS
-  -p, --project-id=<id>  Project ID to copy dataset in (overrides CLI configuration)
+  -p, --project=<id>  Project ID to copy dataset in (overrides CLI configuration)
 
 DESCRIPTION
   Copy a dataset or manage copy jobs
@@ -1673,7 +1988,7 @@ FLAGS
                                    <options: custom|private|public>
 
 OVERRIDE FLAGS
-  -p, --project-id=<id>  Project ID to create dataset in (overrides CLI configuration)
+  -p, --project=<id>  Project ID to create dataset in (overrides CLI configuration)
 
 DESCRIPTION
   Create a new dataset for the project
@@ -1707,7 +2022,7 @@ FLAGS
   --force  Do not prompt for delete confirmation - forcefully delete
 
 OVERRIDE FLAGS
-  -p, --project-id=<id>  Project ID to delete dataset from (overrides CLI configuration)
+  -p, --project=<id>  Project ID to delete dataset from (overrides CLI configuration)
 
 DESCRIPTION
   Delete a dataset from the project
@@ -1734,7 +2049,7 @@ ARGUMENTS
   [DATASET]  Dataset name to disable embeddings for
 
 OVERRIDE FLAGS
-  -p, --project-id=<id>  Project ID to disable embeddings for (overrides CLI configuration)
+  -p, --project=<id>  Project ID to disable embeddings for (overrides CLI configuration)
 
 DESCRIPTION
   Disable embeddings for a dataset
@@ -1761,7 +2076,7 @@ FLAGS
   --wait                Wait for embeddings processing to complete before returning
 
 OVERRIDE FLAGS
-  -p, --project-id=<id>  Project ID to enable embeddings for (overrides CLI configuration)
+  -p, --project=<id>  Project ID to enable embeddings for (overrides CLI configuration)
 
 DESCRIPTION
   Enable embeddings for a dataset
@@ -1792,7 +2107,7 @@ ARGUMENTS
   [DATASET]  The name of the dataset to check embeddings status for
 
 OVERRIDE FLAGS
-  -p, --project-id=<id>  Project ID to check embeddings status for (overrides CLI configuration)
+  -p, --project=<id>  Project ID to check embeddings status for (overrides CLI configuration)
 
 DESCRIPTION
   Show embeddings settings and status for a dataset
@@ -1830,7 +2145,7 @@ FLAGS
   --types=<value>                 Defines which document types to export (comma-separated)
 
 OVERRIDE FLAGS
-  -p, --project-id=<id>  Project ID to export dataset from (overrides CLI configuration)
+  -p, --project=<id>  Project ID to export dataset from (overrides CLI configuration)
 
 DESCRIPTION
   Export a dataset to a local gzipped tarball. Assets returning 401, 403, or 404 are excluded from the export.
@@ -1885,7 +2200,7 @@ FLAGS
       --skip-cross-dataset-references      Skips references to other datasets
 
 OVERRIDE FLAGS
-  -p, --project-id=<id>  Project ID to import to (overrides CLI configuration)
+  -p, --project=<id>  Project ID to import to (overrides CLI configuration)
 
 DESCRIPTION
   Import documents to a Sanity dataset
@@ -1917,7 +2232,7 @@ USAGE
   $ sanity datasets list [-p <id>]
 
 OVERRIDE FLAGS
-  -p, --project-id=<id>  Project ID to list datasets for (overrides CLI configuration)
+  -p, --project=<id>  Project ID to list datasets for (overrides CLI configuration)
 
 DESCRIPTION
   List datasets for the project
@@ -1929,7 +2244,7 @@ EXAMPLES
 
   List datasets for a specific project
 
-    $ sanity datasets list --project-id abc123
+    $ sanity datasets list --project abc123
 ```
 
 ## `sanity datasets visibility get DATASET`
@@ -1944,7 +2259,7 @@ ARGUMENTS
   DATASET  The name of the dataset to get visibility for
 
 OVERRIDE FLAGS
-  -p, --project-id=<id>  Project ID to get dataset visibility for (overrides CLI configuration)
+  -p, --project=<id>  Project ID to get dataset visibility for (overrides CLI configuration)
 
 DESCRIPTION
   Get the visibility of a dataset
@@ -1968,7 +2283,7 @@ ARGUMENTS
   MODE     (public|private) The visibility mode to set
 
 OVERRIDE FLAGS
-  -p, --project-id=<id>  Project ID to set dataset visibility for (overrides CLI configuration)
+  -p, --project=<id>  Project ID to set dataset visibility for (overrides CLI configuration)
 
 DESCRIPTION
   Set the visibility of a dataset
@@ -2010,8 +2325,8 @@ Builds and deploys Sanity Studio or application to Sanity hosting
 
 ```
 USAGE
-  $ sanity deploy [SOURCEDIR] [--auto-updates] [--build] [--create | --external | --url <value>] [--dry-run]
-    [-j] [--minify] [--schema-required] [--source-maps] [--title <value>] [--verbose] [-y]
+  $ sanity deploy [SOURCEDIR] [-j] [--auto-updates] [--build] [--create | --external | --url <value>]
+    [--dry-run] [--minify] [--schema-required] [--source-maps] [--title <value>] [--verbose] [-y]
 
 ARGUMENTS
   [SOURCEDIR]  Source directory
@@ -2222,8 +2537,8 @@ FLAGS
   --watch       Write the documents whenever the target file or buffer changes
 
 OVERRIDE FLAGS
-  -d, --dataset=<name>   Dataset to create document(s) in (overrides CLI configuration)
-  -p, --project-id=<id>  Project ID to create document(s) in (overrides CLI configuration)
+  -d, --dataset=<name>  Dataset to create document(s) in (overrides CLI configuration)
+  -p, --project=<id>    Project ID to create document(s) in (overrides CLI configuration)
 
 DESCRIPTION
   Create one or more documents
@@ -2249,7 +2564,7 @@ EXAMPLES
 
   Create documents in a specific project
 
-    $ sanity documents create myDocument.json --project-id abc123
+    $ sanity documents create myDocument.json --project abc123
 ```
 
 ## `sanity documents delete ID [IDS]`
@@ -2265,8 +2580,8 @@ ARGUMENTS
   [IDS...]  Additional document IDs to delete
 
 OVERRIDE FLAGS
-  -d, --dataset=<name>   Dataset to delete from (overrides CLI configuration)
-  -p, --project-id=<id>  Project ID to delete from (overrides CLI configuration)
+  -d, --dataset=<name>  Dataset to delete from (overrides CLI configuration)
+  -p, --project=<id>    Project ID to delete from (overrides CLI configuration)
 
 DESCRIPTION
   Delete one or more documents from the project's configured dataset
@@ -2290,7 +2605,7 @@ EXAMPLES
 
   Delete a document from a specific project
 
-    $ sanity documents delete myDocId --project-id abc123
+    $ sanity documents delete myDocId --project abc123
 ```
 
 ## `sanity documents get DOCUMENTID`
@@ -2308,8 +2623,8 @@ FLAGS
   --pretty  Colorize JSON output
 
 OVERRIDE FLAGS
-  -d, --dataset=<name>   Dataset to get document from (overrides CLI configuration)
-  -p, --project-id=<id>  Project ID to get document from (overrides CLI configuration)
+  -d, --dataset=<name>  Dataset to get document from (overrides CLI configuration)
+  -p, --project=<id>    Project ID to get document from (overrides CLI configuration)
 
 DESCRIPTION
   Get and print a document by ID
@@ -2329,7 +2644,7 @@ EXAMPLES
 
   Get a document from a specific project
 
-    $ sanity documents get myDocId --project-id abc123
+    $ sanity documents get myDocId --project abc123
 ```
 
 ## `sanity documents query QUERY`
@@ -2349,8 +2664,8 @@ FLAGS
   --pretty               Colorize JSON output
 
 OVERRIDE FLAGS
-  -d, --dataset=<name>   Dataset to query (overrides CLI configuration)
-  -p, --project-id=<id>  Project ID to query (overrides CLI configuration)
+  -d, --dataset=<name>  Dataset to query (overrides CLI configuration)
+  -p, --project=<id>    Project ID to query (overrides CLI configuration)
 
 DESCRIPTION
   Query for documents
@@ -2370,7 +2685,7 @@ EXAMPLES
 
   Query documents in a specific project and dataset
 
-    $ sanity documents query '*[_type == "post"]' --project-id abc123 --dataset production
+    $ sanity documents query '*[_type == "post"]' --project abc123 --dataset production
 ```
 
 ## `sanity documents validate`
@@ -2386,7 +2701,7 @@ USAGE
 FLAGS
   -d, --dataset=<name>                             Override the dataset used. By default, this is derived from the given
                                                    workspace
-  -p, --project-id=<id>                            Override the project ID used. By default, this is derived from the
+  -p, --project=<id>                               Override the project ID used. By default, this is derived from the
                                                    given workspace
   -y, --yes                                        Skips the first confirmation prompt
       --file=<value>                               Path to an NDJSON file or tar archive containing an NDJSON file
@@ -2424,7 +2739,7 @@ EXAMPLES
 
   Validate documents in a specific project and dataset
 
-    $ sanity documents validate --project-id abc123 --dataset production
+    $ sanity documents validate --project abc123 --dataset production
 ```
 
 ## `sanity exec SCRIPT`
@@ -2782,7 +3097,7 @@ USAGE
   $ sanity graphql list [-p <id>]
 
 OVERRIDE FLAGS
-  -p, --project-id=<id>  Project ID to list GraphQL endpoints for (overrides CLI configuration)
+  -p, --project=<id>  Project ID to list GraphQL endpoints for (overrides CLI configuration)
 
 DESCRIPTION
   List deployed GraphQL endpoints for the project
@@ -2794,7 +3109,7 @@ EXAMPLES
 
   List GraphQL endpoints for a specific project
 
-    $ sanity graphql list --project-id abc123
+    $ sanity graphql list --project abc123
 ```
 
 ## `sanity graphql undeploy`
@@ -2803,7 +3118,7 @@ Remove a deployed GraphQL API
 
 ```
 USAGE
-  $ sanity graphql undeploy [--api <value> | -p <id> | ] [-d <name>] [--force] [--tag <value>]
+  $ sanity graphql undeploy [--api <value> | -p <id>] [-d <name>] [--force] [--tag <value>]
 
 FLAGS
   --api=<value>  Undeploy API with this ID
@@ -2811,8 +3126,8 @@ FLAGS
   --tag=<value>  [default: default] Tag to undeploy GraphQL API from
 
 OVERRIDE FLAGS
-  -d, --dataset=<name>   Dataset to undeploy GraphQL API from (overrides CLI configuration)
-  -p, --project-id=<id>  Project ID to undeploy GraphQL API from (overrides CLI configuration)
+  -d, --dataset=<name>  Dataset to undeploy GraphQL API from (overrides CLI configuration)
+  -p, --project=<id>    Project ID to undeploy GraphQL API from (overrides CLI configuration)
 
 DESCRIPTION
   Remove a deployed GraphQL API
@@ -2840,7 +3155,7 @@ EXAMPLES
 
   Undeploy GraphQL API for a specific project and dataset
 
-    $ sanity graphql undeploy --project-id abc123 --dataset production
+    $ sanity graphql undeploy --project abc123 --dataset production
 ```
 
 ## `sanity help [COMMAND]`
@@ -2873,7 +3188,7 @@ ARGUMENTS
   ATTEMPTID  The delivery attempt ID to get details for
 
 OVERRIDE FLAGS
-  -p, --project-id=<id>  Project ID to view webhook attempt for (overrides CLI configuration)
+  -p, --project=<id>  Project ID to view webhook attempt for (overrides CLI configuration)
 
 DESCRIPTION
   Print details of a given webhook delivery attempt
@@ -2885,7 +3200,7 @@ EXAMPLES
 
   Get attempt details for a specific project
 
-    $ sanity hooks attempt abc123 --project-id projectId
+    $ sanity hooks attempt abc123 --project projectId
 ```
 
 ## `sanity hooks create`
@@ -2897,7 +3212,7 @@ USAGE
   $ sanity hooks create [-p <id>]
 
 OVERRIDE FLAGS
-  -p, --project-id=<id>  Project ID to create webhook for (overrides CLI configuration)
+  -p, --project=<id>  Project ID to create webhook for (overrides CLI configuration)
 
 DESCRIPTION
   Create a new webhook for the project
@@ -2909,7 +3224,7 @@ EXAMPLES
 
   Create a webhook for a specific project
 
-    $ sanity hooks create --project-id abc123
+    $ sanity hooks create --project abc123
 ```
 
 ## `sanity hooks delete [NAME]`
@@ -2924,7 +3239,7 @@ ARGUMENTS
   [NAME]  Name of webhook to delete (will prompt if not provided)
 
 OVERRIDE FLAGS
-  -p, --project-id=<id>  Project ID to delete webhook from (overrides CLI configuration)
+  -p, --project=<id>  Project ID to delete webhook from (overrides CLI configuration)
 
 DESCRIPTION
   Delete a webhook from the project
@@ -2940,7 +3255,7 @@ EXAMPLES
 
   Delete a webhook from a specific project
 
-    $ sanity hooks delete --project-id abc123
+    $ sanity hooks delete --project abc123
 ```
 
 ## `sanity hooks list`
@@ -2952,7 +3267,7 @@ USAGE
   $ sanity hooks list [-p <id>]
 
 OVERRIDE FLAGS
-  -p, --project-id=<id>  Project ID to list webhooks for (overrides CLI configuration)
+  -p, --project=<id>  Project ID to list webhooks for (overrides CLI configuration)
 
 DESCRIPTION
   List webhooks for the project
@@ -2964,7 +3279,7 @@ EXAMPLES
 
   List webhooks for a specific project
 
-    $ sanity hooks list --project-id abc123
+    $ sanity hooks list --project abc123
 ```
 
 ## `sanity hooks logs [NAME]`
@@ -2982,7 +3297,7 @@ FLAGS
   --detailed  Include detailed payload and attempts
 
 OVERRIDE FLAGS
-  -p, --project-id=<id>  Project ID to view webhook logs for (overrides CLI configuration)
+  -p, --project=<id>  Project ID to view webhook logs for (overrides CLI configuration)
 
 DESCRIPTION
   Show log entries for project webhooks
@@ -2998,7 +3313,7 @@ EXAMPLES
 
   Show log entries for a specific project
 
-    $ sanity hooks logs --project-id abc123
+    $ sanity hooks logs --project abc123
 ```
 
 ## `sanity init`
@@ -3010,10 +3325,11 @@ USAGE
   $ sanity init [--json] [--auto-updates | --bare] [--coupon <code> | --project-plan <name>] [--dashboard
     |  | --env <filename>] [--dataset <name> | --dataset-default] [--git <message> | ] [--import-dataset] [--install | ]
     [--mcp] [--nextjs-add-config-files] [--nextjs-append-env] [--nextjs-embed-studio] [--organization <id>]
-    [--output-path <path> | ] [--overwrite-files] [--package-manager <manager> | ] [--project <id> |  | --project-name
-    <name>] [--provider <provider>] [--skills] [--template <template> | ] [--typescript | ] [--visibility <mode>] [-y]
+    [--output-path <path> | ] [--overwrite-files] [--package-manager <manager> | ] [-p <id> |  | --project-name <name>]
+    [--provider <provider>] [--skills] [--template <template> | ] [--typescript | ] [--visibility <mode>] [-y]
 
 FLAGS
+  -p, --project=<id>               Project ID to use for the studio
   -y, --yes                        Unattended mode, answers "yes" to any "yes/no" prompt and otherwise uses defaults
       --[no-]auto-updates          Enable auto updates of studio versions
       --bare                       Skip the Studio initialization and only print the selected project ID and dataset
@@ -3031,7 +3347,6 @@ FLAGS
       --output-path=<path>         Path to write studio project to
       --[no-]overwrite-files       Overwrite existing files
       --package-manager=<manager>  Specify which package manager to use [allowed: npm, yarn, pnpm]
-      --project=<id>               Project ID to use for the studio
       --project-name=<name>        Create a new project with the given name
       --project-plan=<name>        Optionally select a plan for a new project
       --provider=<provider>        Login provider to use
@@ -3251,7 +3566,7 @@ FLAGS
       --media-library-id=<value>  The id of the target media library
 
 OVERRIDE FLAGS
-  -p, --project-id=<id>  Project ID to delete media aspect from (overrides CLI configuration)
+  -p, --project=<id>  Project ID to delete media aspect from (overrides CLI configuration)
 
 DESCRIPTION
   Delete an aspect definition
@@ -3278,7 +3593,7 @@ FLAGS
   --media-library-id=<value>  The id of the target media library
 
 OVERRIDE FLAGS
-  -p, --project-id=<id>  Project ID to deploy media aspect to (overrides CLI configuration)
+  -p, --project=<id>  Project ID to deploy media aspect to (overrides CLI configuration)
 
 DESCRIPTION
   Deploy an aspect
@@ -3312,7 +3627,7 @@ FLAGS
   --overwrite                  Overwrite any file with the same name
 
 OVERRIDE FLAGS
-  -p, --project-id=<id>  Project ID to export media from (overrides CLI configuration)
+  -p, --project=<id>  Project ID to export media from (overrides CLI configuration)
 
 DESCRIPTION
   Export file and image assets from a media library (excludes video)
@@ -3353,7 +3668,7 @@ FLAGS
                               aspect data). Only applies to directory and archive imports
 
 OVERRIDE FLAGS
-  -p, --project-id=<id>  Project ID to import media to (overrides CLI configuration)
+  -p, --project=<id>  Project ID to import media to (overrides CLI configuration)
 
 DESCRIPTION
   Import a set of assets to the target media library.
@@ -3428,7 +3743,7 @@ Run a migration against a dataset
 ```
 USAGE
   $ sanity migrations run [ID] [--api-version <value>] [--concurrency <value>] [--confirm] [--dataset <value>]
-    [--dry-run] [--from-export <value>] [--progress] [--project <value>]
+    [--dry-run] [--from-export <value>] [--progress] [-p <id>]
 
 ARGUMENTS
   [ID]  ID
@@ -3443,8 +3758,9 @@ FLAGS
   --from-export=<value>  Use a local dataset export as source for migration instead of calling the Sanity API. Note:
                          this is only supported for dry runs.
   --[no-]progress        Display progress during migration (default: true). Use --no-progress to hide output.
-  --project=<value>      Project ID of the dataset to migrate. Defaults to the projectId configured in your Sanity CLI
-                         config.
+
+OVERRIDE FLAGS
+  -p, --project=<id>  Project ID of the dataset to migrate (overrides CLI configuration)
 
 DESCRIPTION
   Run a migration against a dataset
@@ -3575,8 +3891,10 @@ USAGE
   $ sanity openapi list [--json] [-w]
 
 FLAGS
-  -w, --web   Open HTTP Reference in web browser
-      --json  Output JSON
+  -w, --web  Open HTTP Reference in web browser
+
+GLOBAL FLAGS
+  --json  Format output as json.
 
 DESCRIPTION
   List all available OpenAPI specifications
@@ -3753,7 +4071,7 @@ Create a new Sanity project
 
 ```
 USAGE
-  $ sanity projects create [PROJECTNAME] [--dataset <value>] [--dataset-visibility private|public] [--json]
+  $ sanity projects create [PROJECTNAME] [--json] [--dataset <value>] [--dataset-visibility private|public]
     [--organization <slug|id>] [-y]
 
 ARGUMENTS
@@ -3765,8 +4083,10 @@ FLAGS
       --dataset=<value>              Create a dataset. Prompts for visibility unless specified or --yes used
       --dataset-visibility=<option>  Dataset visibility: public or private
                                      <options: private|public>
-      --json                         Output in JSON format
       --organization=<slug|id>       Organization to create the project in
+
+GLOBAL FLAGS
+  --json  Format output as json.
 
 DESCRIPTION
   Create a new Sanity project
@@ -3826,10 +4146,10 @@ Recover details for unclaimed projects created on this machine
 
 ```
 USAGE
-  $ sanity projects unclaimed [--project-id <value>]
+  $ sanity projects unclaimed [-p <id>]
 
 FLAGS
-  --project-id=<value>  Project ID to recover
+  -p, --project=<id>  Project ID to recover
 
 DESCRIPTION
   Recover details for unclaimed projects created on this machine
@@ -3841,7 +4161,7 @@ EXAMPLES
 
   Show recovery details for one project
 
-    $ sanity projects unclaimed --project-id abc123
+    $ sanity projects unclaimed --project abc123
 ```
 
 ## `sanity schemas delete`
@@ -3859,7 +4179,7 @@ FLAGS
       --verbose         Enable verbose logging
 
 OVERRIDE FLAGS
-  -p, --project-id=<id>  Project ID to delete schema from (overrides CLI configuration)
+  -p, --project=<id>  Project ID to delete schema from (overrides CLI configuration)
 
 DESCRIPTION
   Delete schema documents by id
@@ -3951,11 +4271,13 @@ List all schemas in the current dataset.
 
 ```
 USAGE
-  $ sanity schemas list [--id <schema_id>] [--json]
+  $ sanity schemas list [--json] [--id <schema_id>]
 
 FLAGS
   --id=<schema_id>  Fetch a single schema by id
-  --json            Get schema as json
+
+GLOBAL FLAGS
+  --json  Format output as json.
 
 DESCRIPTION
   List all schemas in the current dataset.
@@ -4098,8 +4420,8 @@ Create a new API token with access to an organization and its projects
 
 ```
 USAGE
-  $ sanity tokens create [LABEL] [-p <id>] [--organization <id>] [--expires-at 2027-01-01] [--grant
-    context=editor...] [--json] [--role viewer] [-y]
+  $ sanity tokens create [LABEL] [--json] [-p <id>] [--organization <id>] [--expires-at 2027-01-01] [--grant
+    context=editor...] [--role viewer] [-y]
 
 ARGUMENTS
   [LABEL]  Label for the new token
@@ -4110,12 +4432,14 @@ FLAGS
       --grant=context=editor...  Access to grant, as <permission>[=<role>] or project:<projectId>=<role>[,<role>].
                                  Permissions: context, blueprints, media-library, canvas, sdk-apps, access,
                                  deploy-studios. Repeatable
-      --json                     Output as JSON
       --role=viewer              Role to assign on the project (defaults to viewer in unattended mode)
 
 OVERRIDE FLAGS
-  -p, --project-id=<id>    Project ID to create token in (overrides CLI configuration)
+  -p, --project=<id>       Project ID to create token in (overrides CLI configuration)
       --organization=<id>  Organization to create an organization token in (overrides CLI configuration)
+
+GLOBAL FLAGS
+  --json  Format output as json.
 
 DESCRIPTION
   Create a new API token with access to an organization and its projects
@@ -4131,7 +4455,7 @@ EXAMPLES
 
   Create a project token with editor role
 
-    $ sanity tokens create "My Token" --project-id abc123 --role=editor
+    $ sanity tokens create "My Token" --project abc123 --role=editor
 
   Create a project token in unattended mode
 
@@ -4162,7 +4486,7 @@ FLAGS
       --organization=<id>  Delete a token managed by this organization
 
 OVERRIDE FLAGS
-  -p, --project-id=<id>  Project ID to delete token from (overrides CLI configuration)
+  -p, --project=<id>  Project ID to delete token from (overrides CLI configuration)
 
 DESCRIPTION
   Delete an API token from a project or organization
@@ -4190,7 +4514,7 @@ EXAMPLES
 
   Delete a token from a specific project
 
-    $ sanity tokens delete --project-id abc123
+    $ sanity tokens delete --project abc123
 ```
 
 ## `sanity tokens list`
@@ -4199,14 +4523,16 @@ List API tokens for a project or organization
 
 ```
 USAGE
-  $ sanity tokens list [--organization <id> | -p <id>] [--json]
+  $ sanity tokens list [--json] [--organization <id> | -p <id>]
 
 FLAGS
-  --json               Output tokens in JSON format
   --organization=<id>  List tokens managed by this organization
 
 OVERRIDE FLAGS
-  -p, --project-id=<id>  Project ID to list tokens for (overrides CLI configuration)
+  -p, --project=<id>  Project ID to list tokens for (overrides CLI configuration)
+
+GLOBAL FLAGS
+  --json  Format output as json.
 
 DESCRIPTION
   List API tokens for a project or organization
@@ -4226,7 +4552,7 @@ EXAMPLES
 
   List tokens for a specific project
 
-    $ sanity tokens list --project-id abc123
+    $ sanity tokens list --project abc123
 ```
 
 ## `sanity tokens rotate`
@@ -4239,7 +4565,9 @@ USAGE
 
 FLAGS
   -t, --token=<token>  Token to rotate (prefer standard input to keep it out of shell history)
-      --json           Output as JSON
+
+GLOBAL FLAGS
+  --json  Format output as json.
 
 DESCRIPTION
   Rotate an API token, replacing its secret with a new one
@@ -4311,7 +4639,7 @@ Removes the deployed Sanity Studio/App from Sanity hosting
 
 ```
 USAGE
-  $ sanity undeploy [APPID] [--dry-run] [-j] [-y]
+  $ sanity undeploy [APPID] [-j] [--dry-run] [-y]
 
 ARGUMENTS
   [APPID]  ID of the application to undeploy. Overrides `deployment.appId` in sanity.cli.ts
@@ -4357,7 +4685,7 @@ FLAGS
   --role=<value>  Role to invite the user as
 
 OVERRIDE FLAGS
-  -p, --project-id=<id>  Project ID to invite user to (overrides CLI configuration)
+  -p, --project=<id>  Project ID to invite user to (overrides CLI configuration)
 
 DESCRIPTION
   Invite a new user to the project
@@ -4377,7 +4705,7 @@ EXAMPLES
 
   Invite a user to a specific project
 
-    $ sanity users invite pippi@sanity.io --project-id abc123
+    $ sanity users invite pippi@sanity.io --project abc123
 ```
 
 ## `sanity users list`
@@ -4397,7 +4725,7 @@ FLAGS
                       <options: id|name|role|date>
 
 OVERRIDE FLAGS
-  -p, --project-id=<id>  Project ID to list users for (overrides CLI configuration)
+  -p, --project=<id>  Project ID to list users for (overrides CLI configuration)
 
 DESCRIPTION
   List project members
@@ -4417,7 +4745,7 @@ EXAMPLES
 
   List users for a specific project
 
-    $ sanity users list --project-id abc123
+    $ sanity users list --project abc123
 ```
 
 ## `sanity versions`
@@ -4443,8 +4771,8 @@ Show the user or API token the CLI is authenticated as
 USAGE
   $ sanity whoami [--json]
 
-FLAGS
-  --json  Output as JSON
+GLOBAL FLAGS
+  --json  Format output as json.
 
 DESCRIPTION
   Show the user or API token the CLI is authenticated as

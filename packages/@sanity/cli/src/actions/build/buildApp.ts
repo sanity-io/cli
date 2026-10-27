@@ -20,7 +20,9 @@ import {type BuildOptions} from './types.js'
  *
  * @internal
  */
-export async function buildApp(options: BuildOptions): Promise<void> {
+export async function buildApp(
+  options: BuildOptions,
+): Promise<{mfManifest: Record<string, unknown> | undefined}> {
   const {cliConfig, flags, outDir, output, workDir} = options
 
   const app = cliConfig && 'app' in cliConfig ? cliConfig.app : undefined
@@ -38,7 +40,7 @@ export async function buildApp(options: BuildOptions): Promise<void> {
 
   const appId = getAppId(cliConfig)
 
-  await internalBuildApp({
+  return internalBuildApp({
     appId,
     appTitle: app?.title,
     autoUpdatesEnabled: options.autoUpdatesEnabled,

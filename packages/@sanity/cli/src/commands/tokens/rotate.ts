@@ -15,6 +15,8 @@ const TOKEN_USAGE_HINT =
 export class RotateTokenCommand extends SanityCommand<typeof RotateTokenCommand> {
   static override description = 'Rotate an API token, replacing its secret with a new one'
 
+  static override enableJsonFlag = true
+
   static override examples = [
     {
       command: 'echo "$SANITY_TOKEN" | <%= config.bin %> <%= command.id %>',
@@ -31,10 +33,6 @@ export class RotateTokenCommand extends SanityCommand<typeof RotateTokenCommand>
   ]
 
   static override flags = {
-    json: Flags.boolean({
-      default: false,
-      description: 'Output as JSON',
-    }),
     token: Flags.string({
       char: 't',
       description: 'Token to rotate (prefer standard input to keep it out of shell history)',
@@ -57,7 +55,7 @@ export class RotateTokenCommand extends SanityCommand<typeof RotateTokenCommand>
       const robot = await rotateToken(token)
 
       if (json) {
-        this.log(JSON.stringify(robot, null, 2))
+        this.logJson(robot)
         return
       }
 

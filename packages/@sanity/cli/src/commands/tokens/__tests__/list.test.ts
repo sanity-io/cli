@@ -176,7 +176,11 @@ describe('#tokens:list', () => {
   })
 
   test('handles network errors gracefully', async () => {
-    // Don't set up any mock to simulate network failure
+    mockApi({
+      apiVersion: TOKENS_API_VERSION,
+      uri: `/access/project/${testProjectId}/robots`,
+    }).replyWithError(new Error('Network Error'))
+
     const {error} = await testCommand(TokensListCommand, [], {mocks: defaultMocks})
 
     expect(error).toBeInstanceOf(Error)
@@ -442,7 +446,7 @@ describe('#tokens:list', () => {
     test('rejects conflicting scope flags', async () => {
       const {error} = await testCommand(
         TokensListCommand,
-        ['--organization', 'org-1', '--project-id', 'abc123'],
+        ['--organization', 'org-1', '--project', 'abc123'],
         {mocks: defaultMocks},
       )
       expect(error?.message).toContain('cannot also be provided')

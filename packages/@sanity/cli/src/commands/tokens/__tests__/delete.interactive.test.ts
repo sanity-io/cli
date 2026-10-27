@@ -1,3 +1,4 @@
+import {once} from 'node:events'
 import {PassThrough} from 'node:stream'
 import {stripVTControlCharacters} from 'node:util'
 
@@ -48,9 +49,11 @@ const tokens: Robot[] = ['token-1', 'token-2'].map((id) => ({
 
 let controller: AbortController
 let screen: string
+let rendered: EventTarget
 let outputs: PassThrough[]
 let input: PassThrough
 let running: ReturnType<typeof testCommand> | undefined
+let finished: Awaited<ReturnType<typeof testCommand>> | undefined
 const stdinTty = Object.getOwnPropertyDescriptor(process.stdin, 'isTTY')
 
 beforeEach(() => {
@@ -61,12 +64,14 @@ beforeEach(() => {
   input = new PassThrough()
   prompts.context = undefined
   screen = ''
+  rendered = new EventTarget()
   outputs = []
   prompts.prepareOutput = () => {
     const output = new PassThrough()
     outputs.push(output)
     output.on('data', (chunk: Buffer) => {
       screen += stripVTControlCharacters(chunk.toString())
+      rendered.dispatchEvent(new Event('render'))
     })
     prompts.context = {input, output, signal: controller.signal}
   }
@@ -96,12 +101,25 @@ function listPage() {
 }
 
 function start(args: string[] = []) {
+  finished = undefined
   running = testCommand(DeleteTokensCommand, ['--organization', 'org-1', ...args], {mocks})
+  void running.then((result) => {
+    finished = result
+    rendered.dispatchEvent(new Event('render'))
+  })
   return running
 }
 
 async function waitForPrompt(text: string) {
-  await vi.waitFor(() => expect(screen).toContain(text))
+  while (!screen.includes(text)) {
+    if (finished) {
+      throw new Error(
+        `Command exited before "${text}": ${finished.error?.message ?? finished.stderr}`,
+      )
+    }
+
+    await once(rendered, 'render')
+  }
 }
 
 function press(keys: string) {

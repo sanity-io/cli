@@ -39,7 +39,7 @@ export class Add extends SanityCommand<typeof Add> {
       description: 'Add a production origin with credentials allowed',
     },
     {
-      command: '<%= config.bin %> <%= command.id %> https://myapp.com --project-id abc123',
+      command: '<%= config.bin %> <%= command.id %> https://myapp.com --project abc123',
       description: 'Add a CORS origin for a specific project',
     },
   ]

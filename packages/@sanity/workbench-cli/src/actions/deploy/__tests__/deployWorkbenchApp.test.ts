@@ -1,4 +1,4 @@
-import {mkdtemp, rm, writeFile} from 'node:fs/promises'
+import {mkdtemp, rm} from 'node:fs/promises'
 import {tmpdir} from 'node:os'
 import {join} from 'node:path'
 import {Readable} from 'node:stream'
@@ -56,7 +56,6 @@ beforeEach(async () => {
   vi.mocked(getGlobalCliClient).mockResolvedValue(mockClient as never)
   appendSpy = vi.spyOn(FormData.prototype, 'append')
   sourceDir = await mkdtemp(join(tmpdir(), 'deploy-'))
-  await writeFile(join(sourceDir, 'mf-manifest.json'), JSON.stringify(mfManifest))
 })
 
 afterEach(async () => {
@@ -214,6 +213,7 @@ describe('deployWorkbenchApp', () => {
       applicationId: 'app_1',
       isApp: true,
       isAutoUpdating: false,
+      mfManifest,
       sourceDir,
       title: 'Drop Desk',
       version: '1.0.0',
@@ -277,6 +277,7 @@ describe('deployWorkbenchApp', () => {
       applicationId: 'app_1',
       isApp: true,
       isAutoUpdating: false,
+      mfManifest,
       sourceDir,
       title: 'Drop Desk',
       version: '1.0.0',
@@ -312,7 +313,7 @@ describe('deployWorkbenchApp', () => {
           title: 'Feed',
         }),
         defineWindowView({
-          dock: {group: 'user'},
+          dock: {group: 'system'},
           name: 'settings',
           src: './src/Settings.tsx',
           title: 'Settings',
@@ -325,6 +326,7 @@ describe('deployWorkbenchApp', () => {
       applicationId: 'app_1',
       isApp: true,
       isAutoUpdating: false,
+      mfManifest,
       sourceDir,
       title: 'Drop Desk',
       version: '1.0.0',
@@ -333,7 +335,7 @@ describe('deployWorkbenchApp', () => {
     const fields = appendedFields()
     expect(JSON.parse(String(fields.find(([name]) => name === 'interfaces')?.[1]))).toEqual([
       {
-        metadata: {dock: {group: 'applications', order: 20}},
+        metadata: {dock: {order: 20}},
         moduleId: 'views/feed',
         name: 'feed',
         title: 'Feed',
@@ -341,7 +343,7 @@ describe('deployWorkbenchApp', () => {
         version: '1.0.0',
       },
       {
-        metadata: {dock: {group: 'user', order: 100}},
+        metadata: {dock: {group: 'system', order: 100}},
         moduleId: 'App',
         name: 'settings',
         title: 'Settings',
@@ -367,6 +369,7 @@ describe('deployWorkbenchApp', () => {
       applicationId: 'studio_1',
       isApp: false,
       isAutoUpdating: false,
+      mfManifest,
       sourceDir,
       title: 'My Studio',
       version: '3.0.0',
@@ -385,6 +388,7 @@ describe('deployWorkbenchApp', () => {
       applicationId: 'studio_1',
       isApp: false,
       isAutoUpdating: false,
+      mfManifest,
       sourceDir,
       title: 'My Studio',
       version: '3.0.0',
@@ -403,6 +407,7 @@ describe('deployWorkbenchApp', () => {
       icon,
       isApp: true,
       isAutoUpdating: false,
+      mfManifest,
       sourceDir,
       title: 'Drop Desk',
       version: '1.0.0',
@@ -423,6 +428,7 @@ describe('deployWorkbenchApp', () => {
       applicationId: 'app_1',
       isApp: true,
       isAutoUpdating: false,
+      mfManifest,
       sourceDir,
       title: 'Drop Desk',
       version: '1.0.0',
@@ -443,6 +449,7 @@ describe('deployWorkbenchApp', () => {
       applicationId: 'app_1',
       isApp: true,
       isAutoUpdating: false,
+      mfManifest,
       sourceDir,
       title: 'Drop Desk',
       version: '1.0.0',
@@ -464,6 +471,7 @@ describe('deployWorkbenchApp', () => {
       applicationId: 'app_1',
       isApp: true,
       isAutoUpdating: false,
+      mfManifest,
       slug: 'media',
       sourceDir,
       title: 'Drop Desk',
@@ -485,6 +493,7 @@ describe('deployWorkbenchApp', () => {
       applicationId: 'app_1',
       isApp: true,
       isAutoUpdating: false,
+      mfManifest,
       sourceDir,
       title: 'Drop Desk',
       version: '1.0.0',
@@ -506,6 +515,7 @@ describe('deployWorkbenchApp', () => {
         applicationId: 'app_1',
         isApp: true,
         isAutoUpdating: false,
+        mfManifest,
         slug: 'media',
         sourceDir,
         title: 'Drop Desk',
@@ -527,6 +537,7 @@ describe('deployWorkbenchApp', () => {
         applicationId: 'app_1',
         isApp: true,
         isAutoUpdating: false,
+        mfManifest,
         slug: 'media',
         sourceDir,
         title: 'Drop Desk',
@@ -550,6 +561,7 @@ describe('deployWorkbenchApp', () => {
         applicationId: 'app_1',
         isApp: true,
         isAutoUpdating: false,
+        mfManifest,
         onDeployed,
         sourceDir,
         title: 'Drop Desk',
@@ -570,6 +582,7 @@ describe('deployWorkbenchApp', () => {
         applicationId: 'app_1',
         isApp: true,
         isAutoUpdating: false,
+        mfManifest,
         onDeployed,
         sourceDir,
         title: 'Drop Desk',
@@ -589,6 +602,7 @@ describe('deployWorkbenchApp', () => {
       isApp: false,
       isAutoUpdating: false,
       isExternal: true,
+      mfManifest,
       sourceDir,
       title: 'My Studio',
       version: '3.0.0',

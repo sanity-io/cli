@@ -17,6 +17,8 @@ Regenerates a manifest file by default. To reuse an existing manifest, use --no-
 export class ListSchemaCommand extends SanityCommand<typeof ListSchemaCommand> {
   static override description = description
 
+  static override enableJsonFlag = true
+
   static override examples = [
     {
       command: '<%= config.bin %> <%= command.id %>',
@@ -46,9 +48,6 @@ export class ListSchemaCommand extends SanityCommand<typeof ListSchemaCommand> {
     id: Flags.string({
       description: 'Fetch a single schema by id',
       helpValue: '<schema_id>',
-    }),
-    json: Flags.boolean({
-      description: 'Get schema as json',
     }),
     'manifest-dir': Flags.directory({
       default: './dist/static',

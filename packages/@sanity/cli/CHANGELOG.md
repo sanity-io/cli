@@ -1,5 +1,131 @@
 # Change Log
 
+## 8.25.0
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-v8.24.0...cli-v8.25.0)
+
+_2026-10-27_
+
+### Features
+
+- allow sanity internal env to be used for a local override ([#2071](https://github.com/sanity-io/cli/pull/2071)) ([ba0ff29](https://github.com/sanity-io/cli/commit/ba0ff292d273a659db06eb0906da1db8d1ba1afb))
+
+### Bug Fixes
+
+- standardize on --project over --project-id ([#2073](https://github.com/sanity-io/cli/pull/2073)) ([f2bdd54](https://github.com/sanity-io/cli/commit/f2bdd549a01ba954ad4fabd5323924017a756362))
+- Create a missing dataset when running `sanity init --yes --dataset <name>`, respecting `--visibility` and reusing existing datasets without changing them. ([b85d9fb](https://github.com/sanity-io/cli/commit/b85d9fb9e54d0eb9117a624a953ae364c7564b94))
+- **cli:** reduce startup time with node compile cache ([#1746](https://github.com/sanity-io/cli/pull/1746)) ([c28db31](https://github.com/sanity-io/cli/commit/c28db31375953e97f5c17c2df78fd87e6f26b247))
+- **cli:** pick up defineApplication without a dev restart ([#2070](https://github.com/sanity-io/cli/pull/2070)) ([bbd878c](https://github.com/sanity-io/cli/commit/bbd878c512bdd9157d4b5ab483f494104fc4dc88))
+- **schema:** honor absolute `--path` in `schemas extract` ([#2034](https://github.com/sanity-io/cli/pull/2034)) ([5ffe2fc](https://github.com/sanity-io/cli/commit/5ffe2fcf186939cd1dd42748c101cbd47ace4184))
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/cli-core bumped to 3.14.0
+    - @sanity/workbench-cli bumped to 2.14.1
+    - @sanity/cli-build bumped to 7.0.3
+
+## 8.24.0
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-v8.23.0...cli-v8.24.0)
+
+_2026-10-26_
+
+### Features
+
+- **init:** search organizations, projects and datasets ([#1984](https://github.com/sanity-io/cli/pull/1984)) ([1debe1d](https://github.com/sanity-io/cli/commit/1debe1de70ae57fe4e482d0c7888e8618a9d2eb4))
+
+### Bug Fixes
+
+- `sanity codemod dashboard` now offers to upgrade sanity (and, in SDK apps, `@sanity/sdk` and `@sanity/sdk-react`) to the latest version when it's too old for the Dashboard, keeps pnpm catalogs intact, and says what to edit when it can't upgrade a catalog itself ([9682501](https://github.com/sanity-io/cli/commit/96825014ce0408b8e9fc0fe88d6eceb19ef21bd8))
+- **dependencies:** unpin runtime-cli ([#2062](https://github.com/sanity-io/cli/pull/2062)) ([5b31e6f](https://github.com/sanity-io/cli/commit/5b31e6f189c5bfd60df46f652dd33494c9b2e1c8))
+- **deps:** update dependency eventsource to ^5.1.3 ([#2069](https://github.com/sanity-io/cli/pull/2069)) ([6a2f464](https://github.com/sanity-io/cli/commit/6a2f464d2ad425a405e5b14e98bae67ede2ddb06))
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/cli-core bumped to 3.13.0
+
+## 8.23.0
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-v8.22.1...cli-v8.23.0)
+
+_2026-10-23_
+
+### Features
+
+- **deploy:** sync media-library aspect documents on config deploy (DAM-1821) ([#2018](https://github.com/sanity-io/cli/pull/2018)) ([fda50ee](https://github.com/sanity-io/cli/commit/fda50eebce218ccfccac0bbd9871a1d71327f367))
+- **init:** add unlisted media-library-config template ([#2015](https://github.com/sanity-io/cli/pull/2015)) ([532a7d1](https://github.com/sanity-io/cli/commit/532a7d1ba986f58811d57a2a7e6c0c9e2a378af5))
+- **media:** add sanity media prune-aspect-data (DAM-1877) ([#2019](https://github.com/sanity-io/cli/pull/2019)) ([3617575](https://github.com/sanity-io/cli/commit/361757532e72f2eef7a35a394e87e9299cc14807))
+- **media:** add sanity media pull-aspects ([#2016](https://github.com/sanity-io/cli/pull/2016)) ([76998d7](https://github.com/sanity-io/cli/commit/76998d79d03171504c006617a84cb143e758aa3d))
+- **media:** declare pulled aspects in sanity.cli.ts and offer init-time pull ([#2030](https://github.com/sanity-io/cli/pull/2030)) ([e66887a](https://github.com/sanity-io/cli/commit/e66887a4467b8d68907e5e4957eb8058bd1ed9d3))
+- **context:** add issue commands for knowledge bases ([#2004](https://github.com/sanity-io/cli/pull/2004)) ([1546ca9](https://github.com/sanity-io/cli/commit/1546ca91cb85e1691ff6133f514d6e86af02847e))
+- **context:** add entry commands for knowledge bases ([#2006](https://github.com/sanity-io/cli/pull/2006)) ([cd52e7b](https://github.com/sanity-io/cli/commit/cd52e7b3d37f8c68236490c516301790d05c0587))
+- **context:** add query command for knowledge base documents ([#2007](https://github.com/sanity-io/cli/pull/2007)) ([bcf5da3](https://github.com/sanity-io/cli/commit/bcf5da327b89ef0407080c5223960d1a3744e1f7))
+
+### Bug Fixes
+
+- **deploy:** prevent a blueprint-managed app from being deployed by the deploy command ([#2052](https://github.com/sanity-io/cli/pull/2052)) ([36753c0](https://github.com/sanity-io/cli/commit/36753c0d6cf9dfe08ae04f271d635f70d27e8b8e))
+- **exec:** run .cjs scripts without the Vite runner ([#2001](https://github.com/sanity-io/cli/pull/2001)) ([402149c](https://github.com/sanity-io/cli/commit/402149c4848d09a84c6e0a2297b13ba9ea8988ba))
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/cli-build bumped to 7.0.2
+    - @sanity/cli-core bumped to 3.12.0
+    - @sanity/workbench-cli bumped to 2.14.0
+
+## 8.22.1
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-v8.22.0...cli-v8.22.1)
+
+_2026-10-22_
+
+### Bug Fixes
+
+- Change to the schema/manifest build interface to return schemaInputs instead of the full unserializable object. ([#1997](https://github.com/sanity-io/cli/pull/1997)) ([10c9e7b](https://github.com/sanity-io/cli/commit/10c9e7bd7d1844572f8ab8292a0d0832ebbd2e99))
+- **schema:** make `sanity schema extract --watch` re-extract on changes ([#2014](https://github.com/sanity-io/cli/pull/2014)) ([f0c8d8b](https://github.com/sanity-io/cli/commit/f0c8d8b39f51a1504325147871f4008184947284))
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/cli-core bumped to 3.11.1
+    - @sanity/cli-build bumped to 7.0.0
+    - @sanity/workbench-cli bumped to 2.13.0
+
+## 8.22.0
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-v8.21.0...cli-v8.22.0)
+
+_2026-10-21_
+
+### Features
+
+- **typegen:** support --watch with typegen.resources (beta) ([#1985](https://github.com/sanity-io/cli/pull/1985)) ([c48e02e](https://github.com/sanity-io/cli/commit/c48e02ef68ac9a995c01c6a491bfebddaa28b646))
+- **codemod:** add dashboard codemod to move a project onto the Dashboard ([#2023](https://github.com/sanity-io/cli/pull/2023)) ([ac7b258](https://github.com/sanity-io/cli/commit/ac7b25811153047374e2db0688823c4072ee7d03))
+
+### Bug Fixes
+
+- **cli:** standardize json output and errors ([#1994](https://github.com/sanity-io/cli/pull/1994)) ([69ef7f7](https://github.com/sanity-io/cli/commit/69ef7f7a9713f0dc85fb15627a341732d833b848))
+- Added validation to detect if a studio is managed by a blueprint and returns an error if a user tries to deploy via the deploy command ([#1988](https://github.com/sanity-io/cli/pull/1988)) ([fd8db14](https://github.com/sanity-io/cli/commit/fd8db14315565768446f046c473af6023fe7e5fd))
+- **init:** track dataset selection and skips during app init ([#1998](https://github.com/sanity-io/cli/pull/1998)) ([8ea1b33](https://github.com/sanity-io/cli/commit/8ea1b33033144053199eabc945eb2c3100046e68))
+- **deploy:** link workbench apps and studios by slug ([#2020](https://github.com/sanity-io/cli/pull/2020)) ([1ff8e2b](https://github.com/sanity-io/cli/commit/1ff8e2b2623d786af83f79c61deb327609181fc5))
+- **deploy:** stop linking panel-only apps to an application route ([#2021](https://github.com/sanity-io/cli/pull/2021)) ([936bc3f](https://github.com/sanity-io/cli/commit/936bc3ffb6c7f68ff81522acac7ee2762a6ea8bb))
+- **codemod:** exit cleanly once jscodeshift finishes ([#2025](https://github.com/sanity-io/cli/pull/2025)) ([f33c260](https://github.com/sanity-io/cli/commit/f33c260c19a5a3caf2233d46a401d233ca780b3f))
+- **build:** return the module federation manifest from buildStudio and buildApp ([#2026](https://github.com/sanity-io/cli/pull/2026)) ([ee487dd](https://github.com/sanity-io/cli/commit/ee487ddb261dbd0d8936d1918a58263fa0a5f712))
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/cli-core bumped to 3.11.0
+    - @sanity/workbench-cli bumped to 2.12.0
+    - @sanity/cli-build bumped to 6.5.0
+
 ## 8.21.0
 
 [Compare changes](https://github.com/sanity-io/cli/compare/cli-v8.20.0...cli-v8.21.0)

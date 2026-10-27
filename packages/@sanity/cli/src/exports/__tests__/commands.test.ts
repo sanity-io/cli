@@ -127,7 +127,7 @@ describe('invokeSanityCli', () => {
 
     try {
       const result = await invoke({
-        args: `cors list --project-id ${projectId}`,
+        args: `cors list --project ${projectId}`,
         sanityEnv: 'production',
         source: 'mcp',
         token: 'invocation-token',
@@ -194,7 +194,7 @@ describe('invokeSanityCli', () => {
 
     try {
       const result = await invoke({
-        args: `users list --project-id ${projectId}`,
+        args: `users list --project ${projectId}`,
         config,
         source: 'mcp',
         token: 'user-token',
@@ -218,17 +218,13 @@ describe('invokeSanityCli', () => {
       .matchHeader('authorization', 'Bearer user-token')
       .reply(200, {email: 'jane@example.com', id: 'pUser123', name: 'Jane Doe', provider: 'github'})
 
-    const result = await invoke({args: 'whoami --json', config, source: 'mcp', token: 'user-token'})
+    const result = await invoke({args: 'whoami', config, source: 'mcp', token: 'user-token'})
 
     expect(result.commandId).toBe('whoami')
     expect(result.exitCode).toBe(0)
-    expect(JSON.parse(result.output)).toEqual({
-      email: 'jane@example.com',
-      id: 'pUser123',
-      name: 'Jane Doe',
-      provider: 'github',
-      tokenSource: 'CLI execution context',
-    })
+    expect(result.output).toContain('Jane Doe')
+    expect(result.output).toContain('jane@example.com')
+    expect(result.output).toContain('CLI execution context')
   })
 
   test('an empty table renders as a message rather than an empty result', async () => {
@@ -243,7 +239,7 @@ describe('invokeSanityCli', () => {
     mockApi({apiVersion: USERS_API_VERSION, uri: '/users/'}).reply(200, [])
 
     const result = await invoke({
-      args: `users list --project-id ${projectId}`,
+      args: `users list --project ${projectId}`,
       config,
       source: 'mcp',
       token: 'user-token',
@@ -262,7 +258,7 @@ describe('invokeSanityCli', () => {
       .reply(200, [corsOrigin('https://example.com')])
 
     const result = await invoke({
-      args: `cors list --project-id ${projectId}`,
+      args: `cors list --project ${projectId}`,
       config,
       source: 'mcp',
       token: 'user-token',
@@ -277,7 +273,7 @@ describe('invokeSanityCli', () => {
       .reply(200, [corsOrigin('https://example.com')])
 
     const result = await invoke({
-      args: ['cors', 'list', '--project-id', projectId],
+      args: ['cors', 'list', '--project', projectId],
       config,
       source: 'mcp',
       token: 'user-token',
@@ -292,7 +288,7 @@ describe('invokeSanityCli', () => {
       .reply(200, [corsOrigin('https://example.com')])
 
     const result = await invoke({
-      args: `sanity cors list --project-id "${projectId}"`,
+      args: `sanity cors list --project "${projectId}"`,
       config,
       source: 'mcp',
       token: 'user-token',
@@ -302,8 +298,8 @@ describe('invokeSanityCli', () => {
   })
 
   test.each([
-    ['double quotes', `cors list --project-id="${projectId}"`],
-    ['single quotes', `cors list --project-id='${projectId}'`],
+    ['double quotes', `cors list --project="${projectId}"`],
+    ['single quotes', `cors list --project='${projectId}'`],
   ])('strips %s glued to --flag= tokens like a shell would', async (_style, args) => {
     mockApi({apiVersion: CORS_API_VERSION, uri: `/projects/${projectId}/cors`})
       .matchHeader('authorization', 'Bearer user-token')
@@ -325,7 +321,7 @@ describe('invokeSanityCli', () => {
       .reply(200, [corsOrigin('https://example.com')])
 
     const result = await invoke({
-      args: `cors:list --project-id ${projectId}`,
+      args: `cors:list --project ${projectId}`,
       config,
       source: 'mcp',
       token: 'user-token',
@@ -350,14 +346,14 @@ describe('invokeSanityCli', () => {
 
     const [resultA, resultB] = await Promise.all([
       invoke({
-        args: 'cors list --project-id project-a',
+        args: 'cors list --project project-a',
         config,
         sanityEnv: 'production',
         source: 'mcp',
         token: 'token-a',
       }),
       invoke({
-        args: 'cors list --project-id project-b',
+        args: 'cors list --project project-b',
         config,
         sanityEnv: 'staging',
         source: 'mcp',
@@ -384,7 +380,7 @@ describe('invokeSanityCli', () => {
 
     const previousExitCode = process.exitCode
     const result = await invoke({
-      args: `cors list --project-id ${projectId}`,
+      args: `cors list --project ${projectId}`,
       config,
       source: 'mcp',
       token: 'bogus-token',
@@ -396,6 +392,155 @@ describe('invokeSanityCli', () => {
     expect(result.output).toContain('Session not found')
     // A failed invocation must not change the host process's exit status
     expect(process.exitCode).toBe(previousExitCode)
+  })
+
+  /**
+   * A result is a single `output` string fed by one sink for both stdout and
+   * stderr, so it cannot carry a payload and a diagnostic apart from one
+   * another. Until that has an answer, a request for JSON is dropped and the
+   * command runs its text path, rather than the invocation being refused.
+   */
+  test('ignores a request for JSON and returns the command text output', async () => {
+    mockApi({
+      apiVersion: 'v2026-08-25',
+      query: {organizationId: 'org-1'},
+      uri: '/context/knowledge-bases',
+    }).reply(200, {data: [], nextCursor: null})
+
+    const result = await invoke({
+      args: 'context list --organization org-1 --json',
+      config,
+      source: 'mcp',
+      token: 'user-token',
+    })
+
+    expect(result.exitCode).toBe(0)
+    expect(result.output).toBe('No knowledge bases found')
+  })
+
+  test('a dropped JSON flag still reaches the command with its other flags', async () => {
+    mockApi({
+      apiVersion: 'v2026-08-25',
+      query: {organizationId: 'org-1'},
+      uri: '/context/knowledge-bases',
+    }).reply(200, {
+      data: [{publicId: 'kb1', state: 'created', title: 'Handbook'}],
+      nextCursor: null,
+    })
+
+    const result = await invoke({
+      args: 'context list --json --organization org-1',
+      config,
+      source: 'mcp',
+      token: 'user-token',
+    })
+
+    expect(result.exitCode).toBe(0)
+    expect(result.output).toContain('Handbook')
+  })
+
+  test('runtime failures stay text and preserve their exit status', async () => {
+    mockApi({
+      apiVersion: 'v2026-08-25',
+      query: {organizationId: 'org-1'},
+      uri: '/context/knowledge-bases',
+    }).reply(403, {error: 'Forbidden', message: 'Access denied', statusCode: 403})
+    const previousExitCode = process.exitCode
+
+    const result = await invoke({
+      args: 'context list --organization org-1 --json',
+      config,
+      source: 'mcp',
+      token: 'user-token',
+    })
+
+    expect(result.exitCode).toBe(1)
+    expect(result.output).toContain('Access denied')
+    expect(process.exitCode).toBe(previousExitCode)
+  })
+
+  test('parser failures stay text and preserve the usage exit code', async () => {
+    const previousExitCode = process.exitCode
+    const result = await invoke({
+      args: 'context list --json --not-a-flag',
+      config,
+      source: 'mcp',
+      token: 'user-token',
+    })
+
+    expect(result.exitCode).toBe(2)
+    expect(result.output).toContain('Nonexistent flag')
+    expect(process.exitCode).toBe(previousExitCode)
+  })
+
+  test('policy refusals preserve the usage exit code', async () => {
+    const result = await invoke({
+      args: 'openapi list --web --json',
+      config,
+      source: 'mcp',
+      token: 'user-token',
+    })
+
+    expect(result.exitCode).toBe(2)
+    expect(result.output).toContain('--web')
+  })
+
+  /**
+   * A host relays a failure straight to a model, so it stays bounded and free
+   * of the parser input or the HTTP response that produced it — neither of
+   * which a caller can act on, and the token least of all.
+   */
+  test('failures stay small and carry no parser or transport internals', async () => {
+    mockApi({
+      apiVersion: 'v2026-08-25',
+      query: {organizationId: 'org-1'},
+      uri: '/context/knowledge-bases',
+    }).reply(403, {error: 'Forbidden', message: 'Access denied', statusCode: 403})
+
+    const [parserFailure, runtimeFailure] = [
+      await invoke({args: 'context list --json --not-a-flag', config, source: 'mcp', token: 't'}),
+      await invoke({
+        args: 'context list --organization org-1 --json',
+        config,
+        source: 'mcp',
+        token: 'user-token',
+      }),
+    ]
+
+    for (const {output} of [parserFailure, runtimeFailure]) {
+      expect(output).not.toContain('Bearer')
+      expect(output).not.toContain('responseBody')
+      expect(output.length).toBeLessThan(1024)
+    }
+  })
+
+  /**
+   * `SANITY_CONTENT_TYPE` is oclif's own opt-in to JSON output, read straight
+   * from the environment. That environment belongs to the embedding process,
+   * so it must not decide the shape of a programmatic result.
+   */
+  test('ignores the host environment when choosing an output format', async () => {
+    vi.stubEnv('SANITY_CONTENT_TYPE', 'json')
+    mockApi({
+      apiVersion: 'v2026-08-25',
+      query: {organizationId: 'org-1'},
+      uri: '/context/knowledge-bases',
+    }).reply(200, {data: [{id: 'kb-1', title: 'Docs'}], nextCursor: null})
+
+    try {
+      const result = await invoke({
+        args: 'context list --organization org-1',
+        config,
+        source: 'mcp',
+        token: 'user-token',
+      })
+
+      expect(result.exitCode).toBe(0)
+      expect(() => JSON.parse(result.output)).toThrow()
+      expect(result.output).toContain('Docs')
+    } finally {
+      vi.stubEnv('SANITY_CONTENT_TYPE', '')
+    }
   })
 
   test('reports invalid flags as a usage error', async () => {
@@ -461,7 +606,7 @@ describe('invokeSanityCli', () => {
       "ProjectRootNotFoundError: Unable to determine project ID
       Code: PROJECT_ROOT_NOT_FOUND
       Try this:
-        * Providing a project ID: --project-id <project-id>
+        * Providing a project ID: --project <project-id>
         * Running this command from within a Sanity project directory
         * Running in an interactive terminal to get a project selection prompt
       Caused by: NonInteractiveError: Cannot run "select" prompt in a non-interactive environment. Provide the required value via flags or environment variables, or run in an interactive terminal.
@@ -513,7 +658,7 @@ describe('invokeSanityCli', () => {
       .reply(200, [corsOrigin('https://example.com')])
 
     const result = await invoke({
-      args: `cors list --project-id "${projectId}`,
+      args: `cors list --project "${projectId}`,
       config,
       source: 'mcp',
       token: 'user-token',
@@ -739,7 +884,7 @@ describe('invokeSanityCli', () => {
       expect(result.commandId).toBe('cors:list')
       expect(result.output).toContain('List CORS origins for the project')
       expect(result.output).toContain('USAGE')
-      expect(result.output).toContain('--project-id')
+      expect(result.output).toContain('--project')
     },
   )
 

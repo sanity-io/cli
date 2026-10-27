@@ -24,7 +24,7 @@ export async function findProjectRoot(cwd: string): Promise<ProjectRootResult> {
   // project context from the host's filesystem: walking up from the host
   // process's cwd could pick up an unrelated Sanity project, and resolving the
   // CLI config from it would even execute that project's `sanity.cli.ts`.
-  // Callers must provide explicit flags (e.g. `--project-id`) instead.
+  // Callers must provide explicit flags (e.g. `--project`) instead.
   if (getCliExecutionContext()) {
     throw new ProjectRootNotFoundError(
       'Project root resolution from the filesystem is disabled for programmatic invocations',

@@ -1,4 +1,5 @@
-import {getSanityEnv} from '../../util/getSanityEnv.js'
+import {getSanityEnv} from '@sanity/cli-core/util'
+
 import {type EditorName} from '../mcp/editorConfigs.js'
 import {createOrAppendEnvVars} from './env/createOrAppendEnvVars.js'
 import {fetchPostInitPrompt} from './fetchPostInitPrompt.js'

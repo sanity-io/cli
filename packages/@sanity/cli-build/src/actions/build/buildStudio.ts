@@ -6,7 +6,7 @@ import {getCliTelemetry} from '@sanity/cli-core/telemetry'
 import {type CliConfig, type Output, type UserViteConfig} from '@sanity/cli-core/types'
 import {isInteractive} from '@sanity/cli-core/util'
 import {getTimer, logSymbols} from '@sanity/cli-core/ux'
-import {type WorkbenchExposes} from '@sanity/workbench-cli/build'
+import {readBuiltManifest, type WorkbenchExposes} from '@sanity/workbench-cli/build'
 import {parse as semverParse} from 'semver'
 
 import {StudioBuildTrace} from '../../telemetry/build.telemetry.js'
@@ -84,7 +84,9 @@ export interface BuildOptions {
  * Internal build studio that avoids depending on flags for CLI config.
  * @param options - options for the build
  */
-export async function buildStudio(options: BuildOptions): Promise<void> {
+export async function buildStudio(
+  options: BuildOptions,
+): Promise<{mfManifest: Record<string, unknown> | undefined}> {
   buildDebug(`Building studio`)
 
   const timer = getTimer()
@@ -184,7 +186,7 @@ export async function buildStudio(options: BuildOptions): Promise<void> {
           mismatched,
           versionMismatchWarning,
         })
-        if (stopBuild) return
+        if (stopBuild) return {mfManifest: undefined}
       } else {
         // if non-interactive or unattended, just show the warning
         onVersionMismatchInNonInteractiveAutoUpdate({versionMismatchWarning})
@@ -263,6 +265,7 @@ export async function buildStudio(options: BuildOptions): Promise<void> {
       vite,
       workbenchAppId: options.workbenchAppId,
     })
+    const mfManifest = options.isWorkbenchApp ? await readBuiltManifest(outputDir) : undefined
 
     trace.log({
       outputSize: bundle.chunks
@@ -278,11 +281,12 @@ export async function buildStudio(options: BuildOptions): Promise<void> {
       output.log('\nLargest module files:')
       output.log(formatModuleSizes(sortModulesBySize(bundle.chunks).slice(0, 15)))
     }
+    return {mfManifest}
   } catch (error) {
     trace.error(error)
     const message = error instanceof Error ? error.message : String(error)
     buildDebug(`Failed to build Sanity Studio`, {error})
     onBuildFail({message: `Failed to build Sanity Studio: ${message}`})
-    return
+    return {mfManifest: undefined}
   }
 }

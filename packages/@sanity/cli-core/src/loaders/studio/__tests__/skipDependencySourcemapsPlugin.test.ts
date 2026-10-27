@@ -1,6 +1,7 @@
 import {mkdir, mkdtemp, rm, writeFile} from 'node:fs/promises'
 import {tmpdir} from 'node:os'
 import {join} from 'node:path'
+import {runInNewContext} from 'node:vm'
 
 import {afterEach, beforeEach, describe, expect, test} from 'vitest'
 
@@ -34,22 +35,19 @@ describe('skipDependencySourcemapsPlugin', () => {
     expect(plugin.name).toBe('sanity:studio-worker-skip-dependency-sourcemaps')
   })
 
-  test('loads dependency scripts with an empty source map and no map comments', async () => {
+  test('loads dependency scripts with an empty source map and unchanged source', async () => {
     const file = join(depDir, 'index.js')
-    await writeFile(
-      file,
-      [
-        'export const a = 1',
-        '//# sourceMappingURL=index.js.map',
-        '//@ sourceMappingURL=data:application/json;base64,eyJ2ZXJzaW9uIjozfQ==',
-      ].join('\n'),
-    )
+    const source = [
+      'export const a = 1',
+      '//# sourceMappingURL=index.js.map',
+      '//@ sourceMappingURL=data:application/json;base64,eyJ2ZXJzaW9uIjozfQ==',
+    ].join('\n')
+    await writeFile(file, source)
 
     const result = await load(file)
 
     expect(result?.map).toEqual({mappings: ''})
-    expect(result?.code).toContain('export const a = 1')
-    expect(result?.code).not.toContain('sourceMappingURL')
+    expect(result?.code.startsWith(source)).toBe(true)
     expect(result?.code).toContain(`//# sourceURL=${file}`)
   })
 
@@ -67,14 +65,30 @@ describe('skipDependencySourcemapsPlugin', () => {
     expect(result?.code.startsWith(source)).toBe(true)
   })
 
+  test.each(['//#', '//@'])(
+    'preserves %s sourceMappingURL lines inside multiline strings',
+    async (prefix) => {
+      const file = join(depDir, 'generator.cjs')
+      const mapComment = `${prefix} sourceMappingURL=generated.js.map`
+      await writeFile(file, ['module.exports = `', mapComment, '`'].join('\n'))
+
+      const result = await load(file)
+      const module = {exports: ''}
+      runInNewContext(result?.code ?? '', {module})
+
+      expect(module.exports).toBe(`\n${mapComment}\n`)
+    },
+  )
+
   test('handles .cjs files', async () => {
     const file = join(depDir, 'index.cjs')
-    await writeFile(file, 'module.exports = 1\n//# sourceMappingURL=index.cjs.map\n')
+    const source = 'module.exports = 1\n//# sourceMappingURL=index.cjs.map\n'
+    await writeFile(file, source)
 
     const result = await load(file)
 
     expect(result?.map).toEqual({mappings: ''})
-    expect(result?.code).not.toContain('sourceMappingURL')
+    expect(result?.code.startsWith(source)).toBe(true)
   })
 
   test('encodes whitespace in the sourceURL', async () => {

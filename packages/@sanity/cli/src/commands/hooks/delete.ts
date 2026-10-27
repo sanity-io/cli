@@ -29,7 +29,7 @@ export class Delete extends SanityCommand<typeof Delete> {
       description: 'Delete a specific webhook by name',
     },
     {
-      command: '<%= config.bin %> <%= command.id %> --project-id abc123',
+      command: '<%= config.bin %> <%= command.id %> --project abc123',
       description: 'Delete a webhook from a specific project',
     },
   ]

@@ -3,9 +3,9 @@ import {isMainThread, parentPort, workerData} from 'node:worker_threads'
 import {subdebug} from '@sanity/cli-core'
 
 import {type BuildStudioSchemasAndManifestsWorkerMessage} from './buildStudioSchemasAndManifests.js'
+import {workerBuildStudioSchemasAndManifests} from './buildStudioSchemasAndManifestsWorker.js'
 import {buildStudioSchemasAndManifestsWorkerData} from './types.js'
 import {extractValidationFromSchemaError} from './utils/extractValidationFromSchemaError.js'
-import {workerBuildStudioSchemasAndManifests} from './workerBuildStudioSchemasAndManifests.js'
 
 const debug = subdebug('buildStudioSchemasAndManifests.worker')
 

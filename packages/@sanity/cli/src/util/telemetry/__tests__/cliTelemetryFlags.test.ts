@@ -36,6 +36,7 @@ describe('CLI flag redaction at intake', () => {
       ['--file=private', '--format=ndjson'],
       ['--file', '--format=ndjson'],
     ],
+    [['--params={"email":"jane@example.test"}'], ['--params']],
     [['private', '--', '--token=private'], []],
     [
       ['--unlisted=value', '-XPOST', '--json'],

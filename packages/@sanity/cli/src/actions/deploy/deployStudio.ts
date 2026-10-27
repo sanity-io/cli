@@ -1,8 +1,7 @@
-import {basename, dirname, join, relative} from 'node:path'
+import {basename, dirname, relative} from 'node:path'
 import {styleText} from 'node:util'
 import {createGzip, type Gzip} from 'node:zlib'
 
-import {findBlueprintFile, readBlueprint} from '@sanity/blueprints/resolve'
 import {formatSchemaValidation, SchemaExtractionError} from '@sanity/cli-build/_internal/extract'
 import {readIconFromPath} from '@sanity/cli-build/_internal/manifest'
 import {exitCodes} from '@sanity/cli-core'
@@ -24,6 +23,7 @@ import {createDeployment, type UserApplication} from '../../services/userApplica
 import {getAppId} from '../../util/appId.js'
 import {NO_ORGANIZATION_ID, NO_PROJECT_ID} from '../../util/errorMessages.js'
 import {buildStudio} from '../build/buildStudio.js'
+import {checkBlueprintManaged} from './blueprintManaged.js'
 import {createStudioUserApplication} from './createUserApplication.js'
 import {
   checkAutoUpdates,
@@ -91,14 +91,7 @@ async function runStudioDeployment(
         },
   )
 
-  if (await isBlueprintStudio(options.projectRoot.directory)) {
-    reporter.report({
-      message:
-        'Using the `deploy` command for a studio that is referenced by a blueprint is not allowed',
-      solution: 'Deploy the studio using the `blueprints deploy` command',
-      status: 'fail',
-    })
-  }
+  await checkBlueprintManaged(reporter, {kind: 'studio', projectRootDir: workDir})
 
   // Workbench studios deploy to Brett (which needs the org); plain studios
   // resolve/create on user-applications, unchanged.
@@ -174,7 +167,7 @@ async function runStudioDeployment(
   // A record created above is stranded at its slug (and blocks retries) if any
   // step before it fully deploys fails, so undo the creation on failure.
   try {
-    await checkBuild(reporter, {
+    const built = await checkBuild(reporter, {
       build: () =>
         buildStudio({
           applicationId: workbench ? applicationId : undefined,
@@ -190,8 +183,10 @@ async function runStudioDeployment(
       successMessage: 'Studio built',
     })
 
-    if (!isLegacyExternal) {
-      await verifyOutputDir({isWorkbenchApp, reporter, sourceDir})
+    let mfManifest = built?.mfManifest
+    // A federated build has already read its manifest; anything else verifies the directory.
+    if (mfManifest === undefined && !isLegacyExternal) {
+      mfManifest = await verifyOutputDir({isWorkbenchApp, reporter, sourceDir})
     }
 
     const interfaces = workbench ? reportInterfaces(reporter, workbench) : null
@@ -220,6 +215,7 @@ async function runStudioDeployment(
     // The studio was created (or resolved from `deployment.appId`) before the
     // build, so this only ships the deployment; plain studios use user-applications.
     if (workbench && organizationId && applicationId) {
+      if (!mfManifest) throw new Error('The federated build produced no manifest.')
       await deployWorkbenchApp({
         access: toAccess(studioManifest),
         app: cliConfig.app,
@@ -229,6 +225,7 @@ async function runStudioDeployment(
         isAutoUpdating,
         isExternal: isExternallyHosted,
         label: 'Deploying studio',
+        mfManifest,
         // Once the deployment is live, a metadata-sync failure must not delete
         // the studio.
         onDeployed: () => {
@@ -241,7 +238,12 @@ async function runStudioDeployment(
         visibility: workbench.visibility,
         workspaces: toWorkspaces(studioManifest),
       })
-      const url = getApplicationUrl({id: applicationId, organizationId, type: 'studio'})
+      const url = getApplicationUrl({
+        id: applicationId,
+        organizationId,
+        slug: workbench.slug,
+        type: 'studio',
+      })
       logWorkbenchStudioDeployed({applicationId, cliConfig, output, url})
       if (isExternallyHosted)
         logExternalHost({built: flags.build, organizationId, output, sourceDir})
@@ -519,31 +521,4 @@ function studioBuildSkipReason({
   if (isLegacyExternal) return 'Build skipped for externally hosted studios'
   if (!build) return 'Build skipped (--no-build) — validating existing output directory'
   return
-}
-
-/**
- * Determine if the blueprint being deployed is referenced by a blueprint.
- * @param projectRootDir - The root directory of the studio
- */
-async function isBlueprintStudio(projectRootDir: string): Promise<boolean> {
-  try {
-    const blueprintFile = findBlueprintFile(projectRootDir)
-    if (!blueprintFile) return false
-
-    const localBlueprint = await readBlueprint({
-      path: blueprintFile,
-    })
-
-    const blueprintReferencesStudio = localBlueprint.resources.some((r) => {
-      if (r.type === 'sanity.studio' && 'root' in r && typeof r.root === 'string') {
-        return relative(join(dirname(blueprintFile), r.root), projectRootDir) === ''
-      }
-
-      return false
-    })
-
-    return blueprintReferencesStudio
-  } catch {
-    return false // fail open
-  }
 }

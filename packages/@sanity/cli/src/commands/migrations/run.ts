@@ -24,6 +24,7 @@ import {
   resolveMigrationScript,
 } from '../../actions/migration/resolveMigrationScript.js'
 import {Table} from '../../util/responsiveTable.js'
+import {getProjectIdFlag} from '../../util/sharedFlags.js'
 import {defineCommandTelemetry} from '../../util/telemetry/commandTelemetry.js'
 
 const runMigrationDebug = subdebug('migration:run')
@@ -114,9 +115,9 @@ export class RunMigrationCommand extends SanityCommand<typeof RunMigrationComman
       description:
         'Display progress during migration (default: true). Use --no-progress to hide output.',
     }),
-    project: Flags.string({
-      description:
-        'Project ID of the dataset to migrate. Defaults to the projectId configured in your Sanity CLI config.',
+    ...getProjectIdFlag({
+      description: 'Project ID of the dataset to migrate',
+      semantics: 'override',
     }),
   }
 
@@ -175,7 +176,7 @@ export class RunMigrationCommand extends SanityCommand<typeof RunMigrationComman
     }
 
     const cliConfig = await this.getCliConfig()
-    const projectId = await this.getProjectId({deprecatedFlagName: 'project'})
+    const projectId = await this.getProjectId()
     const datasetFromConfig = cliConfig.api?.dataset
 
     const fromExport = flags['from-export']

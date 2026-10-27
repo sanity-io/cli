@@ -1,4 +1,5 @@
 export {getErrorMessage, toError} from '../errors/getErrorMessage.js'
+export {JsonOutputError} from '../errors/JsonOutputError.js'
 export {NonInteractiveError} from '../errors/NonInteractiveError.js'
 export {isNotFoundError, NotFoundError} from '../errors/NotFoundError.js'
 export {

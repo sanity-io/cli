@@ -94,6 +94,10 @@ export const mcpPolicy: CommandPolicySet = {
   'context:build': conditionalDenyFlags('watch'),
   'context:create': allow,
   'context:delete': allow,
+  'context:entries:get': allow,
+  'context:entries:list': allow,
+  // See context:build — --watch has no deadline and would hang the MCP tool call.
+  'context:entries:rebuild': conditionalDenyFlags('watch'),
   'context:get': allow,
   // --file reads the import payload from the local filesystem; text, URL and
   // dataset imports are remote-only.
@@ -103,8 +107,17 @@ export const mcpPolicy: CommandPolicySet = {
   'context:imports:get': allow,
   'context:imports:list': allow,
   // See context:build — --watch has no deadline and would hang the MCP tool call.
+  'context:issues:apply': conditionalDenyFlags('watch'),
+  'context:issues:dismiss': allow,
+  'context:issues:get': allow,
+  'context:issues:list': allow,
+  'context:issues:reopen': allow,
+  // See context:build — --watch has no deadline and would hang the MCP tool call.
+  'context:issues:resolve': conditionalDenyFlags('watch'),
+  // See context:build — --watch has no deadline and would hang the MCP tool call.
   'context:jobs:get': conditionalDenyFlags('watch'),
   'context:list': allow,
+  'context:query': allow,
   'context:refresh': allow,
   'context:update': allow,
 
@@ -211,6 +224,10 @@ export const mcpPolicy: CommandPolicySet = {
     deniedFlags: ['replace-aspects'],
     validate: ({args}) => typeof args.source === 'string' && isRemoteAssetSource(args.source),
   }),
+  // media:pull-aspects and media:prune-aspect-data are hidden while the
+  // config app is in beta, so they take the deny-by-default path like any
+  // unlisted command. The exhaustiveness test forces explicit entries when
+  // they are unhidden.
 
   // Creates migration source files in the local project.
   'migrations:create': deny,

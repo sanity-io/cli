@@ -55,6 +55,8 @@ export class CreateTokenCommand extends SanityCommand<typeof CreateTokenCommand>
   static override description =
     'Create a new API token with access to an organization and its projects'
 
+  static override enableJsonFlag = true
+
   static override examples = [
     {
       command: '<%= config.bin %> <%= command.id %> "My API Token"',
@@ -66,7 +68,7 @@ export class CreateTokenCommand extends SanityCommand<typeof CreateTokenCommand>
       description: 'Create an organization token with Context, Blueprints and project access',
     },
     {
-      command: '<%= config.bin %> <%= command.id %> "My Token" --project-id abc123 --role=editor',
+      command: '<%= config.bin %> <%= command.id %> "My Token" --project abc123 --role=editor',
       description: 'Create a project token with editor role',
     },
     {
@@ -101,10 +103,6 @@ export class CreateTokenCommand extends SanityCommand<typeof CreateTokenCommand>
         'Access to grant, as <permission>[=<role>] or project:<projectId>=<role>[,<role>]. Permissions: context, blueprints, media-library, canvas, sdk-apps, access, deploy-studios. Repeatable',
       helpValue: 'context=editor',
       multiple: true,
-    }),
-    json: Flags.boolean({
-      default: false,
-      description: 'Output as JSON',
     }),
     role: Flags.string({
       description: 'Role to assign on the project (defaults to viewer in unattended mode)',
@@ -161,7 +159,7 @@ export class CreateTokenCommand extends SanityCommand<typeof CreateTokenCommand>
     }
 
     if (flags.json) {
-      this.log(JSON.stringify(token, null, 2))
+      this.logJson(token)
       return
     }
 
@@ -215,7 +213,7 @@ export class CreateTokenCommand extends SanityCommand<typeof CreateTokenCommand>
   }
 
   private async getFlagGrants(grants: Grant[]): Promise<{grants: Grant[]; roleTitle?: string}> {
-    const {'project-id': projectIdFlag, role} = this.flags
+    const {project: projectIdFlag, role} = this.flags
     if (grants.length > 0 && !projectIdFlag && !role) {
       return {grants}
     }
@@ -263,7 +261,7 @@ export class CreateTokenCommand extends SanityCommand<typeof CreateTokenCommand>
   }
 
   private async promptForAccess(getExpiry: () => Promise<string | undefined>): Promise<Access> {
-    const requestedProjectId = this.flags['project-id']
+    const requestedProjectId = this.flags.project
     const configProjectId = (await this.tryGetCliConfig()).api?.projectId
     const projects = await listProjects({onlyExplicitMembership: false})
     const organizationOf = (projectId: string | undefined) =>
@@ -387,7 +385,7 @@ export class CreateTokenCommand extends SanityCommand<typeof CreateTokenCommand>
     } catch (error) {
       if (!isProjectRootNotFoundError(error)) throw error
       this.error(
-        'Token access is required. Pass at least one `--grant`, or `--project-id` to create a project token.',
+        'Token access is required. Pass at least one `--grant`, or `--project` to create a project token.',
         {exit: exitCodes.USAGE_ERROR},
       )
     }

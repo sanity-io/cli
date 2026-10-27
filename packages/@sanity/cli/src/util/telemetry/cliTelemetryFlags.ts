@@ -41,6 +41,7 @@ const knownFlags = new Set([
   'output',
   'output-path',
   'package-manager',
+  'params',
   'path',
   'port',
   'project',

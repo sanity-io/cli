@@ -36,7 +36,7 @@ export class LogsHookCommand extends SanityCommand<typeof LogsHookCommand> {
       description: 'Show log entries for a specific webhook by name',
     },
     {
-      command: '<%= config.bin %> <%= command.id %> --project-id abc123',
+      command: '<%= config.bin %> <%= command.id %> --project abc123',
       description: 'Show log entries for a specific project',
     },
   ]

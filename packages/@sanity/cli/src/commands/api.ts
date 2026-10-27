@@ -294,8 +294,8 @@ specific token instead - for example in CI or when the CLI is not logged in
       'api-version'?: string
       dataset?: string
       global?: boolean
+      project?: string
       'project-hosted'?: boolean
-      'project-id'?: string
     },
   ): Promise<ResolvedEndpoint> {
     const cliConfig = await this.tryGetCliConfig()
@@ -313,7 +313,7 @@ specific token instead - for example in CI or when the CLI is not logged in
       return resolveEndpoint({
         ...baseOptions,
         forceHost,
-        projectId: flags['project-id'] ?? cliConfig.api?.projectId,
+        projectId: flags.project ?? cliConfig.api?.projectId,
       })
     } catch (error) {
       if (!(error instanceof ProjectIdRequiredError)) throw error

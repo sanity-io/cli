@@ -42,6 +42,8 @@ export class DoctorCommand extends SanityCommand<typeof DoctorCommand> {
 
   static override description = 'Run diagnostics on your Sanity project'
 
+  static override enableJsonFlag = true
+
   static override examples = [
     '<%= config.bin %> <%= command.id %>',
     {command: '<%= config.bin %> <%= command.id %> --json', description: 'Output results as JSON'},
@@ -82,7 +84,7 @@ export class DoctorCommand extends SanityCommand<typeof DoctorCommand> {
     const results = await runDoctorChecks({cwd}, checks)
 
     if (flags.json) {
-      this.output.log(JSON.stringify(results, null, 2))
+      this.logJson(results)
     } else {
       for (const check of results.checks) {
         this.printCheck(check)

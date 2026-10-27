@@ -1,5 +1,59 @@
 # Changelog
 
+## 3.14.0
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-core-v3.13.0...cli-core-v3.14.0)
+
+_2026-10-27_
+
+### Features
+
+- allow sanity internal env to be used for a local override ([#2071](https://github.com/sanity-io/cli/pull/2071)) ([ba0ff29](https://github.com/sanity-io/cli/commit/ba0ff292d273a659db06eb0906da1db8d1ba1afb))
+
+### Bug Fixes
+
+- standardize on --project over --project-id ([#2073](https://github.com/sanity-io/cli/pull/2073)) ([f2bdd54](https://github.com/sanity-io/cli/commit/f2bdd549a01ba954ad4fabd5323924017a756362))
+
+## 3.13.0
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-core-v3.12.0...cli-core-v3.13.0)
+
+_2026-10-26_
+
+### Features
+
+- **init:** search organizations, projects and datasets ([#1984](https://github.com/sanity-io/cli/pull/1984)) ([1debe1d](https://github.com/sanity-io/cli/commit/1debe1de70ae57fe4e482d0c7888e8618a9d2eb4))
+
+## 3.12.0
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-core-v3.11.1...cli-core-v3.12.0)
+
+_2026-10-23_
+
+### Features
+
+- **deploy:** sync media-library aspect documents on config deploy (DAM-1821) ([#2018](https://github.com/sanity-io/cli/pull/2018)) ([fda50ee](https://github.com/sanity-io/cli/commit/fda50eebce218ccfccac0bbd9871a1d71327f367))
+
+## 3.11.1
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-core-v3.11.0...cli-core-v3.11.1)
+
+_2026-10-22_
+
+### Bug Fixes
+
+- **cli-core:** preserve source map comments inside dependency strings ([#1973](https://github.com/sanity-io/cli/pull/1973)) ([05902fc](https://github.com/sanity-io/cli/commit/05902fc50e2f90bed0f230d8a180607573257456))
+
+## 3.11.0
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-core-v3.10.0...cli-core-v3.11.0)
+
+_2026-10-21_
+
+### Features
+
+- **cli:** standardize json output and errors ([#1994](https://github.com/sanity-io/cli/pull/1994)) ([69ef7f7](https://github.com/sanity-io/cli/commit/69ef7f7a9713f0dc85fb15627a341732d833b848))
+
 ## 3.10.0
 
 [Compare changes](https://github.com/sanity-io/cli/compare/cli-core-v3.9.2...cli-core-v3.10.0)
