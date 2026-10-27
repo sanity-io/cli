@@ -3,7 +3,7 @@ import {existsSync, readFileSync} from 'node:fs'
 import {createTmpDir} from '@sanity/cli-test'
 import {afterEach, beforeEach, expect, test} from 'vitest'
 
-import {getE2EOrganizationId, getE2EProjectId, runCli} from '../../helpers/runCli.js'
+import {getE2EDataset, getE2EOrganizationId, getE2EProjectId, runCli} from '../../helpers/runCli.js'
 
 const projectId = getE2EProjectId()
 
@@ -269,8 +269,8 @@ export function registerStudioInitTests(yFlag: string[]): void {
     expect(cliConfig).toContain('staging')
   })
 
-  test('creates dataset with public visibility', async () => {
-    const uniqueDataset = `pub${Date.now().toString(36)}`
+  test('reuses an existing dataset with --visibility public', async () => {
+    const dataset = getE2EDataset()
     const {error, exitCode} = await runCli({
       args: [
         'init',
@@ -278,7 +278,7 @@ export function registerStudioInitTests(yFlag: string[]): void {
         '--project',
         projectId,
         '--dataset',
-        uniqueDataset,
+        dataset,
         '--output-path',
         tmp.path,
         '--visibility',
@@ -291,7 +291,7 @@ export function registerStudioInitTests(yFlag: string[]): void {
     if (error) throw error
     expect(exitCode).toBe(0)
     const cliConfig = readFileSync(`${tmp.path}/sanity.cli.ts`, 'utf8')
-    expect(cliConfig).toContain(uniqueDataset)
+    expect(cliConfig).toContain(dataset)
   })
 
   // Skipped: creates a new project on the Sanity backend that cannot be cleaned up automatically
