@@ -269,6 +269,7 @@ describe('#init:nextjs-app-initialization', () => {
   test('initializes nextjs app in unattended mode', async () => {
     const cwd = await testFixture('basic-app')
     process.cwd = () => cwd
+    setupInitSuccessMocks()
 
     // Mocks for nextjs initialization
     mockApi({
@@ -345,6 +346,7 @@ describe('#init:nextjs-app-initialization', () => {
 
     const cwd = await testFixture('basic-app')
     process.cwd = () => cwd
+    setupInitSuccessMocks()
 
     mockApi({
       apiVersion: CORS_API_VERSION,

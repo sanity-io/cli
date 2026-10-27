@@ -199,6 +199,12 @@ describe('#init: get project details', () => {
   })
 
   test('returns `Unknown project` if project/organization call fails and in unattended mode with project id provided', async () => {
+    mocks.listDatasets.mockResolvedValueOnce([{aclMode: 'public', name: 'production'}])
+    mockApi({
+      apiVersion: PROJECT_FEATURES_API_VERSION,
+      uri: '/features',
+    }).reply(200, ['privateDataset'])
+
     mocks.listProjects.mockRejectedValueOnce(new Error('Internal Server Error'))
 
     setupInitSuccessMocks('test-project-123')
@@ -630,7 +636,7 @@ describe('#init: get project details', () => {
     )
   })
 
-  test('returns dataset if dataset flag is provided and in unattended mode', async () => {
+  test('reuses an existing named dataset in unattended mode without changing its visibility', async () => {
     mocks.listProjects.mockResolvedValueOnce([
       {
         createdAt: '2024-01-01T00:00:00Z',
@@ -639,18 +645,75 @@ describe('#init: get project details', () => {
       },
     ])
 
+    mocks.listDatasets.mockResolvedValueOnce([{aclMode: 'private', name: 'production'}])
+    mockApi({
+      apiVersion: PROJECT_FEATURES_API_VERSION,
+      uri: '/features',
+    }).reply(200, ['privateDataset'])
+
     setupInitSuccessMocks('test-project-123')
 
     const {error} = await testCommand(
       InitCommand,
-      ['--yes', '--project=test-project-123', '--dataset=production', '--output-path=/tmp/test'],
+      [
+        '--yes',
+        '--project=test-project-123',
+        '--dataset=production',
+        '--visibility=public',
+        '--output-path=/tmp/test',
+      ],
       {
         mocks: {...defaultMocks},
       },
     )
 
     if (error) throw error
+
+    expect(mocks.createDataset).not.toHaveBeenCalled()
+    expect(bootstrapTemplate).toHaveBeenCalledWith(expect.objectContaining({dataset: 'production'}))
   })
+
+  test.each([
+    {aclMode: 'public', features: ['privateDataset'], visibility: undefined},
+    {aclMode: 'public', features: ['privateDataset'], visibility: 'public'},
+    {aclMode: 'private', features: ['privateDataset'], visibility: 'private'},
+    {aclMode: 'public', features: [], visibility: 'private'},
+  ])(
+    'creates a missing named dataset unattended with visibility=$visibility as $aclMode',
+    async ({aclMode, features, visibility}) => {
+      mocks.listProjects.mockResolvedValueOnce([
+        {createdAt: '2024-01-01T00:00:00Z', displayName: 'Test Project', id: 'test-project-123'},
+      ])
+      mocks.listDatasets.mockResolvedValueOnce([{aclMode: 'public', name: 'production'}])
+      mockApi({
+        apiVersion: PROJECT_FEATURES_API_VERSION,
+        uri: '/features',
+      }).reply(200, features)
+      setupInitSuccessMocks('test-project-123')
+
+      const {error} = await testCommand(
+        InitCommand,
+        [
+          '--yes',
+          '--project=test-project-123',
+          '--dataset=staging',
+          '--output-path=/tmp/test',
+          ...(visibility ? [`--visibility=${visibility}`] : []),
+        ],
+        {mocks: defaultMocks},
+      )
+
+      if (error) throw error
+
+      expect(mocks.createDataset).toHaveBeenCalledExactlyOnceWith(
+        'staging',
+        expect.objectContaining({aclMode}),
+      )
+      expect(bootstrapTemplate).toHaveBeenCalledWith(expect.objectContaining({dataset: 'staging'}))
+      expect(mocks.select).not.toHaveBeenCalled()
+      expect(mocks.search).not.toHaveBeenCalled()
+    },
+  )
 
   test('defaults to "production" dataset in unattended mode when no dataset flag is provided', async () => {
     mocks.listProjects.mockResolvedValueOnce([
@@ -1187,7 +1250,11 @@ describe('#init: promptForAppTemplateSetup', () => {
       {createdAt: '2024-01-01T00:00:00Z', displayName: 'My App Project', id: 'new-app-pid-456'},
     ])
 
-    // getOrCreateDataset (unattended + dataset flag provided → no API needed for dataset)
+    mocks.listDatasets.mockResolvedValueOnce([])
+    mockApi({
+      apiVersion: PROJECT_FEATURES_API_VERSION,
+      uri: '/features',
+    }).reply(200, ['privateDataset'])
 
     const {error} = await testCommand(
       InitCommand,
@@ -1340,6 +1407,12 @@ describe('#init: promptForAppTemplateSetup', () => {
   })
 
   test('SDK-1314: unattended + --project + --dataset without --organization succeeds without prompts', async () => {
+    mocks.listDatasets.mockResolvedValueOnce([{aclMode: 'public', name: 'production'}])
+    mockApi({
+      apiVersion: PROJECT_FEATURES_API_VERSION,
+      uri: '/features',
+    }).reply(200, ['privateDataset'])
+
     mocks.listProjects.mockResolvedValueOnce([
       {
         createdAt: '2024-01-01T00:00:00Z',

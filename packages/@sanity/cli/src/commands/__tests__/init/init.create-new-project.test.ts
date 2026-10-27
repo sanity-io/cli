@@ -151,7 +151,7 @@ vi.mock('../../../util/packageManager/installPackages.js', () => ({
   installDeclaredPackages: vi.fn().mockResolvedValue(undefined),
 }))
 
-const setupInitSuccessMocks = () => {
+const setupInitSuccessMocks = (projectId = 'project-123') => {
   mockApi({
     apiVersion: PROJECT_FEATURES_API_VERSION,
     method: 'get',
@@ -166,9 +166,9 @@ const setupInitSuccessMocks = () => {
   mockApi({
     apiVersion: PROJECTS_API_VERSION,
     method: 'get',
-    uri: '/projects/project-123',
+    uri: `/projects/${projectId}`,
   }).reply(200, {
-    id: 'test',
+    id: projectId,
     metadata: {cliInitializedAt: ''},
   })
 }
@@ -539,46 +539,56 @@ describe('#init: create new project', () => {
     expect(mocks.importDatasetRun).not.toHaveBeenCalled()
   })
 
-  test('--import-dataset forces import in unattended mode', async () => {
-    mocks.detectFrameworkRecord.mockResolvedValueOnce(null)
-    mocks.importDatasetRun.mockResolvedValueOnce(undefined)
+  test.each([true, false])(
+    '--import-dataset imports unattended with dataset existing=%s',
+    async (exists) => {
+      mocks.detectFrameworkRecord.mockResolvedValueOnce(null)
+      mocks.importDatasetRun.mockResolvedValueOnce(undefined)
 
-    // Only mock endpoints actually hit in unattended mode with --project and --dataset
-    mockApi({
-      apiVersion: PROJECTS_API_VERSION,
-      method: 'get',
-      uri: '/projects/project-123',
-    }).reply(200, {id: 'project-123', metadata: {cliInitializedAt: ''}})
+      setupInitSuccessMocks()
+      mocks.listDatasets.mockResolvedValueOnce(
+        exists ? [{aclMode: 'public', name: 'production'}] : [],
+      )
 
-    const {error} = await testCommand(
-      InitCommand,
-      [
-        '--yes',
-        '--project=project-123',
-        '--dataset=production',
-        '--output-path=./test-project',
-        '--template=moviedb',
-        '--import-dataset',
-      ],
-      {mocks: defaultMocks},
-    )
+      const {error} = await testCommand(
+        InitCommand,
+        [
+          '--yes',
+          '--project=project-123',
+          '--dataset=production',
+          '--output-path=./test-project',
+          '--template=moviedb',
+          '--import-dataset',
+        ],
+        {mocks: defaultMocks},
+      )
 
-    if (error) throw error
-    expect(mocks.confirm).not.toHaveBeenCalled()
-    expect(mocks.importDatasetRun).toHaveBeenCalledWith(
-      expect.arrayContaining([
-        'https://public.sanity.io/moviesdb-2018-03-06.tar.gz',
-        '--project-id',
-        'project-123',
-        '--dataset',
-        'production',
-        '--token',
-        'test-token',
-        '--missing',
-      ]),
-      expect.objectContaining({root: expect.any(String)}),
-    )
-  })
+      if (error) throw error
+      if (exists) {
+        expect(mocks.datasetsCreate).not.toHaveBeenCalled()
+      } else {
+        expect(mocks.datasetsCreate).toHaveBeenCalledExactlyOnceWith(
+          'production',
+          expect.objectContaining({aclMode: 'public'}),
+        )
+        expect(mocks.datasetsCreate).toHaveBeenCalledBefore(mocks.importDatasetRun)
+      }
+      expect(mocks.confirm).not.toHaveBeenCalled()
+      expect(mocks.importDatasetRun).toHaveBeenCalledWith(
+        expect.arrayContaining([
+          'https://public.sanity.io/moviesdb-2018-03-06.tar.gz',
+          '--project-id',
+          'project-123',
+          '--dataset',
+          'production',
+          '--token',
+          'test-token',
+          '--missing',
+        ]),
+        expect.objectContaining({root: expect.any(String)}),
+      )
+    },
+  )
 
   test('prompts for dataset import when flag is not set in interactive mode', async () => {
     mocks.detectFrameworkRecord.mockResolvedValueOnce(null)
@@ -612,16 +622,7 @@ describe('#init: create new project', () => {
   })
 
   test('initializes studio in unattended mode', async () => {
-    mockApi({
-      apiVersion: PROJECTS_API_VERSION,
-      method: 'get',
-      uri: '/projects/test',
-    }).reply(200, {
-      id: 'test',
-      metadata: {
-        cliInitializedAt: '',
-      },
-    })
+    setupInitSuccessMocks('test')
 
     const {stdout} = await testCommand(
       InitCommand,
@@ -650,16 +651,7 @@ describe('#init: create new project', () => {
   })
 
   test('--no-git skips git initialization', async () => {
-    mockApi({
-      apiVersion: PROJECTS_API_VERSION,
-      method: 'get',
-      uri: '/projects/test',
-    }).reply(200, {
-      id: 'test',
-      metadata: {
-        cliInitializedAt: '',
-      },
-    })
+    setupInitSuccessMocks('test')
 
     const {error} = await testCommand(
       InitCommand,
@@ -683,16 +675,7 @@ describe('#init: create new project', () => {
   })
 
   test('initializes git by default when --no-git is not passed', async () => {
-    mockApi({
-      apiVersion: PROJECTS_API_VERSION,
-      method: 'get',
-      uri: '/projects/test',
-    }).reply(200, {
-      id: 'test',
-      metadata: {
-        cliInitializedAt: '',
-      },
-    })
+    setupInitSuccessMocks('test')
 
     const {error} = await testCommand(
       InitCommand,
