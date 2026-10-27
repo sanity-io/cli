@@ -1,5 +1,6 @@
 import {existsSync} from 'node:fs'
-import {readFile, writeFile} from 'node:fs/promises'
+import {mkdtemp, readFile, writeFile} from 'node:fs/promises'
+import {tmpdir} from 'node:os'
 import {join, resolve} from 'node:path'
 
 import {testCommand, testFixture} from '@sanity/cli-test'
@@ -23,6 +24,24 @@ describe('#schema:extract', {timeout: 60 * 1000}, () => {
     expect(stderr).toContain('Extracting schema')
     expect(stderr).toContain('Extracted schema')
     expect(existsSync(resolve(cwd, 'schema.json'))).toBe(true)
+  })
+
+  test('should extract schema using an explicit config outside the current directory', async () => {
+    const studioDirectory = await testFixture('basic-studio')
+    const cwd = await mkdtemp(join(tmpdir(), 'schema-config-path-'))
+    const outputPath = join(cwd, 'schema.json')
+    process.chdir(cwd)
+
+    const {error, stderr} = await testCommand(ExtractSchemaCommand, [
+      '--config-path',
+      join(studioDirectory, 'sanity.config.ts'),
+      '--path',
+      outputPath,
+    ])
+
+    if (error) throw error
+    expect(stderr).toContain('Extracted schema')
+    expect(existsSync(outputPath)).toBe(true)
   })
 
   test('extracts schema when ESM declarations shadow CommonJS bindings', async () => {

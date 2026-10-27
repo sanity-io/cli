@@ -10,10 +10,11 @@ vi.mock('node:fs/promises')
 
 // First: create the mocks and mocked SanityCommand class
 const {MockedSanityCommand, mocks} = createMockSanityCommand()
+const mockGetCliConfig = vi.hoisted(() => vi.fn())
 // Second: install the mock on cli-core
 vi.mock('@sanity/cli-core', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@sanity/cli-core')>()
-  return {...actual, SanityCommand: MockedSanityCommand}
+  return {...actual, getCliConfig: mockGetCliConfig, SanityCommand: MockedSanityCommand}
 })
 vi.mock('@sanity/cli-core/ux', () => import('@sanity/cli-test/mocks/cli-core/ux'))
 
@@ -36,9 +37,13 @@ const mockAccess = vi.mocked(access)
 
 describe('schema extract command', () => {
   beforeEach(() => {
-    mocks.SanityCmdGetProjectRoot.mockResolvedValue('/some/dir')
+    mocks.SanityCmdGetProjectRoot.mockResolvedValue({
+      directory: '/some/dir',
+      path: '/some/dir/sanity.config.ts',
+      type: 'studio',
+    })
     mocks.SanityCmdGetProjectId.mockResolvedValue('1337newb')
-    mocks.SanityCmdGetCliConfig.mockResolvedValue({schemaExtraction: {}})
+    mockGetCliConfig.mockResolvedValue({schemaExtraction: {}})
     mockExtractSchema.mockResolvedValue(undefined)
     mockWatchExtractSchema.mockResolvedValue(undefined)
     mockAccess.mockRejectedValue(new Error('ENOENT'))
@@ -56,6 +61,31 @@ describe('schema extract command', () => {
   test('schema command with watch flag should invoke watchExtractSchema module', async () => {
     await ExtractSchemaCommand.run(['--watch'])
     expect(mockWatchExtractSchema).toHaveBeenCalledOnce()
+  })
+  test('uses an explicit Studio config without discovering a project root', async () => {
+    await ExtractSchemaCommand.run(['--config-path', '/build-artifacts/studio/sanity.config.js'])
+
+    expect(mocks.SanityCmdGetProjectRoot).not.toHaveBeenCalled()
+    expect(mockGetCliConfig).toHaveBeenCalledWith('/build-artifacts/studio')
+    expect(mockExtractOptions).toHaveBeenCalledWith({
+      flags: expect.objectContaining({
+        'config-path': '/build-artifacts/studio/sanity.config.js',
+      }),
+      projectRoot: {
+        directory: '/build-artifacts/studio',
+        path: '/build-artifacts/studio/sanity.config.js',
+        type: 'studio',
+      },
+      schemaExtraction: {},
+    })
+  })
+  test('redacts the Studio config path from telemetry', () => {
+    expect(ExtractSchemaCommand.telemetry.redactedFlags).toEqual([
+      {
+        canonical: '--config-path',
+        flags: ['--config-path'],
+      },
+    ])
   })
   test('schema command bad flags', async () => {
     await expect(ExtractSchemaCommand.run(['--poop'])).rejects.toThrow('Nonexistent flag')

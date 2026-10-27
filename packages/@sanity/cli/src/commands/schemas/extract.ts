@@ -1,12 +1,14 @@
 import {access} from 'node:fs/promises'
+import {dirname, resolve} from 'node:path'
 
 import {Flags} from '@oclif/core'
-import {exitCodes, SanityCommand} from '@sanity/cli-core'
+import {exitCodes, getCliConfig, SanityCommand} from '@sanity/cli-core'
 import {confirm} from '@sanity/cli-core/ux'
 
 import {extractSchema} from '../../actions/schema/extractSchema.js'
 import {getExtractOptions} from '../../actions/schema/getExtractOptions.js'
 import {watchExtractSchema} from '../../actions/schema/watchExtractSchema.js'
+import {defineCommandTelemetry} from '../../util/telemetry/commandTelemetry.js'
 
 const description = `
 Extract a JSON representation of a Sanity schema within a Studio context.
@@ -33,6 +35,10 @@ export class ExtractSchemaCommand extends SanityCommand<typeof ExtractSchemaComm
   ]
 
   static override flags = {
+    'config-path': Flags.string({
+      description: 'Path to the Sanity Studio config file',
+      helpValue: '<path>',
+    }),
     'enforce-required-fields': Flags.boolean({
       description: 'Makes the schema generated treat fields marked as required as non-optional',
     }),
@@ -63,11 +69,16 @@ export class ExtractSchemaCommand extends SanityCommand<typeof ExtractSchemaComm
 
   static override hiddenAliases: string[] = ['schema:extract']
 
+  static telemetry = defineCommandTelemetry(this.flags, {redact: ['config-path']})
+
   public async run(): Promise<{close?: () => Promise<void>} | void> {
     const {flags} = await this.parse(ExtractSchemaCommand)
-    const projectRoot = await this.getProjectRoot()
+    const configPath = flags['config-path'] && resolve(flags['config-path'])
+    const projectRoot = configPath
+      ? {directory: dirname(configPath), path: configPath, type: 'studio' as const}
+      : await this.getProjectRoot()
 
-    const {schemaExtraction} = await this.getCliConfig()
+    const {schemaExtraction} = await getCliConfig(projectRoot.directory)
     const extractOptions = getExtractOptions({
       flags,
       projectRoot,
