@@ -1,23 +1,14 @@
 type Module = Record<string, unknown>
 
-interface ImportShim {
-  (specifier: string, parentUrl: string): Promise<Module>
-  addImportMap: (importMap: {scopes: Record<string, Record<string, string>>}) => void
-}
-
-interface Instance {
-  source: (
-    path: string,
-    fetchOpts: RequestInit,
-  ) => Promise<{source: string; type: 'js'; url?: string}>
-  vendorModules: Record<string, Module>
-}
-
-// Installed by Workbench: es-module-shims routes each `<page origin>/~<id>/` request to `instances.get(id).source`.
-interface Host {
-  instances: Map<string, Instance>
-  loadImportShim: () => Promise<ImportShim>
-}
+// Workbench's `load`, contract version 2: it loads the app's imports as the app's own copy, with its
+// app ID, and returns undefined for an app it didn't prepare.
+type Load = (
+  appId: string,
+  request: {
+    imports: Record<string, string>
+    source: (url: string) => Promise<{code: string; url: string}>
+  },
+) => Promise<((specifier: string) => Promise<Module>) | undefined>
 
 interface AutoUpdatesLoaderOptions {
   appId: string
@@ -27,9 +18,9 @@ interface AutoUpdatesLoaderOptions {
   vendor: Record<string, () => Promise<Module>>
 }
 
-const HOST_KEY = 'sanity.autoUpdates.host.v1'
-// Path prefix of vendor modules; module CDN paths start with a host name instead.
-const VENDOR_PATH = 'vendor/'
+const VENDOR_KEY = 'sanity.autoUpdates.vendor'
+// `.invalid` never resolves, so these URLs only ever reach `source`.
+const VENDOR_ORIGIN = 'https://vendor.invalid/'
 const TIMESTAMP = /\/t\d+(?=\/|$)/
 
 // Loads the app's auto-updated packages from the module CDN as its own instance; if any fails,
@@ -71,12 +62,10 @@ export function createAutoUpdatesLoader({
     if (typeof document === 'undefined') return false
 
     try {
-      const importInInstance = await createInstance({appId, imports: currentImports, vendor})
+      const importModule = await loadInWorkbench({appId, imports: currentImports, vendor})
       // All or nothing: one bundled package would pull in bundled copies of the others.
       const loaded = await Promise.all(
-        specifiers.map(
-          async (specifier) => [specifier, await importInInstance(specifier)] as const,
-        ),
+        specifiers.map(async (specifier) => [specifier, await importModule(specifier)] as const),
       )
       for (const [specifier, module] of loaded) modules.set(specifier, module)
     } catch (error) {
@@ -99,66 +88,49 @@ export function createAutoUpdatesLoader({
   }
 }
 
-// Maps the app's imports and vendor modules under `<page origin>/~<instance>/`, so its modules
-// get URLs, module state and an app ID of their own.
-async function createInstance({
+async function loadInWorkbench({
   appId,
   imports,
   vendor,
 }: Pick<AutoUpdatesLoaderOptions, 'appId' | 'imports' | 'vendor'>) {
-  const host = (globalThis as {[key: symbol]: Host | undefined})[Symbol.for(HOST_KEY)]
-  if (!host) throw new Error('This Workbench does not load auto-updating apps')
+  const workbench = (globalThis as {[key: symbol]: {versions?: Record<number, Load>} | undefined})[
+    Symbol.for('sanity.autoUpdates')
+  ]
+  const load = workbench?.versions?.[2]
+  if (!load) throw new Error('This Workbench does not load auto-updating apps')
 
-  const importShim = await host.loadImportShim()
-  const id = `i${host.instances.size}`
-  const prefix = `${location.origin}/~${id}/`
-  const instance: Instance = {
-    async source(path, fetchOpts) {
-      if (path.startsWith(VENDOR_PATH)) {
-        const specifier = path.slice(VENDOR_PATH.length)
-        instance.vendorModules[specifier] = await vendor[specifier]()
+  const vendorModules: Record<string, Module> = {}
+  const registry = ((globalThis as {[key: symbol]: unknown})[Symbol.for(VENDOR_KEY)] ??= new Map())
+  ;(registry as Map<string, Record<string, Module>>).set(appId, vendorModules)
+  const importModule = await load(appId, {
+    imports: {
+      ...imports,
+      ...Object.fromEntries(
+        Object.keys(vendor).map((specifier) => [specifier, VENDOR_ORIGIN + specifier]),
+      ),
+    },
+    async source(url) {
+      if (url.startsWith(VENDOR_ORIGIN)) {
+        const specifier = url.slice(VENDOR_ORIGIN.length)
+        vendorModules[specifier] = await vendor[specifier]()
 
-        return {source: reexport(id, specifier, instance.vendorModules[specifier]), type: 'js'}
+        return {code: reexport(appId, specifier, vendorModules[specifier]), url}
       }
 
-      const response = await fetch(`https://${path}`, fetchOpts)
+      const response = await fetch(url)
       if (!response.ok) throw new Error(`${response.url} responded with ${response.status}`)
 
-      return {
-        // Inlines the app ID like the app build's `define`, which never runs on module CDN code.
-        source: (await response.text()).replaceAll(
-          /(?<![\w$.])__SANITY_APP_ID__(?![\w$])/g,
-          JSON.stringify(appId),
-        ),
-        type: 'js',
-        url: prefix + response.url.replace(/^https?:\/\//, ''),
-      }
-    },
-    vendorModules: {},
-  }
-  host.instances.set(id, instance)
-  importShim.addImportMap({
-    scopes: {
-      [prefix]: {
-        ...Object.fromEntries(
-          Object.entries(imports).map(([specifier, url]) => [
-            specifier,
-            prefix + url.replace(/^https?:\/\//, ''),
-          ]),
-        ),
-        ...Object.fromEntries(
-          Object.keys(vendor).map((specifier) => [specifier, prefix + VENDOR_PATH + specifier]),
-        ),
-      },
+      return {code: await response.text(), url: response.url}
     },
   })
+  if (!importModule) throw new Error(`Workbench did not prepare ${appId} for auto-updates`)
 
-  return (specifier: string) => importShim(specifier, prefix)
+  return importModule
 }
 
-function reexport(id: string, specifier: string, module: Module): string {
+function reexport(appId: string, specifier: string, module: Module): string {
   const names = Object.keys(module).filter((name) => name !== 'default')
-  return `const m = globalThis[Symbol.for(${JSON.stringify(HOST_KEY)})].instances.get(${JSON.stringify(id)}).vendorModules[${JSON.stringify(specifier)}]
+  return `const m = globalThis[Symbol.for(${JSON.stringify(VENDOR_KEY)})].get(${JSON.stringify(appId)})[${JSON.stringify(specifier)}]
 ${'default' in module ? 'export default m.default\n' : ''}${names.map((name, index) => `const e${index} = m[${JSON.stringify(name)}]`).join('\n')}
 export {${names.map((name, index) => `e${index} as ${JSON.stringify(name)}`).join(', ')}}
 `
