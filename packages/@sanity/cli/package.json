@@ -140,7 +140,7 @@
     "tar": "catalog:",
     "tar-stream": "^3.2.0",
     "tinyglobby": "catalog:",
-    "typeid-js": "^1.2.0",
+    "uuid": "^14.0.2",
     "valibot": "^1.4.2",
     "vite": "catalog:",
     "which": "^6.0.1",
