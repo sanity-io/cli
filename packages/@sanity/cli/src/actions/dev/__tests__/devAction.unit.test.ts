@@ -60,11 +60,10 @@ describe('devAction', () => {
       const watcherHandle = {close: vi.fn().mockResolvedValue(undefined)}
       mockWatchForWorkbenchOptIn.mockReturnValue(watcherHandle)
 
-      const result = await devAction(createBaseDevOptions())
+      const options = createBaseDevOptions()
+      const result = await devAction(options)
 
-      expect(mockStartStudioDevServer).toHaveBeenCalledWith(
-        expect.objectContaining({announceUrl: true}),
-      )
+      expect(mockStartStudioDevServer).toHaveBeenCalledWith(options)
       expect(mockStartWorkbenchDev).not.toHaveBeenCalled()
       expect(mockWatchForWorkbenchOptIn).toHaveBeenCalledWith(
         expect.objectContaining({closePlainServer: plain.close, workDir: '/tmp/sanity-project'}),

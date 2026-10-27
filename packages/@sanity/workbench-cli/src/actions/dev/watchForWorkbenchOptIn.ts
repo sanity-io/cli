@@ -31,8 +31,6 @@ export function watchForWorkbenchOptIn({
   workDir,
 }: WatchForWorkbenchOptInOptions): {close: () => Promise<void>} {
   let closeCurrent = closePlainServer
-  let handover: Promise<void> | undefined
-  let closed = false
 
   const watcher = watchCliConfig({
     dir: workDir,
@@ -42,27 +40,22 @@ export function watchForWorkbenchOptIn({
       const cliConfig = await getCliConfigUncached(workDir).catch((err) => {
         devDebug('Could not load CLI config while watching for the workbench opt-in: %O', err)
       })
-      if (closed || !cliConfig) return
+      if (!cliConfig) return
       if (!isWorkbenchApp(cliConfig.app) && !isWorkbenchConfig(cliConfig.app)) return
 
       output.log(`${filename} changed, restarting dev server`)
-      handover = (async () => {
+
+      try {
         await closeCurrent()
         closeCurrent = noop
         const workbench = await startWorkbench(cliConfig)
         closeCurrent = workbench.close
-      })()
-
-      try {
-        await handover
         watcher.close()
       } catch (err) {
         output.warn(
           `Failed to start dev server: ${err instanceof Error ? err.message : String(err)}`,
         )
         output.log(`No dev server is running. Save ${filename} to try again.`)
-      } finally {
-        handover = undefined
       }
     },
     onError: (err) => devDebug('CLI config watcher error: %O', err),
@@ -70,10 +63,7 @@ export function watchForWorkbenchOptIn({
 
   return {
     close: async () => {
-      closed = true
       watcher.close()
-      // A handover in flight still assigns its close; wait so it isn't orphaned.
-      await handover?.catch(() => {})
       await closeCurrent()
     },
   }

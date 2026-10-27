@@ -40,15 +40,6 @@ function setup() {
   return {closePlainServer, closeWorkbench, output, startWorkbench, watcher}
 }
 
-function deferred<T>() {
-  let settle: ((value: T) => void) | undefined
-  const promise = new Promise<T>((resolve) => {
-    settle = resolve
-  })
-
-  return {promise, resolve: (value: T) => settle?.(value)}
-}
-
 async function saveCliConfig(filename = 'sanity.cli.ts') {
   fakeWatcher.emitChange(filename)
   await vi.advanceTimersByTimeAsync(300)
@@ -129,33 +120,5 @@ describe('watchForWorkbenchOptIn', () => {
     expect(startWorkbench).toHaveBeenCalledTimes(2)
     expect(closePlainServer).toHaveBeenCalledTimes(1)
     expect(fakeWatcher.closed).toBe(true)
-  })
-
-  test('closing while the config loads does not start the workbench', async () => {
-    const {closePlainServer, startWorkbench, watcher} = setup()
-    const config = deferred<CliConfig>()
-    mockGetCliConfigUncached.mockReturnValue(config.promise)
-
-    await saveCliConfig()
-    await watcher.close()
-    config.resolve(workbenchCliConfig())
-    await vi.advanceTimersByTimeAsync(0)
-
-    expect(startWorkbench).not.toHaveBeenCalled()
-    expect(closePlainServer).toHaveBeenCalledTimes(1)
-  })
-
-  test('closing mid-handover still closes the workbench once it starts', async () => {
-    const {closeWorkbench, startWorkbench, watcher} = setup()
-    mockGetCliConfigUncached.mockResolvedValue(workbenchCliConfig())
-    const start = deferred<{close: () => Promise<void>}>()
-    startWorkbench.mockReturnValue(start.promise)
-
-    await saveCliConfig()
-    const closing = watcher.close()
-    start.resolve({close: closeWorkbench})
-    await closing
-
-    expect(closeWorkbench).toHaveBeenCalledTimes(1)
   })
 })

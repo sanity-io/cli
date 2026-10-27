@@ -1,6 +1,5 @@
 import {SANITY_CACHE_DIR} from '@sanity/cli-build/_internal/build'
 import {extractCoreAppManifest} from '@sanity/cli-build/_internal/manifest'
-import {type CliConfig} from '@sanity/cli-core'
 import {isWorkbenchApp, isWorkbenchConfig} from '@sanity/workbench-cli'
 import {startWorkbenchDev, watchForWorkbenchOptIn} from '@sanity/workbench-cli/dev'
 
@@ -32,8 +31,7 @@ export async function devAction(options: DevActionOptions): Promise<{close: () =
   }
 
   // Plain non-workbench studio/app: one dev server announcing its own URL.
-  const {httpPort} = getServerConfig(options)
-  const result = await startAppServer(options, {announceUrl: true, cliConfig, httpPort})
+  const result = await (options.isApp ? startAppDevServer : startStudioDevServer)(options)
   if (!result.started) return {close: noop}
 
   return watchForWorkbenchOptIn({
@@ -45,21 +43,13 @@ export async function devAction(options: DevActionOptions): Promise<{close: () =
   })
 }
 
-/** The app/studio server; `announceUrl` is false when the workbench announces the URL on its behalf. */
-function startAppServer(
-  options: DevActionOptions,
-  params: {announceUrl: boolean; cliConfig: CliConfig; httpPort: number},
-) {
-  return (options.isApp ? startAppDevServer : startStudioDevServer)({...options, ...params})
-}
-
-function getServerConfig({cliConfig, flags, workDir}: DevActionOptions) {
-  return getSharedServerConfig({cliConfig, flags: {host: flags.host, port: flags.port}, workDir})
-}
-
 function startWorkbench(options: DevActionOptions): Promise<{close: () => Promise<void>}> {
-  const {cliConfig, isApp, output, workDir} = options
-  const {httpHost, httpPort} = getServerConfig(options)
+  const {cliConfig, flags, isApp, output, workDir} = options
+  const {httpHost, httpPort} = getSharedServerConfig({
+    cliConfig,
+    flags: {host: flags.host, port: flags.port},
+    workDir,
+  })
 
   return startWorkbenchDev({
     cacheDir: `${SANITY_CACHE_DIR}/vite`,
@@ -74,7 +64,8 @@ function startWorkbench(options: DevActionOptions): Promise<{close: () => Promis
     output,
     // Runtime template needs a concrete boolean; collapse an unset config to off.
     reactStrictMode: resolveReactStrictMode(cliConfig) ?? false,
-    startAppServer: (params) => startAppServer(options, params),
+    startAppServer: (params) =>
+      (isApp ? startAppDevServer : startStudioDevServer)({...options, ...params}),
     workDir,
   })
 }
