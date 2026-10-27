@@ -36,7 +36,7 @@ const sourceOf = () => load.mock.calls[0][1].source
 
 beforeEach(() => {
   vi.useFakeTimers({now: NOW * 1000, toFake: ['Date']})
-  Object.assign(globalThis, {[KEY]: {versions: {2: load}}})
+  Object.assign(globalThis, {[KEY]: {versions: {1: load}}})
   vi.spyOn(console, 'warn').mockImplementation(() => {})
 })
 
@@ -102,8 +102,8 @@ test('uses the bundled copy of every package when one fails to load', async () =
 })
 
 test.each([
-  {versions: undefined, when: 'Workbench offers no contract version 2'},
-  {versions: {2: async () => undefined}, when: "Workbench didn't prepare the app"},
+  {versions: undefined, when: 'Workbench offers no contract version 1'},
+  {versions: {1: async () => undefined}, when: "Workbench didn't prepare the app"},
 ])('uses the bundled copy when $when', async ({versions}) => {
   Object.assign(globalThis, {[KEY]: versions && {versions}})
 

@@ -1,6 +1,6 @@
 type Module = Record<string, unknown>
 
-// Workbench's `load`, contract version 2: it loads the app's imports as the app's own copy, with its
+// Workbench's `load`, contract version 1: it loads the app's imports as the app's own copy, with its
 // app ID, and returns undefined for an app it didn't prepare.
 type Load = (
   appId: string,
@@ -96,7 +96,7 @@ async function loadInWorkbench({
   const workbench = (globalThis as {[key: symbol]: {versions?: Record<number, Load>} | undefined})[
     Symbol.for('sanity.autoUpdates')
   ]
-  const load = workbench?.versions?.[2]
+  const load = workbench?.versions?.[1]
   if (!load) throw new Error('This Workbench does not load auto-updating apps')
 
   const vendorModules: Record<string, Module> = {}
