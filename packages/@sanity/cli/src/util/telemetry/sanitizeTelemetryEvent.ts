@@ -30,7 +30,9 @@ const version = matching(/^v?\d{1,4}\.\d{1,4}\.\d{1,4}$/)
 const cliProjectId = (value: unknown): string | undefined =>
   typeof value === 'string' && /^[a-z0-9]{8}$/.test(value) ? value : undefined
 const sessionId = matching(/^session_[0-7][0-9a-hjkmnp-tv-z]{25}$/)
-const traceId = matching(/^trace_[0-7][0-9a-hjkmnp-tv-z]{25}$/)
+const traceId = matching(
+  /^trace_(?:[0-7][0-9a-hjkmnp-tv-z]{25}|[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})$/,
+)
 const editor = oneOf(
   'Antigravity',
   'Claude Code',
@@ -114,7 +116,7 @@ const userProperties: Schema = {
 const initSteps: Record<string, Schema> = {
   configureAppProject: {selectedOption: oneOf('create', 'existing', 'skip')},
   createOrSelectDataset: {
-    selectedOption: oneOf('create', 'none', 'select'),
+    selectedOption: oneOf('create', 'none', 'select', 'skip'),
     visibility: oneOf('public', 'private'),
   },
   createOrSelectProject: {

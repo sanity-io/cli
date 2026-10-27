@@ -353,11 +353,14 @@ describe('setupTelemetry integration test', () => {
           groupOrCommand: id.split(':')[0],
         }
         let telemetryFile = ''
+        let persistedTraceId: string | undefined
         await vi.waitFor(async () => {
           const files = await glob(normalizePath(join(telemetryPath, 'telemetry-*.ndjson')))
           expect(files).toHaveLength(1)
           telemetryFile = files[0]
           const events = await readNDJSON<TelemetryEvent>(telemetryFile)
+          persistedTraceId = events.find((event) => event.type === 'trace.start')?.traceId
+          expect(persistedTraceId).toMatch(/^trace_[0-9a-f-]{36}$/)
           expect(events).toContainEqual(
             expect.objectContaining({
               context: expect.objectContaining(expectedContext),
@@ -369,6 +372,7 @@ describe('setupTelemetry integration test', () => {
             expect.objectContaining({
               context: expect.objectContaining(expectedContext),
               data: {message: 'CLI operation failed', name: 'TypeError'},
+              traceId: persistedTraceId,
               type: 'trace.error',
             }),
           )
@@ -407,6 +411,7 @@ describe('setupTelemetry integration test', () => {
         expect(sentEvents).toContainEqual(
           expect.objectContaining({
             context: expect.objectContaining(expectedContext),
+            traceId: persistedTraceId,
             type: 'trace.start',
           }),
         )
@@ -415,7 +420,11 @@ describe('setupTelemetry integration test', () => {
             context: {commandArguments: [], extraArguments: ['--token'], groupOrCommand: 'deploy'},
             data: {message: 'CLI operation failed', name: 'Error'},
             sessionId: 'session_01h3s55cezeqby0hf79brgdqj0',
+            traceId: legacyEvent.traceId,
           }),
+        )
+        expect(sentEvents).toContainEqual(
+          expect.objectContaining({traceId: persistedTraceId, type: 'trace.error'}),
         )
         expect(JSON.stringify(sentEvents)).not.toContain(secret)
         expect(JSON.stringify(sentEvents)).not.toContain('private')

@@ -155,6 +155,45 @@ describe('CLI intake sanitation', () => {
 })
 
 describe('approved CLI payloads', () => {
+  test.each(['trace_01h3s55cezeqby0hf79brgdqj0', 'trace_83c14f34-034b-4b53-8f86-e8be38596ecb'])(
+    'preserves trace correlation for %s across lifecycle events',
+    (traceId) => {
+      for (const type of ['trace.start', 'trace.log', 'trace.complete', 'trace.error']) {
+        const result = sanitizeTelemetryEvent(event({traceId, type}))
+        expect(result).toHaveProperty('traceId', traceId)
+        expect(sanitizeTelemetryEvent(result)).toHaveProperty('traceId', traceId)
+      }
+    },
+  )
+
+  test.each([
+    'trace_private@example.test',
+    'trace_83c14f34-034b-4b53-8f86-e8be38596ecb-private',
+    'trace_83c14f34-034b-4b53-0f86-e8be38596ecb',
+    'trace_83c14f34-034b-5b53-8f86-e8be38596ecb',
+  ])('omits unrecognized trace IDs: %s', (traceId) => {
+    expect(sanitizeTelemetryEvent(event({traceId}))).not.toHaveProperty('traceId')
+  })
+
+  test.each([1, 2])('preserves the init dataset skip choice for event version %s', (version) => {
+    const result = sanitizeTelemetryEvent(
+      event({
+        data: {
+          datasetName: 'private-dataset',
+          selectedOption: 'skip',
+          step: 'createOrSelectDataset',
+        },
+        name: 'CLI Init Step Completed',
+        version,
+      }),
+    )
+    expect(result).toMatchObject({
+      data: {selectedOption: 'skip', step: 'createOrSelectDataset'},
+    })
+    expect(JSON.stringify(result)).not.toContain('private-dataset')
+    expect(sanitizeTelemetryEvent(result)).toEqual(result)
+  })
+
   test('omits unknown keys, unbounded values, and unknown event names at every level', () => {
     const privateValue = 'ordinary-private-value-without-a-token-prefix'
     const result = sanitizeTelemetryEvent(
