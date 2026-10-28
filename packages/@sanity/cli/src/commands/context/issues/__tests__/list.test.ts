@@ -82,15 +82,7 @@ describe('context issues list', () => {
   })
 
   test('accepts every issue kind the client defines as a --kind value', () => {
-    expect(ListIssuesCommand.flags.kind.options).toEqual([
-      'add_entry',
-      'conflict',
-      'gap',
-      'merge_entry',
-      'remove_entry',
-      'split_entry',
-      'update_required',
-    ])
+    expect(ListIssuesCommand.flags.kind.options).toEqual(['conflict', 'update_required'])
   })
 
   test.each([

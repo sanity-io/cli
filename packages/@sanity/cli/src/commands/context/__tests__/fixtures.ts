@@ -56,6 +56,8 @@ export const succeededJob: Context.Job = {
   completedAt: '2026-08-01T01:00:00.000Z',
   error: null,
   id: 'job-def456',
+  kind: 'sync',
+  knowledgeBaseId: 'kb-abc123',
   startedAt: '2026-08-01T00:00:00.000Z',
   status: 'succeeded',
 }
@@ -113,8 +115,14 @@ export const entry: Context.EntryDoc = {
     {
       _key: 'citation-1',
       _type: 'sanity.context.citation',
-      filename: 'refunds.md',
+      claims: ['Refunds are processed within 10 days.'],
+      lineEnd: 1,
+      lineStart: 1,
+      prefix: '',
+      quote: 'Refunds are processed within 10 days.',
       sourceId: 'source-def456',
+      suffix: '',
+      title: 'refunds.md',
     },
   ],
   generatedAt: '2026-08-01T01:00:00Z',
@@ -122,6 +130,7 @@ export const entry: Context.EntryDoc = {
   path: 'billing/refunds',
   revisionId: 'revision-1',
   schemaVersion: 1,
+  sourceIds: ['source-def456'],
   status: 'filled',
   title: 'Refunds',
   tldr: {
