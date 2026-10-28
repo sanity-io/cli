@@ -20,7 +20,6 @@ interface AutoUpdatesLoaderOptions {
   vendor: Record<string, () => Promise<Module>>
 }
 
-// The segment after `by-app/<appId>` or `default/<range>`, so an app ID like `t1` stays.
 const TIMESTAMP = /(\/(?:by-app|default)\/[^/]+)\/t\d+/
 
 // Loads the app's auto-updated packages from the module server as its own copy.
@@ -62,7 +61,6 @@ export function createAutoUpdatesLoader({
     const workbench = (
       globalThis as {[key: symbol]: {versions?: Record<number, Load>} | undefined}
     )[Symbol.for('sanity.autoUpdates')]
-    // A Workbench without contract version 1, or one that doesn't run this app as auto-updating, gets the bundled copy.
     const result = await workbench?.versions?.[1]?.(appId, {
       imports: currentImports,
       specifiers,
