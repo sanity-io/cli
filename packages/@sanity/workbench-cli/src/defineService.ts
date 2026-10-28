@@ -86,7 +86,10 @@ export interface DefinedService<TType extends ServiceType = ServiceType> {
  * new value of a state topic, or on each event of an event topic, until its
  * `signal` aborts. A refused, unanswered or timed-out `emit` or `query` rejects
  * with an `Error` named `MessageBusError` whose `code` says why; it is not an
- * instance of the SDK's `MessageBusError` class.
+ * instance of the SDK's `MessageBusError` class. When the Dashboard's refusal
+ * says how to fix it, the error also carries `fix` and `docsUrl`. A refused
+ * `subscribe` has no error: its handler never runs, and the Dashboard reports
+ * the refusal in the browser console.
  *
  * An event handler answers the sender with `message.reply(value)` or refuses
  * with `message.reject(reason)`; one that throws refuses with code
