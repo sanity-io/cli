@@ -117,6 +117,12 @@ export const mcpPolicy: CommandPolicySet = {
   // See context:build — --watch has no deadline and would hang the MCP tool call.
   'context:jobs:get': conditionalDenyFlags('watch'),
   'context:list': allow,
+  'context:mcp:create': allow,
+  'context:mcp:delete': allow,
+  'context:mcp:get': allow,
+  'context:mcp:list': allow,
+  'context:mcp:status': allow,
+  'context:mcp:update': allow,
   'context:query': allow,
   'context:refresh': allow,
   'context:update': allow,

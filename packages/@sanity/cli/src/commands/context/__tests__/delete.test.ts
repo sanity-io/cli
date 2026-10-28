@@ -121,11 +121,11 @@ describe('context delete', () => {
         'x-sanity-scope-type': 'organization',
       },
       query: {id: knowledgeBase.publicId, type: 'sanity.context.knowledge-base'},
-      uri: '/blueprints/resources/search',
+      url: '/blueprints/resources/search',
     })
     expect(mockRequest).toHaveBeenNthCalledWith(
       2,
-      expect.objectContaining({uri: '/blueprints/stacks/ST-1'}),
+      expect.objectContaining({url: '/blueprints/stacks/ST-1'}),
     )
   })
 

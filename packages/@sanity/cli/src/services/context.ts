@@ -4,6 +4,8 @@ import {type Context, EXPERIMENTAL_API_WARNING, isHttpError} from '@sanity/clien
 const CONTEXT_API_VERSION = 'v2026-08-25'
 const BLUEPRINTS_API_VERSION = 'vX'
 const BLUEPRINTS_LOOKUP_TIMEOUT_MS = 5000
+// The version in the URLs the Context API returns for agents to connect to MCP endpoints
+const MCP_CONNECT_API_VERSION = 'v2026-11-10'
 
 const blueprintOwnershipDebug = subdebug('context:blueprint-ownership')
 
@@ -90,15 +92,43 @@ export async function updateKnowledgeBase(
 export type BlueprintOwnership = {managed: false} | {managed: true; stackName: string | null}
 
 /**
- * Whether a live blueprint stack manages the knowledge base, from the
- * Blueprints resource search. Fails open: a failed lookup answers not managed,
- * so a Blueprints outage never blocks a command.
+ * Whether a live blueprint stack manages the knowledge base
  */
-export async function getKnowledgeBaseBlueprintOwnership(
+export function getKnowledgeBaseBlueprintOwnership(
   knowledgeBaseId: string,
 ): Promise<BlueprintOwnership> {
-  try {
+  return getBlueprintOwnership('sanity.context.knowledge-base', async () => {
     const {organizationId, publicId} = await getKnowledgeBase(knowledgeBaseId)
+    return {organizationId, publicId}
+  })
+}
+
+/**
+ * Whether a live blueprint stack manages the MCP endpoint
+ */
+export function getMcpEndpointBlueprintOwnership(
+  organizationId: string,
+  name: string,
+): Promise<BlueprintOwnership> {
+  return getBlueprintOwnership('sanity.context.mcp', async () => {
+    const endpoint = await getMcpEndpoint(organizationId, name)
+    return endpoint && {organizationId, publicId: endpoint.publicId}
+  })
+}
+
+/**
+ * Looks the resource up in the Blueprints resource search. Fails open: a
+ * failed lookup answers not managed, so a Blueprints outage never blocks a
+ * command. A resource that doesn't exist isn't managed either.
+ */
+async function getBlueprintOwnership(
+  type: string,
+  resolveResource: () => Promise<{organizationId: string; publicId: string} | null>,
+): Promise<BlueprintOwnership> {
+  try {
+    const resource = await resolveResource()
+    if (!resource) return {managed: false}
+    const {organizationId, publicId} = resource
     const client = await getGlobalCliClient({
       apiVersion: BLUEPRINTS_API_VERSION,
       // The Blueprints API has no stable version yet, and the warning would interrupt command output.
@@ -115,15 +145,15 @@ export async function getKnowledgeBaseBlueprintOwnership(
     }
     const matches = await client.request<{stackId?: string}[]>({
       headers,
-      query: {id: publicId, type: 'sanity.context.knowledge-base'},
-      uri: '/blueprints/resources/search',
+      query: {id: publicId, type},
+      url: '/blueprints/resources/search',
     })
     const stackId = matches.find((match) => typeof match.stackId === 'string')?.stackId
     if (!stackId) return {managed: false}
     const stackName = await client
       .request<{name?: string}>({
         headers,
-        uri: `/blueprints/stacks/${encodeURIComponent(stackId)}`,
+        url: `/blueprints/stacks/${encodeURIComponent(stackId)}`,
       })
       .then((stack) => stack.name ?? null)
       .catch(() => null)
@@ -359,4 +389,87 @@ export async function queryContext(
 ): Promise<unknown> {
   const client = await getContextClient(undefined, organizationId)
   return client.context.fetch(query, params)
+}
+
+/**
+ * An MCP endpoint's stored configuration, with the URL agents connect to
+ */
+export type McpEndpointConfig = Context.McpDoc & {url: string}
+
+/**
+ * List an organization's MCP endpoints, oldest first
+ */
+export async function listMcpEndpoints(organizationId: string): Promise<McpEndpointConfig[]> {
+  const client = await getContextClient(undefined, organizationId)
+  const endpoints = await client.context.mcpEndpoints.list()
+  return endpoints.map((endpoint) => ({...endpoint, url: mcpEndpointUrl(client, endpoint)}))
+}
+
+/**
+ * Get an MCP endpoint by name, or `null` when the organization has none by that name
+ */
+export async function getMcpEndpoint(
+  organizationId: string,
+  name: string,
+): Promise<McpEndpointConfig | null> {
+  const client = await getContextClient(undefined, organizationId)
+  const endpoint = await client.context.mcpEndpoints.get({name})
+  return endpoint && {...endpoint, url: mcpEndpointUrl(client, endpoint)}
+}
+
+/**
+ * The stored configuration doesn't carry the URL that create and edit return,
+ * so it is built from the same route and API version.
+ */
+function mcpEndpointUrl(
+  client: Awaited<ReturnType<typeof getContextClient>>,
+  {name, organizationId}: Context.McpDoc,
+): string {
+  return client
+    .withConfig({apiVersion: MCP_CONNECT_API_VERSION})
+    .getUrl(
+      `/context/organizations/${encodeURIComponent(organizationId)}/mcp/${encodeURIComponent(name)}`,
+    )
+}
+
+/**
+ * Create an MCP endpoint
+ */
+export async function createMcpEndpoint(
+  organizationId: string,
+  params: Context.CreateMcpEndpointParams,
+): Promise<Context.McpEndpoint> {
+  const client = await getContextClient(undefined, organizationId)
+  return client.context.mcpEndpoints.create(params)
+}
+
+/**
+ * Update an MCP endpoint's configuration
+ */
+export async function updateMcpEndpoint(
+  organizationId: string,
+  name: string,
+  params: Context.EditMcpEndpointParams,
+): Promise<Context.McpEndpoint> {
+  const client = await getContextClient(undefined, organizationId)
+  return client.context.mcpEndpoints.edit({...params, name})
+}
+
+/**
+ * Delete an MCP endpoint
+ */
+export async function deleteMcpEndpoint(organizationId: string, name: string): Promise<void> {
+  const client = await getContextClient(undefined, organizationId)
+  await client.context.mcpEndpoints.delete({name})
+}
+
+/**
+ * Check whether an agent connecting with the current credentials can use an MCP endpoint
+ */
+export async function getMcpEndpointStatus(
+  organizationId: string,
+  name: string,
+): Promise<Context.McpEndpointStatus> {
+  const client = await getContextClient(undefined, organizationId)
+  return client.context.mcpEndpoints.status({name})
 }
