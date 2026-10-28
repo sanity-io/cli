@@ -23,9 +23,16 @@ type Answer =
   | {error: {code: 'HANDLER_THREW' | 'REFUSED'; message: string}; ok: false}
   | {ok: true; value: unknown}
 
+// What a host refusal can carry besides its code and message, such as the fix
+// and docs link for one of the Dashboard's coded errors.
+interface RefusalDetails {
+  docsUrl?: string
+  fix?: string
+}
+
 type HostMessage =
   | {
-      error: {code: MessageBusErrorCode; message: string}
+      error: RefusalDetails & {code: MessageBusErrorCode; message: string}
       id: number
       kind: 'workbench.bus.reply'
       ok: false
@@ -44,8 +51,13 @@ type HostMessage =
 
 // Mirrors the SDK's MessageBusError: importing the class would pull the SDK
 // runtime into the worker bundle.
-const busError = (code: MessageBusErrorCode, message?: string): Error =>
-  Object.assign(new Error(message || code), {code, name: 'MessageBusError'})
+const busError = (code: MessageBusErrorCode, message?: string, details?: RefusalDetails): Error =>
+  Object.assign(new Error(message || code), {
+    code,
+    docsUrl: details?.docsUrl,
+    fix: details?.fix,
+    name: 'MessageBusError',
+  })
 
 /**
  * The worker's side of the `workbench.bus.*` wire contract. The host relays
@@ -232,14 +244,12 @@ export function createWorkerBus(): {
             settle?.({ok: true, value: message.value})
             return
           }
-          // A refused subscription has no promise to reject, so tell the author through the host logger.
-          if (subscriptions.delete(message.id)) {
-            // eslint-disable-next-line no-console -- the worker's console is bridged to the host logger
-            console.error(
-              `Message bus subscription refused: ${message.error.code}: ${message.error.message}`,
-            )
-          }
-          settle?.({error: busError(message.error.code, message.error.message), ok: false})
+          // A refused subscription has no promise to reject. The Dashboard prints the refusal.
+          subscriptions.delete(message.id)
+          settle?.({
+            error: busError(message.error.code, message.error.message, message.error),
+            ok: false,
+          })
           return
         }
         case 'workbench.bus.value': {

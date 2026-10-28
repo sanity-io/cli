@@ -319,6 +319,28 @@ export const apiRoutes: ApiRouteEntry[] = [
     title: 'Media Library API reference'
   },
   {
+    defaultApiVersion: 'v2025-09-09',
+    host: 'project',
+    pathPatterns: [
+      'media-libraries/{libraryId}/from-url',
+      'media-libraries/{libraryId}/mutate',
+      'media-libraries/{libraryId}/query',
+      'media-libraries/{libraryId}/references/documents/{assetId}/to',
+      'media-libraries/{libraryId}/refsearch',
+      'media-libraries/{libraryId}/signing-keys',
+      'media-libraries/{libraryId}/signing-keys/{keyId}',
+      'media-libraries/{libraryId}/upload',
+      'media-libraries/{libraryId}/video/{videoId}/playback-info',
+      'media-libraries/{libraryId}/video/{videoId}/playback/{type}',
+      'media-libraries/{libraryId}/video/{videoId}/renditions/{name}',
+      'media-libraries/{libraryId}/video/{videoId}/subtitles',
+      'media-libraries/{libraryId}/video/{videoId}/subtitles/upload',
+      'media-libraries/{libraryId}/video/{videoId}/subtitles/{subtitleId}'
+    ],
+    slug: 'media-library',
+    title: 'Media Library API reference'
+  },
+  {
     defaultApiVersion: 'v2025-02-19',
     host: 'project',
     pathPatterns: [

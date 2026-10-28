@@ -80,6 +80,7 @@ describe('#build studio', {timeout: (platform() === 'win32' ? 120 : 60) * 1000},
     const files = await readdir(outputFolder)
     expect(files).toContain('index.html')
     expect(files).toContain('static')
+    await expectAutoUpdatingPage(outputFolder)
 
     // The resource-bindings module is emitted only for Blueprints builds (via
     // `@sanity/runtime-cli`), so a plain `sanity build` never produces it.
@@ -96,7 +97,7 @@ describe('#build studio', {timeout: (platform() === 'win32' ? 120 : 60) * 1000},
   // It's a test-harness limitation (real `sanity build` runs as its own process);
   // the federation-artifact shape is platform-independent, so Linux coverage suffices.
   test.skipIf(platform() === 'win32')(
-    'should build the "federated-studio" with standalone SPA and federation artifacts',
+    'builds the "federated-studio" with auto-updates on the standalone page and the Workbench remote',
     async () => {
       const cwd = await testFixture('federated-studio')
       process.chdir(cwd)
@@ -107,11 +108,12 @@ describe('#build studio', {timeout: (platform() === 'win32' ? 120 : 60) * 1000},
       // Opt out of that guard for this in-process build.
       vi.stubEnv('MFE_VITE_NO_TEST_ENV_CHECK', 'true')
 
-      const {error, stderr} = await testCommand(BuildCommand, ['--yes'], {
+      const {error, stderr, stdout} = await testCommand(BuildCommand, ['--yes'], {
         config: {root: cwd},
       })
 
       if (error) throw error
+      expect(stdout).toContain('Building with auto-updates enabled')
       expect(stderr).toContain('✔ Build Sanity Studio')
 
       const distFiles = await readdir(join(cwd, 'dist'))
@@ -120,8 +122,7 @@ describe('#build studio', {timeout: (platform() === 'win32' ? 120 : 60) * 1000},
       // is emitted alongside the federation output so the studio loads both on
       // its own and embedded in the workbench.
       expect(distFiles).toContain('index.html')
-      expect((await readFile(join(cwd, 'dist', 'index.html'), 'utf8')).length).toBeGreaterThan(0)
-      expect(distFiles).not.toContain('vendor')
+      await expectAutoUpdatingPage(join(cwd, 'dist'))
 
       expect(distFiles).toContain('mf-manifest.json')
       const manifest = JSON.parse(await readFile(join(cwd, 'dist', 'mf-manifest.json'), 'utf8'))
@@ -140,6 +141,21 @@ describe('#build studio', {timeout: (platform() === 'win32' ? 120 : 60) * 1000},
       // The resource-bindings module is emitted only for Blueprints builds (via
       // `@sanity/runtime-cli`), so a plain federated `sanity build` omits it.
       expect(distFiles).not.toContain('sanity-resource-bindings.js')
+
+      // Inside Workbench, the remote loads `sanity` from the module CDN as this app; the
+      // installed copy (several MB) is only a lazy fallback.
+      const appChunks = manifest.exposes.find(({name}: {name: string}) => name === 'App').assets.js
+        .sync
+      const appCode = (
+        await Promise.all(
+          appChunks.map((file: string) => readFile(join(cwd, 'dist', file), 'utf8')),
+        )
+      ).join('\n')
+      const appId = await readFile(join(cwd, 'dist', 'sanity-app-id.txt'), 'utf8')
+      expect(appId).not.toBe('')
+      expect(appCode).toContain(appId)
+      expect(appCode).toContain('/v1/modules/')
+      expect(appCode.length).toBeLessThan(1_000_000)
 
       // The build output must satisfy the deploy gate: `sanity deploy` runs
       // `readBuiltManifest` (not the static-SPA check) and ships only if it finds
@@ -269,6 +285,18 @@ describe('#build studio', {timeout: (platform() === 'win32' ? 120 : 60) * 1000},
 })
 
 const CSS_MARKER = 'sanity-css-code-split-marker'
+
+async function expectAutoUpdatingPage(dist: string) {
+  const html = await readFile(join(dist, 'index.html'), 'utf8')
+  const {imports} = JSON.parse(
+    html.match(/<script type="application\/json" id="__imports">([^<]*)<\/script>/)?.[1] ?? '{}',
+  )
+  expect(imports.sanity).toContain('/v1/modules/')
+  await expect(readFile(join(dist, imports.react), 'utf8')).resolves.not.toBe('')
+  const entry = html.match(/<script src="(\/static\/sanity-[^"]+\.js)" type="module">/)?.[1]
+  expect(entry).toBeDefined()
+  expect(await readFile(join(dist, entry!), 'utf8')).toMatch(/from\s*["'`]sanity["'`]/)
+}
 
 async function studioWithLocalCss(): Promise<string> {
   const cwd = await testFixture('basic-studio')

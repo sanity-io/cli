@@ -27,10 +27,6 @@ export async function getOrCreateDataset(opts: {
   const {dataset, visibility} = opts
   let {defaultConfig} = opts
 
-  if (dataset && opts.unattended) {
-    return {datasetName: dataset, userAction: 'none'}
-  }
-
   const [datasets, projectFeatures] = await Promise.all([
     listDatasets(opts.projectId),
     getProjectFeatures(opts.projectId),
@@ -44,6 +40,7 @@ export async function getOrCreateDataset(opts: {
       await createDataset({
         datasetName: dataset,
         forcePublic: defaultConfig,
+        isUnattended: opts.unattended,
         output: opts.output,
         projectFeatures,
         projectId: opts.projectId,
@@ -51,7 +48,7 @@ export async function getOrCreateDataset(opts: {
       })
     }
 
-    return {datasetName: dataset, userAction: 'none'}
+    return {datasetName: dataset, userAction: existing ? 'none' : 'create'}
   }
 
   if (opts.unattended) {

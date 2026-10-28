@@ -14,7 +14,7 @@ export class List extends SanityCommand<typeof List> {
       description: 'List CORS origins for the project',
     },
     {
-      command: '<%= config.bin %> <%= command.id %> --project-id abc123',
+      command: '<%= config.bin %> <%= command.id %> --project abc123',
       description: 'List CORS origins for a specific project',
     },
   ]

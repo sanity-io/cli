@@ -9,7 +9,12 @@ import {deriveInterfaces} from '../../deriveInterfaces.js'
 import {resolveWorkbenchApp} from '../../resolveWorkbenchApp.js'
 import {createServerLifecycle, toDisplayHost} from '../../util/serverOrchestration.js'
 import {deriveConfigs} from '../dev/deriveConfigs.js'
-import {dashboardPath, type DevServerManifest, registerDevServer} from '../dev/registry.js'
+import {
+  dashboardPath,
+  type DevServerManifest,
+  localAppIdentity,
+  registerDevServer,
+} from '../dev/registry.js'
 import {startWorkbenchDevServer} from '../dev/startWorkbenchDevServer.js'
 import {serveBuiltApplication} from './serveBuiltApplication.js'
 
@@ -108,18 +113,17 @@ export async function startWorkbenchPreview(
     const id = inlinedId ?? (await buildAppId(workbench))
     const interfaces = deriveInterfaces(cliConfig.app, {isApp})
     const registration = registerDevServer({
+      applicationId: cliConfig.deployment?.appId,
       configs,
       host: remote.host,
       id,
       interfaces,
       manifest: await extractManifest({applicationId: id, configPath, workDir}),
       manifestUpdatedAt: new Date().toISOString(),
-      organizationId: workbench.organizationId,
       port: remote.port,
       projectId: cliConfig?.api?.projectId,
-      slug: workbench.slug,
+      ...localAppIdentity(workbench),
       type: isApp ? 'coreApp' : 'studio',
-      visibility: workbench.visibility ?? 'default',
       workDir,
     })
     closers.push(async () => registration.release())

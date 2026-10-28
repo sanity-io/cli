@@ -206,11 +206,15 @@ export async function buildApp(
   trace.start()
 
   let autoUpdates
-  if (autoUpdatesEnabled && !options.isWorkbenchApp) {
+  if (autoUpdatesEnabled && !isMediaLibraryConfigBuild) {
     autoUpdates = {
       cssUrls: autoUpdatesCssUrls,
       imports: autoUpdatesImports,
-      vendor: await resolveVendorBuildConfig({cwd: workDir, isApp: true}),
+      // Module server `sanity` imports `styled-components` by name, so the app provides it when it has it.
+      vendor: await resolveVendorBuildConfig({
+        cwd: workDir,
+        isApp: !(await getLocalPackageVersion('styled-components', workDir)),
+      }),
     }
   }
 

@@ -150,6 +150,34 @@ describe('startWorkbenchPreview', () => {
       })
     })
 
+    test('registers the identity declared in defineApplication, as dev does', async () => {
+      await run({
+        cliConfig: workbenchCliConfig({
+          app: workbenchApp({isSingleton: true, name: 'drop-desk', visibility: 'unlisted'}),
+        }),
+      })
+
+      expect(readManifest()).toMatchObject({
+        name: 'drop-desk',
+        reference: 'sanity/drop-desk',
+        slug: 'test-app',
+        visibility: 'unlisted',
+      })
+    })
+
+    test('registers the deployed application the build stands in for, beside the id the build inlined', async () => {
+      mockReadFile.mockResolvedValue('app_deployed_id\n')
+
+      await run({
+        cliConfig: workbenchCliConfig({deployment: {appId: 'v27rvqtlp3lmdvcln6ey3lro'}}),
+      })
+
+      expect(readManifest()).toMatchObject({
+        applicationId: 'v27rvqtlp3lmdvcln6ey3lro',
+        id: 'app_deployed_id',
+      })
+    })
+
     test('registers a studio build as a studio', async () => {
       await run({isApp: false})
 

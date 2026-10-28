@@ -39,7 +39,7 @@ export class DeleteDocumentCommand extends SanityCommand<typeof DeleteDocumentCo
       description: 'Delete the document with ID "doc1" and "doc2"',
     },
     {
-      command: '<%= config.bin %> <%= command.id %> myDocId --project-id abc123',
+      command: '<%= config.bin %> <%= command.id %> myDocId --project abc123',
       description: 'Delete a document from a specific project',
     },
   ]

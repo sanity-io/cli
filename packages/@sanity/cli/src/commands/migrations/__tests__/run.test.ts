@@ -199,28 +199,31 @@ describe('#migration:run', () => {
     expect(error?.oclif?.exit).toBe(1)
   })
 
-  test('uses --project and --dataset flags even when cli config has no projectId', async () => {
-    const {error, stdout} = await testCommand(
-      RunMigrationCommand,
-      ['my-migration', '--project', 'flag-project', '--dataset', 'flag-dataset'],
-      {
-        mocks: {
-          ...defaultMocks,
-          // No projectId/dataset resolvable from config — only the flags provide them.
-          cliConfig: {api: {}},
+  test.each(['--project', '--project-id', '-p'])(
+    'uses %s and --dataset flags even when cli config has no projectId',
+    async (projectFlag) => {
+      const {error, stdout} = await testCommand(
+        RunMigrationCommand,
+        ['my-migration', projectFlag, 'flag-project', '--dataset', 'flag-dataset'],
+        {
+          mocks: {
+            ...defaultMocks,
+            // No projectId/dataset resolvable from config — only the flags provide them.
+            cliConfig: {api: {}},
+          },
         },
-      },
-    )
+      )
 
-    if (error) throw error
-    expect(stdout).toContain('Running migration "my-migration" in dry mode')
-    expect(mockDryRun).toHaveBeenCalledWith(
-      expect.objectContaining({
-        api: expect.objectContaining({dataset: 'flag-dataset', projectId: 'flag-project'}),
-      }),
-      expect.objectContaining({title: 'My Migration'}),
-    )
-  })
+      if (error) throw error
+      expect(stdout).toContain('Running migration "my-migration" in dry mode')
+      expect(mockDryRun).toHaveBeenCalledWith(
+        expect.objectContaining({
+          api: expect.objectContaining({dataset: 'flag-dataset', projectId: 'flag-project'}),
+        }),
+        expect.objectContaining({title: 'My Migration'}),
+      )
+    },
+  )
 
   test('shows warning when user does not provide migration id', async () => {
     const {error, stderr, stdout} = await testCommand(RunMigrationCommand, [], {

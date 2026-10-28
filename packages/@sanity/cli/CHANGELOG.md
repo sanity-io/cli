@@ -1,5 +1,31 @@
 # Change Log
 
+## 8.25.0
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-v8.24.0...cli-v8.25.0)
+
+_2026-10-27_
+
+### Features
+
+- allow sanity internal env to be used for a local override ([#2071](https://github.com/sanity-io/cli/pull/2071)) ([ba0ff29](https://github.com/sanity-io/cli/commit/ba0ff292d273a659db06eb0906da1db8d1ba1afb))
+
+### Bug Fixes
+
+- standardize on --project over --project-id ([#2073](https://github.com/sanity-io/cli/pull/2073)) ([f2bdd54](https://github.com/sanity-io/cli/commit/f2bdd549a01ba954ad4fabd5323924017a756362))
+- Create a missing dataset when running `sanity init --yes --dataset <name>`, respecting `--visibility` and reusing existing datasets without changing them. ([b85d9fb](https://github.com/sanity-io/cli/commit/b85d9fb9e54d0eb9117a624a953ae364c7564b94))
+- **cli:** reduce startup time with node compile cache ([#1746](https://github.com/sanity-io/cli/pull/1746)) ([c28db31](https://github.com/sanity-io/cli/commit/c28db31375953e97f5c17c2df78fd87e6f26b247))
+- **cli:** pick up defineApplication without a dev restart ([#2070](https://github.com/sanity-io/cli/pull/2070)) ([bbd878c](https://github.com/sanity-io/cli/commit/bbd878c512bdd9157d4b5ab483f494104fc4dc88))
+- **schema:** honor absolute `--path` in `schemas extract` ([#2034](https://github.com/sanity-io/cli/pull/2034)) ([5ffe2fc](https://github.com/sanity-io/cli/commit/5ffe2fcf186939cd1dd42748c101cbd47ace4184))
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/cli-core bumped to 3.14.0
+    - @sanity/workbench-cli bumped to 2.14.1
+    - @sanity/cli-build bumped to 7.0.3
+
 ## 8.24.0
 
 [Compare changes](https://github.com/sanity-io/cli/compare/cli-v8.23.0...cli-v8.24.0)

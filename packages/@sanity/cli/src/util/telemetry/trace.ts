@@ -6,6 +6,7 @@ import {
 } from '@sanity/telemetry'
 
 import {createTraceId} from './createTraceId.js'
+import {telemetryError} from './sanitizeTelemetryEvent.js'
 import {telemetryStoreDebug} from './telemetryStoreDebug.js'
 
 /**
@@ -118,14 +119,10 @@ export function createTrace<Data, Context = unknown, UserProperties = unknown>(
       telemetryStoreDebug('Trace %s already completed, ignoring error', traceId)
       return
     }
-    telemetryStoreDebug('Error in trace %s: %s', traceId, err.message)
+    telemetryStoreDebug('Error in trace %s', traceId)
     if (!isStarted) start()
-    // Convert Error to serializable object
-    const errorData = {
-      message: err.message,
-      name: err.name,
-      stack: err.stack,
-    }
+    // Messages and stacks can repeat private input, request URLs and response bodies.
+    const errorData = telemetryError(err)
     emitTraceEvent('trace.error', errorData)
     isCompleted = true
   }

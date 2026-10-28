@@ -9,6 +9,7 @@ import {validateOrganizationName} from '../../actions/organizations/validateOrga
 import {validateOrganizationSlug} from '../../actions/organizations/validateOrganizationSlug.js'
 import {type OrganizationUpdateParams, updateOrganization} from '../../services/organizations.js'
 import {organizationAliases} from '../../util/organizationAliases.js'
+import {defineCommandTelemetry} from '../../util/telemetry/commandTelemetry.js'
 
 const updateOrgDebug = subdebug('organizations:update')
 
@@ -58,6 +59,8 @@ export class UpdateOrganizationCommand extends SanityCommand<typeof UpdateOrgani
   } satisfies FlagInput
 
   static override hiddenAliases = organizationAliases('update')
+
+  static telemetry = defineCommandTelemetry(this.flags, {redact: ['name']})
 
   public async run(): Promise<void> {
     const {organizationId} = this.args

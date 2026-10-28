@@ -123,7 +123,7 @@ export async function initStudio({
     await ImportDatasetCommand.run(
       [
         resolvedTemplate.datasetUrl,
-        '--project-id',
+        '--project',
         projectId,
         '--dataset',
         datasetName,

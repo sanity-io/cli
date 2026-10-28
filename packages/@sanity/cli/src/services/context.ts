@@ -1,7 +1,11 @@
-import {getGlobalCliClient} from '@sanity/cli-core'
-import {type Context} from '@sanity/client'
+import {getGlobalCliClient, subdebug} from '@sanity/cli-core'
+import {type Context, EXPERIMENTAL_API_WARNING, isHttpError} from '@sanity/client'
 
 const CONTEXT_API_VERSION = 'v2026-08-25'
+const BLUEPRINTS_API_VERSION = 'vX'
+const BLUEPRINTS_LOOKUP_TIMEOUT_MS = 5000
+
+const blueprintOwnershipDebug = subdebug('context:blueprint-ownership')
 
 /**
  * Knowledge-base-scoped methods on `client.context` operate on the client's
@@ -49,7 +53,10 @@ export async function listKnowledgeBases(organizationId: string): Promise<Contex
   const knowledgeBases: Context.KnowledgeBase[] = []
   let cursor: string | undefined
   do {
-    const page = await client.context.knowledgeBases.list({cursor, organizationId})
+    const page = await client.context.knowledgeBases.list({
+      cursor,
+      organizationId,
+    })
     knowledgeBases.push(...page.data)
     cursor = page.nextCursor ?? undefined
   } while (cursor !== undefined)
@@ -74,6 +81,70 @@ export async function updateKnowledgeBase(
 ): Promise<Context.KnowledgeBase> {
   const client = await getContextClient()
   return client.context.knowledgeBases.edit(knowledgeBaseId, params)
+}
+
+/**
+ * `stackName` is `null` when the caller can't read Blueprints: the search then
+ * only says whether a blueprint manages the resource.
+ */
+export type BlueprintOwnership = {managed: false} | {managed: true; stackName: string | null}
+
+/**
+ * Whether a live blueprint stack manages the knowledge base, from the
+ * Blueprints resource search. Fails open: a failed lookup answers not managed,
+ * so a Blueprints outage never blocks a command.
+ */
+export async function getKnowledgeBaseBlueprintOwnership(
+  knowledgeBaseId: string,
+): Promise<BlueprintOwnership> {
+  try {
+    const {organizationId, publicId} = await getKnowledgeBase(knowledgeBaseId)
+    const client = await getGlobalCliClient({
+      apiVersion: BLUEPRINTS_API_VERSION,
+      // The Blueprints API has no stable version yet, and the warning would interrupt command output.
+      // The client splits the warning header on commas, so its second clause is matched separately.
+      ignoreWarnings: [EXPERIMENTAL_API_WARNING, 'which will change without warning'],
+      // The lookup fails open, so an unreachable Blueprints API must not hold the command for the client's defaults.
+      maxRetries: 0,
+      requireUser: true,
+      timeout: BLUEPRINTS_LOOKUP_TIMEOUT_MS,
+    })
+    const headers = {
+      'x-sanity-scope-id': organizationId,
+      'x-sanity-scope-type': 'organization',
+    }
+    const matches = await client.request<{stackId?: string}[]>({
+      headers,
+      query: {id: publicId, type: 'sanity.context.knowledge-base'},
+      url: '/blueprints/resources/search',
+    })
+    const stackId = matches.find((match) => typeof match.stackId === 'string')?.stackId
+    if (!stackId) return {managed: false}
+    const stackName = await client
+      .request<{name?: string}>({
+        headers,
+        url: `/blueprints/stacks/${encodeURIComponent(stackId)}`,
+      })
+      .then((stack) => stack.name ?? null)
+      .catch(() => null)
+    return {managed: true, stackName}
+  } catch (error) {
+    if (isHttpError(error)) {
+      if (error.statusCode === 403 && errorCode(error) === 'RESOURCE_MANAGED') {
+        return {managed: true, stackName: null}
+      }
+      if (error.statusCode === 404 && errorCode(error) === 'RESOURCE_NOT_MANAGED') {
+        return {managed: false}
+      }
+    }
+    blueprintOwnershipDebug('Blueprint ownership lookup failed, treating as not managed', error)
+    return {managed: false}
+  }
+}
+
+function errorCode(error: {response: {body: unknown}}): unknown {
+  const {body} = error.response
+  return body && typeof body === 'object' && 'errorCode' in body ? body.errorCode : undefined
 }
 
 /**

@@ -50,11 +50,16 @@ export class ExecCommand extends SanityCommand<typeof ExecCommand> {
   static override strict = false
 
   public async run(): Promise<void> {
-    const {args, argv, flags} = await this.parse(ExecCommand)
+    const {args, flags, raw} = await this.parse(ExecCommand)
     const {directory: workDir} = await this.getProjectRoot()
+    // oclif may reorder duplicate unparsed argv, while raw tokens preserve their original order.
+    const extraArguments = raw
+      .filter((token) => token.type === 'arg')
+      .slice(1)
+      .map((token) => token.input)
 
     await execScript({
-      extraArguments: (argv as string[]).slice(1), // Remove the script path from argv
+      extraArguments,
       flags,
       scriptPath: args.script,
       workDir,

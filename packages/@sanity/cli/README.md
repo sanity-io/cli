@@ -199,8 +199,8 @@ FLAGS
       --project-hosted            Force the request to the project API host (<projectId>.api.sanity.io)
 
 OVERRIDE FLAGS
-  -d, --dataset=<name>   Dataset for {dataset} placeholders (overrides CLI configuration)
-  -p, --project-id=<id>  Project ID for {projectId} placeholders and project-hosted APIs (overrides CLI configuration)
+  -d, --dataset=<name>  Dataset for {dataset} placeholders (overrides CLI configuration)
+  -p, --project=<id>    Project ID for {projectId} placeholders and project-hosted APIs (overrides CLI configuration)
 
 DESCRIPTION
   Make an authenticated HTTP request to a Sanity API
@@ -274,8 +274,8 @@ FLAGS
                               <options: image|file>
 
 OVERRIDE FLAGS
-  -d, --dataset=<name>   Dataset to upload the asset to (overrides CLI configuration)
-  -p, --project-id=<id>  Project ID to upload the asset to (overrides CLI configuration)
+  -d, --dataset=<name>  Dataset to upload the asset to (overrides CLI configuration)
+  -p, --project=<id>    Project ID to upload the asset to (overrides CLI configuration)
 
 DESCRIPTION
   Upload one image or file to a Sanity dataset, from a local path or a URL, and print the asset document as JSON
@@ -287,8 +287,8 @@ EXAMPLES
 
   Upload a file with explicit project, dataset, and MIME type
 
-    $ sanity assets upload --file ./brief.pdf --type file --content-type application/pdf --project-id abc123 \
-      --dataset production
+    $ sanity assets upload --file ./brief.pdf --type file --content-type application/pdf --project abc123 --dataset \
+      production
 
   Have Sanity fetch an image from a public URL
 
@@ -307,7 +307,7 @@ ARGUMENTS
   [DATASET]  Dataset name to disable backup for
 
 OVERRIDE FLAGS
-  -p, --project-id=<id>  Project ID to disable backups for (overrides CLI configuration)
+  -p, --project=<id>  Project ID to disable backups for (overrides CLI configuration)
 
 DESCRIPTION
   Disable backup for a dataset
@@ -341,7 +341,7 @@ FLAGS
   --overwrite            Allows overwriting of existing backup file
 
 OVERRIDE FLAGS
-  -p, --project-id=<id>  Project ID to download backup from (overrides CLI configuration)
+  -p, --project=<id>  Project ID to download backup from (overrides CLI configuration)
 
 DESCRIPTION
   Download a dataset backup to a local file
@@ -376,7 +376,7 @@ ARGUMENTS
   [DATASET]  Dataset name to enable backup for
 
 OVERRIDE FLAGS
-  -p, --project-id=<id>  Project ID to enable backups for (overrides CLI configuration)
+  -p, --project=<id>  Project ID to enable backups for (overrides CLI configuration)
 
 DESCRIPTION
   Enable backup for a dataset
@@ -408,7 +408,7 @@ FLAGS
       --before=<value>  Only return backups before this date (exclusive, YYYY-MM-DD format)
 
 OVERRIDE FLAGS
-  -p, --project-id=<id>  Project ID to list backups for (overrides CLI configuration)
+  -p, --project=<id>  Project ID to list backups for (overrides CLI configuration)
 
 DESCRIPTION
   List available backups for a dataset
@@ -1686,7 +1686,7 @@ FLAGS
       --[no-]credentials  Allow credentials (token/cookie) to be sent from this origin
 
 OVERRIDE FLAGS
-  -p, --project-id=<id>  Project ID to add CORS origin to (overrides CLI configuration)
+  -p, --project=<id>  Project ID to add CORS origin to (overrides CLI configuration)
 
 DESCRIPTION
   Add a CORS origin to the project
@@ -1706,7 +1706,7 @@ EXAMPLES
 
   Add a CORS origin for a specific project
 
-    $ sanity cors add https://myapp.com --project-id abc123
+    $ sanity cors add https://myapp.com --project abc123
 ```
 
 ## `sanity cors delete [ORIGIN]`
@@ -1721,7 +1721,7 @@ ARGUMENTS
   [ORIGIN]  Origin to delete (will prompt if not provided)
 
 OVERRIDE FLAGS
-  -p, --project-id=<id>  Project ID to delete CORS origin from (overrides CLI configuration)
+  -p, --project=<id>  Project ID to delete CORS origin from (overrides CLI configuration)
 
 DESCRIPTION
   Delete a CORS origin from the project
@@ -1737,7 +1737,7 @@ EXAMPLES
 
   Delete a CORS origin from a specific project
 
-    $ sanity cors delete --project-id abc123
+    $ sanity cors delete --project abc123
 ```
 
 ## `sanity cors list`
@@ -1749,7 +1749,7 @@ USAGE
   $ sanity cors list [-p <id>]
 
 OVERRIDE FLAGS
-  -p, --project-id=<id>  Project ID to list CORS origins for (overrides CLI configuration)
+  -p, --project=<id>  Project ID to list CORS origins for (overrides CLI configuration)
 
 DESCRIPTION
   List CORS origins for the project
@@ -1761,7 +1761,7 @@ EXAMPLES
 
   List CORS origins for a specific project
 
-    $ sanity cors list --project-id abc123
+    $ sanity cors list --project abc123
 ```
 
 ## `sanity datasets alias create [ALIASNAME] [TARGETDATASET]`
@@ -1777,7 +1777,7 @@ ARGUMENTS
   [TARGETDATASET]  Target dataset name to link the alias to
 
 OVERRIDE FLAGS
-  -p, --project-id=<id>  Project ID to create dataset alias in (overrides CLI configuration)
+  -p, --project=<id>  Project ID to create dataset alias in (overrides CLI configuration)
 
 DESCRIPTION
   Create a dataset alias for the project
@@ -1785,7 +1785,7 @@ DESCRIPTION
 EXAMPLES
   Create alias in a specific project
 
-    $ sanity datasets alias create --project-id abc123 conference conf-2025
+    $ sanity datasets alias create --project abc123 conference conf-2025
 
   Create an alias with interactive prompts
 
@@ -1815,7 +1815,7 @@ FLAGS
   --force  Skip confirmation prompt and delete immediately
 
 OVERRIDE FLAGS
-  -p, --project-id=<id>  Project ID to delete dataset alias from (overrides CLI configuration)
+  -p, --project=<id>  Project ID to delete dataset alias from (overrides CLI configuration)
 
 DESCRIPTION
   Delete a dataset alias from the project
@@ -1846,7 +1846,7 @@ FLAGS
   --force  Skip confirmation prompt when relinking existing alias
 
 OVERRIDE FLAGS
-  -p, --project-id=<id>  Project ID to link dataset alias in (overrides CLI configuration)
+  -p, --project=<id>  Project ID to link dataset alias in (overrides CLI configuration)
 
 DESCRIPTION
   Link a dataset alias to a dataset in the project
@@ -1884,7 +1884,7 @@ FLAGS
   --force  Skip confirmation prompt and unlink immediately
 
 OVERRIDE FLAGS
-  -p, --project-id=<id>  Project ID to unlink dataset alias in (overrides CLI configuration)
+  -p, --project=<id>  Project ID to unlink dataset alias in (overrides CLI configuration)
 
 DESCRIPTION
   Unlink a dataset alias from its dataset in the project
@@ -1926,7 +1926,7 @@ FLAGS
   --skip-history           Don't preserve document history on copy
 
 OVERRIDE FLAGS
-  -p, --project-id=<id>  Project ID to copy dataset in (overrides CLI configuration)
+  -p, --project=<id>  Project ID to copy dataset in (overrides CLI configuration)
 
 DESCRIPTION
   Copy a dataset or manage copy jobs
@@ -1988,7 +1988,7 @@ FLAGS
                                    <options: custom|private|public>
 
 OVERRIDE FLAGS
-  -p, --project-id=<id>  Project ID to create dataset in (overrides CLI configuration)
+  -p, --project=<id>  Project ID to create dataset in (overrides CLI configuration)
 
 DESCRIPTION
   Create a new dataset for the project
@@ -2022,7 +2022,7 @@ FLAGS
   --force  Do not prompt for delete confirmation - forcefully delete
 
 OVERRIDE FLAGS
-  -p, --project-id=<id>  Project ID to delete dataset from (overrides CLI configuration)
+  -p, --project=<id>  Project ID to delete dataset from (overrides CLI configuration)
 
 DESCRIPTION
   Delete a dataset from the project
@@ -2049,7 +2049,7 @@ ARGUMENTS
   [DATASET]  Dataset name to disable embeddings for
 
 OVERRIDE FLAGS
-  -p, --project-id=<id>  Project ID to disable embeddings for (overrides CLI configuration)
+  -p, --project=<id>  Project ID to disable embeddings for (overrides CLI configuration)
 
 DESCRIPTION
   Disable embeddings for a dataset
@@ -2076,7 +2076,7 @@ FLAGS
   --wait                Wait for embeddings processing to complete before returning
 
 OVERRIDE FLAGS
-  -p, --project-id=<id>  Project ID to enable embeddings for (overrides CLI configuration)
+  -p, --project=<id>  Project ID to enable embeddings for (overrides CLI configuration)
 
 DESCRIPTION
   Enable embeddings for a dataset
@@ -2107,7 +2107,7 @@ ARGUMENTS
   [DATASET]  The name of the dataset to check embeddings status for
 
 OVERRIDE FLAGS
-  -p, --project-id=<id>  Project ID to check embeddings status for (overrides CLI configuration)
+  -p, --project=<id>  Project ID to check embeddings status for (overrides CLI configuration)
 
 DESCRIPTION
   Show embeddings settings and status for a dataset
@@ -2145,7 +2145,7 @@ FLAGS
   --types=<value>                 Defines which document types to export (comma-separated)
 
 OVERRIDE FLAGS
-  -p, --project-id=<id>  Project ID to export dataset from (overrides CLI configuration)
+  -p, --project=<id>  Project ID to export dataset from (overrides CLI configuration)
 
 DESCRIPTION
   Export a dataset to a local gzipped tarball. Assets returning 401, 403, or 404 are excluded from the export.
@@ -2200,7 +2200,7 @@ FLAGS
       --skip-cross-dataset-references      Skips references to other datasets
 
 OVERRIDE FLAGS
-  -p, --project-id=<id>  Project ID to import to (overrides CLI configuration)
+  -p, --project=<id>  Project ID to import to (overrides CLI configuration)
 
 DESCRIPTION
   Import documents to a Sanity dataset
@@ -2232,7 +2232,7 @@ USAGE
   $ sanity datasets list [-p <id>]
 
 OVERRIDE FLAGS
-  -p, --project-id=<id>  Project ID to list datasets for (overrides CLI configuration)
+  -p, --project=<id>  Project ID to list datasets for (overrides CLI configuration)
 
 DESCRIPTION
   List datasets for the project
@@ -2244,7 +2244,7 @@ EXAMPLES
 
   List datasets for a specific project
 
-    $ sanity datasets list --project-id abc123
+    $ sanity datasets list --project abc123
 ```
 
 ## `sanity datasets visibility get DATASET`
@@ -2259,7 +2259,7 @@ ARGUMENTS
   DATASET  The name of the dataset to get visibility for
 
 OVERRIDE FLAGS
-  -p, --project-id=<id>  Project ID to get dataset visibility for (overrides CLI configuration)
+  -p, --project=<id>  Project ID to get dataset visibility for (overrides CLI configuration)
 
 DESCRIPTION
   Get the visibility of a dataset
@@ -2283,7 +2283,7 @@ ARGUMENTS
   MODE     (public|private) The visibility mode to set
 
 OVERRIDE FLAGS
-  -p, --project-id=<id>  Project ID to set dataset visibility for (overrides CLI configuration)
+  -p, --project=<id>  Project ID to set dataset visibility for (overrides CLI configuration)
 
 DESCRIPTION
   Set the visibility of a dataset
@@ -2537,8 +2537,8 @@ FLAGS
   --watch       Write the documents whenever the target file or buffer changes
 
 OVERRIDE FLAGS
-  -d, --dataset=<name>   Dataset to create document(s) in (overrides CLI configuration)
-  -p, --project-id=<id>  Project ID to create document(s) in (overrides CLI configuration)
+  -d, --dataset=<name>  Dataset to create document(s) in (overrides CLI configuration)
+  -p, --project=<id>    Project ID to create document(s) in (overrides CLI configuration)
 
 DESCRIPTION
   Create one or more documents
@@ -2564,7 +2564,7 @@ EXAMPLES
 
   Create documents in a specific project
 
-    $ sanity documents create myDocument.json --project-id abc123
+    $ sanity documents create myDocument.json --project abc123
 ```
 
 ## `sanity documents delete ID [IDS]`
@@ -2580,8 +2580,8 @@ ARGUMENTS
   [IDS...]  Additional document IDs to delete
 
 OVERRIDE FLAGS
-  -d, --dataset=<name>   Dataset to delete from (overrides CLI configuration)
-  -p, --project-id=<id>  Project ID to delete from (overrides CLI configuration)
+  -d, --dataset=<name>  Dataset to delete from (overrides CLI configuration)
+  -p, --project=<id>    Project ID to delete from (overrides CLI configuration)
 
 DESCRIPTION
   Delete one or more documents from the project's configured dataset
@@ -2605,7 +2605,7 @@ EXAMPLES
 
   Delete a document from a specific project
 
-    $ sanity documents delete myDocId --project-id abc123
+    $ sanity documents delete myDocId --project abc123
 ```
 
 ## `sanity documents get DOCUMENTID`
@@ -2623,8 +2623,8 @@ FLAGS
   --pretty  Colorize JSON output
 
 OVERRIDE FLAGS
-  -d, --dataset=<name>   Dataset to get document from (overrides CLI configuration)
-  -p, --project-id=<id>  Project ID to get document from (overrides CLI configuration)
+  -d, --dataset=<name>  Dataset to get document from (overrides CLI configuration)
+  -p, --project=<id>    Project ID to get document from (overrides CLI configuration)
 
 DESCRIPTION
   Get and print a document by ID
@@ -2644,7 +2644,7 @@ EXAMPLES
 
   Get a document from a specific project
 
-    $ sanity documents get myDocId --project-id abc123
+    $ sanity documents get myDocId --project abc123
 ```
 
 ## `sanity documents query QUERY`
@@ -2664,8 +2664,8 @@ FLAGS
   --pretty               Colorize JSON output
 
 OVERRIDE FLAGS
-  -d, --dataset=<name>   Dataset to query (overrides CLI configuration)
-  -p, --project-id=<id>  Project ID to query (overrides CLI configuration)
+  -d, --dataset=<name>  Dataset to query (overrides CLI configuration)
+  -p, --project=<id>    Project ID to query (overrides CLI configuration)
 
 DESCRIPTION
   Query for documents
@@ -2685,7 +2685,7 @@ EXAMPLES
 
   Query documents in a specific project and dataset
 
-    $ sanity documents query '*[_type == "post"]' --project-id abc123 --dataset production
+    $ sanity documents query '*[_type == "post"]' --project abc123 --dataset production
 ```
 
 ## `sanity documents validate`
@@ -2701,7 +2701,7 @@ USAGE
 FLAGS
   -d, --dataset=<name>                             Override the dataset used. By default, this is derived from the given
                                                    workspace
-  -p, --project-id=<id>                            Override the project ID used. By default, this is derived from the
+  -p, --project=<id>                               Override the project ID used. By default, this is derived from the
                                                    given workspace
   -y, --yes                                        Skips the first confirmation prompt
       --file=<value>                               Path to an NDJSON file or tar archive containing an NDJSON file
@@ -2739,7 +2739,7 @@ EXAMPLES
 
   Validate documents in a specific project and dataset
 
-    $ sanity documents validate --project-id abc123 --dataset production
+    $ sanity documents validate --project abc123 --dataset production
 ```
 
 ## `sanity exec SCRIPT`
@@ -3097,7 +3097,7 @@ USAGE
   $ sanity graphql list [-p <id>]
 
 OVERRIDE FLAGS
-  -p, --project-id=<id>  Project ID to list GraphQL endpoints for (overrides CLI configuration)
+  -p, --project=<id>  Project ID to list GraphQL endpoints for (overrides CLI configuration)
 
 DESCRIPTION
   List deployed GraphQL endpoints for the project
@@ -3109,7 +3109,7 @@ EXAMPLES
 
   List GraphQL endpoints for a specific project
 
-    $ sanity graphql list --project-id abc123
+    $ sanity graphql list --project abc123
 ```
 
 ## `sanity graphql undeploy`
@@ -3118,7 +3118,7 @@ Remove a deployed GraphQL API
 
 ```
 USAGE
-  $ sanity graphql undeploy [--api <value> | -p <id> | ] [-d <name>] [--force] [--tag <value>]
+  $ sanity graphql undeploy [--api <value> | -p <id>] [-d <name>] [--force] [--tag <value>]
 
 FLAGS
   --api=<value>  Undeploy API with this ID
@@ -3126,8 +3126,8 @@ FLAGS
   --tag=<value>  [default: default] Tag to undeploy GraphQL API from
 
 OVERRIDE FLAGS
-  -d, --dataset=<name>   Dataset to undeploy GraphQL API from (overrides CLI configuration)
-  -p, --project-id=<id>  Project ID to undeploy GraphQL API from (overrides CLI configuration)
+  -d, --dataset=<name>  Dataset to undeploy GraphQL API from (overrides CLI configuration)
+  -p, --project=<id>    Project ID to undeploy GraphQL API from (overrides CLI configuration)
 
 DESCRIPTION
   Remove a deployed GraphQL API
@@ -3155,7 +3155,7 @@ EXAMPLES
 
   Undeploy GraphQL API for a specific project and dataset
 
-    $ sanity graphql undeploy --project-id abc123 --dataset production
+    $ sanity graphql undeploy --project abc123 --dataset production
 ```
 
 ## `sanity help [COMMAND]`
@@ -3188,7 +3188,7 @@ ARGUMENTS
   ATTEMPTID  The delivery attempt ID to get details for
 
 OVERRIDE FLAGS
-  -p, --project-id=<id>  Project ID to view webhook attempt for (overrides CLI configuration)
+  -p, --project=<id>  Project ID to view webhook attempt for (overrides CLI configuration)
 
 DESCRIPTION
   Print details of a given webhook delivery attempt
@@ -3200,7 +3200,7 @@ EXAMPLES
 
   Get attempt details for a specific project
 
-    $ sanity hooks attempt abc123 --project-id projectId
+    $ sanity hooks attempt abc123 --project projectId
 ```
 
 ## `sanity hooks create`
@@ -3212,7 +3212,7 @@ USAGE
   $ sanity hooks create [-p <id>]
 
 OVERRIDE FLAGS
-  -p, --project-id=<id>  Project ID to create webhook for (overrides CLI configuration)
+  -p, --project=<id>  Project ID to create webhook for (overrides CLI configuration)
 
 DESCRIPTION
   Create a new webhook for the project
@@ -3224,7 +3224,7 @@ EXAMPLES
 
   Create a webhook for a specific project
 
-    $ sanity hooks create --project-id abc123
+    $ sanity hooks create --project abc123
 ```
 
 ## `sanity hooks delete [NAME]`
@@ -3239,7 +3239,7 @@ ARGUMENTS
   [NAME]  Name of webhook to delete (will prompt if not provided)
 
 OVERRIDE FLAGS
-  -p, --project-id=<id>  Project ID to delete webhook from (overrides CLI configuration)
+  -p, --project=<id>  Project ID to delete webhook from (overrides CLI configuration)
 
 DESCRIPTION
   Delete a webhook from the project
@@ -3255,7 +3255,7 @@ EXAMPLES
 
   Delete a webhook from a specific project
 
-    $ sanity hooks delete --project-id abc123
+    $ sanity hooks delete --project abc123
 ```
 
 ## `sanity hooks list`
@@ -3267,7 +3267,7 @@ USAGE
   $ sanity hooks list [-p <id>]
 
 OVERRIDE FLAGS
-  -p, --project-id=<id>  Project ID to list webhooks for (overrides CLI configuration)
+  -p, --project=<id>  Project ID to list webhooks for (overrides CLI configuration)
 
 DESCRIPTION
   List webhooks for the project
@@ -3279,7 +3279,7 @@ EXAMPLES
 
   List webhooks for a specific project
 
-    $ sanity hooks list --project-id abc123
+    $ sanity hooks list --project abc123
 ```
 
 ## `sanity hooks logs [NAME]`
@@ -3297,7 +3297,7 @@ FLAGS
   --detailed  Include detailed payload and attempts
 
 OVERRIDE FLAGS
-  -p, --project-id=<id>  Project ID to view webhook logs for (overrides CLI configuration)
+  -p, --project=<id>  Project ID to view webhook logs for (overrides CLI configuration)
 
 DESCRIPTION
   Show log entries for project webhooks
@@ -3313,7 +3313,7 @@ EXAMPLES
 
   Show log entries for a specific project
 
-    $ sanity hooks logs --project-id abc123
+    $ sanity hooks logs --project abc123
 ```
 
 ## `sanity init`
@@ -3325,10 +3325,11 @@ USAGE
   $ sanity init [--json] [--auto-updates | --bare] [--coupon <code> | --project-plan <name>] [--dashboard
     |  | --env <filename>] [--dataset <name> | --dataset-default] [--git <message> | ] [--import-dataset] [--install | ]
     [--mcp] [--nextjs-add-config-files] [--nextjs-append-env] [--nextjs-embed-studio] [--organization <id>]
-    [--output-path <path> | ] [--overwrite-files] [--package-manager <manager> | ] [--project <id> |  | --project-name
-    <name>] [--provider <provider>] [--skills] [--template <template> | ] [--typescript | ] [--visibility <mode>] [-y]
+    [--output-path <path> | ] [--overwrite-files] [--package-manager <manager> | ] [-p <id> |  | --project-name <name>]
+    [--provider <provider>] [--skills] [--template <template> | ] [--typescript | ] [--visibility <mode>] [-y]
 
 FLAGS
+  -p, --project=<id>               Project ID to use for the studio
   -y, --yes                        Unattended mode, answers "yes" to any "yes/no" prompt and otherwise uses defaults
       --[no-]auto-updates          Enable auto updates of studio versions
       --bare                       Skip the Studio initialization and only print the selected project ID and dataset
@@ -3346,7 +3347,6 @@ FLAGS
       --output-path=<path>         Path to write studio project to
       --[no-]overwrite-files       Overwrite existing files
       --package-manager=<manager>  Specify which package manager to use [allowed: npm, yarn, pnpm]
-      --project=<id>               Project ID to use for the studio
       --project-name=<name>        Create a new project with the given name
       --project-plan=<name>        Optionally select a plan for a new project
       --provider=<provider>        Login provider to use
@@ -3566,7 +3566,7 @@ FLAGS
       --media-library-id=<value>  The id of the target media library
 
 OVERRIDE FLAGS
-  -p, --project-id=<id>  Project ID to delete media aspect from (overrides CLI configuration)
+  -p, --project=<id>  Project ID to delete media aspect from (overrides CLI configuration)
 
 DESCRIPTION
   Delete an aspect definition
@@ -3593,7 +3593,7 @@ FLAGS
   --media-library-id=<value>  The id of the target media library
 
 OVERRIDE FLAGS
-  -p, --project-id=<id>  Project ID to deploy media aspect to (overrides CLI configuration)
+  -p, --project=<id>  Project ID to deploy media aspect to (overrides CLI configuration)
 
 DESCRIPTION
   Deploy an aspect
@@ -3627,7 +3627,7 @@ FLAGS
   --overwrite                  Overwrite any file with the same name
 
 OVERRIDE FLAGS
-  -p, --project-id=<id>  Project ID to export media from (overrides CLI configuration)
+  -p, --project=<id>  Project ID to export media from (overrides CLI configuration)
 
 DESCRIPTION
   Export file and image assets from a media library (excludes video)
@@ -3668,7 +3668,7 @@ FLAGS
                               aspect data). Only applies to directory and archive imports
 
 OVERRIDE FLAGS
-  -p, --project-id=<id>  Project ID to import media to (overrides CLI configuration)
+  -p, --project=<id>  Project ID to import media to (overrides CLI configuration)
 
 DESCRIPTION
   Import a set of assets to the target media library.
@@ -3743,7 +3743,7 @@ Run a migration against a dataset
 ```
 USAGE
   $ sanity migrations run [ID] [--api-version <value>] [--concurrency <value>] [--confirm] [--dataset <value>]
-    [--dry-run] [--from-export <value>] [--progress] [--project <value>]
+    [--dry-run] [--from-export <value>] [--progress] [-p <id>]
 
 ARGUMENTS
   [ID]  ID
@@ -3758,8 +3758,9 @@ FLAGS
   --from-export=<value>  Use a local dataset export as source for migration instead of calling the Sanity API. Note:
                          this is only supported for dry runs.
   --[no-]progress        Display progress during migration (default: true). Use --no-progress to hide output.
-  --project=<value>      Project ID of the dataset to migrate. Defaults to the projectId configured in your Sanity CLI
-                         config.
+
+OVERRIDE FLAGS
+  -p, --project=<id>  Project ID of the dataset to migrate (overrides CLI configuration)
 
 DESCRIPTION
   Run a migration against a dataset
@@ -4145,10 +4146,10 @@ Recover details for unclaimed projects created on this machine
 
 ```
 USAGE
-  $ sanity projects unclaimed [--project-id <value>]
+  $ sanity projects unclaimed [-p <id>]
 
 FLAGS
-  --project-id=<value>  Project ID to recover
+  -p, --project=<id>  Project ID to recover
 
 DESCRIPTION
   Recover details for unclaimed projects created on this machine
@@ -4160,7 +4161,7 @@ EXAMPLES
 
   Show recovery details for one project
 
-    $ sanity projects unclaimed --project-id abc123
+    $ sanity projects unclaimed --project abc123
 ```
 
 ## `sanity schemas delete`
@@ -4178,7 +4179,7 @@ FLAGS
       --verbose         Enable verbose logging
 
 OVERRIDE FLAGS
-  -p, --project-id=<id>  Project ID to delete schema from (overrides CLI configuration)
+  -p, --project=<id>  Project ID to delete schema from (overrides CLI configuration)
 
 DESCRIPTION
   Delete schema documents by id
@@ -4233,10 +4234,11 @@ Extract a JSON representation of a Sanity schema within a Studio context.
 
 ```
 USAGE
-  $ sanity schemas extract [--enforce-required-fields] [--force] [--format <format>] [--path <value>] [--watch]
-    [--watch-patterns <glob>...] [--workspace <name>]
+  $ sanity schemas extract [--config-path <path>] [--enforce-required-fields] [--force] [--format <format>] [--path
+    <value>] [--watch] [--watch-patterns <glob>...] [--workspace <name>]
 
 FLAGS
+  --config-path=<path>        Path to the Sanity Studio config file
   --enforce-required-fields   Makes the schema generated treat fields marked as required as non-optional
   --force                     Overwrite an existing schema file
   --format=<format>           [default: groq-type-nodes] Output format (currently only groq-type-nodes)
@@ -4434,7 +4436,7 @@ FLAGS
       --role=viewer              Role to assign on the project (defaults to viewer in unattended mode)
 
 OVERRIDE FLAGS
-  -p, --project-id=<id>    Project ID to create token in (overrides CLI configuration)
+  -p, --project=<id>       Project ID to create token in (overrides CLI configuration)
       --organization=<id>  Organization to create an organization token in (overrides CLI configuration)
 
 GLOBAL FLAGS
@@ -4454,7 +4456,7 @@ EXAMPLES
 
   Create a project token with editor role
 
-    $ sanity tokens create "My Token" --project-id abc123 --role=editor
+    $ sanity tokens create "My Token" --project abc123 --role=editor
 
   Create a project token in unattended mode
 
@@ -4485,7 +4487,7 @@ FLAGS
       --organization=<id>  Delete a token managed by this organization
 
 OVERRIDE FLAGS
-  -p, --project-id=<id>  Project ID to delete token from (overrides CLI configuration)
+  -p, --project=<id>  Project ID to delete token from (overrides CLI configuration)
 
 DESCRIPTION
   Delete an API token from a project or organization
@@ -4513,7 +4515,7 @@ EXAMPLES
 
   Delete a token from a specific project
 
-    $ sanity tokens delete --project-id abc123
+    $ sanity tokens delete --project abc123
 ```
 
 ## `sanity tokens list`
@@ -4528,7 +4530,7 @@ FLAGS
   --organization=<id>  List tokens managed by this organization
 
 OVERRIDE FLAGS
-  -p, --project-id=<id>  Project ID to list tokens for (overrides CLI configuration)
+  -p, --project=<id>  Project ID to list tokens for (overrides CLI configuration)
 
 GLOBAL FLAGS
   --json  Format output as json.
@@ -4551,7 +4553,7 @@ EXAMPLES
 
   List tokens for a specific project
 
-    $ sanity tokens list --project-id abc123
+    $ sanity tokens list --project abc123
 ```
 
 ## `sanity tokens rotate`
@@ -4684,7 +4686,7 @@ FLAGS
   --role=<value>  Role to invite the user as
 
 OVERRIDE FLAGS
-  -p, --project-id=<id>  Project ID to invite user to (overrides CLI configuration)
+  -p, --project=<id>  Project ID to invite user to (overrides CLI configuration)
 
 DESCRIPTION
   Invite a new user to the project
@@ -4704,7 +4706,7 @@ EXAMPLES
 
   Invite a user to a specific project
 
-    $ sanity users invite pippi@sanity.io --project-id abc123
+    $ sanity users invite pippi@sanity.io --project abc123
 ```
 
 ## `sanity users list`
@@ -4724,7 +4726,7 @@ FLAGS
                       <options: id|name|role|date>
 
 OVERRIDE FLAGS
-  -p, --project-id=<id>  Project ID to list users for (overrides CLI configuration)
+  -p, --project=<id>  Project ID to list users for (overrides CLI configuration)
 
 DESCRIPTION
   List project members
@@ -4744,7 +4746,7 @@ EXAMPLES
 
   List users for a specific project
 
-    $ sanity users list --project-id abc123
+    $ sanity users list --project abc123
 ```
 
 ## `sanity versions`

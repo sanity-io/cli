@@ -45,7 +45,7 @@ export class DeleteTokensCommand extends SanityCommand<typeof DeleteTokensComman
       description: 'Delete a specific token without confirmation prompt',
     },
     {
-      command: '<%= config.bin %> <%= command.id %> --project-id abc123',
+      command: '<%= config.bin %> <%= command.id %> --project abc123',
       description: 'Delete a token from a specific project',
     },
   ]
@@ -53,7 +53,7 @@ export class DeleteTokensCommand extends SanityCommand<typeof DeleteTokensComman
   static override flags = {
     ...getOrganizationFlag({
       description: 'Delete a token managed by this organization',
-      exclusive: ['project-id'],
+      exclusive: ['project'],
       semantics: 'specify',
     }),
     ...getProjectIdFlag({

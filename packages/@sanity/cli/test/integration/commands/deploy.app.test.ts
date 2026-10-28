@@ -749,6 +749,151 @@ describe('#deploy app', () => {
     )
   })
 
+  describe('without a configured appId', () => {
+    const app = defineApplication({
+      entry: './src/App.tsx',
+      organizationId,
+      slug: 'drop-desk-host',
+      title: 'Workbench App',
+    })
+    const takenApp = {
+      id: 'app_taken',
+      organizationId,
+      slug: 'drop-desk-host',
+      title: 'Taken App',
+      type: 'coreApp',
+    }
+    const studio = {
+      id: 'studio_1',
+      organizationId,
+      slug: 'a-studio',
+      title: 'A Studio',
+      type: 'studio',
+    }
+
+    let cwd: string
+
+    // The selector lists inside the workbench package, out of `mockListApplications`' reach
+    function mockSelectorList(apps: object[]) {
+      mockApi({
+        apiVersion: 'vX',
+        query: {limit: 'none', organizationId},
+        uri: '/applications',
+      }).reply(200, {data: apps})
+    }
+
+    beforeEach(async () => {
+      cwd = await testFixture('basic-app')
+      process.cwd = () => cwd
+      mockListApplications.mockResolvedValue([takenApp, studio])
+    })
+
+    test('an interactive deploy offers the existing apps and redeploys the pick', async () => {
+      mockSelectorList([takenApp, studio])
+      mockApi({apiVersion: 'vX', uri: '/applications/app_taken'}).reply(200, takenApp)
+      mockSelect.mockResolvedValue('app_taken')
+
+      const {error, stdout} = await testCommand(DeployCommand, [], {
+        config: {root: cwd},
+        mocks: {cliConfig: {app}, isInteractive: true},
+      })
+
+      if (error) throw error
+      expect(mockSelect).toHaveBeenCalledTimes(1)
+      expect(mockCreateCoreApp).not.toHaveBeenCalled()
+      expect(mockBuildApp).toHaveBeenCalledWith(
+        expect.objectContaining({applicationId: 'app_taken'}),
+      )
+      expect(mockDeployWorkbenchApp).toHaveBeenCalledWith(
+        expect.objectContaining({applicationId: 'app_taken'}),
+      )
+      expect(stdout).toContain(`deployment: {\n  appId: 'app_taken',`)
+    })
+
+    test('picking a new deployment creates the app at the configured slug', async () => {
+      const apps = [{...takenApp, slug: 'other-slug'}]
+      mockListApplications.mockResolvedValue(apps)
+      mockSelectorList(apps)
+      mockSelect.mockResolvedValue('NEW_APP')
+      mockCreateCoreApp.mockResolvedValue({
+        application: {...takenApp, id: 'app_new'},
+      })
+
+      const {error} = await testCommand(DeployCommand, [], {
+        config: {root: cwd},
+        mocks: {cliConfig: {app}, isInteractive: true},
+      })
+
+      if (error) throw error
+      expect(mockCreateCoreApp).toHaveBeenCalledWith(
+        expect.objectContaining({slug: 'drop-desk-host'}),
+      )
+      expect(mockDeployWorkbenchApp).toHaveBeenCalledWith(
+        expect.objectContaining({applicationId: 'app_new'}),
+      )
+    })
+
+    test('an interactive deploy without apps of its type creates without prompting', async () => {
+      mockListApplications.mockResolvedValue([studio])
+      mockSelectorList([studio])
+      mockCreateCoreApp.mockResolvedValue({application: {...takenApp, id: 'app_new'}})
+
+      const {error} = await testCommand(DeployCommand, [], {
+        config: {root: cwd},
+        mocks: {cliConfig: {app}, isInteractive: true},
+      })
+
+      if (error) throw error
+      expect(mockSelect).not.toHaveBeenCalled()
+      expect(mockCreateCoreApp).toHaveBeenCalled()
+    })
+
+    test.each([
+      {args: [], isInteractive: false, label: 'an unattended deploy'},
+      {args: ['--no-build'], isInteractive: true, label: '--no-build'},
+    ])('$label skips the prompt and reports the taken slug', async ({args, isInteractive}) => {
+      const {error} = await testCommand(DeployCommand, args, {
+        config: {root: cwd},
+        mocks: {cliConfig: {app}, isInteractive},
+      })
+
+      expect(error?.message).toContain(
+        'An application already exists at slug "drop-desk-host" in this organization (app ID app_taken)',
+      )
+      expect(mockSelect).not.toHaveBeenCalled()
+      expect(mockCreateCoreApp).not.toHaveBeenCalled()
+    })
+
+    test('--json never prompts and reports the existing app id with its fix', async () => {
+      const {stdout} = await testCommand(DeployCommand, ['--json'], {
+        config: {root: cwd},
+        mocks: {cliConfig: {app}, isInteractive: true},
+      })
+
+      expect(JSON.parse(stdout)).toMatchObject({
+        deployed: false,
+        error: {
+          message: expect.stringContaining(
+            "(app ID app_taken): Add `deployment: {appId: 'app_taken'}` to sanity.cli.ts",
+          ),
+        },
+      })
+      expect(mockSelect).not.toHaveBeenCalled()
+    })
+
+    test('an interactive --dry-run never prompts and reports the existing app id with its fix', async () => {
+      const {error, stdout} = await testCommand(DeployCommand, ['--dry-run'], {
+        config: {root: cwd},
+        mocks: {cliConfig: {app}, isInteractive: true},
+      })
+
+      expect(error?.message).toContain('Deploy blocked')
+      expect(stdout).toContain('(app ID app_taken)')
+      expect(stdout).toContain("Add `deployment: {appId: 'app_taken'}` to sanity.cli.ts")
+      expect(mockSelect).not.toHaveBeenCalled()
+    })
+  })
+
   test('a panel-only app links the organization workbench in human and --json output', async () => {
     const cwd = await testFixture('basic-app')
     process.cwd = () => cwd

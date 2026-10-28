@@ -62,7 +62,7 @@ export class UploadAssetCommand extends SanityCommand<typeof UploadAssetCommand>
     },
     {
       command:
-        '<%= config.bin %> <%= command.id %> --file ./brief.pdf --type file --content-type application/pdf --project-id abc123 --dataset production',
+        '<%= config.bin %> <%= command.id %> --file ./brief.pdf --type file --content-type application/pdf --project abc123 --dataset production',
       description: 'Upload a file with explicit project, dataset, and MIME type',
     },
     {

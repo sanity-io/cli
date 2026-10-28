@@ -62,6 +62,16 @@ describe('workbenchVitePlugins', () => {
     expect(mockFederation).not.toHaveBeenCalled()
   })
 
+  test('throws when an auto-updating app has no appId', async () => {
+    await expect(
+      workbenchVitePlugins({
+        autoUpdates: {imports: {}, vendor: {specifiersByChunkName: {}}},
+        cwd,
+        entries: {relativeConfigLocation: '../../sanity.config.ts', relativeEntry: null},
+      }),
+    ).rejects.toThrow('An auto-updating workbench app needs an app ID')
+  })
+
   test('builds an app remote with its entry', async () => {
     await workbenchVitePlugins({
       cwd,

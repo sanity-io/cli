@@ -4,6 +4,7 @@ import {exitCodes, findProjectRoot, SanityCommand} from '@sanity/cli-core'
 
 import {manifestDebug} from '../../actions/manifest/debug.js'
 import {extractManifest} from '../../actions/manifest/extractManifest.js'
+import {defineCommandTelemetry} from '../../util/telemetry/commandTelemetry.js'
 
 const description = `
 Extract studio configuration as JSON manifest files.
@@ -31,6 +32,8 @@ export class ExtractManifestCommand extends SanityCommand<typeof ExtractManifest
       description: 'Optional path to specify destination directory of the manifest files',
     }),
   }
+
+  static telemetry = defineCommandTelemetry(this.flags, {redact: ['path']})
 
   public async run(): Promise<void> {
     const {flags} = await this.parse(ExtractManifestCommand)

@@ -126,10 +126,10 @@ export async function initAction(options: InitOptions, context: InitContext): Pr
   trace.log({
     flags: {
       bare: options.bare,
-      coupon: options.coupon,
+      coupon: Boolean(options.coupon),
       defaultConfig,
-      env: options.env,
-      git: typeof options.git === 'string' ? options.git : undefined,
+      env: Boolean(options.env),
+      git: typeof options.git === 'string',
       plan: options.projectPlan,
       reconfigure: options.reconfigure,
       unattended: options.unattended,

@@ -394,7 +394,7 @@ describe('context imports create', () => {
         '--title=Internal notes',
         '--content-type=text/plain',
       ],
-      CreateImportCommand.telemetry,
+      CreateImportCommand,
     )
 
     expect(result.extraArguments).toEqual(['--text', '--title', '--content-type=text/plain'])
@@ -413,7 +413,7 @@ describe('context imports create', () => {
         '--url=https://intranet.example.com',
         '--query=*[_type == "secret"]',
       ],
-      CreateImportCommand.telemetry,
+      CreateImportCommand,
     )
 
     expect(result.extraArguments).toEqual(['--file', '--url', '--query'])

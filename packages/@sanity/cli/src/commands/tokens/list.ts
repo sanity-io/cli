@@ -28,14 +28,14 @@ export class TokensListCommand extends SanityCommand<typeof TokensListCommand> {
       description: 'List tokens in JSON format',
     },
     {
-      command: '<%= config.bin %> <%= command.id %> --project-id abc123',
+      command: '<%= config.bin %> <%= command.id %> --project abc123',
       description: 'List tokens for a specific project',
     },
   ]
   static override flags = {
     ...getOrganizationFlag({
       description: 'List tokens managed by this organization',
-      exclusive: ['project-id'],
+      exclusive: ['project'],
       semantics: 'specify',
     }),
     ...getProjectIdFlag({

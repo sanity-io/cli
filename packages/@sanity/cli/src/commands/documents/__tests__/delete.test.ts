@@ -211,7 +211,7 @@ describe('#documents:delete', () => {
       token: 'test-token',
     }
 
-    test('works with --project-id and --dataset flags when no project root', async () => {
+    test('works with --project and --dataset flags when no project root', async () => {
       const mockDelete = vi.fn()
       const mockCommit = vi.fn().mockResolvedValue({
         results: [{id: 'test-doc', operation: 'delete'}],
@@ -223,7 +223,7 @@ describe('#documents:delete', () => {
 
       const {error, stdout} = await testCommand(
         DeleteDocumentCommand,
-        ['test-doc', '--project-id', 'ext-project', '--dataset', 'ext-dataset'],
+        ['test-doc', '--project', 'ext-project', '--dataset', 'ext-dataset'],
         {mocks: noProjectRootMocks},
       )
 
@@ -239,10 +239,10 @@ describe('#documents:delete', () => {
       )
     })
 
-    test('errors when no project root with --project-id but no --dataset', async () => {
+    test('errors when no project root with --project but no --dataset', async () => {
       const {error} = await testCommand(
         DeleteDocumentCommand,
-        ['test-doc', '--project-id', 'ext-project'],
+        ['test-doc', '--project', 'ext-project'],
         {mocks: noProjectRootMocks},
       )
 
