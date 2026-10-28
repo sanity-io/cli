@@ -3,6 +3,7 @@ import {type Context, EXPERIMENTAL_API_WARNING, isHttpError} from '@sanity/clien
 
 const CONTEXT_API_VERSION = 'v2026-08-25'
 const BLUEPRINTS_API_VERSION = 'vX'
+const BLUEPRINTS_LOOKUP_TIMEOUT_MS = 5000
 
 const blueprintOwnershipDebug = subdebug('context:blueprint-ownership')
 
@@ -103,7 +104,10 @@ export async function getKnowledgeBaseBlueprintOwnership(
       // The Blueprints API has no stable version yet, and the warning would interrupt command output.
       // The client splits the warning header on commas, so its second clause is matched separately.
       ignoreWarnings: [EXPERIMENTAL_API_WARNING, 'which will change without warning'],
+      // The lookup fails open, so an unreachable Blueprints API must not hold the command for the client's defaults.
+      maxRetries: 0,
       requireUser: true,
+      timeout: BLUEPRINTS_LOOKUP_TIMEOUT_MS,
     })
     const headers = {
       'x-sanity-scope-id': organizationId,

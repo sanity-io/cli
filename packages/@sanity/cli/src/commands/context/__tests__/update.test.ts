@@ -174,9 +174,9 @@ describe('context update', () => {
     ])
 
     expect(error?.message).toContain(
-      'The blueprint stack "production" manages knowledge base "kb-abc123"',
+      'The blueprint stack "production" manages the title and description of knowledge base "kb-abc123"',
     )
-    expect(error?.message).toContain('Change it in the blueprint')
+    expect(error?.message).toContain('Change them in the blueprint')
     expect(error?.oclif?.exit).toBe(2)
     expect(mockEdit).not.toHaveBeenCalled()
     expect(mockRequest).toHaveBeenNthCalledWith(1, {
@@ -202,7 +202,9 @@ describe('context update', () => {
       'New title',
     ])
 
-    expect(error?.message).toContain('A blueprint manages knowledge base "kb-abc123"')
+    expect(error?.message).toContain(
+      'A blueprint manages the title and description of knowledge base "kb-abc123"',
+    )
     expect(error?.oclif?.exit).toBe(2)
     expect(mockEdit).not.toHaveBeenCalled()
   })
@@ -227,5 +229,37 @@ describe('context update', () => {
     if (lookupFailed.error) throw lookupFailed.error
 
     expect(mockEdit).toHaveBeenCalledTimes(2)
+  })
+
+  test('changes refresh settings without a lookup, since the blueprint does not manage them', async () => {
+    for (const args of [
+      ['kb-abc123', '--no-refresh-enabled'],
+      ['kb-abc123', '--refresh-frequency', 'monthly'],
+    ]) {
+      const {error} = await testCommand(UpdateKnowledgeBaseCommand, args)
+      if (error) throw error
+    }
+
+    expect(mockRequest).not.toHaveBeenCalled()
+    expect(mockEdit).toHaveBeenNthCalledWith(1, 'kb-abc123', {refreshEnabled: false})
+    expect(mockEdit).toHaveBeenNthCalledWith(2, 'kb-abc123', {refreshFrequency: 'monthly'})
+  })
+
+  test('refuses a title change mixed with refresh settings, and says refresh can change alone', async () => {
+    mockRequest
+      .mockResolvedValueOnce([{stackId: 'ST-1'}])
+      .mockResolvedValueOnce({name: 'production'})
+
+    const {error} = await testCommand(UpdateKnowledgeBaseCommand, [
+      'kb-abc123',
+      '--title',
+      'New title',
+      '--refresh-frequency',
+      'monthly',
+    ])
+
+    expect(error?.message).toContain('Refresh settings are not managed by the blueprint')
+    expect(error?.oclif?.exit).toBe(2)
+    expect(mockEdit).not.toHaveBeenCalled()
   })
 })

@@ -5,7 +5,11 @@ import {getErrorMessage} from '@sanity/cli-core/errors'
 import {spinner} from '@sanity/cli-core/ux'
 import {type Context, isHttpError} from '@sanity/client'
 
-import {getKnowledgeBaseBlueprintOwnership, updateKnowledgeBase} from '../../services/context.js'
+import {
+  type BlueprintOwnership,
+  getKnowledgeBaseBlueprintOwnership,
+  updateKnowledgeBase,
+} from '../../services/context.js'
 import {defineCommandTelemetry} from '../../util/telemetry/commandTelemetry.js'
 
 const updateContextDebug = subdebug('context:update')
@@ -102,13 +106,20 @@ export class UpdateKnowledgeBaseCommand extends SanityCommand<typeof UpdateKnowl
       params.refreshFrequency = refreshFrequency
     }
 
-    const ownership = await getKnowledgeBaseBlueprintOwnership(knowledgeBaseId)
+    const changesBlueprintFields = params.title !== undefined || params.description !== undefined
+    const ownership: BlueprintOwnership = changesBlueprintFields
+      ? await getKnowledgeBaseBlueprintOwnership(knowledgeBaseId)
+      : {managed: false}
     if (ownership.managed) {
       const manager = ownership.stackName
         ? `The blueprint stack "${ownership.stackName}"`
         : 'A blueprint'
+      const refreshHint =
+        params.refreshEnabled === undefined && params.refreshFrequency === undefined
+          ? ''
+          : ' Refresh settings are not managed by the blueprint, so you can change them without `--title` and `--description`.'
       this.error(
-        `${manager} manages knowledge base "${knowledgeBaseId}", so the next deploy would undo this change. Change it in the blueprint and run \`sanity blueprints deploy\` instead.`,
+        `${manager} manages the title and description of knowledge base "${knowledgeBaseId}", so the next deploy would undo this change. Change them in the blueprint and run \`sanity blueprints deploy\` instead.${refreshHint}`,
         {exit: exitCodes.USAGE_ERROR},
       )
     }
