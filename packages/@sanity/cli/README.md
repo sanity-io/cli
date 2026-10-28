@@ -4234,10 +4234,11 @@ Extract a JSON representation of a Sanity schema within a Studio context.
 
 ```
 USAGE
-  $ sanity schemas extract [--enforce-required-fields] [--force] [--format <format>] [--path <value>] [--watch]
-    [--watch-patterns <glob>...] [--workspace <name>]
+  $ sanity schemas extract [--config-path <path>] [--enforce-required-fields] [--force] [--format <format>] [--path
+    <value>] [--watch] [--watch-patterns <glob>...] [--workspace <name>]
 
 FLAGS
+  --config-path=<path>        Path to the Sanity Studio config file
   --enforce-required-fields   Makes the schema generated treat fields marked as required as non-optional
   --force                     Overwrite an existing schema file
   --format=<format>           [default: groq-type-nodes] Output format (currently only groq-type-nodes)
