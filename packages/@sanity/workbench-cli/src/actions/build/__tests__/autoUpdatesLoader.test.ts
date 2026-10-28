@@ -13,13 +13,18 @@ const modules = {sanity: {source: 'cdn'}, 'sanity/structure': {source: 'cdn stru
 const load = vi.fn(async (_appId: string, _request: object) => ({modules}))
 
 function setup() {
-  return createAutoUpdatesLoader({
+  const loader = createAutoUpdatesLoader({
     appId: APP_ID,
     cssUrls: [`${SANITY_URL}/index.css`],
     imports: {sanity: SANITY_URL, 'sanity/': `${SANITY_URL}/`},
     specifiers: ['sanity', 'sanity/structure'],
     vendor,
   })
+
+  return {
+    importMapUrl: loader.importMapUrl,
+    load: loader.load,
+  }
 }
 
 beforeEach(() => {
@@ -35,7 +40,7 @@ afterEach(() => {
 })
 
 test('loads the auto-updated packages through Workbench, from current module server URLs', async () => {
-  const {imports, load: loadModule} = setup()
+  const {importMapUrl, load: loadModule} = setup()
 
   const [sanity, structure] = await Promise.all([
     loadModule('sanity'),
@@ -51,7 +56,7 @@ test('loads the auto-updated packages through Workbench, from current module ser
     styles: [`${CURRENT_SANITY_URL}/index.css`],
     vendor,
   })
-  expect(imports.sanity).toBe(CURRENT_SANITY_URL)
+  expect(importMapUrl('sanity')).toBe(CURRENT_SANITY_URL)
 })
 
 test('refreshes the timestamp in default (not by-app) module server URLs', async () => {
@@ -79,7 +84,7 @@ test.each([
   {autoUpdates: {versions: {}}, when: 'Workbench offers no contract version 1'},
 ])('fails every package when $when', async ({autoUpdates}) => {
   Object.assign(globalThis, {[KEY]: autoUpdates})
-  const {load: loadModule} = setup()
+  const {importMapUrl, load: loadModule} = setup()
 
   await expect(loadModule('sanity')).rejects.toThrow(
     'The auto update loader is not installed in dashboard',
@@ -87,15 +92,17 @@ test.each([
   await expect(loadModule('sanity/structure')).rejects.toThrow(
     'The auto update loader is not installed in dashboard',
   )
+  expect(importMapUrl('sanity')).toBeUndefined()
 })
 
 test('fails every package when Workbench fails to load them', async () => {
   const error = new TypeError('Failed to fetch')
   const failing = vi.fn(() => Promise.reject(error))
   Object.assign(globalThis, {[KEY]: {versions: {1: failing}}})
-  const {load: loadModule} = setup()
+  const {importMapUrl, load: loadModule} = setup()
 
   await expect(loadModule('sanity')).rejects.toBe(error)
   await expect(loadModule('sanity/structure')).rejects.toBe(error)
+  expect(importMapUrl('sanity')).toBeUndefined()
   expect(failing).toHaveBeenCalledOnce()
 })

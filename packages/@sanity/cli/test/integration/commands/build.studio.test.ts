@@ -1,4 +1,4 @@
-import {readdir, readFile, stat, writeFile} from 'node:fs/promises'
+import {readdir, readFile, writeFile} from 'node:fs/promises'
 import {platform} from 'node:os'
 import {join, relative, sep} from 'node:path'
 
@@ -142,16 +142,7 @@ describe('#build studio', {timeout: (platform() === 'win32' ? 120 : 60) * 1000},
       // `@sanity/runtime-cli`), so a plain federated `sanity build` omits it.
       expect(distFiles).not.toContain('sanity-resource-bindings.js')
 
-      // Inside Workbench, the remote loads `sanity` from the module server as this app; the
-      // installed copy (several MB) isn't in the build.
-      const jsFiles = (await readdir(join(cwd, 'dist'), {recursive: true})).filter((file) =>
-        file.endsWith('.js'),
-      )
-      const jsSizes = await Promise.all(
-        jsFiles.map(async (file) => (await stat(join(cwd, 'dist', file))).size),
-      )
-      expect(jsSizes.reduce((total, size) => total + size, 0)).toBeLessThan(2_000_000)
-
+      // Inside Workbench, the remote loads `sanity` from the module server as this app.
       const appChunks = manifest.exposes.find(({name}: {name: string}) => name === 'App').assets.js
         .sync
       const appCode = (

@@ -102,14 +102,15 @@ function renderAutoUpdatesModule(autoUpdates: AutoUpdates | undefined): string {
   )
 
   return `import {createAutoUpdatesLoader} from ${JSON.stringify(LOADER_ENTRY)}
-export const {imports, load} = createAutoUpdatesLoader({
+export const {importMapUrl, load} = createAutoUpdatesLoader({
   appId: __SANITY_APP_ID__,
   cssUrls: ${JSON.stringify(autoUpdates.cssUrls ?? [])},
   imports: ${JSON.stringify(autoUpdates.imports)},
   specifiers: JSON.parse(${JSON.stringify(SPECIFIERS_PLACEHOLDER)}),
   vendor: {${vendor.join(', ')}},
 })
-export const studioProps = () => (imports.sanity ? {unstable_importMapUrl: imports.sanity} : {})
+export const studioProps = () =>
+  importMapUrl('sanity') ? {unstable_importMapUrl: importMapUrl('sanity')} : {}
 `
 }
 

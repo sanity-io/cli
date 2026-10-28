@@ -38,31 +38,35 @@ export function createAutoUpdatesLoader({
       url.replace(TIMESTAMP, `$1${timestamp}`),
     ]),
   )
-  let modules: Promise<Record<string, Module>> | undefined
+  let modules: Record<string, Module> | undefined
+  let ready: Promise<void> | undefined
 
-  return {imports: currentImports, load}
+  return {
+    importMapUrl: (specifier: string) => (modules ? currentImports[specifier] : undefined),
+    load,
+  }
 
   async function load(specifier: string): Promise<Module> {
-    modules ??= loadModules()
-    const module = (await modules)[specifier]
+    ready ??= prepare()
+    await ready
+    if (!modules) throw new Error('The auto update loader is not installed in dashboard')
+
+    const module = modules?.[specifier]
     if (!module) throw new Error(`${specifier} was not loaded from the module server`)
 
     return module
   }
 
-  async function loadModules(): Promise<Record<string, Module>> {
-    const workbenchLoad = (
+  async function prepare(): Promise<void> {
+    const workbench = (
       globalThis as {[key: symbol]: {versions?: Record<number, Load>} | undefined}
-    )[Symbol.for('sanity.autoUpdates')]?.versions?.[1]
-    if (!workbenchLoad) throw new Error('The auto update loader is not installed in dashboard')
-
-    return (
-      await workbenchLoad(appId, {
-        imports: currentImports,
-        specifiers,
-        styles: cssUrls.map((url) => url.replace(TIMESTAMP, `$1${timestamp}`)),
-        vendor,
-      })
-    ).modules
+    )[Symbol.for('sanity.autoUpdates')]
+    const result = await workbench?.versions?.[1]?.(appId, {
+      imports: currentImports,
+      specifiers,
+      styles: cssUrls.map((url) => url.replace(TIMESTAMP, `$1${timestamp}`)),
+      vendor,
+    })
+    modules = result?.modules
   }
 }
