@@ -17,7 +17,9 @@ import {
 } from '@sanity/cli-core'
 import {z} from 'zod/mini'
 
+import {applicationReference} from '../../applicationReference.js'
 import {TileInterfaceMetadataSchema, ViewPlacementMetadataSchema} from '../../contract.js'
+import {type WorkbenchApp} from '../../defineApp.js'
 import {canonicalizeWatchDir} from './canonicalizeWatchDir.js'
 import {getProcessStartTime, isOurProcess} from './processLiveness.js'
 
@@ -96,6 +98,7 @@ const devServerInterfaceSchema = z.union([
 // Exported so test fixtures can validate against the same schema the registry
 // parses with — see `aDevServerManifest`. Used internally by `getRegisteredServers`.
 export const devServerManifestSchema = z.object({
+  applicationId: z.optional(z.string()),
   /**
    * Field schema *values* load from the federation module; each field's `src`
    * rides along so a repoint bumps the exposes-set id and forces a rebuild.
@@ -127,6 +130,10 @@ export const devServerManifestSchema = z.object({
     ),
   ),
   host: z.string(),
+  /**
+   * The id the app runs under on the bus. It stays apart from `applicationId`,
+   * because Dashboards that predate `applicationId` key local apps on it.
+   */
   id: z.optional(z.string()),
   interfaces: z.optional(z.array(devServerInterfaceSchema)),
   /**
@@ -176,6 +183,24 @@ export function isConfigOnlyServer(
   server: Pick<DevServerManifest, 'configs' | 'interfaces'>,
 ): boolean {
   return Boolean(server.configs?.length) && !server.interfaces?.length
+}
+
+export function localAppIdentity(
+  app: Pick<WorkbenchApp, 'isSingleton' | 'name' | 'organizationId' | 'slug' | 'visibility'>,
+): Pick<DevServerManifest, 'name' | 'organizationId' | 'reference' | 'slug' | 'visibility'> {
+  const name = app.name ?? app.slug
+
+  return {
+    name,
+    organizationId: app.organizationId,
+    reference: applicationReference({
+      isSingleton: app.isSingleton ?? false,
+      name,
+      organizationId: app.organizationId,
+    }),
+    slug: app.slug,
+    visibility: app.visibility ?? 'default',
+  }
 }
 
 /**
