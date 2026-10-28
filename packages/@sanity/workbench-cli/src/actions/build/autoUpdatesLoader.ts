@@ -54,7 +54,7 @@ export function createAutoUpdatesLoader({
     const workbenchLoad = (
       globalThis as {[key: symbol]: {versions?: Record<number, Load>} | undefined}
     )[Symbol.for('sanity.autoUpdates')]?.versions?.[1]
-    if (!workbenchLoad) throw new Error('No Workbench on this page loads auto-updating apps')
+    if (!workbenchLoad) throw new Error('The auto update loader is not installed in dashboard')
 
     return (
       await workbenchLoad(appId, {

@@ -82,10 +82,10 @@ test.each([
   const {load: loadModule} = setup()
 
   await expect(loadModule('sanity')).rejects.toThrow(
-    'No Workbench on this page loads auto-updating apps',
+    'The auto update loader is not installed in dashboard',
   )
   await expect(loadModule('sanity/structure')).rejects.toThrow(
-    'No Workbench on this page loads auto-updating apps',
+    'The auto update loader is not installed in dashboard',
   )
 })
 
