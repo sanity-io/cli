@@ -339,6 +339,29 @@ describe('approved CLI payloads', () => {
     ).toMatchObject({data: {}})
   })
 
+  test('preserves TypeGen resources usage and rejects invalid values', () => {
+    const metrics = {boundSchemaCount: 1, mode: 'watch', resourceCount: 3}
+    const result = sanitizeTelemetryEvent(
+      event({
+        data: {...metrics, configPath: 'private'},
+        name: 'Typegen Resources Used',
+        type: 'trace.log',
+        version: 1,
+      }),
+    )
+    expect(result).toMatchObject({data: metrics, name: 'Typegen Resources Used', version: 1})
+    expect(JSON.stringify(result)).not.toContain('private')
+    expect(
+      sanitizeTelemetryEvent(
+        event({
+          data: {boundSchemaCount: -1, mode: 'private', resourceCount: Number.NaN},
+          name: 'Typegen Resources Used',
+          version: 1,
+        }),
+      ),
+    ).toMatchObject({data: {}})
+  })
+
   test('omits unknown event versions and invalid metric values', () => {
     expect(
       sanitizeTelemetryEvent(

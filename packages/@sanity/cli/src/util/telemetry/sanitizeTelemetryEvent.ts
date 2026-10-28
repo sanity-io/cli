@@ -188,6 +188,10 @@ const eventSchemas: Record<string, {fields: Schema; versions: number[]}> = {
     versions: [0],
   },
   'Studio Build Completed': {fields: {outputSize: number}, versions: [0]},
+  'Typegen Resources Used': {
+    fields: {boundSchemaCount: number, mode: oneOf('generate', 'watch'), resourceCount: number},
+    versions: [1],
+  },
   'Typegen Watch Mode Started': {
     fields: {
       averageGenerationDuration: number,
