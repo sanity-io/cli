@@ -6,6 +6,7 @@ import {initAction} from '../actions/init/initAction.js'
 import {InitError} from '../actions/init/initError.js'
 import {flagsToInitOptions} from '../actions/init/types.js'
 import {getProjectIdFlag} from '../util/sharedFlags.js'
+import {defineCommandTelemetry} from '../util/telemetry/commandTelemetry.js'
 
 export class InitCommand extends SanityCommand<typeof InitCommand> {
   static override args = {type: Args.string({hidden: true})}
@@ -223,6 +224,19 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
         'Unattended mode, answers "yes" to any "yes/no" prompt and otherwise uses defaults',
     }),
   }
+
+  static telemetry = defineCommandTelemetry(this.flags, {
+    redact: [
+      'template-token',
+      'template',
+      'git',
+      'env',
+      'output-path',
+      'project-name',
+      'create-project',
+      'coupon',
+    ],
+  })
 
   public async run(): Promise<void> {
     let mcpMode: 'auto' | 'prompt' | 'skip' = 'prompt'

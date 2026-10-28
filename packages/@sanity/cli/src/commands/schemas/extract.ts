@@ -69,7 +69,9 @@ export class ExtractSchemaCommand extends SanityCommand<typeof ExtractSchemaComm
 
   static override hiddenAliases: string[] = ['schema:extract']
 
-  static telemetry = defineCommandTelemetry(this.flags, {redact: ['config-path']})
+  static telemetry = defineCommandTelemetry(this.flags, {
+    redact: ['config-path', 'path', 'watch-patterns'],
+  })
 
   public async run(): Promise<{close?: () => Promise<void>} | void> {
     const {flags} = await this.parse(ExtractSchemaCommand)

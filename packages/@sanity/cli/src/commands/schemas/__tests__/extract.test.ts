@@ -89,6 +89,14 @@ describe('schema extract command', () => {
         canonical: '--config-path',
         flags: ['--config-path'],
       },
+      {
+        canonical: '--path',
+        flags: ['--path'],
+      },
+      {
+        canonical: '--watch-patterns',
+        flags: ['--watch-patterns'],
+      },
     ])
   })
   test('schema command bad flags', async () => {
