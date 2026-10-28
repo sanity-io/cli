@@ -1,4 +1,5 @@
 import {access} from 'node:fs/promises'
+import {dirname, join, resolve} from 'node:path'
 
 import {exitCodes} from '@sanity/cli-core/ExitCodes'
 import * as uxMocks from '@sanity/cli-test/mocks/cli-core/ux'
@@ -63,17 +64,20 @@ describe('schema extract command', () => {
     expect(mockWatchExtractSchema).toHaveBeenCalledOnce()
   })
   test('uses an explicit Studio config without discovering a project root', async () => {
-    await ExtractSchemaCommand.run(['--config-path', '/build-artifacts/studio/sanity.config.js'])
+    const configPath = join('build-artifacts', 'studio', 'sanity.config.js')
+    const resolvedConfigPath = resolve(configPath)
+
+    await ExtractSchemaCommand.run(['--config-path', configPath])
 
     expect(mocks.SanityCmdGetProjectRoot).not.toHaveBeenCalled()
-    expect(mockGetCliConfig).toHaveBeenCalledWith('/build-artifacts/studio')
+    expect(mockGetCliConfig).toHaveBeenCalledWith(dirname(resolvedConfigPath))
     expect(mockExtractOptions).toHaveBeenCalledWith({
       flags: expect.objectContaining({
-        'config-path': '/build-artifacts/studio/sanity.config.js',
+        'config-path': configPath,
       }),
       projectRoot: {
-        directory: '/build-artifacts/studio',
-        path: '/build-artifacts/studio/sanity.config.js',
+        directory: dirname(resolvedConfigPath),
+        path: resolvedConfigPath,
         type: 'studio',
       },
       schemaExtraction: {},
