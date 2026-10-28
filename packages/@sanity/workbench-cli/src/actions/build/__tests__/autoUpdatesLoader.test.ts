@@ -4,8 +4,9 @@ import {createAutoUpdatesLoader} from '../autoUpdatesLoader.js'
 
 const KEY = Symbol.for('sanity.autoUpdates')
 const NOW = 1_800_000_000
-// The app ID's `t9` segment must survive the timestamp refresh.
-const SANITY_URL = 'https://sanity-cdn.com/v1/modules/by-app/t9app/t100/%5E6.17.0/sanity'
+// An app ID shaped like a timestamp segment must survive the timestamp refresh.
+const APP_ID = 't9'
+const SANITY_URL = `https://sanity-cdn.com/v1/modules/by-app/${APP_ID}/t100/%5E6.17.0/sanity`
 const CURRENT_SANITY_URL = SANITY_URL.replace('/t100', `/t${NOW}`)
 const bundled = {source: 'bundled'}
 const vendor = {react: async () => ({})}
@@ -15,7 +16,7 @@ let warn: MockInstance
 
 function setup() {
   const loader = createAutoUpdatesLoader({
-    appId: 't9app',
+    appId: APP_ID,
     cssUrls: [`${SANITY_URL}/index.css`],
     imports: {sanity: SANITY_URL, 'sanity/': `${SANITY_URL}/`},
     specifiers: ['sanity', 'sanity/structure'],
@@ -52,7 +53,7 @@ test('loads the auto-updated packages through Workbench, from current module ser
   expect(sanity).toBe(modules.sanity)
   expect(structure).toBe(modules['sanity/structure'])
 
-  expect(load).toHaveBeenCalledExactlyOnceWith('t9app', {
+  expect(load).toHaveBeenCalledExactlyOnceWith(APP_ID, {
     imports: {sanity: CURRENT_SANITY_URL, 'sanity/': `${CURRENT_SANITY_URL}/`},
     specifiers: ['sanity', 'sanity/structure'],
     styles: [`${CURRENT_SANITY_URL}/index.css`],

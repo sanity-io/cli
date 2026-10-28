@@ -20,7 +20,7 @@ interface AutoUpdatesLoaderOptions {
   vendor: Record<string, () => Promise<Module>>
 }
 
-const TIMESTAMP = /\/t\d+(?=\/|$)/
+const TIMESTAMP = /(\/by-app\/[^/]+)\/t\d+/
 
 // Loads the app's auto-updated packages from the module server as its own copy; if any fails,
 // the app uses the bundled copies of all of them.
@@ -36,7 +36,7 @@ export function createAutoUpdatesLoader({
   const currentImports = Object.fromEntries(
     Object.entries(imports).map(([specifier, url]) => [
       specifier,
-      url.replace(TIMESTAMP, timestamp),
+      url.replace(TIMESTAMP, `$1${timestamp}`),
     ]),
   )
   let modules: Record<string, Module> | undefined
@@ -68,7 +68,7 @@ export function createAutoUpdatesLoader({
       const result = await workbenchLoad(appId, {
         imports: currentImports,
         specifiers,
-        styles: cssUrls.map((url) => url.replace(TIMESTAMP, timestamp)),
+        styles: cssUrls.map((url) => url.replace(TIMESTAMP, `$1${timestamp}`)),
         vendor,
       })
       if (!result) throw new Error(`Workbench did not prepare ${appId} for auto-updates`)
