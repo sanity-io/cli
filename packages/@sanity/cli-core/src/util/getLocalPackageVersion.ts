@@ -1,9 +1,8 @@
 import {dirname, join, normalize, resolve} from 'node:path'
 import {fileURLToPath, pathToFileURL} from 'node:url'
 
-import {moduleResolve} from 'import-meta-resolve'
-
 import {readPackageJson} from './readPackageJson.js'
+import {resolvePackageUrl} from './resolveLocalPackage.js'
 
 /**
  * Get the version of a package installed locally.
@@ -41,7 +40,7 @@ export function getLocalPackageDir(moduleName: string, workDir: string): string 
   const dirUrl = pathToFileURL(resolve(dir, 'noop.js'))
 
   try {
-    const packageJsonUrl = moduleResolve(`${moduleName}/package.json`, dirUrl)
+    const packageJsonUrl = resolvePackageUrl(`${moduleName}/package.json`, dirUrl)
     return dirname(fileURLToPath(packageJsonUrl))
   } catch (err: unknown) {
     if (!isErrPackagePathNotExported(err)) {
@@ -50,7 +49,7 @@ export function getLocalPackageDir(moduleName: string, workDir: string): string 
   }
 
   // Fallback: resolve main entry point and derive package root
-  const mainUrl = moduleResolve(moduleName, dirUrl)
+  const mainUrl = resolvePackageUrl(moduleName, dirUrl)
   const mainPath = fileURLToPath(mainUrl)
   const normalizedName = normalize(moduleName)
   const idx = mainPath.lastIndexOf(normalizedName)

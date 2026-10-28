@@ -1,9 +1,5 @@
-import {resolve} from 'node:path'
-import {pathToFileURL} from 'node:url'
-
-import {moduleResolve} from 'import-meta-resolve'
-
 import {doImport} from '../doImport.js'
+import {resolveLocalPackagePath} from '../resolveLocalPackage.js'
 
 /**
  * Loads the `getStudioEnvironmentVariables` function from the studio's
@@ -19,13 +15,10 @@ import {doImport} from '../doImport.js'
 export async function getStudioEnvironmentVariables(
   rootPath: string,
 ): Promise<Record<string, string>> {
-  // Create a fake config URL - doesn't have to be correct, just need the root path
-  const fakeConfigUrl = pathToFileURL(resolve(rootPath, 'sanity.config.mjs'))
-
   // Load `getStudioEnvironmentVariables` from the `sanity/cli` module installed
   // relative to where the studio is located, instead of resolving from where this CLI is
   // running, in order to ensure we're using the same version as the studio would.
-  const sanityCliUrl = moduleResolve('sanity/cli', fakeConfigUrl)
+  const sanityCliUrl = resolveLocalPackagePath('sanity/cli', rootPath)
   try {
     const {getStudioEnvironmentVariables: getEnvVars} = await doImport(sanityCliUrl.href)
     if (typeof getEnvVars !== 'function') {
