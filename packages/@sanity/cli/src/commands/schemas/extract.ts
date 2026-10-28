@@ -2,7 +2,13 @@ import {access} from 'node:fs/promises'
 import {dirname, resolve} from 'node:path'
 
 import {Flags} from '@oclif/core'
-import {exitCodes, getCliConfig, SanityCommand} from '@sanity/cli-core'
+import {
+  type CliConfig,
+  exitCodes,
+  getCliConfig,
+  isNotFoundError,
+  SanityCommand,
+} from '@sanity/cli-core'
 import {confirm} from '@sanity/cli-core/ux'
 
 import {extractSchema} from '../../actions/schema/extractSchema.js'
@@ -80,7 +86,15 @@ export class ExtractSchemaCommand extends SanityCommand<typeof ExtractSchemaComm
       ? {directory: dirname(configPath), path: configPath, type: 'studio' as const}
       : await this.getProjectRoot()
 
-    const {schemaExtraction} = await getCliConfig(projectRoot.directory)
+    let cliConfig: CliConfig
+    try {
+      cliConfig = await getCliConfig(projectRoot.directory)
+    } catch (err) {
+      if (!configPath || !isNotFoundError(err)) throw err
+      cliConfig = {}
+    }
+
+    const {schemaExtraction} = cliConfig
     const extractOptions = getExtractOptions({
       flags,
       projectRoot,

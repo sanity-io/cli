@@ -1,5 +1,5 @@
 import {existsSync} from 'node:fs'
-import {mkdtemp, readFile, writeFile} from 'node:fs/promises'
+import {mkdtemp, readFile, unlink, writeFile} from 'node:fs/promises'
 import {tmpdir} from 'node:os'
 import {join, resolve} from 'node:path'
 
@@ -26,10 +26,11 @@ describe('#schema:extract', {timeout: 60 * 1000}, () => {
     expect(existsSync(resolve(cwd, 'schema.json'))).toBe(true)
   })
 
-  test('should extract schema using an explicit config outside the current directory', async () => {
+  test('should extract schema using an explicit config without a CLI config', async () => {
     const studioDirectory = await testFixture('basic-studio')
     const cwd = await mkdtemp(join(tmpdir(), 'schema-config-path-'))
     const outputPath = join(cwd, 'schema.json')
+    await unlink(join(studioDirectory, 'sanity.cli.ts'))
     process.chdir(cwd)
 
     const {error, stderr} = await testCommand(ExtractSchemaCommand, [

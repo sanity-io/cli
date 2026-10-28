@@ -33,6 +33,7 @@ vi.mock('../../../actions/schema/watchExtractSchema.js', () => ({
 }))
 
 // Finally, import the module under test: extract schema command
+const {NotFoundError} = await import('@sanity/cli-core')
 const {ExtractSchemaCommand} = await import('../extract.js')
 const mockAccess = vi.mocked(access)
 
@@ -82,6 +83,30 @@ describe('schema extract command', () => {
       },
       schemaExtraction: {},
     })
+  })
+  test('does not require a CLI config when using an explicit Studio config', async () => {
+    mockGetCliConfig.mockRejectedValue(new NotFoundError('No CLI config found'))
+
+    await ExtractSchemaCommand.run(['--config-path', join('build-artifacts', 'sanity.config.js')])
+
+    expect(mockExtractOptions).toHaveBeenCalledWith(
+      expect.objectContaining({schemaExtraction: undefined}),
+    )
+    expect(mockExtractSchema).toHaveBeenCalledOnce()
+  })
+  test('still requires a CLI config when discovering the project root', async () => {
+    const error = new NotFoundError('No CLI config found')
+    mockGetCliConfig.mockRejectedValue(error)
+
+    await expect(ExtractSchemaCommand.run([])).rejects.toBe(error)
+  })
+  test('does not ignore other CLI config loading failures', async () => {
+    const error = new Error('Invalid CLI config')
+    mockGetCliConfig.mockRejectedValue(error)
+
+    await expect(
+      ExtractSchemaCommand.run(['--config-path', join('build-artifacts', 'sanity.config.js')]),
+    ).rejects.toBe(error)
   })
   test('redacts the Studio config path from telemetry', () => {
     expect(ExtractSchemaCommand.telemetry.redactedFlags).toEqual([
