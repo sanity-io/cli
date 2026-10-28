@@ -2,10 +2,7 @@ import {type FlagInput} from '@oclif/core/interfaces'
 import {exitCodes, SanityCommand, subdebug} from '@sanity/cli-core'
 import {getErrorMessage} from '@sanity/cli-core/errors'
 
-import {
-  MissingOrganizationError,
-  resolveOrganizationId,
-} from '../../actions/context/resolveOrganizationId.js'
+import {resolveOrganizationId} from '../../actions/context/resolveOrganizationId.js'
 import {listKnowledgeBases} from '../../services/context.js'
 import {Table} from '../../util/responsiveTable.js'
 import {getOrganizationFlag} from '../../util/sharedFlags.js'
@@ -42,22 +39,11 @@ export class ListKnowledgeBasesCommand extends SanityCommand<typeof ListKnowledg
   public async run(): Promise<void> {
     const {json, organization} = this.flags
 
-    let organizationId: string
-    try {
-      organizationId = await resolveOrganizationId({
-        configuredOrganizationId: (await this.tryGetCliConfig()).app?.organizationId,
-        flagOrganizationId: organization,
-        unattended: this.isUnattended(),
-      })
-    } catch (error) {
-      listContextDebug('Error resolving organization', error)
-      this.error(getErrorMessage(error), {
-        exit:
-          error instanceof MissingOrganizationError
-            ? exitCodes.USAGE_ERROR
-            : exitCodes.RUNTIME_ERROR,
-      })
-    }
+    const organizationId = await resolveOrganizationId({
+      configuredOrganizationId: (await this.tryGetCliConfig()).app?.organizationId,
+      flagOrganizationId: organization,
+      unattended: this.isUnattended(),
+    })
 
     let knowledgeBases
     try {

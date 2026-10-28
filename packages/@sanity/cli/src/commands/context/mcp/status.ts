@@ -1,25 +1,21 @@
-import {Args} from '@oclif/core'
 import {type FlagInput} from '@oclif/core/interfaces'
 import {exitCodes, SanityCommand, subdebug} from '@sanity/cli-core'
 import {getErrorMessage} from '@sanity/cli-core/errors'
 import {isHttpError} from '@sanity/client'
 
 import {
-  MissingOrganizationError,
-  resolveOrganizationId,
-} from '../../../actions/context/resolveOrganizationId.js'
+  mcpEndpointNameArg,
+  mcpEndpointOrganizationFlag,
+} from '../../../actions/context/mcpEndpoint.js'
+import {resolveOrganizationId} from '../../../actions/context/resolveOrganizationId.js'
 import {formatKeyValue} from '../../../actions/debug/output.js'
 import {getMcpEndpointStatus} from '../../../services/context.js'
-import {getOrganizationFlag} from '../../../util/sharedFlags.js'
 
 const statusMcpDebug = subdebug('context:mcp:status')
 
 export class McpEndpointStatusCommand extends SanityCommand<typeof McpEndpointStatusCommand> {
   static override args = {
-    name: Args.string({
-      description: 'MCP endpoint name, as in its URL',
-      required: true,
-    }),
+    name: mcpEndpointNameArg,
   }
 
   static override description =
@@ -35,32 +31,18 @@ export class McpEndpointStatusCommand extends SanityCommand<typeof McpEndpointSt
   ]
 
   static override flags = {
-    ...getOrganizationFlag({
-      description: 'Organization the MCP endpoint belongs to',
-      semantics: 'override',
-    }),
+    ...mcpEndpointOrganizationFlag,
   } satisfies FlagInput
 
   public async run(): Promise<void> {
     const {name} = this.args
     const {json, organization} = this.flags
 
-    let organizationId: string
-    try {
-      organizationId = await resolveOrganizationId({
-        configuredOrganizationId: (await this.tryGetCliConfig()).app?.organizationId,
-        flagOrganizationId: organization,
-        unattended: this.isUnattended(),
-      })
-    } catch (error) {
-      statusMcpDebug('Error resolving organization', error)
-      this.error(getErrorMessage(error), {
-        exit:
-          error instanceof MissingOrganizationError
-            ? exitCodes.USAGE_ERROR
-            : exitCodes.RUNTIME_ERROR,
-      })
-    }
+    const organizationId = await resolveOrganizationId({
+      configuredOrganizationId: (await this.tryGetCliConfig()).app?.organizationId,
+      flagOrganizationId: organization,
+      unattended: this.isUnattended(),
+    })
 
     let status
     try {

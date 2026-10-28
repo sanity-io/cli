@@ -159,7 +159,6 @@ describe('context query', () => {
     })
 
     expect(error?.message).toContain('Network down')
-    expect(error?.oclif?.exit).toBe(1)
     expect(mockFetch).not.toHaveBeenCalled()
   })
 

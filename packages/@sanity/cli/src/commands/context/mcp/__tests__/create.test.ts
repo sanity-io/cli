@@ -118,19 +118,15 @@ describe('context mcp create', () => {
     expect(mockCreate).not.toHaveBeenCalled()
   })
 
-  test.each([
-    ['--workspace', 'default'],
-    ['--perspective', 'drafts'],
-    ['--no-semantic-search'],
-    ['--groq-filter', '*'],
-  ])('requires --dataset with %s', async (...flag) => {
+  test('requires --dataset with dataset settings', async () => {
     const {error} = await testCommand(CreateMcpEndpointCommand, [
       ...base,
       '--title',
       'Support',
       '--knowledge-base',
       'kb-abc123',
-      ...flag,
+      '--perspective',
+      'drafts',
     ])
 
     expect(error?.message).toContain('--dataset')

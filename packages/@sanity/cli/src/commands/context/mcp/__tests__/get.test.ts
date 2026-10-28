@@ -14,7 +14,7 @@ vi.mock('@sanity/cli-core', async (importOriginal) => {
 
 describe('context mcp get', () => {
   beforeEach(() => {
-    mockGetGlobalCliClient.mockResolvedValue({context: {mcpEndpoints: {get: mockGet}}, withConfig})
+    mockGetGlobalCliClient.mockResolvedValue({context: {fetch: mockGet}, withConfig})
   })
 
   afterEach(() => {
@@ -47,7 +47,10 @@ describe('context mcp get', () => {
         '',
       ].join('\n'),
     )
-    expect(mockGet).toHaveBeenCalledWith({name: 'support'})
+    expect(mockGet).toHaveBeenCalledWith(expect.stringContaining('publicId == $nameOrId'), {
+      nameOrId: 'support',
+      org: 'org-abc123',
+    })
   })
 
   test('leaves out dataset settings when the endpoint has no dataset', async () => {
@@ -84,6 +87,7 @@ describe('context mcp get', () => {
 
     if (error) throw error
     expect(stdout).toContain('Semantic search: on')
+    expect(stdout).toContain('Knowledge bases: -')
   })
 
   test('outputs the endpoint with its URL as JSON with --json', async () => {

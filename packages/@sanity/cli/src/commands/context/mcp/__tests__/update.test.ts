@@ -33,7 +33,7 @@ const base = ['support', '--organization', 'org-abc123']
 describe('context mcp update', () => {
   beforeEach(() => {
     mockGetGlobalCliClient.mockResolvedValue({
-      context: {mcpEndpoints: {edit: mockEdit, get: mockGet}},
+      context: {fetch: mockGet, mcpEndpoints: {edit: mockEdit}},
       request: mockRequest,
       withConfig,
     })
@@ -182,9 +182,10 @@ describe('context mcp update', () => {
   })
 
   test('stops serving the dataset with --no-dataset', async () => {
-    const {error} = await testCommand(UpdateMcpEndpointCommand, [...base, '--no-dataset'])
+    const {error, stderr} = await testCommand(UpdateMcpEndpointCommand, [...base, '--no-dataset'])
 
     if (error) throw error
+    expect(stderr).not.toContain('has no dataset')
     expect(mockEdit).toHaveBeenCalledWith({
       name: 'support',
       sources: [{id: 'kb-abc123', type: 'knowledge-base'}],
@@ -253,6 +254,15 @@ describe('context mcp update', () => {
 
     if (error) throw error
     expect(mockEdit).toHaveBeenCalledWith({groqFilter: '_type == "post"', name: 'support'})
+  })
+
+  test('clears the GROQ filter on an endpoint without a dataset', async () => {
+    mockGet.mockResolvedValue({...mcpDoc, sources: [{id: 'kb-abc123', type: 'knowledge-base'}]})
+
+    const {error} = await testCommand(UpdateMcpEndpointCommand, [...base, '--groq-filter', ''])
+
+    if (error) throw error
+    expect(mockEdit).toHaveBeenCalledWith({groqFilter: null, name: 'support'})
   })
 
   test('refuses to remove the last source', async () => {
@@ -345,6 +355,15 @@ describe('context mcp update', () => {
       query: {id: 'mcpabc123', type: 'sanity.context.mcp'},
       url: '/blueprints/resources/search',
     })
+  })
+
+  test('refuses without a stack name when the caller cannot read Blueprints', async () => {
+    mockRequest.mockRejectedValueOnce(httpError(403, 'Managed', {errorCode: 'RESOURCE_MANAGED'}))
+
+    const {error} = await testCommand(UpdateMcpEndpointCommand, [...base, '--title', 'New'])
+
+    expect(error?.message).toContain('A blueprint manages MCP endpoint "support"')
+    expect(mockEdit).not.toHaveBeenCalled()
   })
 
   test('skips the blueprint lookup for an endpoint that does not exist', async () => {

@@ -1,5 +1,7 @@
+import {Args} from '@oclif/core'
 import {type Context} from '@sanity/client'
 
+import {getOrganizationFlag} from '../../util/sharedFlags.js'
 import {formatKeyValue} from '../debug/output.js'
 
 type McpSource = Context.McpDoc['sources'][number]
@@ -8,6 +10,22 @@ type McpSourceInput = Context.CreateMcpEndpointParams['sources'][number]
 export type DatasetSettings = Partial<
   Pick<DatasetSource, 'perspective' | 'semanticSearch' | 'workspace'>
 >
+
+/**
+ * The `<name>` argument of commands that act on an existing endpoint
+ */
+export const mcpEndpointNameArg = Args.string({
+  description: 'MCP endpoint name, as in its URL',
+  required: true,
+})
+
+/**
+ * The `--organization` flag of commands that act on an existing endpoint
+ */
+export const mcpEndpointOrganizationFlag = getOrganizationFlag({
+  description: 'Organization the MCP endpoint belongs to',
+  semantics: 'override',
+})
 
 /**
  * A flag `parse` that trims the value and rejects an empty one
@@ -35,20 +53,7 @@ export async function parseDatasetSourceId(input: string): Promise<string> {
 }
 
 /**
- * Build an endpoint's sources from knowledge base IDs and an optional dataset
- */
-export function buildSources(
-  knowledgeBaseIds: string[],
-  dataset: string | undefined,
-  settings: DatasetSettings,
-): McpSourceInput[] {
-  const sources: McpSourceInput[] = knowledgeBaseIds.map((id) => ({id, type: 'knowledge-base'}))
-  if (dataset !== undefined) sources.push({...settings, id: dataset, type: 'dataset'})
-  return sources
-}
-
-/**
- * Apply an update's source changes to an endpoint's current sources. The dataset
+ * Apply source changes to an endpoint's current sources, or to none when creating one. The dataset
  * keeps its settings until it is switched for another one; `dataset: null`
  * removes it. Sources are rebuilt from their known fields, since the stored
  * configuration may carry more. `notes` names the changes that were already in

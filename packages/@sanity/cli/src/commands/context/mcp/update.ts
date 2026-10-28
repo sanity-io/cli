@@ -1,4 +1,4 @@
-import {Args, Flags} from '@oclif/core'
+import {Flags} from '@oclif/core'
 import {type FlagInput} from '@oclif/core/interfaces'
 import {exitCodes, SanityCommand, subdebug} from '@sanity/cli-core'
 import {getErrorMessage} from '@sanity/cli-core/errors'
@@ -9,19 +9,18 @@ import {
   type DatasetSettings,
   editSources,
   formatMcpEndpoint,
+  mcpEndpointNameArg,
+  mcpEndpointOrganizationFlag,
   parseDatasetSourceId,
   parseNonEmpty,
 } from '../../../actions/context/mcpEndpoint.js'
+import {resolveOrganizationId} from '../../../actions/context/resolveOrganizationId.js'
 import {
-  MissingOrganizationError,
-  resolveOrganizationId,
-} from '../../../actions/context/resolveOrganizationId.js'
-import {
+  describeBlueprintManager,
   getMcpEndpoint,
   getMcpEndpointBlueprintOwnership,
   updateMcpEndpoint,
 } from '../../../services/context.js'
-import {getOrganizationFlag} from '../../../util/sharedFlags.js'
 import {defineCommandTelemetry} from '../../../util/telemetry/commandTelemetry.js'
 
 const updateMcpDebug = subdebug('context:mcp:update')
@@ -41,10 +40,7 @@ const UPDATE_FLAGS = [
 ]
 
 const flags = {
-  ...getOrganizationFlag({
-    description: 'Organization the MCP endpoint belongs to',
-    semantics: 'override',
-  }),
+  ...mcpEndpointOrganizationFlag,
   'add-knowledge-base': Flags.string({
     atLeastOne: UPDATE_FLAGS,
     description: 'Knowledge base to add to the endpoint; repeat the flag to add several',
@@ -109,10 +105,7 @@ const flags = {
 
 export class UpdateMcpEndpointCommand extends SanityCommand<typeof UpdateMcpEndpointCommand> {
   static override args = {
-    name: Args.string({
-      description: 'MCP endpoint name, as in its URL',
-      required: true,
-    }),
+    name: mcpEndpointNameArg,
   }
 
   static override description = `Update a Context MCP endpoint
@@ -201,28 +194,15 @@ Only the settings you pass change. Dataset settings (--workspace, --perspective,
       Object.keys(settings).length > 0
     const needsDataset = Object.keys(settings).length > 0 || Boolean(params.groqFilter)
 
-    let organizationId: string
-    try {
-      organizationId = await resolveOrganizationId({
-        configuredOrganizationId: (await this.tryGetCliConfig()).app?.organizationId,
-        flagOrganizationId: organization,
-        unattended: this.isUnattended(),
-      })
-    } catch (error) {
-      updateMcpDebug('Error resolving organization', error)
-      this.error(getErrorMessage(error), {
-        exit:
-          error instanceof MissingOrganizationError
-            ? exitCodes.USAGE_ERROR
-            : exitCodes.RUNTIME_ERROR,
-      })
-    }
+    const organizationId = await resolveOrganizationId({
+      configuredOrganizationId: (await this.tryGetCliConfig()).app?.organizationId,
+      flagOrganizationId: organization,
+      unattended: this.isUnattended(),
+    })
 
     const ownership = await getMcpEndpointBlueprintOwnership(organizationId, name)
     if (ownership.managed) {
-      const manager = ownership.stackName
-        ? `The blueprint stack "${ownership.stackName}"`
-        : 'A blueprint'
+      const manager = describeBlueprintManager(ownership.stackName)
       this.error(
         `${manager} manages MCP endpoint "${name}", so the next deploy would undo this change. Change it in the blueprint and run \`sanity blueprints deploy\` instead.`,
         {exit: exitCodes.USAGE_ERROR},

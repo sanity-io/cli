@@ -92,6 +92,13 @@ export async function updateKnowledgeBase(
 export type BlueprintOwnership = {managed: false} | {managed: true; stackName: string | null}
 
 /**
+ * Who manages a resource, for refusal messages: the stack by name when the caller can read it
+ */
+export function describeBlueprintManager(stackName: string | null): string {
+  return stackName ? `The blueprint stack "${stackName}"` : 'A blueprint'
+}
+
+/**
  * Whether a live blueprint stack manages the knowledge base
  */
 export function getKnowledgeBaseBlueprintOwnership(
@@ -108,10 +115,10 @@ export function getKnowledgeBaseBlueprintOwnership(
  */
 export function getMcpEndpointBlueprintOwnership(
   organizationId: string,
-  name: string,
+  nameOrId: string,
 ): Promise<BlueprintOwnership> {
   return getBlueprintOwnership('sanity.context.mcp', async () => {
-    const endpoint = await getMcpEndpoint(organizationId, name)
+    const endpoint = await getMcpEndpoint(organizationId, nameOrId)
     return endpoint && {organizationId, publicId: endpoint.publicId}
   })
 }
@@ -406,14 +413,18 @@ export async function listMcpEndpoints(organizationId: string): Promise<McpEndpo
 }
 
 /**
- * Get an MCP endpoint by name, or `null` when the organization has none by that name
+ * Get an MCP endpoint by name or ID, or `null` when the organization has none.
+ * Update and delete accept either, so the lookups guarding them must too.
  */
 export async function getMcpEndpoint(
   organizationId: string,
-  name: string,
+  nameOrId: string,
 ): Promise<McpEndpointConfig | null> {
   const client = await getContextClient(undefined, organizationId)
-  const endpoint = await client.context.mcpEndpoints.get({name})
+  const endpoint = await client.context.fetch<Context.McpDoc | null>(
+    '*[_type == "sanity.context.mcp" && organizationId == $org && (name == $nameOrId || publicId == $nameOrId)][0]',
+    {nameOrId, org: organizationId},
+  )
   return endpoint && {...endpoint, url: mcpEndpointUrl(client, endpoint)}
 }
 

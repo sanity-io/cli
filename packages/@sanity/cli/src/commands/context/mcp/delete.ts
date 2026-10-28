@@ -1,4 +1,4 @@
-import {Args, Flags} from '@oclif/core'
+import {Flags} from '@oclif/core'
 import {type FlagInput} from '@oclif/core/interfaces'
 import {exitCodes, SanityCommand, subdebug} from '@sanity/cli-core'
 import {getErrorMessage} from '@sanity/cli-core/errors'
@@ -6,24 +6,25 @@ import {confirm} from '@sanity/cli-core/ux'
 import {isHttpError} from '@sanity/client'
 
 import {
-  MissingOrganizationError,
-  resolveOrganizationId,
-} from '../../../actions/context/resolveOrganizationId.js'
-import {deleteMcpEndpoint, getMcpEndpointBlueprintOwnership} from '../../../services/context.js'
-import {getOrganizationFlag} from '../../../util/sharedFlags.js'
+  mcpEndpointNameArg,
+  mcpEndpointOrganizationFlag,
+} from '../../../actions/context/mcpEndpoint.js'
+import {resolveOrganizationId} from '../../../actions/context/resolveOrganizationId.js'
+import {
+  deleteMcpEndpoint,
+  describeBlueprintManager,
+  getMcpEndpointBlueprintOwnership,
+} from '../../../services/context.js'
 
 const deleteMcpDebug = subdebug('context:mcp:delete')
 
 export class DeleteMcpEndpointCommand extends SanityCommand<typeof DeleteMcpEndpointCommand> {
   static override args = {
-    name: Args.string({
-      description: 'MCP endpoint name, as in its URL',
-      required: true,
-    }),
+    name: mcpEndpointNameArg,
   }
 
   static override description =
-    'Delete a Context MCP endpoint. Agents connected through it lose access'
+    'Delete a Context MCP endpoint, which disconnects any agents using it'
 
   static override examples = [
     {
@@ -37,10 +38,7 @@ export class DeleteMcpEndpointCommand extends SanityCommand<typeof DeleteMcpEndp
   ]
 
   static override flags = {
-    ...getOrganizationFlag({
-      description: 'Organization the MCP endpoint belongs to',
-      semantics: 'override',
-    }),
+    ...mcpEndpointOrganizationFlag,
     yes: Flags.boolean({
       char: 'y',
       default: false,
@@ -52,28 +50,15 @@ export class DeleteMcpEndpointCommand extends SanityCommand<typeof DeleteMcpEndp
     const {name} = this.args
     const {organization, yes: skipConfirmation} = this.flags
 
-    let organizationId: string
-    try {
-      organizationId = await resolveOrganizationId({
-        configuredOrganizationId: (await this.tryGetCliConfig()).app?.organizationId,
-        flagOrganizationId: organization,
-        unattended: this.isUnattended(),
-      })
-    } catch (error) {
-      deleteMcpDebug('Error resolving organization', error)
-      this.error(getErrorMessage(error), {
-        exit:
-          error instanceof MissingOrganizationError
-            ? exitCodes.USAGE_ERROR
-            : exitCodes.RUNTIME_ERROR,
-      })
-    }
+    const organizationId = await resolveOrganizationId({
+      configuredOrganizationId: (await this.tryGetCliConfig()).app?.organizationId,
+      flagOrganizationId: organization,
+      unattended: this.isUnattended(),
+    })
 
     const ownership = await getMcpEndpointBlueprintOwnership(organizationId, name)
     if (ownership.managed) {
-      const manager = ownership.stackName
-        ? `The blueprint stack "${ownership.stackName}"`
-        : 'A blueprint'
+      const manager = describeBlueprintManager(ownership.stackName)
       this.error(
         `${manager} manages MCP endpoint "${name}". To delete it, deploy it with \`lifecycle: {deletionPolicy: 'allow'}\` in the blueprint, then remove it from the blueprint and deploy again.`,
         {exit: exitCodes.USAGE_ERROR},

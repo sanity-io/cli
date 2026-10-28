@@ -3,18 +3,16 @@ import {type FlagInput} from '@oclif/core/interfaces'
 import {exitCodes, SanityCommand, subdebug} from '@sanity/cli-core'
 import {getErrorMessage} from '@sanity/cli-core/errors'
 import {requiredWhenUnattended} from '@sanity/cli-core/flags'
-import {input, spinner} from '@sanity/cli-core/ux'
+import {spinner} from '@sanity/cli-core/ux'
 
 import {
-  buildSources,
+  editSources,
   formatMcpEndpoint,
   parseDatasetSourceId,
   parseNonEmpty,
 } from '../../../actions/context/mcpEndpoint.js'
-import {
-  MissingOrganizationError,
-  resolveOrganizationId,
-} from '../../../actions/context/resolveOrganizationId.js'
+import {resolveOrganizationId} from '../../../actions/context/resolveOrganizationId.js'
+import {promptForText} from '../../../prompts/promptForText.js'
 import {createMcpEndpoint} from '../../../services/context.js'
 import {getOrganizationFlag} from '../../../util/sharedFlags.js'
 import {defineCommandTelemetry} from '../../../util/telemetry/commandTelemetry.js'
@@ -119,31 +117,13 @@ export class CreateMcpEndpointCommand extends SanityCommand<typeof CreateMcpEndp
       workspace,
     } = this.flags
 
-    let organizationId: string
-    try {
-      organizationId = await resolveOrganizationId({
-        configuredOrganizationId: (await this.tryGetCliConfig()).app?.organizationId,
-        flagOrganizationId: organization,
-        unattended: this.isUnattended(),
-      })
-    } catch (error) {
-      createMcpDebug('Error resolving organization', error)
-      this.error(getErrorMessage(error), {
-        exit:
-          error instanceof MissingOrganizationError
-            ? exitCodes.USAGE_ERROR
-            : exitCodes.RUNTIME_ERROR,
-      })
-    }
+    const organizationId = await resolveOrganizationId({
+      configuredOrganizationId: (await this.tryGetCliConfig()).app?.organizationId,
+      flagOrganizationId: organization,
+      unattended: this.isUnattended(),
+    })
 
-    const title =
-      titleFlag ||
-      (
-        await input({
-          message: 'MCP endpoint title:',
-          validate: (value) => value.trim().length > 0 || 'Value cannot be empty',
-        })
-      ).trim()
+    const title = titleFlag || (await promptForText('MCP endpoint title:'))
 
     const spin = spinner('Creating MCP endpoint').start()
     try {
@@ -151,11 +131,12 @@ export class CreateMcpEndpointCommand extends SanityCommand<typeof CreateMcpEndp
         groqFilter,
         instructions,
         name,
-        sources: buildSources(knowledgeBaseIds, dataset, {
-          perspective,
-          semanticSearch,
-          workspace,
-        }),
+        sources: editSources([], {
+          addKnowledgeBases: knowledgeBaseIds,
+          dataset,
+          removeKnowledgeBases: [],
+          settings: {perspective, semanticSearch, workspace},
+        }).sources,
         title,
       })
       spin.succeed('MCP endpoint created')

@@ -26,7 +26,7 @@ const base = ['support', '--organization', 'org-abc123']
 describe('context mcp delete', () => {
   beforeEach(() => {
     mockGetGlobalCliClient.mockResolvedValue({
-      context: {mcpEndpoints: {delete: mockDelete, get: mockGet}},
+      context: {fetch: mockGet, mcpEndpoints: {delete: mockDelete}},
       request: mockRequest,
       withConfig,
     })
@@ -57,11 +57,12 @@ describe('context mcp delete', () => {
   test('keeps the endpoint when confirmation is declined', async () => {
     mockConfirm.mockResolvedValue(false)
 
-    const {stdout} = await testCommand(DeleteMcpEndpointCommand, base, {
+    const {error, stdout} = await testCommand(DeleteMcpEndpointCommand, base, {
       mocks: {isInteractive: true},
     })
 
     expect(stdout).toContain('MCP endpoint not deleted')
+    expect(error?.oclif?.exit).toBe(3)
     expect(mockDelete).not.toHaveBeenCalled()
   })
 
@@ -83,14 +84,39 @@ describe('context mcp delete', () => {
     expect(mockDelete).not.toHaveBeenCalled()
   })
 
-  test('refuses an endpoint a blueprint manages', async () => {
-    mockRequest.mockRejectedValueOnce(httpError(403, 'Managed', {errorCode: 'RESOURCE_MANAGED'}))
+  test('refuses an endpoint a blueprint manages, naming its stack', async () => {
+    mockRequest
+      .mockResolvedValueOnce([{stackId: 'ST-1'}])
+      .mockResolvedValueOnce({name: 'production'})
 
     const {error} = await testCommand(DeleteMcpEndpointCommand, [...base, '--yes'])
 
-    expect(error?.message).toContain('A blueprint manages MCP endpoint "support"')
+    expect(error?.message).toContain(
+      'The blueprint stack "production" manages MCP endpoint "support"',
+    )
     expect(error?.message).toContain("deletionPolicy: 'allow'")
     expect(error?.oclif?.exit).toBe(2)
+    expect(mockDelete).not.toHaveBeenCalled()
+  })
+
+  test('refuses a blueprint-managed endpoint addressed by its ID', async () => {
+    mockRequest.mockRejectedValueOnce(httpError(403, 'Managed', {errorCode: 'RESOURCE_MANAGED'}))
+
+    const {error} = await testCommand(DeleteMcpEndpointCommand, [
+      'mcpabc123',
+      '--organization',
+      'org-abc123',
+      '--yes',
+    ])
+
+    expect(error?.message).toContain('A blueprint manages MCP endpoint "mcpabc123"')
+    expect(mockGet).toHaveBeenCalledWith(expect.any(String), {
+      nameOrId: 'mcpabc123',
+      org: 'org-abc123',
+    })
+    expect(mockRequest).toHaveBeenCalledWith(
+      expect.objectContaining({query: {id: 'mcpabc123', type: 'sanity.context.mcp'}}),
+    )
     expect(mockDelete).not.toHaveBeenCalled()
   })
 
