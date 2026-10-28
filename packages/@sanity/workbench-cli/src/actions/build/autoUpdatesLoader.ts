@@ -1,7 +1,7 @@
 type Module = Record<string, unknown>
 
 // Workbench's `load`, contract version 1: it loads every specifier as the app's own copy, with its
-// app ID and vendor modules, links the stylesheets, and returns undefined for an app it didn't prepare.
+// app ID and vendor modules, and links the stylesheets.
 type Load = (
   appId: string,
   request: {
@@ -10,7 +10,7 @@ type Load = (
     styles: string[]
     vendor: Record<string, () => Promise<Module>>
   },
-) => Promise<{modules: Record<string, Module>} | undefined>
+) => Promise<{modules: Record<string, Module>}>
 
 interface AutoUpdatesLoaderOptions {
   appId: string
@@ -38,35 +38,31 @@ export function createAutoUpdatesLoader({
       url.replace(TIMESTAMP, `$1${timestamp}`),
     ]),
   )
-  let modules: Record<string, Module> | undefined
-  let ready: Promise<void> | undefined
+  let modules: Promise<Record<string, Module>> | undefined
 
-  return {
-    importMapUrl: (specifier: string) => (modules ? currentImports[specifier] : undefined),
-    load,
-  }
+  return {imports: currentImports, load}
 
-  async function load(specifier: string, bundled: () => Promise<Module>): Promise<Module> {
-    ready ??= prepare()
-    await ready
-    if (!modules) return bundled()
-
-    const module = modules?.[specifier]
+  async function load(specifier: string): Promise<Module> {
+    modules ??= loadModules()
+    const module = (await modules)[specifier]
     if (!module) throw new Error(`${specifier} was not loaded from the module server`)
 
     return module
   }
 
-  async function prepare(): Promise<void> {
-    const workbench = (
+  async function loadModules(): Promise<Record<string, Module>> {
+    const workbenchLoad = (
       globalThis as {[key: symbol]: {versions?: Record<number, Load>} | undefined}
-    )[Symbol.for('sanity.autoUpdates')]
-    const result = await workbench?.versions?.[1]?.(appId, {
-      imports: currentImports,
-      specifiers,
-      styles: cssUrls.map((url) => url.replace(TIMESTAMP, `$1${timestamp}`)),
-      vendor,
-    })
-    modules = result?.modules
+    )[Symbol.for('sanity.autoUpdates')]?.versions?.[1]
+    if (!workbenchLoad) throw new Error('No Workbench on this page loads auto-updating apps')
+
+    return (
+      await workbenchLoad(appId, {
+        imports: currentImports,
+        specifiers,
+        styles: cssUrls.map((url) => url.replace(TIMESTAMP, `$1${timestamp}`)),
+        vendor,
+      })
+    ).modules
   }
 }

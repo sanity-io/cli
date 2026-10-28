@@ -27,10 +27,7 @@ function createPlugin(): Plugin {
   return sanityAutoUpdates(autoUpdates)[1]
 }
 
-function evaluateAutoUpdatesModule(
-  plugins: Plugin[],
-  importMapUrl: (specifier: string) => unknown,
-) {
+function evaluateAutoUpdatesModule(plugins: Plugin[], imports: Record<string, string>) {
   const loaded = (plugins[0].load as (id: string) => string)('\0virtual:sanity/auto-updates')
   const rendered =
     plugins[1] && (plugins[1].renderChunk as (code: string) => {code: string} | null)(loaded)
@@ -51,7 +48,7 @@ function evaluateAutoUpdatesModule(
   const createAutoUpdatesLoader = (options: (typeof loaderOptions)[number]) => {
     loaderOptions.push(options)
 
-    return {importMapUrl, load: () => {}}
+    return {imports, load: () => {}}
   }
   const {studioProps} = new Function('deps', `${body}\nreturn {studioProps}`)({
     createAutoUpdatesLoader,
@@ -74,11 +71,10 @@ describe('resolveId', () => {
     },
     {expected: null, importer: '/app/src/App.tsx', source: '@sanity/sdk-other'},
     {
-      expected: null,
+      expected: '\0sanity/auto-updates:@sanity/sdk',
       importer: '/app/node_modules/.pnpm/x/node_modules/@sanity/sdk-react/dist/index.js',
       source: '@sanity/sdk',
     },
-    {expected: null, importer: '\0sanity/auto-updates:@sanity/sdk', source: '@sanity/sdk'},
     {expected: null, importer: undefined, source: '@sanity/sdk'},
   ])('resolves $source from $importer to $expected', ({expected, importer, source}) => {
     const resolveId = createPlugin().resolveId as (source: string, importer?: string) => unknown
@@ -87,15 +83,13 @@ describe('resolveId', () => {
   })
 })
 
-it('hands the loader the import map and wrapped specifiers, and the studio its import map URL once loaded', () => {
+it('hands the loader the import map and wrapped specifiers, and the studio its import map URL', () => {
   const plugins = sanityAutoUpdates(autoUpdates)
   const resolveId = plugins[1].resolveId as (source: string, importer: string) => unknown
   resolveId('@sanity/sdk', '/app/src/App.tsx')
   resolveId('@sanity/sdk-react', '/app/src/App.tsx')
-  const loadedFrom = new Map<string, string>()
-  const {loaderOptions, studioProps} = evaluateAutoUpdatesModule(plugins, (specifier) =>
-    loadedFrom.get(specifier),
-  )
+  const sanityUrl = 'https://sanity-cdn.com/v1/modules/by-app/app1/t1/%5E6.0.0/sanity'
+  const {loaderOptions, studioProps} = evaluateAutoUpdatesModule(plugins, {sanity: sanityUrl})
 
   expect(loaderOptions[0]).toEqual({
     appId: 'app1',
@@ -104,9 +98,6 @@ it('hands the loader the import map and wrapped specifiers, and the studio its i
     specifiers: ['@sanity/sdk', '@sanity/sdk-react'],
     vendor: {react: expect.any(Function), 'react/jsx-runtime': expect.any(Function)},
   })
-  expect(studioProps()).toEqual({})
-  const sanityUrl = 'https://sanity-cdn.com/v1/modules/by-app/app1/t1/%5E6.0.0/sanity'
-  loadedFrom.set('sanity', sanityUrl)
   expect(studioProps()).toEqual({unstable_importMapUrl: sanityUrl})
 })
 
@@ -114,7 +105,7 @@ it('gives the studio no props and wraps no imports without auto-updates', () => 
   const plugins = sanityAutoUpdates()
 
   expect(plugins).toHaveLength(1)
-  expect(evaluateAutoUpdatesModule(plugins, () => 'https://cdn').studioProps()).toEqual({})
+  expect(evaluateAutoUpdatesModule(plugins, {sanity: 'https://cdn'}).studioProps()).toEqual({})
 })
 
 describe('wrapper exports', () => {
@@ -172,6 +163,7 @@ export * from './index.js'
       'one',
       'two',
     ])
-    expect(code).toContain(`await load("@sanity/sdk", () => import("@sanity/sdk"))`)
+    expect(code).toContain(`await load("@sanity/sdk")`)
+    expect(code).not.toContain('import(')
   })
 })
