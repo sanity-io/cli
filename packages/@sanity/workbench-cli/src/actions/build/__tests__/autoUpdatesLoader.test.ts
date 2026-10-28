@@ -1,4 +1,4 @@
-import {afterEach, beforeEach, expect, type MockInstance, test, vi} from 'vitest'
+import {afterEach, beforeEach, expect, test, vi} from 'vitest'
 
 import {createAutoUpdatesLoader} from '../autoUpdatesLoader.js'
 
@@ -12,7 +12,6 @@ const bundled = {source: 'bundled'}
 const vendor = {react: async () => ({})}
 const modules = {sanity: {source: 'cdn'}, 'sanity/structure': {source: 'cdn structure'}}
 const load = vi.fn(async (_appId: string, _request: object) => ({modules}))
-let warn: MockInstance
 
 function setup() {
   const loader = createAutoUpdatesLoader({
@@ -32,7 +31,6 @@ function setup() {
 beforeEach(() => {
   vi.useFakeTimers({now: NOW * 1000, toFake: ['Date']})
   Object.assign(globalThis, {[KEY]: {versions: {1: load}}})
-  warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
 })
 
 afterEach(() => {
@@ -63,19 +61,29 @@ test('loads the auto-updated packages through Workbench, from current module ser
 })
 
 test.each([
-  {versions: undefined, when: 'Workbench offers no contract version 1'},
-  {versions: {1: vi.fn(async () => undefined)}, when: "Workbench didn't prepare the app"},
+  {autoUpdates: undefined, when: 'no Workbench runs the app'},
+  {autoUpdates: {versions: {}}, when: 'Workbench offers no contract version 1'},
   {
-    versions: {1: vi.fn(() => Promise.reject(new TypeError('Failed to fetch')))},
-    when: 'Workbench fails to load the packages',
+    autoUpdates: {versions: {1: async () => undefined}},
+    when: "Workbench doesn't run the app as auto-updating",
   },
-])('uses the bundled copy of every package when $when', async ({versions}) => {
-  Object.assign(globalThis, {[KEY]: versions && {versions}})
+])('uses the bundled copy of every package when $when', async ({autoUpdates}) => {
+  Object.assign(globalThis, {[KEY]: autoUpdates})
   const {importMapUrl, load: loadModule} = setup()
 
   await expect(loadModule('sanity')).resolves.toBe(bundled)
   await expect(loadModule('sanity/structure')).resolves.toBe(bundled)
   expect(importMapUrl('sanity')).toBeUndefined()
-  expect(warn).toHaveBeenCalledOnce()
-  if (versions) expect(versions[1]).toHaveBeenCalledOnce()
+})
+
+test('fails every package when Workbench fails to load them', async () => {
+  const error = new TypeError('Failed to fetch')
+  const failing = vi.fn(() => Promise.reject(error))
+  Object.assign(globalThis, {[KEY]: {versions: {1: failing}}})
+  const {importMapUrl, load: loadModule} = setup()
+
+  await expect(loadModule('sanity')).rejects.toBe(error)
+  await expect(loadModule('sanity/structure')).rejects.toBe(error)
+  expect(importMapUrl('sanity')).toBeUndefined()
+  expect(failing).toHaveBeenCalledOnce()
 })

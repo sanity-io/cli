@@ -22,8 +22,7 @@ interface AutoUpdatesLoaderOptions {
 
 const TIMESTAMP = /(\/by-app\/[^/]+)\/t\d+/
 
-// Loads the app's auto-updated packages from the module server as its own copy; if any fails,
-// the app uses the bundled copies of all of them.
+// Loads the app's auto-updated packages from the module server as its own copy.
 export function createAutoUpdatesLoader({
   appId,
   cssUrls,
@@ -40,7 +39,7 @@ export function createAutoUpdatesLoader({
     ]),
   )
   let modules: Record<string, Module> | undefined
-  let ready: Promise<boolean> | undefined
+  let ready: Promise<void> | undefined
 
   return {
     importMapUrl: (specifier: string) => (modules ? currentImports[specifier] : undefined),
@@ -49,7 +48,8 @@ export function createAutoUpdatesLoader({
 
   async function load(specifier: string, bundled: () => Promise<Module>): Promise<Module> {
     ready ??= prepare()
-    if (!(await ready)) return bundled()
+    await ready
+    if (!modules) return bundled()
 
     const module = modules?.[specifier]
     if (!module) throw new Error(`${specifier} was not loaded from the module server`)
@@ -57,30 +57,17 @@ export function createAutoUpdatesLoader({
     return module
   }
 
-  async function prepare(): Promise<boolean> {
-    try {
-      const workbench = (
-        globalThis as {[key: symbol]: {versions?: Record<number, Load>} | undefined}
-      )[Symbol.for('sanity.autoUpdates')]
-      const workbenchLoad = workbench?.versions?.[1]
-      if (!workbenchLoad) throw new Error('This Workbench does not load auto-updating apps')
-
-      const result = await workbenchLoad(appId, {
-        imports: currentImports,
-        specifiers,
-        styles: cssUrls.map((url) => url.replace(TIMESTAMP, `$1${timestamp}`)),
-        vendor,
-      })
-      if (!result) throw new Error(`Workbench did not prepare ${appId} for auto-updates`)
-
-      modules = result.modules
-
-      return true
-    } catch (error) {
-      // eslint-disable-next-line no-console -- the app keeps working, but no longer auto-updates
-      console.warn('Failed to load from the module server, using the bundled copy', error)
-
-      return false
-    }
+  async function prepare(): Promise<void> {
+    const workbench = (
+      globalThis as {[key: symbol]: {versions?: Record<number, Load>} | undefined}
+    )[Symbol.for('sanity.autoUpdates')]
+    // A Workbench without contract version 1, or one that doesn't run this app as auto-updating, gets the bundled copy.
+    const result = await workbench?.versions?.[1]?.(appId, {
+      imports: currentImports,
+      specifiers,
+      styles: cssUrls.map((url) => url.replace(TIMESTAMP, `$1${timestamp}`)),
+      vendor,
+    })
+    modules = result?.modules
   }
 }
