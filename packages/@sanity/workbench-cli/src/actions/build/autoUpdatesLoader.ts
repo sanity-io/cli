@@ -20,7 +20,8 @@ interface AutoUpdatesLoaderOptions {
   vendor: Record<string, () => Promise<Module>>
 }
 
-const TIMESTAMP = /(\/by-app\/[^/]+)\/t\d+/
+// The segment after `by-app/<appId>` or `default/<range>`, so an app ID like `t1` stays.
+const TIMESTAMP = /(\/(?:by-app|default)\/[^/]+)\/t\d+/
 
 // Loads the app's auto-updated packages from the module server as its own copy.
 export function createAutoUpdatesLoader({

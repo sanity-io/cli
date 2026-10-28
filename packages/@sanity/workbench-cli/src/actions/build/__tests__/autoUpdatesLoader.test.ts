@@ -60,6 +60,26 @@ test('loads the auto-updated packages through Workbench, from current module ser
   expect(importMapUrl('sanity')).toBe(CURRENT_SANITY_URL)
 })
 
+test('refreshes the timestamp in default (not by-app) module server URLs', async () => {
+  const url = 'https://sanity-cdn.com/v1/modules/sanity/default/%5E6.17.0/t100'
+  const loader = createAutoUpdatesLoader({
+    appId: APP_ID,
+    cssUrls: [],
+    imports: {sanity: url},
+    specifiers: ['sanity'],
+    vendor,
+  })
+
+  await loader.load('sanity', async () => bundled)
+
+  expect(load).toHaveBeenCalledExactlyOnceWith(APP_ID, {
+    imports: {sanity: url.replace('/t100', `/t${NOW}`)},
+    specifiers: ['sanity'],
+    styles: [],
+    vendor,
+  })
+})
+
 test.each([
   {autoUpdates: undefined, when: 'no Workbench runs the app'},
   {autoUpdates: {versions: {}}, when: 'Workbench offers no contract version 1'},
