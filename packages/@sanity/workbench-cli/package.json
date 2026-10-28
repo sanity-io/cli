@@ -51,6 +51,10 @@
       "source": "./src/_exports/_internal_worker_bus.ts",
       "default": "./dist/_exports/_internal_worker_bus.js"
     },
+    "./_internal_auto_updates": {
+      "source": "./src/_exports/_internal_auto_updates.ts",
+      "default": "./dist/_exports/_internal_auto_updates.js"
+    },
     "./undeploy": {
       "source": "./src/_exports/undeploy.ts",
       "default": "./dist/_exports/undeploy.js"
