@@ -3,7 +3,7 @@ import {join} from 'node:path'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
 import {unstable_defineMediaLibrary} from '../../../defineApp.js'
-import {getRegisteredServers} from '../registry.js'
+import {type DevServerManifest, getRegisteredServers} from '../registry.js'
 import {startDevServerRegistration} from '../startDevServerRegistration.js'
 import {createMockOutput, workbenchApp, workbenchCliConfig} from './devTestHelpers.js'
 
@@ -42,6 +42,25 @@ const manifestPath = () => join(REGISTRY_DIR, `${process.pid}.json`)
 
 /** The manifest the registry persisted for this process — what the workbench reads. */
 const readManifest = () => JSON.parse(fsMock.files.get(manifestPath())!)
+
+const APP_ID = 'v27rvqtlp3lmdvcln6ey3lro'
+
+function registerForeignServer(overrides: Partial<DevServerManifest>) {
+  fsMock.files.set(
+    join(REGISTRY_DIR, '4242.json'),
+    JSON.stringify({
+      host: 'localhost',
+      organizationId: 'org-123',
+      pid: process.pid,
+      port: 3334,
+      startedAt: new Date().toISOString(),
+      type: 'studio',
+      version: 2,
+      workDir: '/tmp/other',
+      ...overrides,
+    }),
+  )
+}
 
 function mockServer({
   boundPort,
@@ -97,17 +116,43 @@ describe('startDevServerRegistration', () => {
     expect(readManifest().type).toBe('coreApp')
   })
 
-  test('identifies the local app by its slug, not its deployment app id', async () => {
-    await register()
+  test('registers the deployed application it stands in for, still on the bus under its slug', async () => {
+    await register({cliConfig: workbenchCliConfig({deployment: {appId: APP_ID}})})
 
-    expect(readManifest().id).toBe('test-app')
+    expect(readManifest()).toMatchObject({applicationId: APP_ID, id: 'test-app'})
+  })
+
+  test('registers no application for a config, which stands in for none', async () => {
+    await register({
+      cliConfig: workbenchCliConfig({
+        app: unstable_defineMediaLibrary({organizationId: 'org-1'}),
+        deployment: {appId: APP_ID},
+      }),
+      isApp: true,
+    })
+
+    expect(readManifest()).not.toHaveProperty('applicationId')
+  })
+
+  test('registers no application without a deployment app id, ignoring the deprecated app.id', async () => {
+    await register({cliConfig: workbenchCliConfig({app: workbenchApp({id: APP_ID})})})
+
+    expect(readManifest()).not.toHaveProperty('applicationId')
+  })
+
+  test('references a singleton under sanity/, like the deployed app', async () => {
+    await register({cliConfig: workbenchCliConfig({app: workbenchApp({isSingleton: true})})})
+
+    expect(readManifest().reference).toBe('sanity/test-app')
   })
 
   test('forwards local application metadata for the workbench to read', async () => {
     await register()
 
     expect(readManifest()).toMatchObject({
+      name: 'test-app',
       organizationId: 'org-123',
+      reference: 'org-123/test-app',
       slug: 'test-app',
       visibility: 'default',
     })
@@ -140,20 +185,7 @@ describe('startDevServerRegistration', () => {
 
   test('logs an error and keeps the dev server up when another server already holds the id', async () => {
     // A live foreign server already advertises `test-app` in the registry.
-    fsMock.files.set(
-      join(REGISTRY_DIR, '4242.json'),
-      JSON.stringify({
-        host: 'localhost',
-        id: 'test-app',
-        organizationId: 'org-123',
-        pid: process.pid,
-        port: 3334,
-        startedAt: new Date().toISOString(),
-        type: 'studio',
-        version: 2,
-        workDir: '/tmp/other',
-      }),
-    )
+    registerForeignServer({id: 'test-app'})
     const output = createMockOutput()
 
     const handle = await register({output})
@@ -174,20 +206,21 @@ describe('startDevServerRegistration', () => {
     await expect(handle.close()).resolves.toBeUndefined()
   })
 
-  test('registers when a live dev server holds a different id', async () => {
-    fsMock.files.set(
-      join(REGISTRY_DIR, '4242.json'),
-      JSON.stringify({
-        host: 'localhost',
-        id: 'other-app',
-        pid: process.pid,
-        port: 3334,
-        startedAt: new Date().toISOString(),
-        type: 'studio',
-        version: 2,
-        workDir: '/tmp/other',
-      }),
+  test('logs an error when another server stands in for the same application', async () => {
+    registerForeignServer({applicationId: APP_ID, id: 'other-app'})
+    const output = createMockOutput()
+
+    await register({cliConfig: workbenchCliConfig({deployment: {appId: APP_ID}}), output})
+
+    expect(output.error).toHaveBeenCalledWith(
+      expect.stringContaining('"test-app" is the same application as "other-app"'),
+      {exit: false},
     )
+    expect(fsMock.files.has(manifestPath())).toBe(false)
+  })
+
+  test('registers when a live dev server holds a different id', async () => {
+    registerForeignServer({id: 'other-app'})
     const output = createMockOutput()
 
     await register({output})
@@ -197,20 +230,7 @@ describe('startDevServerRegistration', () => {
   })
 
   test('registers when another organization serves the same id', async () => {
-    fsMock.files.set(
-      join(REGISTRY_DIR, '4242.json'),
-      JSON.stringify({
-        host: 'localhost',
-        id: 'test-app',
-        organizationId: 'org-other',
-        pid: process.pid,
-        port: 3334,
-        startedAt: new Date().toISOString(),
-        type: 'studio',
-        version: 2,
-        workDir: '/tmp/other',
-      }),
-    )
+    registerForeignServer({id: 'test-app', organizationId: 'org-other'})
     const output = createMockOutput()
 
     await register({output})
@@ -534,20 +554,7 @@ describe('startDevServerRegistration', () => {
     })
 
     test('has no path when another dev server already holds the id', async () => {
-      fsMock.files.set(
-        join(REGISTRY_DIR, '4242.json'),
-        JSON.stringify({
-          host: 'localhost',
-          id: 'test-app',
-          organizationId: 'org-123',
-          pid: process.pid,
-          port: 3334,
-          startedAt: new Date().toISOString(),
-          type: 'studio',
-          version: 2,
-          workDir: '/tmp/other',
-        }),
-      )
+      registerForeignServer({id: 'test-app'})
 
       const {path} = await register()
 

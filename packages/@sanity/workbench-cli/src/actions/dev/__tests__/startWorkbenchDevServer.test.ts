@@ -532,6 +532,7 @@ describe('startWorkbenchDevServer', () => {
       const watchCallback = mockWatchRegistry.mock.calls[0][0]
       watchCallback([
         aDevServerManifest({
+          applicationId: 'v27rvqtlp3lmdvcln6ey3lro',
           id: 'app-1',
           name: 'studio',
           organizationId: 'org-test',
@@ -547,6 +548,7 @@ describe('startWorkbenchDevServer', () => {
       expect(mockServer.ws.send).toHaveBeenCalledWith('sanity:workbench:local-applications', {
         applications: [
           expect.objectContaining({
+            applicationId: 'v27rvqtlp3lmdvcln6ey3lro',
             host: 'localhost',
             id: 'app-1',
             name: 'studio',
