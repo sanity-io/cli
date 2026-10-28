@@ -5,7 +5,7 @@ import {getErrorMessage} from '@sanity/cli-core/errors'
 import {spinner} from '@sanity/cli-core/ux'
 import {type Context, isHttpError} from '@sanity/client'
 
-import {updateKnowledgeBase} from '../../services/context.js'
+import {getKnowledgeBaseBlueprintOwnership, updateKnowledgeBase} from '../../services/context.js'
 import {defineCommandTelemetry} from '../../util/telemetry/commandTelemetry.js'
 
 const updateContextDebug = subdebug('context:update')
@@ -65,7 +65,9 @@ export class UpdateKnowledgeBaseCommand extends SanityCommand<typeof UpdateKnowl
 
   static override flags = flags
 
-  static telemetry = defineCommandTelemetry(flags, {redact: ['title', 'description']})
+  static telemetry = defineCommandTelemetry(flags, {
+    redact: ['title', 'description'],
+  })
 
   public async run(): Promise<void> {
     const {knowledgeBaseId} = this.args
@@ -87,7 +89,9 @@ export class UpdateKnowledgeBaseCommand extends SanityCommand<typeof UpdateKnowl
     if (description !== undefined) {
       const trimmedDescription = description.trim()
       if (trimmedDescription === '') {
-        this.error('Description cannot be empty', {exit: exitCodes.USAGE_ERROR})
+        this.error('Description cannot be empty', {
+          exit: exitCodes.USAGE_ERROR,
+        })
       }
       params.description = trimmedDescription
     }
@@ -96,6 +100,17 @@ export class UpdateKnowledgeBaseCommand extends SanityCommand<typeof UpdateKnowl
     }
     if (refreshFrequency !== undefined) {
       params.refreshFrequency = refreshFrequency
+    }
+
+    const ownership = await getKnowledgeBaseBlueprintOwnership(knowledgeBaseId)
+    if (ownership.managed) {
+      const manager = ownership.stackName
+        ? `The blueprint stack "${ownership.stackName}"`
+        : 'A blueprint'
+      this.error(
+        `${manager} manages knowledge base "${knowledgeBaseId}", so the next deploy would undo this change. Change it in the blueprint and run \`sanity blueprints deploy\` instead.`,
+        {exit: exitCodes.USAGE_ERROR},
+      )
     }
 
     const spin = spinner('Updating knowledge base').start()
