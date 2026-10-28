@@ -58,8 +58,34 @@ describe('createWorkerBus', () => {
     await expect(location).rejects.toBeInstanceOf(Error)
     await expect(location).rejects.toMatchObject({
       code: 'REFUSED',
+      docsUrl: undefined,
+      fix: undefined,
       message: 'not for workers',
       name: 'MessageBusError',
+    })
+  })
+
+  test("passes on a refusal's fix and docs link", async () => {
+    const {bus, client, receive} = start()
+    const update = client.emit('navigation.location.update', {url: '/a'})
+    const [request] = bus('workbench.bus.emit')
+
+    receive({
+      error: {
+        code: 'NO_RESPONDER',
+        docsUrl: 'https://www.sanity.io/docs/dashboard-beta/dash1003',
+        fix: 'Start the worker before posting to it.',
+        message: 'Worker "sync" is not running.',
+      },
+      id: request.id,
+      kind: 'workbench.bus.reply',
+      ok: false,
+    })
+    await expect(update).rejects.toMatchObject({
+      code: 'NO_RESPONDER',
+      docsUrl: 'https://www.sanity.io/docs/dashboard-beta/dash1003',
+      fix: 'Start the worker before posting to it.',
+      message: 'Worker "sync" is not running.',
     })
   })
 
@@ -166,7 +192,8 @@ describe('createWorkerBus', () => {
     expect(bus('workbench.bus.abort')).toEqual([{id: request.id, kind: 'workbench.bus.abort'}])
   })
 
-  test('ends a subscription the host refuses and reports it on the console', () => {
+  // The Dashboard prints the refusal itself, so printing it here too would show it twice.
+  test('ends a subscription the host refuses without printing it', () => {
     const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
     const {bus, client, receive} = start()
     const handler = vi.fn()
@@ -182,7 +209,7 @@ describe('createWorkerBus', () => {
     receive({id: request.id, kind: 'workbench.bus.value', value: {url: '/a'}})
 
     expect(handler).not.toHaveBeenCalled()
-    expect(consoleError.mock.calls).toEqual([['Message bus subscription refused: REFUSED: no']])
+    expect(consoleError).not.toHaveBeenCalled()
   })
 
   test('answers each event message once with the reply its handler gives', () => {
