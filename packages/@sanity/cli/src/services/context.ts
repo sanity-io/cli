@@ -116,14 +116,14 @@ export async function getKnowledgeBaseBlueprintOwnership(
     const matches = await client.request<{stackId?: string}[]>({
       headers,
       query: {id: publicId, type: 'sanity.context.knowledge-base'},
-      uri: '/blueprints/resources/search',
+      url: '/blueprints/resources/search',
     })
     const stackId = matches.find((match) => typeof match.stackId === 'string')?.stackId
     if (!stackId) return {managed: false}
     const stackName = await client
       .request<{name?: string}>({
         headers,
-        uri: `/blueprints/stacks/${encodeURIComponent(stackId)}`,
+        url: `/blueprints/stacks/${encodeURIComponent(stackId)}`,
       })
       .then((stack) => stack.name ?? null)
       .catch(() => null)
