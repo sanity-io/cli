@@ -1,5 +1,5 @@
 import {getGlobalCliClient, subdebug} from '@sanity/cli-core'
-import {type Context, isHttpError} from '@sanity/client'
+import {type Context, EXPERIMENTAL_API_WARNING, isHttpError} from '@sanity/client'
 
 const CONTEXT_API_VERSION = 'v2026-08-25'
 const BLUEPRINTS_API_VERSION = 'vX'
@@ -100,6 +100,9 @@ export async function getKnowledgeBaseBlueprintOwnership(
     const {organizationId, publicId} = await getKnowledgeBase(knowledgeBaseId)
     const client = await getGlobalCliClient({
       apiVersion: BLUEPRINTS_API_VERSION,
+      // The Blueprints API has no stable version yet, and the warning would interrupt command output.
+      // The client splits the warning header on commas, so its second clause is matched separately.
+      ignoreWarnings: [EXPERIMENTAL_API_WARNING, 'which will change without warning'],
       requireUser: true,
     })
     const headers = {
