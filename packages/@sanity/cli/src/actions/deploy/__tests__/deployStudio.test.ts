@@ -7,6 +7,7 @@ import {
   deployWorkbenchApp,
   getApplication,
   listApplications,
+  selectWorkbenchAppId,
 } from '@sanity/workbench-cli/deploy'
 import {beforeEach, describe, expect, test, vi} from 'vitest'
 
@@ -30,6 +31,7 @@ vi.mock(import('@sanity/workbench-cli/deploy'), async (importOriginal) => ({
   deployWorkbenchApp: vi.fn(),
   getApplication: vi.fn(),
   listApplications: vi.fn(),
+  selectWorkbenchAppId: vi.fn(),
 }))
 vi.mock('@sanity/cli-core', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@sanity/cli-core')>()),
@@ -49,6 +51,7 @@ const mockCreateStudio = vi.mocked(createStudio)
 const mockDeployWorkbenchApp = vi.mocked(deployWorkbenchApp)
 const mockGetApplication = vi.mocked(getApplication)
 const mockListApplications = vi.mocked(listApplications)
+const mockSelectWorkbenchAppId = vi.mocked(selectWorkbenchAppId)
 const mockBuildStudio = vi.mocked(buildStudio)
 const mockFindBlueprintFile = vi.mocked(findBlueprintFile)
 const mockReadBlueprint = vi.mocked(readBlueprint)
@@ -94,6 +97,7 @@ beforeEach(() => {
   mockFindBlueprintFile.mockReset().mockReturnValue(undefined)
   mockReadBlueprint.mockReset()
   mockListApplications.mockResolvedValue([])
+  mockSelectWorkbenchAppId.mockImplementation(async ({appId}) => appId)
   mockBuildStudio.mockResolvedValue({mfManifest: {id: 'my-studio'}})
   vi.mocked(readBuiltManifest).mockResolvedValue({id: 'my-studio'})
   mockCreateStudio.mockResolvedValue({
@@ -275,6 +279,30 @@ describe('deployStudio (federated studio)', () => {
     expect(mockBuildStudio).not.toHaveBeenCalled()
   })
 
+  test('without `deployment.appId`, redeploys the studio picked from the selector', async () => {
+    mockGetApplication.mockResolvedValue({
+      id: 'studio-9',
+      organizationId: 'org-1',
+      slug: 'my-studio',
+      title: 'Holder',
+      type: 'studio',
+    })
+    mockSelectWorkbenchAppId.mockResolvedValue('studio-9')
+
+    await deployStudio(deployOptions())
+
+    expect(mockSelectWorkbenchAppId).toHaveBeenCalledWith(
+      expect.objectContaining({appId: undefined, organizationId: 'org-1', type: 'studio'}),
+    )
+    expect(mockCreateStudio).not.toHaveBeenCalled()
+    expect(mockBuildStudio).toHaveBeenCalledWith(
+      expect.objectContaining({applicationId: 'studio-9'}),
+    )
+    expect(mockDeployWorkbenchApp).toHaveBeenCalledWith(
+      expect.objectContaining({applicationId: 'studio-9'}),
+    )
+  })
+
   test('reports schema extraction errors without validation details', async () => {
     const options = deployOptions()
     vi.mocked(deployStudioSchemasAndManifests).mockRejectedValue(
@@ -444,5 +472,24 @@ describe('deployStudio --external (federated studio)', () => {
     )
     const logged = vi.mocked(options.output.log).mock.calls.map(([line]) => line)
     expect(logged.join('\n')).not.toContain('copy it to your host')
+  })
+
+  test('a picked external studio redeploys without --url', async () => {
+    mockGetApplication.mockResolvedValue({
+      externalUrl: 'https://studio.example.com',
+      id: 'studio-9',
+      organizationId: 'org-1',
+      slug: 'my-studio',
+      title: 'My Studio',
+      type: 'studio',
+    })
+    mockSelectWorkbenchAppId.mockResolvedValue('studio-9')
+
+    await deployStudio(deployOptions({flags: {...externalFlags, url: undefined}}))
+
+    expect(mockCreateStudio).not.toHaveBeenCalled()
+    expect(mockDeployWorkbenchApp).toHaveBeenCalledWith(
+      expect.objectContaining({applicationId: 'studio-9', isExternal: true}),
+    )
   })
 })

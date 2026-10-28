@@ -11,6 +11,7 @@ export {
   deployWorkbenchApp,
 } from '../actions/deploy/deployWorkbenchApp.js'
 export {getWorkbench} from '../actions/deploy/getWorkbench.js'
+export {selectWorkbenchAppId} from '../actions/deploy/selectWorkbenchAppId.js'
 export {
   type DeployedInterface,
   type DeployedView,

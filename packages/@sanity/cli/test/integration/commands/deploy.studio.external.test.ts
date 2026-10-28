@@ -904,5 +904,51 @@ describe('#deploy studio (external)', () => {
       )
       expect(mockReadBuiltManifest).not.toHaveBeenCalled()
     })
+
+    test('an interactive deploy without an appId redeploys the picked studio without --url', async () => {
+      const cwd = await testFixture('basic-studio')
+      process.cwd = () => cwd
+
+      const app = defineApplication({
+        organizationId: 'org-1',
+        slug: 'test-studio',
+        title: 'Test Studio',
+      }) as unknown as NonNullable<CliConfig['app']> & {applicationType?: string}
+      app.applicationType = 'studio'
+
+      const studio = {
+        externalUrl: 'https://studio.example.com',
+        id: 'studio_existing',
+        organizationId: 'org-1',
+        slug: 'test-studio',
+        title: 'Test Studio',
+        type: 'studio',
+      }
+      mockApi({
+        apiVersion: 'vX',
+        query: {limit: 'none', organizationId: 'org-1'},
+        uri: '/applications',
+      }).reply(200, {data: [studio]})
+      mockApi({apiVersion: 'vX', uri: '/applications/studio_existing'}).reply(200, studio)
+      mockSelect.mockResolvedValue('studio_existing')
+      mockBuildStudio.mockResolvedValueOnce({mfManifest: {id: 'built'}})
+
+      const {error} = await testCommand(DeployCommand, ['--external'], {
+        config: {root: cwd},
+        mocks: {
+          cliConfig: {api: {projectId: 'test-project-id'}, app} as CliConfig,
+          isInteractive: true,
+        },
+      })
+
+      if (error) throw error
+      expect(mockCreateStudio).not.toHaveBeenCalled()
+      expect(mockBuildStudio).toHaveBeenCalledWith(
+        expect.objectContaining({applicationId: 'studio_existing'}),
+      )
+      expect(mockDeployWorkbenchApp).toHaveBeenCalledWith(
+        expect.objectContaining({applicationId: 'studio_existing', isExternal: true}),
+      )
+    })
   })
 })
