@@ -4,10 +4,7 @@ import {colorizeJson, exitCodes, SanityCommand, subdebug} from '@sanity/cli-core
 import {getErrorMessage} from '@sanity/cli-core/errors'
 import {isRecord} from '@sanity/cli-core/util'
 
-import {
-  MissingOrganizationError,
-  resolveOrganizationId,
-} from '../../actions/context/resolveOrganizationId.js'
+import {resolveOrganizationId} from '../../actions/context/resolveOrganizationId.js'
 import {queryContext} from '../../services/context.js'
 import {getOrganizationFlag} from '../../util/sharedFlags.js'
 import {defineCommandTelemetry} from '../../util/telemetry/commandTelemetry.js'
@@ -70,22 +67,11 @@ export class QueryContextCommand extends SanityCommand<typeof QueryContextComman
     const {query} = this.args
     const {json, organization, params} = this.flags
 
-    let organizationId: string
-    try {
-      organizationId = await resolveOrganizationId({
-        configuredOrganizationId: (await this.tryGetCliConfig()).app?.organizationId,
-        flagOrganizationId: organization,
-        unattended: this.isUnattended(),
-      })
-    } catch (error) {
-      queryContextDebug('Error resolving organization', error)
-      this.error(getErrorMessage(error), {
-        exit:
-          error instanceof MissingOrganizationError
-            ? exitCodes.USAGE_ERROR
-            : exitCodes.RUNTIME_ERROR,
-      })
-    }
+    const organizationId = await resolveOrganizationId({
+      configuredOrganizationId: (await this.tryGetCliConfig()).app?.organizationId,
+      flagOrganizationId: organization,
+      unattended: this.isUnattended(),
+    })
 
     let result
     try {

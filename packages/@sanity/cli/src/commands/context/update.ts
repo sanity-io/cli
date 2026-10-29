@@ -7,6 +7,7 @@ import {type Context, isHttpError} from '@sanity/client'
 
 import {
   type BlueprintOwnership,
+  describeBlueprintManager,
   getKnowledgeBaseBlueprintOwnership,
   updateKnowledgeBase,
 } from '../../services/context.js'
@@ -111,9 +112,7 @@ export class UpdateKnowledgeBaseCommand extends SanityCommand<typeof UpdateKnowl
       ? await getKnowledgeBaseBlueprintOwnership(knowledgeBaseId)
       : {managed: false}
     if (ownership.managed) {
-      const manager = ownership.stackName
-        ? `The blueprint stack "${ownership.stackName}"`
-        : 'A blueprint'
+      const manager = describeBlueprintManager(ownership.stackName)
       const refreshHint =
         params.refreshEnabled === undefined && params.refreshFrequency === undefined
           ? ''
