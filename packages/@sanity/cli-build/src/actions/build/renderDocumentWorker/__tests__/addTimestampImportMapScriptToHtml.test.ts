@@ -65,7 +65,7 @@ describe('addTimestampedImportMapScriptToHtml', () => {
     )
   })
 
-  test('bakes the pinned map into the __imports JSON and keeps the timestamped injector', () => {
+  test('injects the module server fallback loader with both maps when a pinned map is provided', () => {
     const pinned = {
       cssUrls: ['https://modules.sanity-cdn.com/modules/v1/sanity/3.2.0/bare/index.css'],
       imports: {sanity: 'https://modules.sanity-cdn.com/modules/v1/sanity/3.2.0/bare/index.mjs'},
@@ -86,7 +86,11 @@ describe('addTimestampedImportMapScriptToHtml', () => {
     )
     expect(mockInsert).toHaveBeenCalledWith(
       'beforeend',
-      expect.stringContaining('const { imports = {}, css = [], pinned, ...rest }'),
+      expect.stringContaining("const RECOVERY_STORAGE_KEY = 'sanity:module-server-fallback'"),
+    )
+    expect(mockInsert).not.toHaveBeenCalledWith(
+      'beforeend',
+      expect.stringContaining('auto-generated script to add import map with timestamp'),
     )
   })
 

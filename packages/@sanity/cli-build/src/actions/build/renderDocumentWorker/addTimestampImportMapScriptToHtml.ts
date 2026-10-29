@@ -1,6 +1,7 @@
 import {type HTMLElement, parse as parseHtml} from 'node-html-parser'
 
 import {type DocumentImportMap} from '../autoUpdates.js'
+import {MODULE_SERVER_FALLBACK_SCRIPT} from './moduleServerFallbackScript.js'
 
 /**
  * This script takes the import map from the `#__imports` script tag,
@@ -19,7 +20,7 @@ import {type DocumentImportMap} from '../autoUpdates.js'
 const TIMESTAMPED_IMPORTMAP_INJECTOR_SCRIPT = `<script>
   // auto-generated script to add import map with timestamp
   const importsJson = document.getElementById('__imports')?.textContent;
-  const { imports = {}, css = [], pinned, ...rest } = importsJson ? JSON.parse(importsJson) : {};
+  const { imports = {}, css = [], ...rest } = importsJson ? JSON.parse(importsJson) : {};
   const importMapEl = document.createElement('script');
   importMapEl.type = 'importmap';
   const newTimestamp = \`/t\${Math.floor(Date.now() / 1000)}\`;
@@ -154,7 +155,7 @@ export function addTimestampedImportMapScriptToHtml(
       css: autoUpdatesCssUrls ?? [],
       pinned: {css: pinned.cssUrls, imports: pinned.imports},
     })
-    headEl.insertAdjacentHTML('beforeend', TIMESTAMPED_IMPORTMAP_INJECTOR_SCRIPT)
+    headEl.insertAdjacentHTML('beforeend', MODULE_SERVER_FALLBACK_SCRIPT)
     return root.outerHTML
   }
 
