@@ -109,6 +109,21 @@ describe('context mcp status', () => {
     )
   })
 
+  test.each([
+    [{error: 'Embeddings index unavailable.', ok: false}, 'failed: Embeddings index unavailable.'],
+    [
+      {active: false, inactiveReason: null, ok: true, status: null, withinUsageLimit: null},
+      'inactive',
+    ],
+  ])('describes semantic search %#', async (semanticSearch, expected) => {
+    mockStatus.mockResolvedValue({...status, checks: {...status.checks, semanticSearch}})
+
+    const {error, stdout} = await testCommand(McpEndpointStatusCommand, base)
+
+    if (error) throw error
+    expect(stdout).toContain(`Semantic search: ${expected}\n`)
+  })
+
   test('outputs the status as JSON with --json', async () => {
     mockStatus.mockResolvedValue(status)
 
