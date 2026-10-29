@@ -16,6 +16,7 @@ import {
   getUnavailableVersionsWarning,
 } from '../../util/compareDependencyVersions.js'
 import {formatModuleSizes, sortModulesBySize} from '../../util/moduleFormatUtils.js'
+import {type PinnedImportMap} from './autoUpdates.js'
 import {buildDebug} from './buildDebug.js'
 import {buildStaticFiles} from './buildStaticFiles.js'
 import {checkRequiredDependencies} from './checkRequiredDependencies.js'
@@ -23,6 +24,7 @@ import {checkStudioDependencyVersions} from './checkStudioDependencyVersions.js'
 import {type BuildEventListener, type MessageFunc} from './eventListener.js'
 import {getAutoUpdatesCssUrls, getAutoUpdatesImportMap} from './getAutoUpdatesImportMap.js'
 import {getStudioEnvironmentVariables} from './getEnvironmentVariables.js'
+import {getInstalledBucketEntries, getPinnedImportMap} from './getPinnedImportMap.js'
 import {handlePrereleaseVersions} from './handlePrereleaseVersions.js'
 import {resolveVendorBuildConfig} from './resolveVendorBuildConfig.js'
 
@@ -126,6 +128,7 @@ export async function buildStudio(
 
   let autoUpdatesImports = {}
   let autoUpdatesCssUrls: string[] = []
+  let autoUpdatesPinned: PinnedImportMap | undefined
 
   if (autoUpdatesEnabled) {
     // Get the clean version without build metadata: https://semver.org/#spec-item-10
@@ -154,6 +157,15 @@ export async function buildStudio(
 
     autoUpdatesCssUrls = getAutoUpdatesCssUrls(sanityDependencies, {appId})
 
+    autoUpdatesPinned = getPinnedImportMap(
+      await Promise.all(
+        sanityDependencies.map(async (pkg) => ({
+          ...pkg,
+          entries: await getInstalledBucketEntries(pkg.name, workDir),
+        })),
+      ),
+    )
+
     // Check the versions
     const {
       mismatched,
@@ -174,6 +186,7 @@ export async function buildStudio(
       })
       autoUpdatesImports = {}
       autoUpdatesCssUrls = []
+      autoUpdatesPinned = undefined
       autoUpdatesEnabled = false
     }
 
@@ -251,6 +264,7 @@ export async function buildStudio(
     autoUpdates = {
       cssUrls: autoUpdatesCssUrls,
       imports: autoUpdatesImports,
+      pinned: autoUpdatesPinned,
       vendor: await resolveVendorBuildConfig({cwd: workDir, isApp: false}),
     }
   }

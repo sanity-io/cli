@@ -2,6 +2,7 @@ import {type MessagePort} from 'node:worker_threads'
 
 import {resolveLocalPackage} from '@sanity/cli-core/package-manager'
 
+import {type DocumentImportMap} from '../autoUpdates.js'
 import {buildDebug} from '../buildDebug.js'
 import {addTimestampedImportMapScriptToHtml} from './addTimestampImportMapScriptToHtml.js'
 import {getDocumentComponent} from './getDocumentComponent.js'
@@ -40,7 +41,7 @@ export async function getDocumentHtml(
   parent: MessagePort,
   studioRootPath: string,
   props?: DocumentProps,
-  importMap?: {imports?: Record<string, string>},
+  importMap?: DocumentImportMap,
   isApp?: boolean,
   autoUpdatesCssUrls?: string[],
 ): Promise<string> {

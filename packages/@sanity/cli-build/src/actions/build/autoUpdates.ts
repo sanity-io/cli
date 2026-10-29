@@ -19,4 +19,26 @@ export interface AutoUpdatesBuildConfig {
 
   /** Stylesheets served from the module CDN, loaded via `<link>` tags. */
   cssUrls?: string[]
+  /** The build's exact versions in the module bucket, used when Module Server does not answer. */
+  pinned?: PinnedImportMap
+}
+
+/**
+ * Import map and stylesheets pointing at exact-version files in the module bucket.
+ *
+ * @internal
+ */
+export interface PinnedImportMap {
+  cssUrls: string[]
+  imports: Record<string, string>
+}
+
+/**
+ * Import map handed from the build to the document renderer.
+ *
+ * @internal
+ */
+export interface DocumentImportMap {
+  imports?: Record<string, string>
+  pinned?: PinnedImportMap
 }

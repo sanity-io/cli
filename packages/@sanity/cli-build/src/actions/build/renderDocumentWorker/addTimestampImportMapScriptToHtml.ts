@@ -1,4 +1,6 @@
-import {parse as parseHtml} from 'node-html-parser'
+import {type HTMLElement, parse as parseHtml} from 'node-html-parser'
+
+import {type DocumentImportMap} from '../autoUpdates.js'
 
 /**
  * This script takes the import map from the `#__imports` script tag,
@@ -17,7 +19,7 @@ import {parse as parseHtml} from 'node-html-parser'
 const TIMESTAMPED_IMPORTMAP_INJECTOR_SCRIPT = `<script>
   // auto-generated script to add import map with timestamp
   const importsJson = document.getElementById('__imports')?.textContent;
-  const { imports = {}, css = [], ...rest } = importsJson ? JSON.parse(importsJson) : {};
+  const { imports = {}, css = [], pinned, ...rest } = importsJson ? JSON.parse(importsJson) : {};
   const importMapEl = document.createElement('script');
   importMapEl.type = 'importmap';
   const newTimestamp = \`/t\${Math.floor(Date.now() / 1000)}\`;
@@ -112,12 +114,19 @@ const TIMESTAMPED_IMPORTMAP_INJECTOR_SCRIPT = `<script>
   }
 </script>`
 
+function insertImportsScript(headEl: HTMLElement, config: unknown): void {
+  headEl.insertAdjacentHTML(
+    'beforeend',
+    `<script type="application/json" id="__imports">${JSON.stringify(config)}</script>`,
+  )
+}
+
 /**
  * @internal
  */
 export function addTimestampedImportMapScriptToHtml(
   html: string,
-  importMap?: {imports?: Record<string, string>},
+  importMap?: DocumentImportMap,
   autoUpdatesCssUrls?: string[],
 ): string {
   if (!importMap) return html
@@ -138,6 +147,17 @@ export function addTimestampedImportMapScriptToHtml(
     headEl = root.querySelector('head')!
   }
 
+  if (importMap.pinned) {
+    const {pinned, ...moduleServerImportMap} = importMap
+    insertImportsScript(headEl, {
+      ...moduleServerImportMap,
+      css: autoUpdatesCssUrls ?? [],
+      pinned: {css: pinned.cssUrls, imports: pinned.imports},
+    })
+    headEl.insertAdjacentHTML('beforeend', TIMESTAMPED_IMPORTMAP_INJECTOR_SCRIPT)
+    return root.outerHTML
+  }
+
   // Include CSS URLs in the __imports JSON so the runtime script can create
   // <link> tags with fresh timestamps synchronously during head parsing.
   const importMapWithCss =
@@ -145,11 +165,7 @@ export function addTimestampedImportMapScriptToHtml(
       ? {...importMap, css: autoUpdatesCssUrls}
       : importMap
 
-  headEl.insertAdjacentHTML(
-    'beforeend',
-    `<script type="application/json" id="__imports">${JSON.stringify(importMapWithCss)}</script>`,
-  )
-
+  insertImportsScript(headEl, importMapWithCss)
   headEl.insertAdjacentHTML('beforeend', TIMESTAMPED_IMPORTMAP_INJECTOR_SCRIPT)
   return root.outerHTML
 }

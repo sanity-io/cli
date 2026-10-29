@@ -68,8 +68,10 @@ function getByAppModuleUrl(
 /**
  * replaces '/' with '__' similar to how eg `@types/scope__pkg` are rewritten
  * scoped packages are stored this way both in the manifest and in the cloud storage bucket
+ *
+ * @internal
  */
-function rewriteScopedPackage(pkgName: string) {
+export function rewriteScopedPackage(pkgName: string) {
   if (!pkgName.includes('@')) {
     return pkgName
   }
