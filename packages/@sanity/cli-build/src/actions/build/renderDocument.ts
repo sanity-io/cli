@@ -1,6 +1,7 @@
 import {ux} from '@oclif/core'
 import {tsxWorkerTask} from '@sanity/cli-core/tasks'
 
+import {type DocumentImportMap} from './autoUpdates.js'
 import {buildDebug} from './buildDebug.js'
 
 interface DocumentProps {
@@ -15,9 +16,7 @@ interface RenderDocumentOptions {
   studioRootPath: string
 
   autoUpdatesCssUrls?: string[]
-  importMap?: {
-    imports?: Record<string, string>
-  }
+  importMap?: DocumentImportMap
   isApp?: boolean
   props?: DocumentProps
 }
