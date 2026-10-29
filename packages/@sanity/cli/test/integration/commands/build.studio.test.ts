@@ -108,7 +108,7 @@ describe('#build studio', {timeout: (platform() === 'win32' ? 120 : 60) * 1000},
       // Opt out of that guard for this in-process build.
       vi.stubEnv('MFE_VITE_NO_TEST_ENV_CHECK', 'true')
 
-      const {error, stderr, stdout} = await testCommand(BuildCommand, ['--yes'], {
+      const {error, stderr, stdout} = await testCommand(BuildCommand, ['--yes', '--source-maps'], {
         config: {root: cwd},
       })
 
@@ -142,8 +142,18 @@ describe('#build studio', {timeout: (platform() === 'win32' ? 120 : 60) * 1000},
       // `@sanity/runtime-cli`), so a plain federated `sanity build` omits it.
       expect(distFiles).not.toContain('sanity-resource-bindings.js')
 
-      // Inside Workbench, the remote loads `sanity` from the module CDN as this app; the
-      // installed copy (several MB) is only a lazy fallback.
+      // Inside Workbench, the remote loads `sanity` from the module server as this app.
+      const sources = await Promise.all(
+        (await readdir(join(cwd, 'dist'), {recursive: true}))
+          .filter((file) => file.endsWith('.map'))
+          .map(
+            async (file) =>
+              JSON.parse(await readFile(join(cwd, 'dist', file), 'utf8')).sources as string[],
+          ),
+      )
+      expect(sources.flat()).toContainEqual(expect.stringContaining('/node_modules/react/'))
+      expect(sources.flat()).not.toContainEqual(expect.stringContaining('/node_modules/sanity/'))
+
       const appChunks = manifest.exposes.find(({name}: {name: string}) => name === 'App').assets.js
         .sync
       const appCode = (
@@ -155,7 +165,6 @@ describe('#build studio', {timeout: (platform() === 'win32' ? 120 : 60) * 1000},
       expect(appId).not.toBe('')
       expect(appCode).toContain(appId)
       expect(appCode).toContain('/v1/modules/')
-      expect(appCode.length).toBeLessThan(1_000_000)
 
       // The build output must satisfy the deploy gate: `sanity deploy` runs
       // `readBuiltManifest` (not the static-SPA check) and ships only if it finds
