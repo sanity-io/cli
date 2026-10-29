@@ -13,6 +13,7 @@ const roots: string[] = []
 afterEach(() => {
   for (const root of roots.splice(0)) fs.rmSync(root, {force: true, recursive: true})
   delete (globalThis as Record<symbol, unknown>)[Symbol.for('sanity.os.module')]
+  delete (globalThis as Record<symbol, unknown>)[Symbol.for('sanity.os.root')]
 })
 
 /** Run the plugin's `configResolved` against a temp root and read back the entry it wrote. */
@@ -37,7 +38,7 @@ function evaluateEntry(source: string) {
   const rendered: Element[] = []
   const React = {
     Activity: 'Activity',
-    createContext: () => ({Provider: 'Provider'}),
+    createContext: () => ({Provider: {}}),
     createElement: (type: unknown, props: Record<string, unknown>, ...children: unknown[]) =>
       ({children, props, type}) satisfies Element,
     StrictMode: 'StrictMode',
@@ -64,15 +65,26 @@ function evaluateEntry(source: string) {
       renderOptions?: unknown,
     ) => {dispose: () => void; setLifecycle: (state: string) => void}
   }
-  return {rendered, ...mod}
+  return {React, rendered, ...mod}
 }
 
-/** Walk the wrapper chain (Activity, StrictMode, ...) down to the ModuleContext.Provider. */
-function providerOf(element: Element): Element {
-  let node = element
-  while (node && node.type !== 'Provider') node = (node.children as Element[])[0]
+/** Walk the wrapper chain (Activity, StrictMode, providers) to the first element that matches. */
+function find(element: Element, matches: (node: Element) => boolean): Element | undefined {
+  let node: Element | undefined = element
+  while (node && !matches(node)) node = (node.children as Element[])[0]
   return node
 }
+
+/** The element providing the module context the entry stored for this React stub. */
+function moduleProviderOf(element: Element, React: object): Element | undefined {
+  const slot = (globalThis as Record<symbol, unknown>)[Symbol.for('sanity.os.module')]
+  const context = (slot as WeakMap<object, {Provider: object}> | undefined)?.get(
+    (React as {createContext: object}).createContext,
+  )
+  return context && find(element, (node) => node.type === context.Provider)
+}
+
+const appOf = (element: Element) => find(element, (node) => typeof node.type === 'function')
 
 test('the studio entry renders Studio with the config, the auto-updates props and forwarded props', () => {
   const source = emitEntry({isApp: false, studioConfigPath: '/studio/sanity.config.ts'})
@@ -82,9 +94,8 @@ test('the studio entry renders Studio with the config, the auto-updates props an
   // after the template switched to `import * as React`; it threw here.
   mod.render({}, {scheme: 'dark'}, {moduleId: 'studio/App'})
 
-  const provider = providerOf(mod.rendered[0])
-  expect(provider.props.value).toBe('studio/App')
-  const [app] = provider.children as Element[]
+  expect(moduleProviderOf(mod.rendered[0], mod.React)?.props.value).toBe('studio/App')
+  const app = appOf(mod.rendered[0])!
   expect(app.props).toEqual({scheme: 'dark'})
   // Render the bound App the way React would to reach the studio expression.
   const studio = (app.type as (props: unknown) => Element)(app.props)
@@ -102,9 +113,7 @@ test('the app entry renders the imported App with forwarded props', () => {
 
   mod.render({}, {greeting: 'hi'})
 
-  const provider = providerOf(mod.rendered[0])
-  const [app] = provider.children as Element[]
-  expect(app.props).toEqual({greeting: 'hi'})
+  expect(appOf(mod.rendered[0])?.props).toEqual({greeting: 'hi'})
 })
 
 test('an SDK app entry render() returns a lifecycle controller', () => {

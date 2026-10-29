@@ -1,7 +1,7 @@
 type Module = Record<string, unknown>
 
 // Workbench's `load`, contract version 1: it loads every specifier as the app's own copy, with its
-// app ID and vendor modules, links the stylesheets, and returns undefined for an app it didn't prepare.
+// app ID and vendor modules, and links the stylesheets.
 type Load = (
   appId: string,
   request: {
@@ -10,7 +10,7 @@ type Load = (
     styles: string[]
     vendor: Record<string, () => Promise<Module>>
   },
-) => Promise<{modules: Record<string, Module>} | undefined>
+) => Promise<{modules: Record<string, Module>}>
 
 interface AutoUpdatesLoaderOptions {
   appId: string
@@ -46,10 +46,13 @@ export function createAutoUpdatesLoader({
     load,
   }
 
-  async function load(specifier: string, bundled: () => Promise<Module>): Promise<Module> {
+  async function load(specifier: string): Promise<Module> {
     ready ??= prepare()
     await ready
-    if (!modules) return bundled()
+    if (!modules)
+      throw new Error(
+        "Couldn't load auto-updated packages: the Dashboard doesn't provide the auto-update loader. Contact Sanity support.",
+      )
 
     const module = modules?.[specifier]
     if (!module) throw new Error(`${specifier} was not loaded from the module server`)

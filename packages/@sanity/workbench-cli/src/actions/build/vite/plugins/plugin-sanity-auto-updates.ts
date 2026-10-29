@@ -1,11 +1,10 @@
 /*
- * Wraps the app's imports of auto-updated packages so they load at runtime, installed copy as fallback:
+ * Wraps the app's imports of auto-updated packages so they load from the module server at runtime:
  *
  *   import {Studio} from 'sanity'
- *     -> const m = await load('sanity', () => import('sanity'))
+ *     -> const m = await load('sanity')
  *        export {m.Studio as Studio, ...}   (export names read from the installed copy)
  *
- * Imports inside the installed packages stay unwrapped, so the fallback is self-contained.
  * `virtual:sanity/auto-updates` always resolves; `studioProps()` is empty without auto-updates.
  */
 import {readFile} from 'node:fs/promises'
@@ -52,10 +51,6 @@ function wrapAutoUpdatedImports(imports: Record<string, string>): Plugin {
     Object.keys(imports).some((key) =>
       key.endsWith('/') ? source.startsWith(key) : source === key,
     )
-  const isInstalledCopy = (importer: string) =>
-    Object.keys(imports).some(
-      (key) => key.endsWith('/') && importer.includes(`/node_modules/${key}`),
-    )
   const wrapped = new Set<string>()
   let root = ''
 
@@ -89,12 +84,7 @@ function wrapAutoUpdatedImports(imports: Record<string, string>): Plugin {
       }
     },
     resolveId(source, importer) {
-      if (
-        importer &&
-        !importer.startsWith(WRAPPER_PREFIX) &&
-        isAutoUpdated(source) &&
-        !isInstalledCopy(importer)
-      ) {
+      if (importer && isAutoUpdated(source)) {
         wrapped.add(source)
         return WRAPPER_PREFIX + source
       }
@@ -126,7 +116,7 @@ export const studioProps = () =>
 
 function renderWrapper(specifier: string, names: string[]): string {
   return `import {load} from ${JSON.stringify(AUTO_UPDATES_ID)}
-const m = await load(${JSON.stringify(specifier)}, () => import(${JSON.stringify(specifier)}))
+const m = await load(${JSON.stringify(specifier)})
 ${names.map((name, index) => `const e${index} = m[${JSON.stringify(name)}]`).join('\n')}
 export {${names.map((name, index) => `e${index} as ${JSON.stringify(name)}`).join(', ')}}
 `

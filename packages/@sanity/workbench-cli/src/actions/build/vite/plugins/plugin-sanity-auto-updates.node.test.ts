@@ -73,12 +73,6 @@ describe('resolveId', () => {
       source: '@sanity/sdk/dashboard',
     },
     {expected: null, importer: '/app/src/App.tsx', source: '@sanity/sdk-other'},
-    {
-      expected: null,
-      importer: '/app/node_modules/.pnpm/x/node_modules/@sanity/sdk-react/dist/index.js',
-      source: '@sanity/sdk',
-    },
-    {expected: null, importer: '\0sanity/auto-updates:@sanity/sdk', source: '@sanity/sdk'},
     {expected: null, importer: undefined, source: '@sanity/sdk'},
   ])('resolves $source from $importer to $expected', ({expected, importer, source}) => {
     const resolveId = createPlugin().resolveId as (source: string, importer?: string) => unknown
@@ -172,6 +166,7 @@ export * from './index.js'
       'one',
       'two',
     ])
-    expect(code).toContain(`await load("@sanity/sdk", () => import("@sanity/sdk"))`)
+    expect(code).toContain(`await load("@sanity/sdk")`)
+    expect(code).not.toContain('import(')
   })
 })

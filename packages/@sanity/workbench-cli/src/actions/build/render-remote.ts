@@ -14,6 +14,7 @@ const HMR_REMOUNT = `if (import.meta.hot) {
     for (const [rootElement, args] of renderArgs) {
       rootMap.get(rootElement)?.unmount()
       rootMap.delete(rootElement)
+      closeRoot(rootElement)
       args.next = next.render(rootElement, args.props, args.renderOptions)
       args.next.setLifecycle(args.lifecycle)
     }
@@ -50,13 +51,19 @@ import { createRoot } from 'react-dom/client'
 ${stylesheetImport}
 ${preamble}
 ${app ? `\nconst App = ${app}\n` : ''}${version ? `\nexport const version = ${version}\n` : ''}
-// The SDK reads this slot via getDashboardModuleContext(), so its symbol, key and
-// value are a contract. Keyed by createContext, not the React namespace: Vite dev
-// pre-bundling can give two importers of one React copy different namespaces.
-const moduleSlot = (globalThis[Symbol.for('sanity.os.module')] ??= new WeakMap())
-if (!moduleSlot.has(React.createContext)) moduleSlot.set(React.createContext, React.createContext(undefined))
-const ModuleContext = moduleSlot.get(React.createContext)
+// The SDK reads these slots via getDashboardModuleContext() and getDashboardRootContext(),
+// so their symbols, key and values are a contract. Keyed by createContext, not the React
+// namespace: Vite dev pre-bundling can give two importers of one React copy different namespaces.
+function sharedContext(name) {
+  const slot = (globalThis[Symbol.for(name)] ??= new WeakMap())
+  if (!slot.has(React.createContext)) slot.set(React.createContext, React.createContext(undefined))
+  return slot.get(React.createContext)
+}
+const ModuleContext = sharedContext('sanity.os.module')
+// Older SDKs read ModuleContext as a plain string, so the root's signal has its own context.
+const RootContext = sharedContext('sanity.os.root')
 const rootMap = new Map()
+const rootContexts = new Map()
 // A shared default sheet can overwrite another app's global rules; each root needs its own sheet.
 const styleTargets = new Map()
 const stylisPlugins = new Map()
@@ -71,11 +78,21 @@ function uniqueStylisPlugin() {
   return Object.defineProperty(() => {}, 'name', { value: 'sanity-root-' + globalThis[stylisPluginCount] })
 }
 
+// The SDK disposes the root's instance, closing its bus connection, when the signal aborts. Next tick:
+// a host disposing a child root from its own cleanup code leaves the child still unmounting.
+function closeRoot(rootElement) {
+  const closing = rootContexts.get(rootElement)
+  rootContexts.delete(rootElement)
+  if (closing) setTimeout(() => closing.controller.abort(), 0)
+}
+
 function mount(rootElement, args) {
   let root = rootMap.get(rootElement)
   if (!root) {
     root = createRoot(rootElement, args?.renderOptions?.rootOptions)
     rootMap.set(rootElement, root)
+    const controller = new AbortController()
+    rootContexts.set(rootElement, { controller, value: { signal: controller.signal } })
     if (StyleSheetManager) {
       const target = rootElement.ownerDocument.createElement('sanity-styles')
       // React can replace the mount node's contents; keep its stylesheet outside that node.
@@ -84,7 +101,8 @@ function mount(rootElement, args) {
       stylisPlugins.set(rootElement, [uniqueStylisPlugin()])
     }
   }
-  let element = React.createElement(ModuleContext.Provider, { value: args?.renderOptions?.moduleId }, React.createElement(App, args.props))
+  let element = React.createElement(RootContext.Provider, { value: rootContexts.get(rootElement).value }, React.createElement(App, args.props))
+  element = React.createElement(ModuleContext.Provider, { value: args?.renderOptions?.moduleId }, element)
   if (StyleSheetManager) element = React.createElement(StyleSheetManager, { target: styleTargets.get(rootElement), stylisPlugins: stylisPlugins.get(rootElement) }, element)
   // The host's React can't pause this root, so the host pauses the app through this Activity.
   // Keep it inside StrictMode: outside, it stops StrictMode double-invoking effects.
@@ -109,6 +127,7 @@ export function render(rootElement, props, renderOptions) {
       styleTargets.get(rootElement)?.remove()
       styleTargets.delete(rootElement)
       stylisPlugins.delete(rootElement)
+      closeRoot(rootElement)
     },
     setLifecycle(state) {
       const current = renderArgs.get(rootElement)
