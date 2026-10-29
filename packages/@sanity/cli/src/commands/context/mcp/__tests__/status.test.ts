@@ -39,6 +39,28 @@ const status = {
   requiredOk: false,
 }
 
+const passingStatus = {
+  checks: {
+    knowledgeBases: {ok: true, resolved: ['kb-abc123']},
+    schema: {documentTypes: 3, ok: true, perspective: 'published'},
+    semanticSearch: {
+      active: true,
+      inactiveReason: null,
+      ok: true,
+      status: 'ready',
+      withinUsageLimit: true,
+    },
+    studio: {
+      availableWorkspaces: [{name: 'default', title: 'Default'}],
+      ok: true,
+      workspace: 'default',
+      workspaceAutoSelected: true,
+      workspaceTitle: 'Default',
+    },
+  },
+  requiredOk: true,
+}
+
 describe('context mcp status', () => {
   beforeEach(() => {
     mockGetGlobalCliClient.mockResolvedValue({
@@ -52,12 +74,12 @@ describe('context mcp status', () => {
     vi.clearAllMocks()
   })
 
-  test('prints each check, with "-" for checks that do not apply', async () => {
+  test('prints each check, with "-" for checks that do not apply, and exits 1 when not ready', async () => {
     mockStatus.mockResolvedValue(status)
 
     const {error, stdout} = await testCommand(McpEndpointStatusCommand, base)
 
-    if (error) throw error
+    expect(error?.oclif?.exit).toBe(1)
     expect(stdout).toBe(
       [
         '  Studio:          -',
@@ -71,28 +93,8 @@ describe('context mcp status', () => {
     expect(mockStatus).toHaveBeenCalledWith({name: 'support'})
   })
 
-  test('describes passing checks', async () => {
-    mockStatus.mockResolvedValue({
-      checks: {
-        knowledgeBases: {ok: true, resolved: ['kb-abc123']},
-        schema: {documentTypes: 3, ok: true, perspective: 'published'},
-        semanticSearch: {
-          active: true,
-          inactiveReason: null,
-          ok: true,
-          status: 'ready',
-          withinUsageLimit: true,
-        },
-        studio: {
-          availableWorkspaces: [{name: 'default', title: 'Default'}],
-          ok: true,
-          workspace: 'default',
-          workspaceAutoSelected: true,
-          workspaceTitle: 'Default',
-        },
-      },
-      requiredOk: true,
-    })
+  test('describes passing checks and exits 0', async () => {
+    mockStatus.mockResolvedValue(passingStatus)
 
     const {error, stdout} = await testCommand(McpEndpointStatusCommand, base)
 
@@ -115,22 +117,33 @@ describe('context mcp status', () => {
       {active: false, inactiveReason: null, ok: true, status: null, withinUsageLimit: null},
       'inactive',
     ],
-  ])('describes semantic search %#', async (semanticSearch, expected) => {
-    mockStatus.mockResolvedValue({...status, checks: {...status.checks, semanticSearch}})
+  ])(
+    'describes semantic search %#, which never fails the check',
+    async (semanticSearch, expected) => {
+      mockStatus.mockResolvedValue({
+        ...passingStatus,
+        checks: {...passingStatus.checks, semanticSearch},
+      })
 
-    const {error, stdout} = await testCommand(McpEndpointStatusCommand, base)
+      const {error, stdout} = await testCommand(McpEndpointStatusCommand, base)
 
-    if (error) throw error
-    expect(stdout).toContain(`Semantic search: ${expected}\n`)
-  })
+      if (error) throw error
+      expect(stdout).toContain(`Semantic search: ${expected}\n`)
+    },
+  )
 
-  test('outputs the status as JSON with --json', async () => {
+  test('outputs the status as JSON with --json, still exiting 1 when not ready', async () => {
+    const previousExitCode = process.exitCode
     mockStatus.mockResolvedValue(status)
 
-    const {error, stdout} = await testCommand(McpEndpointStatusCommand, [...base, '--json'])
+    try {
+      const {stdout} = await testCommand(McpEndpointStatusCommand, [...base, '--json'])
 
-    if (error) throw error
-    expect(JSON.parse(stdout)).toEqual(status)
+      expect(JSON.parse(stdout)).toEqual(status)
+      expect(process.exitCode).toBe(1)
+    } finally {
+      process.exitCode = previousExitCode
+    }
   })
 
   test('errors when no endpoint has that name or ID', async () => {
@@ -163,7 +176,7 @@ describe('context mcp status', () => {
   })
 
   test('checks an endpoint addressed by its ID under its name', async () => {
-    mockStatus.mockResolvedValue(status)
+    mockStatus.mockResolvedValue(passingStatus)
 
     const {error} = await testCommand(McpEndpointStatusCommand, [
       'mcpabc123',

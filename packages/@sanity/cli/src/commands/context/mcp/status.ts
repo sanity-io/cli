@@ -63,9 +63,15 @@ export class McpEndpointStatusCommand extends SanityCommand<typeof McpEndpointSt
 
     if (json) {
       this.logJson(status)
-      return
+    } else {
+      this.printStatus(status)
     }
 
+    // Like `sanity doctor`: fail when agents can't use the endpoint. Semantic search never affects `requiredOk`
+    if (!status.requiredOk) this.exit(exitCodes.RUNTIME_ERROR)
+  }
+
+  private printStatus(status: Context.McpEndpointStatus): void {
     const {knowledgeBases, schema, semanticSearch, studio} = status.checks
     const padTo = 15 // "Knowledge bases" and "Semantic search" are the longest keys
     this.log(
