@@ -5,15 +5,16 @@ import path from 'node:path'
 import {build, type Plugin, type ResolvedConfig} from 'vite'
 import {describe, expect, test, vi} from 'vitest'
 
+import {type AutoUpdatesBuildConfig} from '../../autoUpdates.js'
 import {renderDocument} from '../../renderDocument.js'
 import {sanityBuildEntries} from '../plugin-sanity-build-entries.js'
 
 vi.mock('../../renderDocument.js', () => ({
-  renderDocument: vi.fn(async (options: {props?: {css?: string[]}}) => {
+  renderDocument: vi.fn(async (options: {props?: {css?: string[]; entryPath?: string}}) => {
     const links = (options.props?.css ?? [])
       .map((href) => `<link href="${href}" rel="stylesheet" />`)
       .join('')
-    return `<html><head>${links}</head><body><div id="root"></div></body></html>`
+    return `<html><head>${links}</head><body><div id="root"></div><script src="${options.props?.entryPath}" type="module"></script></body></html>`
   }),
 }))
 
@@ -55,11 +56,17 @@ function entryChunk(overrides: Partial<BundleChunk> = {}): BundleChunk {
 }
 
 async function renderBundle(options: {
+  autoUpdates?: AutoUpdatesBuildConfig
   bridge?: boolean
   bundle: Bundle
   cssCodeSplit?: boolean
 }): Promise<{css: string[]; html: string}> {
-  const plugin = sanityBuildEntries({basePath: '/', bridge: options.bridge, cwd: '/project'})
+  const plugin = sanityBuildEntries({
+    autoUpdates: options.autoUpdates,
+    basePath: '/',
+    bridge: options.bridge,
+    cwd: '/project',
+  })
   if (options.cssCodeSplit !== undefined) {
     await resolveConfig(plugin, options.cssCodeSplit)
   }
@@ -126,6 +133,61 @@ describe('sanityBuildEntries index.html', () => {
     expect(html).not.toContain('bridge.js')
     // The document itself is still emitted.
     expect(html).toContain('id="root"')
+  })
+})
+
+describe('sanityBuildEntries module server fallback', () => {
+  const vendor = {entries: {}, namesByChunkName: {}, specifiersByChunkName: {}}
+  const moduleServerImports = {
+    sanity: 'https://sanity-cdn.com/v1/modules/sanity/default/%5E6.18.0/t1',
+    'sanity/': 'https://sanity-cdn.com/v1/modules/sanity/default/%5E6.18.0/t1/',
+  }
+  const pinned = {
+    cssUrls: ['https://modules.sanity-cdn.com/modules/v1/sanity/6.18.0/bare/index.css'],
+    imports: {sanity: 'https://modules.sanity-cdn.com/modules/v1/sanity/6.18.0/bare/index.mjs'},
+  }
+
+  test('passes the pinned map and defers every module script, bridge included', async () => {
+    const {html} = await renderBundle({
+      autoUpdates: {
+        imports: moduleServerImports,
+        pinned,
+        vendor: {...vendor, specifiersByChunkName: {react: 'react'}},
+      },
+      bundle: {
+        'static/sanity-abc.js': entryChunk(),
+        'vendor/react-abc.mjs': {
+          fileName: 'vendor/react-abc.mjs',
+          isEntry: true,
+          name: 'react',
+          type: 'chunk',
+        },
+      },
+    })
+
+    const vendorImports = {react: '/vendor/react-abc.mjs'}
+    expect(vi.mocked(renderDocument).mock.calls.at(-1)?.[0].importMap).toEqual({
+      imports: {...vendorImports, ...moduleServerImports},
+      pinned: {cssUrls: pinned.cssUrls, imports: {...vendorImports, ...pinned.imports}},
+    })
+    expect(html).not.toContain('type="module"')
+    expect(html).toContain(
+      '<script src="/static/sanity-abc.js" type="sanity/deferred-module" data-sanity-entry></script>',
+    )
+    expect(html).toMatch(/<script src="[^"]+bridge\.js" async type="sanity\/deferred-module"/)
+  })
+
+  test('leaves module scripts alone without a pinned map', async () => {
+    const {html} = await renderBundle({
+      autoUpdates: {imports: moduleServerImports, vendor},
+      bundle: {'static/sanity-abc.js': entryChunk()},
+    })
+
+    expect(vi.mocked(renderDocument).mock.calls.at(-1)?.[0].importMap).toEqual({
+      imports: moduleServerImports,
+    })
+    expect(html).toContain('<script src="/static/sanity-abc.js" type="module"></script>')
+    expect(html).not.toContain('sanity/deferred-module')
   })
 })
 

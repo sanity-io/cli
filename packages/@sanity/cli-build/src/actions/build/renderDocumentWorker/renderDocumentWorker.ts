@@ -1,5 +1,6 @@
 import {type MessagePort} from 'node:worker_threads'
 
+import {type DocumentImportMap} from '../autoUpdates.js'
 import {getDocumentHtml} from './getDocumentHtml.js'
 import {type DocumentProps} from './types.js'
 
@@ -10,9 +11,7 @@ export interface RenderDocumentWorkerOptions {
   studioRootPath: string
 
   autoUpdatesCssUrls?: string[]
-  importMap?: {
-    imports?: Record<string, string>
-  }
+  importMap?: DocumentImportMap
   isApp?: boolean
   props?: DocumentProps
 }

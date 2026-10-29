@@ -8,6 +8,7 @@ import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
 import {type BuildOptions, buildStudio, BuildStudioEventListener} from '../buildStudio.js'
 import {getAutoUpdatesCssUrls, getAutoUpdatesImportMap} from '../getAutoUpdatesImportMap.js'
+import {getInstalledBucketEntries, getPinnedImportMap} from '../getPinnedImportMap.js'
 
 function buildOptions(
   overrides: Partial<BuildOptions> & Pick<BuildOptions, 'output'>,
@@ -81,6 +82,14 @@ vi.mock(import('../checkStudioDependencyVersions.js'), () => ({
 vi.mock(import('../getAutoUpdatesImportMap.js'), () => ({
   getAutoUpdatesCssUrls: vi.fn(),
   getAutoUpdatesImportMap: vi.fn(),
+}))
+
+vi.mock(import('../getPinnedImportMap.js'), () => ({
+  getInstalledBucketEntries: vi.fn().mockResolvedValue(['index']),
+  getPinnedImportMap: vi.fn().mockReturnValue({
+    cssUrls: ['https://modules.sanity-cdn.com/modules/v1/sanity/3.0.0/bare/index.css'],
+    imports: {sanity: 'https://modules.sanity-cdn.com/modules/v1/sanity/3.0.0/bare/index.mjs'},
+  }),
 }))
 
 vi.mock(import('../resolveVendorBuildConfig.js'), () => ({
@@ -473,6 +482,79 @@ describe('#buildStudio', () => {
 
     // The same dependency array is passed to getAutoUpdatesCssUrls
     expect(vi.mocked(getAutoUpdatesCssUrls).mock.calls[0][0]).toBe(sanityDependencies)
+  })
+
+  test('passes the pinned bucket import map for the installed versions to the build', async () => {
+    const output = createMockOutput()
+    vi.mocked(getInstalledBucketEntries).mockImplementation(async (packageName) =>
+      packageName === 'sanity' ? ['index', 'structure'] : ['index'],
+    )
+
+    await buildStudio(buildOptions({autoUpdatesEnabled: true, output, workDir: '/studio'}))
+
+    expect(getInstalledBucketEntries).toHaveBeenCalledWith('sanity', '/studio')
+    expect(vi.mocked(getPinnedImportMap).mock.calls[0][0]).toEqual([
+      expect.objectContaining({entries: ['index', 'structure'], name: 'sanity', version: '3.0.0'}),
+      expect.objectContaining({entries: ['index'], name: '@sanity/vision', version: '3.0.0'}),
+    ])
+    expect(mockedBuildStaticFiles).toHaveBeenCalledWith(
+      expect.objectContaining({
+        autoUpdates: expect.objectContaining({
+          pinned: vi.mocked(getPinnedImportMap).mock.results[0].value,
+        }),
+      }),
+    )
+  })
+
+  test('drops the pinned import map when prerelease versions disable auto-updates', async () => {
+    const output = createMockOutput()
+
+    await buildStudio(
+      buildOptions(
+        {
+          autoUpdatesEnabled: true,
+          compareDependencyVersions: async () => ({
+            mismatched: [],
+            unresolvedPrerelease: [{pkg: 'sanity', version: '5.11.1-alpha.14'}],
+          }),
+          output,
+          unattendedMode: true,
+        },
+        {onPreReleaseInNonInteractiveAutoUpdate: vi.fn()},
+      ),
+    )
+
+    expect(mockedBuildStaticFiles).toHaveBeenCalledWith(
+      expect.objectContaining({autoUpdates: undefined}),
+    )
+  })
+
+  test('warns and builds when the runtime version check cannot reach Module Server', async () => {
+    const output = createMockOutput()
+    const onBuildStart = vi.fn()
+
+    await buildStudio(
+      buildOptions(
+        {
+          autoUpdatesEnabled: true,
+          compareDependencyVersions: async () => ({
+            mismatched: [],
+            unavailable: [
+              {pkg: 'sanity', reason: 'HTTP 503 Service Unavailable'},
+              {pkg: '@sanity/vision', reason: 'HTTP 503 Service Unavailable'},
+            ],
+            unresolvedPrerelease: [],
+          }),
+          output,
+        },
+        {onBuildStart},
+      ),
+    )
+
+    expect(output.warn).toHaveBeenCalledWith(
+      expect.stringContaining('Could not check the runtime version of sanity, @sanity/vision'),
+    )
+    expect(onBuildStart).toHaveBeenCalledWith({message: 'Build Sanity Studio'})
   })
 
   test('should not check appId when auto-updates are disabled', async () => {

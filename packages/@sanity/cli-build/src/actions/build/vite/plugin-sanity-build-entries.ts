@@ -4,6 +4,7 @@ import {type AutoUpdatesBuildConfig} from '../autoUpdates.js'
 import {createVendorImportMapFromBundle} from '../createVendorImportMapFromBundle.js'
 import {decorateIndexWithBridgeScript} from '../decorateIndexWithBridgeScript.js'
 import {decorateIndexWithStagingScript} from '../decorateIndexWithStagingScript.js'
+import {deferModuleScripts} from '../deferModuleScripts.js'
 import {renderDocument} from '../renderDocument.js'
 
 interface ViteOutputBundle {
@@ -85,16 +86,20 @@ export function sanityBuildEntries(options: {
       // For auto-updating studios/apps the import map combines the vendor
       // chunks emitted by this very build (hashed filenames, resolved from the
       // bundle) with the module-CDN imports for auto-updated packages.
+      const vendorImports = autoUpdates
+        ? createVendorImportMapFromBundle(
+            bundle,
+            autoUpdates.vendor.specifiersByChunkName,
+            basePath,
+          )
+        : {}
+      const pinned = autoUpdates?.pinned
       const importMap = autoUpdates
         ? {
-            imports: {
-              ...createVendorImportMapFromBundle(
-                bundle,
-                autoUpdates.vendor.specifiersByChunkName,
-                basePath,
-              ),
-              ...autoUpdates.imports,
-            },
+            imports: {...vendorImports, ...autoUpdates.imports},
+            ...(pinned && {
+              pinned: {cssUrls: pinned.cssUrls, imports: {...vendorImports, ...pinned.imports}},
+            }),
           }
         : undefined
 
@@ -110,9 +115,22 @@ export function sanityBuildEntries(options: {
         studioRootPath: cwd,
       })
 
+      const decoratedHtml = decorateIndexWithStagingScript(
+        bridge ? decorateIndexWithBridgeScript(html) : html,
+      )
+
       this.emitFile({
         fileName: 'index.html',
-        source: decorateIndexWithStagingScript(bridge ? decorateIndexWithBridgeScript(html) : html),
+        source: pinned
+          ? deferModuleScripts(decoratedHtml, {
+              entryPath,
+              onEntryNotFound: () =>
+                this.warn(
+                  `Could not find the studio entry script (${entryPath}) in the rendered document. ` +
+                    `A custom _document that changes its src will not get an automatic reload or stall notice on a Module Server failure.`,
+                ),
+            })
+          : decoratedHtml,
         type: 'asset',
       })
     },
