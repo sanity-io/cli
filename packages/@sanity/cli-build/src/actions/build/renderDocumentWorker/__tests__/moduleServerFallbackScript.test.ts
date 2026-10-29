@@ -54,7 +54,7 @@ function createClock() {
     },
     clearTimeout: (timerId: number) => timers.delete(timerId),
     // Only Date.now() is faked; real Date construction is untouched. This lets a test drive
-    // wall-clock-dependent logic (the recovery window) through the same clock.advance().
+    // wall-clock-dependent logic (the stall timer's hard cap) through the same clock.advance().
     dateNow: () => startTime + clock.now,
     setTimeout(callback: () => void, delay: number) {
       const timerId = clock.nextId++
@@ -290,6 +290,81 @@ describe('module server fallback loader', () => {
     expect(source).toBe('module-server')
     expect(studio.reloads).toHaveLength(0)
     expect(studio.notice()?.textContent).toContain('Sanity Studio could not load')
+  })
+
+  test('shows a notice on a stalled entry, never reloads, and clears it once the entry loads', async () => {
+    const studio = loadStudio({fetch: answeringFetch})
+    await committedImportMap(studio)
+
+    studio.clock.advance(10_000)
+
+    expect(studio.notice()?.textContent).toContain('taking longer than usual')
+    expect(studio.reloads).toHaveLength(0)
+
+    studio.dispatchEntryEvent('load')
+
+    expect(studio.notice()).toBeNull()
+  })
+
+  test('does not show the stall notice once the entry has loaded', async () => {
+    const studio = loadStudio({fetch: answeringFetch})
+    await committedImportMap(studio)
+
+    studio.dispatchEntryEvent('load')
+    studio.clock.advance(10_000)
+
+    expect(studio.notice()).toBeNull()
+  })
+
+  class FakePerformanceObserver {
+    static instances: FakePerformanceObserver[] = []
+    callback: () => void
+
+    constructor(callback: () => void) {
+      this.callback = callback
+      FakePerformanceObserver.instances.push(this)
+    }
+
+    disconnect() {}
+    observe() {}
+  }
+
+  test('restarts the stall idle timer when a resource loads', async () => {
+    FakePerformanceObserver.instances.length = 0
+    const studio = loadStudio({
+      fetch: answeringFetch,
+      prepareWindow: (window) =>
+        Object.assign(window, {PerformanceObserver: FakePerformanceObserver}),
+    })
+    await committedImportMap(studio)
+
+    studio.clock.advance(9000)
+    FakePerformanceObserver.instances[0]!.callback()
+    studio.clock.advance(9000)
+    expect(studio.notice()).toBeNull()
+
+    studio.clock.advance(1000)
+    expect(studio.notice()?.textContent).toContain('taking longer than usual')
+  })
+
+  test('shows the stall notice at the hard cap, even with continuous progress', async () => {
+    FakePerformanceObserver.instances.length = 0
+    const studio = loadStudio({
+      fetch: answeringFetch,
+      prepareWindow: (window) =>
+        Object.assign(window, {PerformanceObserver: FakePerformanceObserver}),
+    })
+    await committedImportMap(studio)
+    const observer = FakePerformanceObserver.instances[0]!
+
+    for (let step = 0; step < 5; step += 1) {
+      studio.clock.advance(5000)
+      observer.callback()
+    }
+    expect(studio.notice()).toBeNull()
+
+    studio.clock.advance(5000)
+    expect(studio.notice()?.textContent).toContain('taking longer than usual')
   })
 
   test('treats a probe blocked by connect-src as an answer and commits the module-server map', async () => {

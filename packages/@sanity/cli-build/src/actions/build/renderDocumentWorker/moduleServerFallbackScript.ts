@@ -13,6 +13,8 @@ import {
 export const MODULE_SERVER_FALLBACK_SCRIPT = String.raw`<script>
 {
   const PROBE_TIMEOUT_MS = 4000;
+  const STALL_IDLE_MS = 10000;
+  const STALL_MAX_MS = 30000;
   const RECOVERY_WINDOW_MS = 60000;
   const NOTICE_ID = '__sanityModuleNotice';
 
@@ -153,6 +155,11 @@ export const MODULE_SERVER_FALLBACK_SCRIPT = String.raw`<script>
     document.body.appendChild(notice);
   };
 
+  const removeNotice = () => {
+    const notice = document.getElementById(NOTICE_ID);
+    if (notice) notice.remove();
+  };
+
   const handleEntryError = (plan) => {
     if (plan.source === 'module-server' && markRecoveryReload()) {
       location.reload();
@@ -161,8 +168,37 @@ export const MODULE_SERVER_FALLBACK_SCRIPT = String.raw`<script>
     showNotice('Sanity Studio could not load. Check your connection and reload the page.');
   };
 
+  // Never reloads on a stall: both maps load from the same bucket.
   const watchEntry = (entryScript, plan) => {
+    const commitTime = Date.now();
+    let idleTimer;
+
+    const scheduleStallCheck = () => {
+      clearTimeout(idleTimer);
+      const remainingUntilCap = STALL_MAX_MS - (Date.now() - commitTime);
+      const delay = Math.min(STALL_IDLE_MS, Math.max(remainingUntilCap, 0));
+      idleTimer = setTimeout(() => showNotice('Sanity Studio is taking longer than usual to load.'), delay);
+    };
+
+    let progressObserver = null;
+    if (typeof PerformanceObserver === 'function') {
+      try {
+        progressObserver = new PerformanceObserver(scheduleStallCheck);
+        progressObserver.observe({buffered: false, type: 'resource'});
+      } catch {
+        progressObserver = null;
+      }
+    }
+    scheduleStallCheck();
+
+    const stopWatching = () => {
+      clearTimeout(idleTimer);
+      if (progressObserver) progressObserver.disconnect();
+    };
+
     entryScript.addEventListener('load', () => {
+      stopWatching();
+      removeNotice();
       if (plan.source === 'pinned') {
         try {
           sessionStorage.removeItem(RECOVERY_STORAGE_KEY);
@@ -171,7 +207,10 @@ export const MODULE_SERVER_FALLBACK_SCRIPT = String.raw`<script>
         }
       }
     });
-    entryScript.addEventListener('error', () => handleEntryError(plan));
+    entryScript.addEventListener('error', () => {
+      stopWatching();
+      handleEntryError(plan);
+    });
   };
 
   const copyAttributes = (source, target) =>

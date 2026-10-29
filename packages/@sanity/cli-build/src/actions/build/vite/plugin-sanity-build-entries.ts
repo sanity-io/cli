@@ -127,7 +127,7 @@ export function sanityBuildEntries(options: {
               onEntryNotFound: () =>
                 this.warn(
                   `Could not find the studio entry script (${entryPath}) in the rendered document. ` +
-                    `A custom _document that changes its src will not get an automatic reload on a Module Server failure.`,
+                    `A custom _document that changes its src will not get an automatic reload or stall notice on a Module Server failure.`,
                 ),
             })
           : decoratedHtml,
