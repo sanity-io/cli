@@ -25,6 +25,7 @@ import {
 } from '../../actions/typegen/generateResourceTypes.js'
 import {parseTypegenConfig} from '../../actions/typegen/parseTypegenConfig.js'
 import {
+  getResourceKey,
   parseTypegenResources,
   type TypegenResourcesConfig,
 } from '../../actions/typegen/parseTypegenResources.js'
@@ -202,6 +203,7 @@ export class TypegenGenerateCommand extends SanityCommand<typeof TypegenGenerate
         .length,
       mode,
       resourceCount: resources.resources.length,
+      resourceKeys: resources.resources.map((resource) => getResourceKey(resource)),
     })
     trace.complete()
   }

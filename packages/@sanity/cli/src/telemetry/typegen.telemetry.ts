@@ -5,6 +5,12 @@ interface TypegenResourcesTraceData {
   boundSchemaCount: number
   mode: 'generate' | 'watch'
   resourceCount: number
+  /**
+   * Each resource's `projectId.dataset`. `resourceCount` is kept alongside this because a key
+   * the telemetry sanitizer rejects is dropped from the list, leaving the count as the one
+   * number that is always right.
+   */
+  resourceKeys: string[]
 }
 
 /**

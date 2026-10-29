@@ -340,7 +340,12 @@ describe('approved CLI payloads', () => {
   })
 
   test('preserves TypeGen resources usage and rejects invalid values', () => {
-    const metrics = {boundSchemaCount: 1, mode: 'watch', resourceCount: 3}
+    const metrics = {
+      boundSchemaCount: 1,
+      mode: 'watch',
+      resourceCount: 3,
+      resourceKeys: ['ppsg7ml5.test', 'vo1ysemo.production', 'abcd1234.my-dataset_2'],
+    }
     const result = sanitizeTelemetryEvent(
       event({
         data: {...metrics, configPath: 'private'},
@@ -360,6 +365,32 @@ describe('approved CLI payloads', () => {
         }),
       ),
     ).toMatchObject({data: {}})
+  })
+
+  test('drops resource keys that are not a projectId.dataset pair', () => {
+    const result = sanitizeTelemetryEvent(
+      event({
+        data: {
+          boundSchemaCount: 0,
+          mode: 'generate',
+          resourceCount: 5,
+          resourceKeys: [
+            'ppsg7ml5.test',
+            'TOOLONGPROJECT.test',
+            'ppsg7ml5.Has Spaces',
+            'ppsg7ml5',
+            '../../etc/passwd',
+          ],
+        },
+        name: 'Typegen Resources Used',
+        type: 'trace.log',
+        version: 1,
+      }),
+    )
+    // `resourceCount` still reports 5, which is why it is kept alongside the keys.
+    expect(result).toMatchObject({
+      data: {resourceCount: 5, resourceKeys: ['ppsg7ml5.test']},
+    })
   })
 
   test('omits unknown event versions and invalid metric values', () => {

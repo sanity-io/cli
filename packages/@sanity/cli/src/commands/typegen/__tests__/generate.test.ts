@@ -279,7 +279,12 @@ describe('#typegen:generate', () => {
       if (error) throw error
 
       expect(trace).toHaveBeenCalledWith(TypegenResourcesTrace)
-      expect(log).toHaveBeenCalledWith({boundSchemaCount: 1, mode: 'generate', resourceCount: 2})
+      expect(log).toHaveBeenCalledWith({
+        boundSchemaCount: 1,
+        mode: 'generate',
+        resourceCount: 2,
+        resourceKeys: ['abc123.production', 'abc123.staging'],
+      })
 
       expect(resolveResourceSchemas).toHaveBeenCalledOnce()
       const [resolveOptions] = resolveResourceSchemas.mock.calls[0]
@@ -369,7 +374,12 @@ describe('#typegen:generate', () => {
       if (error) throw error
 
       expect(trace).toHaveBeenCalledWith(TypegenResourcesTrace)
-      expect(log).toHaveBeenCalledWith({boundSchemaCount: 1, mode: 'watch', resourceCount: 2})
+      expect(log).toHaveBeenCalledWith({
+        boundSchemaCount: 1,
+        mode: 'watch',
+        resourceCount: 2,
+        resourceKeys: ['abc123.production', 'abc123.staging'],
+      })
 
       expect(resolveResourceSchemas).toHaveBeenCalledOnce()
       // A missing local schema file is reported on each run until it appears.
