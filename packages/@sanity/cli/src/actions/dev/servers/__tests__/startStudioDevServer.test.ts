@@ -44,6 +44,8 @@ vi.mock('@sanity/cli-build/_internal/build', () => ({
   checkRequiredDependencies: mockCheckRequiredDependencies,
   checkStudioDependencyVersions: mockCheckStudioDependencyVersions,
   compareDependencyVersions: mockCompareDependencyVersions,
+  getUnavailableVersionsWarning: (unavailable: Array<{pkg: string}>) =>
+    `Could not check the runtime version of ${unavailable.map((entry) => entry.pkg).join(', ')}`,
 }))
 vi.mock('../../../build/shouldAutoUpdate.js', () => ({
   shouldAutoUpdate: mockShouldAutoUpdate,
@@ -298,6 +300,19 @@ describe('startStudioDevServer', () => {
       await startStudioDevServer(createDevOptions({output}))
 
       expect(output.warn).toHaveBeenCalledWith(expect.stringContaining('prerelease'))
+    })
+
+    test('warns when Module Server does not answer the runtime version check', async () => {
+      mockCompareDependencyVersions.mockResolvedValueOnce({
+        mismatched: [],
+        unavailable: [{pkg: 'sanity', reason: 'HTTP 502 Bad Gateway'}],
+        unresolvedPrerelease: [],
+      })
+      const output = createMockOutput()
+
+      await startStudioDevServer(createDevOptions({output}))
+
+      expect(output.warn).toHaveBeenCalledWith('Could not check the runtime version of sanity')
     })
 
     test('warns when compareDependencyVersions throws', async () => {

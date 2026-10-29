@@ -310,7 +310,7 @@ describe('compareDependencyVersions', () => {
   })
 
   describe('error handling', () => {
-    it('should throw with URL context when request fails with a network error', async () => {
+    it('should report the package as unavailable when the request fails with a network error', async () => {
       mockRequest.mockRejectedValue(new Error('getaddrinfo ENOTFOUND modules.sanity.io'))
       mockReadPackageJson.mockResolvedValueOnce({
         dependencies: {sanity: '^3.40.0'},
@@ -319,9 +319,100 @@ describe('compareDependencyVersions', () => {
         version: '0.0.0',
       })
 
-      await expect(
-        compareDependencyVersions([{name: 'sanity', version: '3.40.0'}], '/test/workdir'),
-      ).rejects.toThrow(/Failed to fetch remote version for .+: getaddrinfo ENOTFOUND/)
+      const result = await compareDependencyVersions(
+        [{name: 'sanity', version: '3.40.0'}],
+        '/test/workdir',
+      )
+
+      expect(result).toEqual({
+        mismatched: [],
+        unavailable: [{pkg: 'sanity', reason: 'getaddrinfo ENOTFOUND modules.sanity.io'}],
+        unresolvedPrerelease: [],
+      })
+    })
+
+    it('should report the package as unavailable when Module Server answers with a 5xx', async () => {
+      mockRequest.mockResolvedValue(mockHeadResponse(503, {}, 'Service Unavailable'))
+      mockReadPackageJson.mockResolvedValueOnce({
+        dependencies: {sanity: '^3.40.0'},
+        devDependencies: {},
+        name: 'test-package',
+        version: '0.0.0',
+      })
+
+      const result = await compareDependencyVersions(
+        [{name: 'sanity', version: '3.40.0'}],
+        '/test/workdir',
+      )
+
+      expect(result.unavailable).toEqual([{pkg: 'sanity', reason: 'HTTP 503 Service Unavailable'}])
+    })
+
+    it('should report the package as unavailable when Module Server answers with a 429', async () => {
+      mockRequest.mockResolvedValue(mockHeadResponse(429, {}, 'Too Many Requests'))
+      mockReadPackageJson.mockResolvedValueOnce({
+        dependencies: {sanity: '^3.40.0'},
+        devDependencies: {},
+        name: 'test-package',
+        version: '0.0.0',
+      })
+
+      const result = await compareDependencyVersions(
+        [{name: 'sanity', version: '3.40.0'}],
+        '/test/workdir',
+      )
+
+      expect(result.unavailable).toEqual([{pkg: 'sanity', reason: 'HTTP 429 Too Many Requests'}])
+    })
+
+    it('should keep comparing the packages Module Server answers for', async () => {
+      mockRequest
+        .mockRejectedValueOnce(new Error('The operation was aborted due to timeout'))
+        .mockResolvedValueOnce(mockHeadResponse(302, {'x-resolved-version': '3.41.0'}))
+      mockGetLocalPackageVersion.mockResolvedValue('3.40.0')
+      mockReadPackageJson.mockResolvedValueOnce({
+        dependencies: {'@sanity/vision': '^3.40.0', sanity: '^3.40.0'},
+        devDependencies: {},
+        name: 'test-package',
+        version: '0.0.0',
+      })
+
+      const result = await compareDependencyVersions(autoUpdatePackages, '/test/workdir')
+
+      expect(result).toEqual({
+        mismatched: [{installed: '3.40.0', pkg: '@sanity/vision', remote: '3.41.0'}],
+        unavailable: [{pkg: 'sanity', reason: 'The operation was aborted due to timeout'}],
+        unresolvedPrerelease: [],
+      })
+    })
+
+    it('should check every package at the same time', async () => {
+      const pendingRequests: Array<() => void> = []
+      mockRequest.mockImplementation(
+        () =>
+          new Promise((resolve) => {
+            pendingRequests.push(() =>
+              resolve(mockHeadResponse(302, {'x-resolved-version': '3.40.0'})),
+            )
+          }),
+      )
+      mockGetLocalPackageVersion.mockResolvedValue('3.40.0')
+      mockReadPackageJson.mockResolvedValueOnce({
+        dependencies: {'@sanity/vision': '^3.40.0', sanity: '^3.40.0'},
+        devDependencies: {},
+        name: 'test-package',
+        version: '0.0.0',
+      })
+
+      const comparison = compareDependencyVersions(autoUpdatePackages, '/test/workdir')
+      await vi.waitFor(() => expect(pendingRequests).toHaveLength(2))
+      for (const resolveRequest of pendingRequests) resolveRequest()
+
+      await expect(comparison).resolves.toEqual({
+        mismatched: [],
+        unavailable: [],
+        unresolvedPrerelease: [],
+      })
     })
 
     it("should throw when response is missing the 'x-resolved-version' header", async () => {
@@ -339,7 +430,7 @@ describe('compareDependencyVersions', () => {
     })
 
     it('should throw when response has an unexpected HTTP status code', async () => {
-      mockRequest.mockResolvedValue(mockHeadResponse(500, {}, 'Internal Server Error'))
+      mockRequest.mockResolvedValue(mockHeadResponse(403, {}, 'Forbidden'))
       mockReadPackageJson.mockResolvedValueOnce({
         dependencies: {sanity: '^3.40.0'},
         devDependencies: {},
@@ -349,7 +440,7 @@ describe('compareDependencyVersions', () => {
 
       await expect(
         compareDependencyVersions([{name: 'sanity', version: '3.40.0'}], '/test/workdir'),
-      ).rejects.toThrow('Unexpected HTTP response: 500 Internal Server Error')
+      ).rejects.toThrow('Unexpected HTTP response: 403 Forbidden')
     })
   })
 
@@ -523,6 +614,27 @@ describe('compareDependencyVersions', () => {
           remote: '3.40.0',
         },
       ])
+    })
+
+    it('should treat a prerelease as unresolved when Module Server is unavailable', async () => {
+      mockRequest.mockRejectedValue(new Error('getaddrinfo ENOTFOUND modules.sanity.io'))
+      mockReadPackageJson.mockResolvedValueOnce({
+        dependencies: {sanity: '^5.11.1-alpha.14'},
+        devDependencies: {},
+        name: 'test-package',
+        version: '0.0.0',
+      })
+
+      const result = await compareDependencyVersions(
+        [{name: 'sanity', version: '5.11.1-alpha.14'}],
+        '/test/workdir',
+      )
+
+      expect(result).toEqual({
+        mismatched: [],
+        unavailable: [],
+        unresolvedPrerelease: [{pkg: 'sanity', version: '5.11.1-alpha.14'}],
+      })
     })
 
     it('should handle multiple prerelease packages with 404', async () => {
