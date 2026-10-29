@@ -90,6 +90,13 @@ export async function updateKnowledgeBase(
 export type BlueprintOwnership = {managed: false} | {managed: true; stackName: string | null}
 
 /**
+ * Who manages a resource, for refusal messages: the stack by name when the caller can read it
+ */
+export function describeBlueprintManager(stackName: string | null): string {
+  return stackName ? `The blueprint stack "${stackName}"` : 'A blueprint'
+}
+
+/**
  * Whether a live blueprint stack manages the knowledge base, from the
  * Blueprints resource search. Fails open: a failed lookup answers not managed,
  * so a Blueprints outage never blocks a command.

@@ -3,13 +3,11 @@ import {type FlagInput} from '@oclif/core/interfaces'
 import {exitCodes, SanityCommand, subdebug} from '@sanity/cli-core'
 import {getErrorMessage} from '@sanity/cli-core/errors'
 import {requiredWhenUnattended} from '@sanity/cli-core/flags'
-import {input, spinner} from '@sanity/cli-core/ux'
+import {spinner} from '@sanity/cli-core/ux'
 
-import {
-  MissingOrganizationError,
-  resolveOrganizationId,
-} from '../../actions/context/resolveOrganizationId.js'
+import {resolveOrganizationId} from '../../actions/context/resolveOrganizationId.js'
 import {formatKeyValue} from '../../actions/debug/output.js'
+import {promptForText} from '../../prompts/promptForText.js'
 import {createKnowledgeBase} from '../../services/context.js'
 import {getOrganizationFlag} from '../../util/sharedFlags.js'
 import {defineCommandTelemetry} from '../../util/telemetry/commandTelemetry.js'
@@ -62,22 +60,11 @@ export class CreateKnowledgeBaseCommand extends SanityCommand<typeof CreateKnowl
       this.error('Description cannot be empty', {exit: exitCodes.USAGE_ERROR})
     }
 
-    let organizationId: string
-    try {
-      organizationId = await resolveOrganizationId({
-        configuredOrganizationId: (await this.tryGetCliConfig()).app?.organizationId,
-        flagOrganizationId: organization,
-        unattended: this.isUnattended(),
-      })
-    } catch (error) {
-      createContextDebug('Error resolving organization', error)
-      this.error(getErrorMessage(error), {
-        exit:
-          error instanceof MissingOrganizationError
-            ? exitCodes.USAGE_ERROR
-            : exitCodes.RUNTIME_ERROR,
-      })
-    }
+    const organizationId = await resolveOrganizationId({
+      configuredOrganizationId: (await this.tryGetCliConfig()).app?.organizationId,
+      flagOrganizationId: organization,
+      unattended: this.isUnattended(),
+    })
 
     const title = titleFlag?.trim() || (await promptForText('Knowledge base title:'))
     const description =
@@ -99,12 +86,4 @@ export class CreateKnowledgeBaseCommand extends SanityCommand<typeof CreateKnowl
       })
     }
   }
-}
-
-async function promptForText(message: string): Promise<string> {
-  const value = await input({
-    message,
-    validate: (input_) => input_.trim().length > 0 || 'Value cannot be empty',
-  })
-  return value.trim()
 }

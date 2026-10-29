@@ -223,7 +223,7 @@ describe('context create', () => {
     )
 
     expect(error).toBeInstanceOf(Error)
-    expect(error?.oclif?.exit).toBe(1)
+    expect(error?.message).toContain('org list boom')
     expect(mockCreate).not.toHaveBeenCalled()
   })
 
