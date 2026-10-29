@@ -1,8 +1,10 @@
 import {exitCodes} from '@sanity/cli-core/ExitCodes'
-import {testCommand} from '@sanity/cli-test'
+import {createTestClient, mockApi, testCommand} from '@sanity/cli-test'
+import {cleanAll, pendingMocks} from 'nock'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
 import {selectTemplate} from '../../../actions/init/scaffoldTemplate.js'
+import {PROJECT_FEATURES_API_VERSION} from '../../../services/getProjectFeatures.js'
 import {InitCommand} from '../../init.js'
 
 const mocks = vi.hoisted(() => ({
@@ -10,6 +12,8 @@ const mocks = vi.hoisted(() => ({
   detectFrameworkRecord: vi.fn(),
   getById: vi.fn(),
   getGitHubRepoInfo: vi.fn(),
+  listDatasets: vi.fn(),
+  listProjects: vi.fn(),
   promptForTypeScript: vi.fn(),
 }))
 
@@ -31,9 +35,25 @@ vi.mock('@sanity/cli-core', async (importOriginal) => {
   return {
     ...actual,
     getGlobalCliClient: vi.fn().mockResolvedValue({
+      projects: {
+        list: mocks.listProjects,
+      },
       users: {
         getById: mocks.getById,
       } as never,
+    }),
+    getProjectCliClient: vi.fn().mockImplementation(async (options) => {
+      const client = createTestClient({
+        apiVersion: options.apiVersion,
+        token: 'test-token',
+      })
+
+      return {
+        datasets: {
+          list: mocks.listDatasets,
+        } as never,
+        request: client.request,
+      }
     }),
   }
 })
@@ -55,9 +75,23 @@ const defaultMocks = {
   token: 'test-token',
 }
 
+const setupBareProjectMocks = () => {
+  mocks.listProjects.mockResolvedValueOnce([
+    {createdAt: '2024-01-01T00:00:00Z', displayName: 'Test Project', id: 'test-project'},
+  ])
+  mocks.listDatasets.mockResolvedValueOnce([{aclMode: 'public', name: 'production'}])
+  mockApi({
+    apiVersion: PROJECT_FEATURES_API_VERSION,
+    uri: '/features',
+  }).reply(200, [])
+}
+
 describe('#init: oclif command setup', () => {
   afterEach(() => {
     vi.clearAllMocks()
+    const pending = pendingMocks()
+    cleanAll()
+    expect(pending, 'pending mocks').toEqual([])
   })
 
   test.each([
@@ -188,19 +222,24 @@ describe('#init: oclif command setup', () => {
     expect(error?.oclif?.exit).toBe(1)
   })
 
-  test('does not require --dataset in unattended mode', async () => {
+  test('defaults to the production dataset in unattended mode without --dataset', async () => {
     // Mock no framework or a non-Next.js framework
     mocks.detectFrameworkRecord.mockResolvedValueOnce(null)
+    setupBareProjectMocks()
 
     // Use --bare to bypass the --output-path requirement, omit --dataset
-    const {error} = await testCommand(InitCommand, ['--yes', '--bare', '--project=test-project'], {
-      mocks: {
-        ...defaultMocks,
+    const {error, stdout} = await testCommand(
+      InitCommand,
+      ['--yes', '--bare', '--project=test-project'],
+      {
+        mocks: {
+          ...defaultMocks,
+        },
       },
-    })
+    )
 
-    // Should not throw a --dataset validation error
-    expect(error?.message ?? '').not.toContain('--dataset')
+    if (error) throw error
+    expect(stdout).toContain('Dataset: production')
   })
 
   test('throws error when `output-path` is not used in unattended mode with non-nextjs project', async () => {
@@ -222,8 +261,9 @@ describe('#init: oclif command setup', () => {
 
   test('does not require `output-path` in unattended mode when `bare` is used', async () => {
     mocks.detectFrameworkRecord.mockResolvedValueOnce(null)
+    setupBareProjectMocks()
 
-    const {error} = await testCommand(
+    const {error, stdout} = await testCommand(
       InitCommand,
       ['--yes', '--bare', '--dataset=production', '--project=test-project'],
       {
@@ -233,10 +273,8 @@ describe('#init: oclif command setup', () => {
       },
     )
 
-    // Should NOT throw output-path error — bare mode doesn't need it
-    expect(error?.message ?? '').not.toContain(
-      'Output path is required in unattended mode. Pass it with `--output-path <path>`.',
-    )
+    if (error) throw error
+    expect(stdout).toContain('Project ID: test-project')
   })
 
   test('throws error when in unattended mode and `project` and `project-name` not set', async () => {
