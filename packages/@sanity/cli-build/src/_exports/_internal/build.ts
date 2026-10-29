@@ -11,5 +11,7 @@ export {
   compareDependencyVersions,
   type CompareDependencyVersions,
   type CompareDependencyVersionsResult,
+  getUnavailableVersionsWarning,
+  type UnavailableDependencyVersion,
   type UnresolvedPrerelease,
 } from '../../util/compareDependencyVersions.js'
