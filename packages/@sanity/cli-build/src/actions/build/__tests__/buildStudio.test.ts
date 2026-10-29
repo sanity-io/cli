@@ -475,6 +475,34 @@ describe('#buildStudio', () => {
     expect(vi.mocked(getAutoUpdatesCssUrls).mock.calls[0][0]).toBe(sanityDependencies)
   })
 
+  test('warns and builds when the runtime version check cannot reach Module Server', async () => {
+    const output = createMockOutput()
+    const onBuildStart = vi.fn()
+
+    await buildStudio(
+      buildOptions(
+        {
+          autoUpdatesEnabled: true,
+          compareDependencyVersions: async () => ({
+            mismatched: [],
+            unavailable: [
+              {pkg: 'sanity', reason: 'HTTP 503 Service Unavailable'},
+              {pkg: '@sanity/vision', reason: 'HTTP 503 Service Unavailable'},
+            ],
+            unresolvedPrerelease: [],
+          }),
+          output,
+        },
+        {onBuildStart},
+      ),
+    )
+
+    expect(output.warn).toHaveBeenCalledWith(
+      expect.stringContaining('Could not check the runtime version of sanity, @sanity/vision'),
+    )
+    expect(onBuildStart).toHaveBeenCalledWith({message: 'Build Sanity Studio'})
+  })
+
   test('should not check appId when auto-updates are disabled', async () => {
     const output = createMockOutput()
 
