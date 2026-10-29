@@ -49,7 +49,10 @@ export function createAutoUpdatesLoader({
   async function load(specifier: string): Promise<Module> {
     ready ??= prepare()
     await ready
-    if (!modules) throw new Error('The auto update loader is not installed in dashboard')
+    if (!modules)
+      throw new Error(
+        "Couldn't load auto-updated packages: the Dashboard doesn't provide the auto-update loader. Contact Sanity support.",
+      )
 
     const module = modules?.[specifier]
     if (!module) throw new Error(`${specifier} was not loaded from the module server`)

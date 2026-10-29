@@ -87,10 +87,10 @@ test.each([
   const {importMapUrl, load: loadModule} = setup()
 
   await expect(loadModule('sanity')).rejects.toThrow(
-    'The auto update loader is not installed in dashboard',
+    "Couldn't load auto-updated packages: the Dashboard doesn't provide the auto-update loader. Contact Sanity support.",
   )
   await expect(loadModule('sanity/structure')).rejects.toThrow(
-    'The auto update loader is not installed in dashboard',
+    "Couldn't load auto-updated packages: the Dashboard doesn't provide the auto-update loader. Contact Sanity support.",
   )
   expect(importMapUrl('sanity')).toBeUndefined()
 })
