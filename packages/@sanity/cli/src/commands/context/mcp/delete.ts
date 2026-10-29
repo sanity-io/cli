@@ -64,7 +64,7 @@ export class DeleteMcpEndpointCommand extends SanityCommand<typeof DeleteMcpEndp
     if (ownership.managed) {
       const manager = describeBlueprintManager(ownership.stackName)
       this.error(
-        `${manager} manages MCP endpoint "${name}". To delete it, deploy it with \`lifecycle: {deletionPolicy: 'allow'}\` in the blueprint, then remove it from the blueprint and deploy again.`,
+        `${manager} manages MCP endpoint "${name}", so the next deploy would recreate it. To delete it, remove it from the blueprint and run \`sanity blueprints deploy\`.`,
         {exit: exitCodes.USAGE_ERROR},
       )
     }

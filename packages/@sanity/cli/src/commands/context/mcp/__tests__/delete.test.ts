@@ -95,7 +95,8 @@ describe('context mcp delete', () => {
     expect(error?.message).toContain(
       'The blueprint stack "production" manages MCP endpoint "support"',
     )
-    expect(error?.message).toContain("deletionPolicy: 'allow'")
+    expect(error?.message).toContain('the next deploy would recreate it')
+    expect(error?.message).not.toContain('deletionPolicy')
     expect(error?.oclif?.exit).toBe(2)
     expect(mockDelete).not.toHaveBeenCalled()
   })

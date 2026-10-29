@@ -90,7 +90,7 @@ describe('context mcp get', () => {
     expect(stdout).toContain('Knowledge bases: -')
   })
 
-  test('outputs the endpoint with its URL as JSON with --json', async () => {
+  test('outputs the endpoint in the shape create and update return with --json', async () => {
     mockGet.mockResolvedValue(mcpDoc)
 
     const {error, stdout} = await testCommand(GetMcpEndpointCommand, [
@@ -101,7 +101,7 @@ describe('context mcp get', () => {
     ])
 
     if (error) throw error
-    expect(JSON.parse(stdout)).toEqual({...mcpDoc, url: mcpEndpoint.url})
+    expect(JSON.parse(stdout)).toEqual(mcpEndpoint)
   })
 
   test('errors when no endpoint has that name', async () => {

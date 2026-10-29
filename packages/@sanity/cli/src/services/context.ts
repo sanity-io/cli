@@ -115,9 +115,9 @@ export function getKnowledgeBaseBlueprintOwnership(
  */
 export function getMcpEndpointBlueprintOwnership(
   organizationId: string,
-  {publicId}: Pick<Context.McpDoc, 'publicId'>,
+  {id}: Pick<Context.McpEndpoint, 'id'>,
 ): Promise<BlueprintOwnership> {
-  return getBlueprintOwnership('sanity.context.mcp', async () => ({organizationId, publicId}))
+  return getBlueprintOwnership('sanity.context.mcp', async () => ({organizationId, publicId: id}))
 }
 
 /**
@@ -396,18 +396,13 @@ export async function queryContext(
 }
 
 /**
- * An MCP endpoint's stored configuration, with the URL agents connect to
- */
-export type McpEndpointConfig = Context.McpDoc & {url: string}
-
-/**
  * List an organization's MCP endpoints, oldest first
  */
-export async function listMcpEndpoints(organizationId: string): Promise<McpEndpointConfig[]> {
+export async function listMcpEndpoints(organizationId: string): Promise<Context.McpEndpoint[]> {
   const client = await getContextClient(undefined, organizationId)
-  const endpoints = await client.context.mcpEndpoints.list()
+  const docs = await client.context.mcpEndpoints.list()
   const connectClient = client.withConfig({apiVersion: MCP_CONNECT_API_VERSION})
-  return endpoints.map((endpoint) => ({...endpoint, url: mcpEndpointUrl(connectClient, endpoint)}))
+  return docs.map((doc) => toMcpEndpoint(connectClient, doc))
 }
 
 /**
@@ -417,27 +412,37 @@ export async function listMcpEndpoints(organizationId: string): Promise<McpEndpo
 export async function getMcpEndpoint(
   organizationId: string,
   nameOrId: string,
-): Promise<McpEndpointConfig | null> {
+): Promise<Context.McpEndpoint | null> {
   const client = await getContextClient(undefined, organizationId)
-  const endpoint = await client.context.fetch<Context.McpDoc | null>(
+  const doc = await client.context.fetch<Context.McpDoc | null>(
     '*[_type == "sanity.context.mcp" && organizationId == $org && (name == $nameOrId || publicId == $nameOrId)][0]',
     {nameOrId, org: organizationId},
   )
-  const connectClient = client.withConfig({apiVersion: MCP_CONNECT_API_VERSION})
-  return endpoint && {...endpoint, url: mcpEndpointUrl(connectClient, endpoint)}
+  return doc && toMcpEndpoint(client.withConfig({apiVersion: MCP_CONNECT_API_VERSION}), doc)
 }
 
 /**
- * The stored configuration doesn't carry the URL that create and edit return,
- * so it is built from the same route and API version.
+ * The stored configuration in the shape create and edit return, so every command outputs the
+ * same fields. The URL isn't stored, so it is built from the same route and API version.
  */
-function mcpEndpointUrl(
+function toMcpEndpoint(
   connectClient: {getUrl: (uri: string) => string},
-  {name, organizationId}: Context.McpDoc,
-): string {
-  return connectClient.getUrl(
-    `/context/organizations/${encodeURIComponent(organizationId)}/mcp/${encodeURIComponent(name)}`,
-  )
+  doc: Context.McpDoc,
+): Context.McpEndpoint {
+  return {
+    createdAt: doc._createdAt,
+    groqFilter: doc.groqFilter ?? null,
+    id: doc.publicId,
+    instructions: doc.instructions ?? null,
+    name: doc.name,
+    organizationId: doc.organizationId,
+    sources: doc.sources,
+    title: doc.title,
+    updatedAt: doc._updatedAt,
+    url: connectClient.getUrl(
+      `/context/organizations/${encodeURIComponent(doc.organizationId)}/mcp/${encodeURIComponent(doc.name)}`,
+    ),
+  }
 }
 
 /**

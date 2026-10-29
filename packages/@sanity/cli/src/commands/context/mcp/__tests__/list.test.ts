@@ -41,7 +41,7 @@ describe('context mcp list', () => {
     )
   })
 
-  test('outputs endpoints with their URLs as JSON with --json', async () => {
+  test('outputs endpoints in the shape create and update return with --json', async () => {
     mockList.mockResolvedValue([mcpDoc])
 
     const {error, stdout} = await testCommand(ListMcpEndpointsCommand, [
@@ -51,7 +51,7 @@ describe('context mcp list', () => {
     ])
 
     if (error) throw error
-    expect(JSON.parse(stdout)).toEqual([{...mcpDoc, url: mcpEndpoint.url}])
+    expect(JSON.parse(stdout)).toEqual([mcpEndpoint])
   })
 
   test('says so when the organization has no endpoints', async () => {

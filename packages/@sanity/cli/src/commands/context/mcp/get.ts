@@ -50,7 +50,7 @@ export class GetMcpEndpointCommand extends SanityCommand<typeof GetMcpEndpointCo
       return
     }
 
-    for (const line of formatMcpEndpoint({...endpoint, id: endpoint.publicId})) {
+    for (const line of formatMcpEndpoint(endpoint)) {
       this.log(line)
     }
   }
