@@ -7,20 +7,21 @@ import {type Context, isHttpError} from '@sanity/client'
 
 import {
   type DatasetSettings,
+  datasetSourceId,
   editSources,
+  findMcpEndpoint,
   formatMcpEndpoint,
   mcpEndpointNameArg,
   mcpEndpointOrganizationFlag,
-  parseDatasetSourceId,
   parseNonEmpty,
 } from '../../../actions/context/mcpEndpoint.js'
 import {resolveOrganizationId} from '../../../actions/context/resolveOrganizationId.js'
 import {
   describeBlueprintManager,
-  getMcpEndpoint,
   getMcpEndpointBlueprintOwnership,
   updateMcpEndpoint,
 } from '../../../services/context.js'
+import {getDatasetFlag, getProjectIdFlag} from '../../../util/sharedFlags.js'
 import {defineCommandTelemetry} from '../../../util/telemetry/commandTelemetry.js'
 
 const updateMcpDebug = subdebug('context:mcp:update')
@@ -48,12 +49,15 @@ const flags = {
     multiple: true,
     parse: parseNonEmpty('add-knowledge-base'),
   }),
-  dataset: Flags.string({
+  ...getDatasetFlag({
     atLeastOne: UPDATE_FLAGS,
-    description:
-      'Dataset the endpoint serves, as <projectId>.<datasetName>, replacing its current dataset',
-    helpValue: '<projectId.datasetName>',
-    parse: parseDatasetSourceId,
+    description: 'Dataset the endpoint serves, replacing its current dataset',
+    semantics: 'specify',
+  }),
+  ...getProjectIdFlag({
+    dependsOn: ['dataset'],
+    description: 'Project the dataset belongs to',
+    semantics: 'override',
   }),
   'groq-filter': Flags.string({
     atLeastOne: UPDATE_FLAGS,
@@ -124,7 +128,7 @@ Only the settings you pass change. Dataset settings (--workspace, --perspective,
     },
     {
       command:
-        '<%= config.bin %> <%= command.id %> catalog --dataset abc123.staging --perspective drafts',
+        '<%= config.bin %> <%= command.id %> catalog --project abc123 --dataset staging --perspective drafts',
       description: 'Switch to another dataset and query its drafts',
     },
     {
@@ -154,6 +158,7 @@ Only the settings you pass change. Dataset settings (--workspace, --perspective,
       'no-dataset': noDataset,
       organization,
       perspective,
+      project,
       'remove-knowledge-base': removeKnowledgeBases = [],
       'semantic-search': semanticSearch,
       title,
@@ -177,6 +182,17 @@ Only the settings you pass change. Dataset settings (--workspace, --perspective,
       )
     }
 
+    const addedAndRemoved = addKnowledgeBases.find((id) => removeKnowledgeBases.includes(id))
+    if (addedAndRemoved) {
+      this.error(
+        `"${addedAndRemoved}" is passed to both \`--add-knowledge-base\` and \`--remove-knowledge-base\`.`,
+        {exit: exitCodes.USAGE_ERROR},
+      )
+    }
+
+    const cliConfig = await this.tryGetCliConfig()
+    const datasetId = datasetSourceId(dataset, project ?? cliConfig.api?.projectId)
+
     const params: Context.EditMcpEndpointParams = {}
     if (title !== undefined) params.title = title
     if (instructions !== undefined) params.instructions = instructions.trim() || null
@@ -195,12 +211,14 @@ Only the settings you pass change. Dataset settings (--workspace, --perspective,
     const needsDataset = Object.keys(settings).length > 0 || Boolean(params.groqFilter)
 
     const organizationId = await resolveOrganizationId({
-      configuredOrganizationId: (await this.tryGetCliConfig()).app?.organizationId,
+      configuredOrganizationId: cliConfig.app?.organizationId,
       flagOrganizationId: organization,
       unattended: this.isUnattended(),
     })
 
-    const ownership = await getMcpEndpointBlueprintOwnership(organizationId, name)
+    const current = await findMcpEndpoint(organizationId, name)
+
+    const ownership = await getMcpEndpointBlueprintOwnership(organizationId, current)
     if (ownership.managed) {
       const manager = describeBlueprintManager(ownership.stackName)
       this.error(
@@ -210,22 +228,9 @@ Only the settings you pass change. Dataset settings (--workspace, --perspective,
     }
 
     if (changesSources || needsDataset) {
-      let current
-      try {
-        current = await getMcpEndpoint(organizationId, name)
-      } catch (error) {
-        updateMcpDebug('Error getting MCP endpoint', error)
-        this.error(`Failed to get MCP endpoint: ${getErrorMessage(error)}`, {
-          exit: exitCodes.RUNTIME_ERROR,
-        })
-      }
-      if (!current) {
-        this.error(`MCP endpoint "${name}" not found`, {exit: exitCodes.RUNTIME_ERROR})
-      }
-
       const {notes, sources} = editSources(current.sources, {
         addKnowledgeBases,
-        dataset: noDataset ? null : dataset,
+        dataset: noDataset ? null : datasetId,
         removeKnowledgeBases,
         settings,
       })
@@ -245,7 +250,7 @@ Only the settings you pass change. Dataset settings (--workspace, --perspective,
 
     const spin = spinner('Updating MCP endpoint').start()
     try {
-      const endpoint = await updateMcpEndpoint(organizationId, name, params)
+      const endpoint = await updateMcpEndpoint(organizationId, current.name, params)
       spin.succeed('MCP endpoint updated')
       for (const line of formatMcpEndpoint(endpoint)) {
         this.log(line)

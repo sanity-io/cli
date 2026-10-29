@@ -47,10 +47,10 @@ describe('context mcp get', () => {
         '',
       ].join('\n'),
     )
-    expect(mockGet).toHaveBeenCalledWith(expect.stringContaining('publicId == $nameOrId'), {
-      nameOrId: 'support',
-      org: 'org-abc123',
-    })
+    expect(mockGet).toHaveBeenCalledWith(
+      '*[_type == "sanity.context.mcp" && organizationId == $org && (name == $nameOrId || publicId == $nameOrId)][0]',
+      {nameOrId: 'support', org: 'org-abc123'},
+    )
   })
 
   test('leaves out dataset settings when the endpoint has no dataset', async () => {

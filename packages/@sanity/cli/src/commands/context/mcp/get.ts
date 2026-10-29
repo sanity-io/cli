@@ -1,16 +1,13 @@
 import {type FlagInput} from '@oclif/core/interfaces'
-import {exitCodes, SanityCommand, subdebug} from '@sanity/cli-core'
-import {getErrorMessage} from '@sanity/cli-core/errors'
+import {SanityCommand} from '@sanity/cli-core'
 
 import {
+  findMcpEndpoint,
   formatMcpEndpoint,
   mcpEndpointNameArg,
   mcpEndpointOrganizationFlag,
 } from '../../../actions/context/mcpEndpoint.js'
 import {resolveOrganizationId} from '../../../actions/context/resolveOrganizationId.js'
-import {getMcpEndpoint} from '../../../services/context.js'
-
-const getMcpDebug = subdebug('context:mcp:get')
 
 export class GetMcpEndpointCommand extends SanityCommand<typeof GetMcpEndpointCommand> {
   static override args = {
@@ -46,19 +43,7 @@ export class GetMcpEndpointCommand extends SanityCommand<typeof GetMcpEndpointCo
       unattended: this.isUnattended(),
     })
 
-    let endpoint
-    try {
-      endpoint = await getMcpEndpoint(organizationId, name)
-    } catch (error) {
-      getMcpDebug('Error getting MCP endpoint', error)
-      this.error(`Failed to get MCP endpoint: ${getErrorMessage(error)}`, {
-        exit: exitCodes.RUNTIME_ERROR,
-      })
-    }
-
-    if (!endpoint) {
-      this.error(`MCP endpoint "${name}" not found`, {exit: exitCodes.RUNTIME_ERROR})
-    }
+    const endpoint = await findMcpEndpoint(organizationId, name)
 
     if (json) {
       this.logJson(endpoint)

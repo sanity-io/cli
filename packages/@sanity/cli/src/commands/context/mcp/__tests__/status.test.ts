@@ -3,8 +3,10 @@ import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
 import {httpError} from '../../../../../test/helpers/httpError.js'
 import {McpEndpointStatusCommand} from '../status.js'
+import {mcpDoc, withConfig} from './fixtures.js'
 
 const mockStatus = vi.hoisted(() => vi.fn())
+const mockGet = vi.hoisted(() => vi.fn())
 const mockGetGlobalCliClient = vi.hoisted(() => vi.fn())
 
 vi.mock('@sanity/cli-core', async (importOriginal) => {
@@ -39,7 +41,11 @@ const status = {
 
 describe('context mcp status', () => {
   beforeEach(() => {
-    mockGetGlobalCliClient.mockResolvedValue({context: {mcpEndpoints: {status: mockStatus}}})
+    mockGetGlobalCliClient.mockResolvedValue({
+      context: {fetch: mockGet, mcpEndpoints: {status: mockStatus}},
+      withConfig,
+    })
+    mockGet.mockResolvedValue(mcpDoc)
   })
 
   afterEach(() => {
@@ -57,7 +63,7 @@ describe('context mcp status', () => {
         '  Studio:          -',
         '  Schema:          ok (12 document types, drafts perspective)',
         '  Knowledge bases: failed: Knowledge base kb-def456 has not been built.',
-        '  Semantic search: ok (inactive: turnedOff)',
+        '  Semantic search: inactive (turned off)',
         '  Ready:           no',
         '',
       ].join('\n'),
@@ -96,7 +102,7 @@ describe('context mcp status', () => {
         '  Studio:          ok (workspace "default")',
         '  Schema:          ok (3 document types, published perspective)',
         '  Knowledge bases: ok (kb-abc123)',
-        '  Semantic search: ok (active)',
+        '  Semantic search: active',
         '  Ready:           yes',
         '',
       ].join('\n'),
@@ -112,13 +118,46 @@ describe('context mcp status', () => {
     expect(JSON.parse(stdout)).toEqual(status)
   })
 
-  test('errors when no endpoint has that name', async () => {
+  test('errors when no endpoint has that name or ID', async () => {
+    mockGet.mockResolvedValue(null)
+
+    const {error} = await testCommand(McpEndpointStatusCommand, base)
+
+    expect(error?.message).toContain('MCP endpoint "support" not found')
+    expect(error?.oclif?.exit).toBe(1)
+    expect(mockStatus).not.toHaveBeenCalled()
+  })
+
+  test('errors when looking up the endpoint fails', async () => {
+    mockGet.mockRejectedValue(new Error('Store unavailable'))
+
+    const {error} = await testCommand(McpEndpointStatusCommand, base)
+
+    expect(error?.message).toContain('Failed to get MCP endpoint: Store unavailable')
+    expect(error?.oclif?.exit).toBe(1)
+    expect(mockStatus).not.toHaveBeenCalled()
+  })
+
+  test('errors when the endpoint disappears before the check', async () => {
     mockStatus.mockRejectedValue(httpError(404))
 
     const {error} = await testCommand(McpEndpointStatusCommand, base)
 
     expect(error?.message).toContain('MCP endpoint "support" not found')
     expect(error?.oclif?.exit).toBe(1)
+  })
+
+  test('checks an endpoint addressed by its ID under its name', async () => {
+    mockStatus.mockResolvedValue(status)
+
+    const {error} = await testCommand(McpEndpointStatusCommand, [
+      'mcpabc123',
+      '--organization',
+      'org-abc123',
+    ])
+
+    if (error) throw error
+    expect(mockStatus).toHaveBeenCalledWith({name: 'support'})
   })
 
   test('errors when the API call fails', async () => {

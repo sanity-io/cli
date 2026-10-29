@@ -24,6 +24,7 @@ interface SharedFlagOptions {
    */
   semantics: FlagSemantics
 
+  atLeastOne?: string[]
   dependsOn?: string[]
   description?: string
   env?: string

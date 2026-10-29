@@ -6,15 +6,16 @@ import {requiredWhenUnattended} from '@sanity/cli-core/flags'
 import {spinner} from '@sanity/cli-core/ux'
 
 import {
+  datasetSourceId,
   editSources,
   formatMcpEndpoint,
-  parseDatasetSourceId,
+  parseEndpointName,
   parseNonEmpty,
 } from '../../../actions/context/mcpEndpoint.js'
 import {resolveOrganizationId} from '../../../actions/context/resolveOrganizationId.js'
 import {promptForText} from '../../../prompts/promptForText.js'
 import {createMcpEndpoint} from '../../../services/context.js'
-import {getOrganizationFlag} from '../../../util/sharedFlags.js'
+import {getDatasetFlag, getOrganizationFlag, getProjectIdFlag} from '../../../util/sharedFlags.js'
 import {defineCommandTelemetry} from '../../../util/telemetry/commandTelemetry.js'
 
 const createMcpDebug = subdebug('context:mcp:create')
@@ -26,11 +27,15 @@ const flags = {
     description: 'Organization to create the MCP endpoint in',
     semantics: 'override',
   }),
-  dataset: Flags.string({
+  ...getDatasetFlag({
     atLeastOne: SOURCE_FLAGS,
-    description: 'Dataset the endpoint serves, as <projectId>.<datasetName>',
-    helpValue: '<projectId.datasetName>',
-    parse: parseDatasetSourceId,
+    description: 'Dataset the endpoint serves',
+    semantics: 'specify',
+  }),
+  ...getProjectIdFlag({
+    dependsOn: ['dataset'],
+    description: 'Project the dataset belongs to',
+    semantics: 'override',
   }),
   'groq-filter': Flags.string({
     dependsOn: ['dataset'],
@@ -77,6 +82,7 @@ export class CreateMcpEndpointCommand extends SanityCommand<typeof CreateMcpEndp
     name: Args.string({
       description:
         'Permanent MCP endpoint name used in its URL, made of lowercase letters, digits and hyphens',
+      parse: parseEndpointName,
       required: true,
     }),
   }
@@ -92,7 +98,7 @@ export class CreateMcpEndpointCommand extends SanityCommand<typeof CreateMcpEndp
     },
     {
       command:
-        '<%= config.bin %> <%= command.id %> catalog --title "Catalog" --dataset abc123.production --perspective drafts --groq-filter \'_type in ["product"]\'',
+        '<%= config.bin %> <%= command.id %> catalog --title "Catalog" --project abc123 --dataset production --perspective drafts --groq-filter \'_type in ["product"]\'',
       description: 'Create an MCP endpoint that serves the products in a dataset',
     },
   ]
@@ -112,13 +118,17 @@ export class CreateMcpEndpointCommand extends SanityCommand<typeof CreateMcpEndp
       'knowledge-base': knowledgeBaseIds = [],
       organization,
       perspective,
+      project,
       'semantic-search': semanticSearch,
       title: titleFlag,
       workspace,
     } = this.flags
 
+    const cliConfig = await this.tryGetCliConfig()
+    const datasetId = datasetSourceId(dataset, project ?? cliConfig.api?.projectId)
+
     const organizationId = await resolveOrganizationId({
-      configuredOrganizationId: (await this.tryGetCliConfig()).app?.organizationId,
+      configuredOrganizationId: cliConfig.app?.organizationId,
       flagOrganizationId: organization,
       unattended: this.isUnattended(),
     })
@@ -133,7 +143,7 @@ export class CreateMcpEndpointCommand extends SanityCommand<typeof CreateMcpEndp
         name,
         sources: editSources([], {
           addKnowledgeBases: knowledgeBaseIds,
-          dataset,
+          dataset: datasetId,
           removeKnowledgeBases: [],
           settings: {perspective, semanticSearch, workspace},
         }).sources,

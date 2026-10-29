@@ -120,8 +120,10 @@ describe('context mcp update', () => {
 
     const {error} = await testCommand(UpdateMcpEndpointCommand, [
       ...base,
+      '--project',
+      'proj2',
       '--dataset',
-      'proj2.staging',
+      'staging',
     ])
 
     if (error) throw error
@@ -146,8 +148,10 @@ describe('context mcp update', () => {
   test('starts a different dataset from the settings passed alongside it', async () => {
     const {error} = await testCommand(UpdateMcpEndpointCommand, [
       ...base,
+      '--project',
+      'proj2',
       '--dataset',
-      'proj2.staging',
+      'staging',
       '--perspective',
       'raw',
     ])
@@ -162,11 +166,41 @@ describe('context mcp update', () => {
     })
   })
 
+  test('takes the dataset project from the CLI configuration', async () => {
+    const {error} = await testCommand(UpdateMcpEndpointCommand, [...base, '--dataset', 'staging'], {
+      mocks: {cliConfig: {api: {projectId: 'proj-config'}}},
+    })
+
+    if (error) throw error
+    expect(mockEdit).toHaveBeenCalledWith({
+      name: 'support',
+      sources: [
+        {id: 'kb-abc123', type: 'knowledge-base'},
+        {id: 'proj-config.staging', type: 'dataset'},
+      ],
+    })
+  })
+
+  test('edits an endpoint addressed by its ID under its name', async () => {
+    const {error} = await testCommand(UpdateMcpEndpointCommand, [
+      'mcpabc123',
+      '--organization',
+      'org-abc123',
+      '--title',
+      'New',
+    ])
+
+    if (error) throw error
+    expect(mockEdit).toHaveBeenCalledWith({name: 'support', title: 'New'})
+  })
+
   test('keeps the settings when --dataset names the current dataset', async () => {
     const {error} = await testCommand(UpdateMcpEndpointCommand, [
       ...base,
+      '--project',
+      'proj1',
       '--dataset',
-      'proj1.production',
+      'production',
       '--perspective',
       'raw',
     ])
@@ -299,6 +333,22 @@ describe('context mcp update', () => {
     expect(mockEdit).not.toHaveBeenCalled()
   })
 
+  test('rejects a knowledge base passed to both add and remove', async () => {
+    const {error} = await testCommand(UpdateMcpEndpointCommand, [
+      ...base,
+      '--add-knowledge-base',
+      'kb-def456',
+      '--remove-knowledge-base',
+      'kb-def456',
+    ])
+
+    expect(error?.message).toContain(
+      '"kb-def456" is passed to both `--add-knowledge-base` and `--remove-knowledge-base`',
+    )
+    expect(error?.oclif?.exit).toBe(2)
+    expect(mockGet).not.toHaveBeenCalled()
+  })
+
   test('points --knowledge-base users to the add and remove flags', async () => {
     const {error} = await testCommand(UpdateMcpEndpointCommand, [
       ...base,
@@ -366,15 +416,24 @@ describe('context mcp update', () => {
     expect(mockEdit).not.toHaveBeenCalled()
   })
 
-  test('skips the blueprint lookup for an endpoint that does not exist', async () => {
+  test('fails with not found before the blueprint lookup for an endpoint that does not exist', async () => {
     mockGet.mockResolvedValue(null)
-    mockEdit.mockRejectedValue(httpError(404))
 
     const {error} = await testCommand(UpdateMcpEndpointCommand, [...base, '--title', 'New'])
 
     expect(error?.message).toContain('MCP endpoint "support" not found')
     expect(error?.oclif?.exit).toBe(1)
     expect(mockRequest).not.toHaveBeenCalled()
+    expect(mockEdit).not.toHaveBeenCalled()
+  })
+
+  test('errors when the endpoint disappears before the edit', async () => {
+    mockEdit.mockRejectedValue(httpError(404))
+
+    const {error} = await testCommand(UpdateMcpEndpointCommand, [...base, '--title', 'New'])
+
+    expect(error?.message).toContain('MCP endpoint "support" not found')
+    expect(error?.oclif?.exit).toBe(1)
   })
 
   test('errors when the API call fails', async () => {

@@ -1,9 +1,10 @@
 import {type FlagInput} from '@oclif/core/interfaces'
 import {exitCodes, SanityCommand, subdebug} from '@sanity/cli-core'
 import {getErrorMessage} from '@sanity/cli-core/errors'
-import {isHttpError} from '@sanity/client'
+import {type Context, isHttpError} from '@sanity/client'
 
 import {
+  findMcpEndpoint,
   mcpEndpointNameArg,
   mcpEndpointOrganizationFlag,
 } from '../../../actions/context/mcpEndpoint.js'
@@ -44,9 +45,12 @@ export class McpEndpointStatusCommand extends SanityCommand<typeof McpEndpointSt
       unattended: this.isUnattended(),
     })
 
+    const endpoint = await findMcpEndpoint(organizationId, name)
+
     let status
     try {
-      status = await getMcpEndpointStatus(organizationId, name)
+      // The status route only takes names, not IDs
+      status = await getMcpEndpointStatus(organizationId, endpoint.name)
     } catch (error) {
       statusMcpDebug('Error checking MCP endpoint', error)
       if (isHttpError(error) && error.statusCode === 404) {
@@ -88,15 +92,7 @@ export class McpEndpointStatusCommand extends SanityCommand<typeof McpEndpointSt
         {padTo},
       ),
     )
-    this.log(
-      formatKeyValue(
-        'Semantic search',
-        formatCheck(semanticSearch, (check) =>
-          check.active ? 'active' : `inactive: ${check.inactiveReason}`,
-        ),
-        {padTo},
-      ),
-    )
+    this.log(formatKeyValue('Semantic search', formatSemanticSearch(semanticSearch), {padTo}))
     this.log(formatKeyValue('Ready', status.requiredOk ? 'yes' : 'no', {padTo}))
   }
 }
@@ -114,4 +110,19 @@ function formatCheck<Check extends {error?: string; ok: boolean}>(
 
 function isPassed<Check extends {ok: boolean}>(check: Check): check is Extract<Check, {ok: true}> {
   return check.ok
+}
+
+type SemanticSearchCheck = Context.McpEndpointStatus['checks']['semanticSearch']
+
+const INACTIVE_REASONS = {
+  datasetEmbeddingsNotReady: 'embeddings are still being prepared',
+  turnedOff: 'turned off',
+  usageLimitReached: 'embeddings usage limit reached',
+} satisfies Record<NonNullable<Extract<SemanticSearchCheck, {ok: true}>['inactiveReason']>, string>
+
+function formatSemanticSearch(check: SemanticSearchCheck): string {
+  if (!check) return '-'
+  if (!isPassed(check)) return `failed: ${check.error}`
+  if (check.active) return 'active'
+  return check.inactiveReason ? `inactive (${INACTIVE_REASONS[check.inactiveReason]})` : 'inactive'
 }

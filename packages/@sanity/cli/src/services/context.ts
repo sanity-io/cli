@@ -115,12 +115,9 @@ export function getKnowledgeBaseBlueprintOwnership(
  */
 export function getMcpEndpointBlueprintOwnership(
   organizationId: string,
-  nameOrId: string,
+  {publicId}: Pick<Context.McpDoc, 'publicId'>,
 ): Promise<BlueprintOwnership> {
-  return getBlueprintOwnership('sanity.context.mcp', async () => {
-    const endpoint = await getMcpEndpoint(organizationId, nameOrId)
-    return endpoint && {organizationId, publicId: endpoint.publicId}
-  })
+  return getBlueprintOwnership('sanity.context.mcp', async () => ({organizationId, publicId}))
 }
 
 /**
@@ -409,7 +406,8 @@ export type McpEndpointConfig = Context.McpDoc & {url: string}
 export async function listMcpEndpoints(organizationId: string): Promise<McpEndpointConfig[]> {
   const client = await getContextClient(undefined, organizationId)
   const endpoints = await client.context.mcpEndpoints.list()
-  return endpoints.map((endpoint) => ({...endpoint, url: mcpEndpointUrl(client, endpoint)}))
+  const connectClient = client.withConfig({apiVersion: MCP_CONNECT_API_VERSION})
+  return endpoints.map((endpoint) => ({...endpoint, url: mcpEndpointUrl(connectClient, endpoint)}))
 }
 
 /**
@@ -425,7 +423,8 @@ export async function getMcpEndpoint(
     '*[_type == "sanity.context.mcp" && organizationId == $org && (name == $nameOrId || publicId == $nameOrId)][0]',
     {nameOrId, org: organizationId},
   )
-  return endpoint && {...endpoint, url: mcpEndpointUrl(client, endpoint)}
+  const connectClient = client.withConfig({apiVersion: MCP_CONNECT_API_VERSION})
+  return endpoint && {...endpoint, url: mcpEndpointUrl(connectClient, endpoint)}
 }
 
 /**
@@ -433,14 +432,12 @@ export async function getMcpEndpoint(
  * so it is built from the same route and API version.
  */
 function mcpEndpointUrl(
-  client: Awaited<ReturnType<typeof getContextClient>>,
+  connectClient: {getUrl: (uri: string) => string},
   {name, organizationId}: Context.McpDoc,
 ): string {
-  return client
-    .withConfig({apiVersion: MCP_CONNECT_API_VERSION})
-    .getUrl(
-      `/context/organizations/${encodeURIComponent(organizationId)}/mcp/${encodeURIComponent(name)}`,
-    )
+  return connectClient.getUrl(
+    `/context/organizations/${encodeURIComponent(organizationId)}/mcp/${encodeURIComponent(name)}`,
+  )
 }
 
 /**

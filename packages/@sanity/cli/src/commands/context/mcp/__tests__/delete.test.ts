@@ -9,6 +9,7 @@ const mockDelete = vi.hoisted(() => vi.fn())
 const mockGet = vi.hoisted(() => vi.fn())
 const mockRequest = vi.hoisted(() => vi.fn())
 const mockConfirm = vi.hoisted(() => vi.fn())
+const mockSelect = vi.hoisted(() => vi.fn())
 const mockGetGlobalCliClient = vi.hoisted(() => vi.fn())
 
 vi.mock('@sanity/cli-core', async (importOriginal) => {
@@ -18,7 +19,7 @@ vi.mock('@sanity/cli-core', async (importOriginal) => {
 
 vi.mock('@sanity/cli-core/ux', async () => {
   const actual = await vi.importActual<typeof import('@sanity/cli-core/ux')>('@sanity/cli-core/ux')
-  return {...actual, confirm: mockConfirm}
+  return {...actual, confirm: mockConfirm, select: mockSelect}
 })
 
 const base = ['support', '--organization', 'org-abc123']
@@ -141,13 +142,62 @@ describe('context mcp delete', () => {
     expect(error?.oclif?.exit).toBe(1)
   })
 
-  test('errors when no endpoint has that name', async () => {
-    mockGet.mockResolvedValue(null)
+  test('errors when looking up the endpoint fails', async () => {
+    mockGet.mockRejectedValue(new Error('Store unavailable'))
+
+    const {error} = await testCommand(DeleteMcpEndpointCommand, [...base, '--yes'])
+
+    expect(error?.message).toContain('Failed to get MCP endpoint: Store unavailable')
+    expect(error?.oclif?.exit).toBe(1)
+    expect(mockDelete).not.toHaveBeenCalled()
+  })
+
+  test('errors when the endpoint disappears before the delete', async () => {
     mockDelete.mockRejectedValue(httpError(404))
 
     const {error} = await testCommand(DeleteMcpEndpointCommand, [...base, '--yes'])
 
     expect(error?.message).toContain('MCP endpoint "support" not found')
     expect(error?.oclif?.exit).toBe(1)
+  })
+
+  test('fails with not found before asking for confirmation', async () => {
+    mockGet.mockResolvedValue(null)
+
+    const {error} = await testCommand(DeleteMcpEndpointCommand, base, {
+      mocks: {isInteractive: true},
+    })
+
+    expect(error?.message).toContain('MCP endpoint "support" not found')
+    expect(error?.oclif?.exit).toBe(1)
+    expect(mockConfirm).not.toHaveBeenCalled()
+    expect(mockDelete).not.toHaveBeenCalled()
+  })
+
+  test('offers the organization picker with --yes in an interactive terminal', async () => {
+    mockRequest.mockResolvedValueOnce([{id: 'org-abc123', name: 'Acme', slug: null}])
+    mockSelect.mockResolvedValue('org-abc123')
+
+    const {error} = await testCommand(DeleteMcpEndpointCommand, ['support', '--yes'], {
+      mocks: {isInteractive: true},
+    })
+
+    if (error) throw error
+    expect(mockSelect).toHaveBeenCalledWith(
+      expect.objectContaining({message: 'Select organization:'}),
+    )
+    expect(mockDelete).toHaveBeenCalledWith({name: 'support'})
+  })
+
+  test('rejects a blank name', async () => {
+    const {error} = await testCommand(DeleteMcpEndpointCommand, [
+      ' ',
+      '--organization',
+      'org-abc123',
+      '--yes',
+    ])
+
+    expect(error?.message).toContain('The MCP endpoint name cannot be empty')
+    expect(mockDelete).not.toHaveBeenCalled()
   })
 })

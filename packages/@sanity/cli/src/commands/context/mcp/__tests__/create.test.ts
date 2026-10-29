@@ -48,8 +48,10 @@ describe('context mcp create', () => {
       'kb-abc123',
       '--knowledge-base',
       'kb-def456',
+      '--project',
+      'proj1',
       '--dataset',
-      'proj1.production',
+      'production',
       '--workspace',
       'default',
       '--perspective',
@@ -133,21 +135,47 @@ describe('context mcp create', () => {
     expect(mockCreate).not.toHaveBeenCalled()
   })
 
-  test.each(['production', 'proj1.', '.production', 'proj1.production.extra'])(
-    'rejects --dataset %s',
-    async (dataset) => {
-      const {error} = await testCommand(CreateMcpEndpointCommand, [
-        ...base,
-        '--title',
-        'Support',
-        '--dataset',
-        dataset,
-      ])
+  test('takes the dataset project from the CLI configuration', async () => {
+    const {error} = await testCommand(
+      CreateMcpEndpointCommand,
+      [...base, '--title', 'Support', '--dataset', 'production'],
+      {mocks: {cliConfig: {api: {projectId: 'proj-config'}}}},
+    )
 
-      expect(error?.message).toContain('`--dataset` must be given as <projectId>.<datasetName>')
-      expect(mockCreate).not.toHaveBeenCalled()
-    },
-  )
+    if (error) throw error
+    expect(mockCreate).toHaveBeenCalledWith(
+      expect.objectContaining({sources: [{id: 'proj-config.production', type: 'dataset'}]}),
+    )
+  })
+
+  test('requires a project for --dataset outside a project directory', async () => {
+    const {error} = await testCommand(CreateMcpEndpointCommand, [
+      ...base,
+      '--title',
+      'Support',
+      '--dataset',
+      'production',
+    ])
+
+    expect(error?.message).toContain('Pass `--project` with `--dataset`')
+    expect(error?.oclif?.exit).toBe(2)
+    expect(mockCreate).not.toHaveBeenCalled()
+  })
+
+  test('rejects a blank name', async () => {
+    const {error} = await testCommand(CreateMcpEndpointCommand, [
+      ' ',
+      '--organization',
+      'org-abc123',
+      '--title',
+      'Support',
+      '--knowledge-base',
+      'kb-abc123',
+    ])
+
+    expect(error?.message).toContain('The MCP endpoint name cannot be empty')
+    expect(mockCreate).not.toHaveBeenCalled()
+  })
 
   test('rejects an empty --instructions', async () => {
     const {error} = await testCommand(CreateMcpEndpointCommand, [
@@ -206,7 +234,7 @@ describe('context mcp create', () => {
         '--title=Internal',
         '--instructions=Secret plans',
         '--groq-filter=_type == "secret"',
-        '--dataset=proj1.production',
+        '--dataset=production',
       ],
       CreateMcpEndpointCommand,
     )
@@ -215,7 +243,7 @@ describe('context mcp create', () => {
       '--title',
       '--instructions',
       '--groq-filter',
-      '--dataset=proj1.production',
+      '--dataset=production',
     ])
   })
 })

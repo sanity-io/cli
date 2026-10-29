@@ -6,6 +6,7 @@ import {confirm} from '@sanity/cli-core/ux'
 import {isHttpError} from '@sanity/client'
 
 import {
+  findMcpEndpoint,
   mcpEndpointNameArg,
   mcpEndpointOrganizationFlag,
 } from '../../../actions/context/mcpEndpoint.js'
@@ -53,10 +54,13 @@ export class DeleteMcpEndpointCommand extends SanityCommand<typeof DeleteMcpEndp
     const organizationId = await resolveOrganizationId({
       configuredOrganizationId: (await this.tryGetCliConfig()).app?.organizationId,
       flagOrganizationId: organization,
-      unattended: this.isUnattended(),
+      // Not `isUnattended()`: `--yes` skips the confirmation, not the organization picker
+      unattended: !this.resolveIsInteractive(),
     })
 
-    const ownership = await getMcpEndpointBlueprintOwnership(organizationId, name)
+    const endpoint = await findMcpEndpoint(organizationId, name)
+
+    const ownership = await getMcpEndpointBlueprintOwnership(organizationId, endpoint)
     if (ownership.managed) {
       const manager = describeBlueprintManager(ownership.stackName)
       this.error(
@@ -84,7 +88,7 @@ export class DeleteMcpEndpointCommand extends SanityCommand<typeof DeleteMcpEndp
     }
 
     try {
-      await deleteMcpEndpoint(organizationId, name)
+      await deleteMcpEndpoint(organizationId, endpoint.name)
       this.log('MCP endpoint deleted')
     } catch (error) {
       deleteMcpDebug('Error deleting MCP endpoint', error)

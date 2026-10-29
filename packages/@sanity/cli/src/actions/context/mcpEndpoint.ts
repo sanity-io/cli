@@ -1,6 +1,10 @@
 import {Args} from '@oclif/core'
+import {CLIError} from '@oclif/core/errors'
+import {exitCodes} from '@sanity/cli-core'
+import {getErrorMessage} from '@sanity/cli-core/errors'
 import {type Context} from '@sanity/client'
 
+import {getMcpEndpoint, type McpEndpointConfig} from '../../services/context.js'
 import {getOrganizationFlag} from '../../util/sharedFlags.js'
 import {formatKeyValue} from '../debug/output.js'
 
@@ -16,8 +20,39 @@ export type DatasetSettings = Partial<
  */
 export const mcpEndpointNameArg = Args.string({
   description: 'MCP endpoint name, as in its URL',
+  parse: parseEndpointName,
   required: true,
 })
+
+/**
+ * An argument `parse` that trims an endpoint name and rejects an empty one
+ */
+export async function parseEndpointName(input: string): Promise<string> {
+  const trimmed = input.trim()
+  if (trimmed === '') throw new Error('The MCP endpoint name cannot be empty')
+  return trimmed
+}
+
+/**
+ * Get an endpoint by name or ID, failing the command when the lookup fails or finds nothing
+ */
+export async function findMcpEndpoint(
+  organizationId: string,
+  nameOrId: string,
+): Promise<McpEndpointConfig> {
+  let endpoint
+  try {
+    endpoint = await getMcpEndpoint(organizationId, nameOrId)
+  } catch (error) {
+    throw new CLIError(`Failed to get MCP endpoint: ${getErrorMessage(error)}`, {
+      exit: exitCodes.RUNTIME_ERROR,
+    })
+  }
+  if (!endpoint) {
+    throw new CLIError(`MCP endpoint "${nameOrId}" not found`, {exit: exitCodes.RUNTIME_ERROR})
+  }
+  return endpoint
+}
 
 /**
  * The `--organization` flag of commands that act on an existing endpoint
@@ -41,15 +76,21 @@ export function parseNonEmpty(flag: string): (input: string) => Promise<string> 
 }
 
 /**
- * Parse a `--dataset` value, which names the dataset as `<projectId>.<datasetName>`
+ * The API names a dataset source `<projectId>.<datasetName>`; the project comes from
+ * `--project` or the CLI configuration.
  */
-export async function parseDatasetSourceId(input: string): Promise<string> {
-  const trimmed = input.trim()
-  const [projectId, datasetName, ...rest] = trimmed.split('.')
-  if (!projectId || !datasetName || rest.length > 0) {
-    throw new Error('`--dataset` must be given as <projectId>.<datasetName>')
+export function datasetSourceId(
+  dataset: string | undefined,
+  projectId: string | undefined,
+): string | undefined {
+  if (dataset === undefined) return undefined
+  if (!projectId) {
+    throw new CLIError(
+      'Pass `--project` with `--dataset`, or run the command in a Sanity project directory.',
+      {exit: exitCodes.USAGE_ERROR},
+    )
   }
-  return trimmed
+  return `${projectId}.${dataset}`
 }
 
 /**
