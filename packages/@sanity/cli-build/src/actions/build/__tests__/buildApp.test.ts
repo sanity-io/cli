@@ -384,6 +384,27 @@ describe('#buildApp', () => {
     expect(mockedBuildStaticFiles).toHaveBeenCalled()
   })
 
+  test('warns and builds when the runtime version check cannot reach Module Server', async () => {
+    const output = createMockOutput()
+
+    await buildApp(
+      buildOptions({
+        autoUpdatesEnabled: true,
+        compareDependencyVersions: async () => ({
+          mismatched: [],
+          unavailable: [{pkg: '@sanity/sdk-react', reason: 'socket hang up'}],
+          unresolvedPrerelease: [],
+        }),
+        output,
+      }),
+    )
+
+    expect(output.warn).toHaveBeenCalledWith(
+      expect.stringContaining('Could not check the runtime version of @sanity/sdk-react'),
+    )
+    expect(mockedBuildStaticFiles).toHaveBeenCalled()
+  })
+
   test('should error in unattended mode when prerelease versions are detected', async () => {
     const output = createMockOutput()
 
