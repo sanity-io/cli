@@ -4,6 +4,7 @@ import {type AutoUpdatesBuildConfig} from '../autoUpdates.js'
 import {createVendorImportMapFromBundle} from '../createVendorImportMapFromBundle.js'
 import {decorateIndexWithBridgeScript} from '../decorateIndexWithBridgeScript.js'
 import {decorateIndexWithStagingScript} from '../decorateIndexWithStagingScript.js'
+import {deferModuleScripts} from '../deferModuleScripts.js'
 import {renderDocument} from '../renderDocument.js'
 
 interface ViteOutputBundle {
@@ -114,9 +115,22 @@ export function sanityBuildEntries(options: {
         studioRootPath: cwd,
       })
 
+      const decoratedHtml = decorateIndexWithStagingScript(
+        bridge ? decorateIndexWithBridgeScript(html) : html,
+      )
+
       this.emitFile({
         fileName: 'index.html',
-        source: decorateIndexWithStagingScript(bridge ? decorateIndexWithBridgeScript(html) : html),
+        source: pinned
+          ? deferModuleScripts(decoratedHtml, {
+              entryPath,
+              onEntryNotFound: () =>
+                this.warn(
+                  `Could not find the studio entry script (${entryPath}) in the rendered document. ` +
+                    `A custom _document that changes its src will not get an automatic reload on a Module Server failure.`,
+                ),
+            })
+          : decoratedHtml,
         type: 'asset',
       })
     },

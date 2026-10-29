@@ -10,11 +10,11 @@ import {renderDocument} from '../../renderDocument.js'
 import {sanityBuildEntries} from '../plugin-sanity-build-entries.js'
 
 vi.mock('../../renderDocument.js', () => ({
-  renderDocument: vi.fn(async (options: {props?: {css?: string[]}}) => {
+  renderDocument: vi.fn(async (options: {props?: {css?: string[]; entryPath?: string}}) => {
     const links = (options.props?.css ?? [])
       .map((href) => `<link href="${href}" rel="stylesheet" />`)
       .join('')
-    return `<html><head>${links}</head><body><div id="root"></div></body></html>`
+    return `<html><head>${links}</head><body><div id="root"></div><script src="${options.props?.entryPath}" type="module"></script></body></html>`
   }),
 }))
 
@@ -136,7 +136,7 @@ describe('sanityBuildEntries index.html', () => {
   })
 })
 
-describe('sanityBuildEntries pinned import map', () => {
+describe('sanityBuildEntries module server fallback', () => {
   const vendor = {entries: {}, namesByChunkName: {}, specifiersByChunkName: {}}
   const moduleServerImports = {
     sanity: 'https://sanity-cdn.com/v1/modules/sanity/default/%5E6.18.0/t1',
@@ -147,8 +147,8 @@ describe('sanityBuildEntries pinned import map', () => {
     imports: {sanity: 'https://modules.sanity-cdn.com/modules/v1/sanity/6.18.0/bare/index.mjs'},
   }
 
-  test('merges the vendor chunks into the pinned map', async () => {
-    await renderBundle({
+  test('passes the pinned map and defers every module script, bridge included', async () => {
+    const {html} = await renderBundle({
       autoUpdates: {
         imports: moduleServerImports,
         pinned,
@@ -170,10 +170,15 @@ describe('sanityBuildEntries pinned import map', () => {
       imports: {...vendorImports, ...moduleServerImports},
       pinned: {cssUrls: pinned.cssUrls, imports: {...vendorImports, ...pinned.imports}},
     })
+    expect(html).not.toContain('type="module"')
+    expect(html).toContain(
+      '<script src="/static/sanity-abc.js" type="sanity/deferred-module" data-sanity-entry></script>',
+    )
+    expect(html).toMatch(/<script src="[^"]+bridge\.js" async type="sanity\/deferred-module"/)
   })
 
-  test('leaves the pinned map out when the build has none', async () => {
-    await renderBundle({
+  test('leaves module scripts alone without a pinned map', async () => {
+    const {html} = await renderBundle({
       autoUpdates: {imports: moduleServerImports, vendor},
       bundle: {'static/sanity-abc.js': entryChunk()},
     })
@@ -181,6 +186,8 @@ describe('sanityBuildEntries pinned import map', () => {
     expect(vi.mocked(renderDocument).mock.calls.at(-1)?.[0].importMap).toEqual({
       imports: moduleServerImports,
     })
+    expect(html).toContain('<script src="/static/sanity-abc.js" type="module"></script>')
+    expect(html).not.toContain('sanity/deferred-module')
   })
 })
 
