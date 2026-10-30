@@ -49,17 +49,12 @@ describe('renderRemote', () => {
 
       export const version = view.version
 
-      // The SDK reads these slots via getDashboardModuleContext() and getDashboardRootContext(),
-      // so their symbols, key and values are a contract. Keyed by createContext, not the React
-      // namespace: Vite dev pre-bundling can give two importers of one React copy different namespaces.
-      function sharedContext(name) {
-        const slot = (globalThis[Symbol.for(name)] ??= new WeakMap())
-        if (!slot.has(React.createContext)) slot.set(React.createContext, React.createContext(undefined))
-        return slot.get(React.createContext)
-      }
-      const ModuleContext = sharedContext('sanity.os.module')
-      // Older SDKs read ModuleContext as a plain string, so the root's signal has its own context.
-      const RootContext = sharedContext('sanity.os.root')
+      // The SDK reads this slot via getDashboardRootContext(), so its symbol, key and value are a
+      // contract. Keyed by createContext, not the React namespace: Vite dev pre-bundling can give two
+      // importers of one React copy different namespaces.
+      const rootSlot = (globalThis[Symbol.for('sanity.os.root')] ??= new WeakMap())
+      if (!rootSlot.has(React.createContext)) rootSlot.set(React.createContext, React.createContext(undefined))
+      const RootContext = rootSlot.get(React.createContext)
       const rootMap = new Map()
       const rootContexts = new Map()
       // A shared default sheet can overwrite another app's global rules; each root needs its own sheet.
@@ -90,7 +85,9 @@ describe('renderRemote', () => {
           root = createRoot(rootElement, args?.renderOptions?.rootOptions)
           rootMap.set(rootElement, root)
           const controller = new AbortController()
-          rootContexts.set(rootElement, { controller, value: { signal: controller.signal } })
+          // Read once: the SDK pins the root's bus identity when it first connects.
+          const { moduleId, parentKey } = args?.renderOptions ?? {}
+          rootContexts.set(rootElement, { controller, value: { signal: controller.signal, moduleId, parentKey } })
           if (StyleSheetManager) {
             const target = rootElement.ownerDocument.createElement('sanity-styles')
             // React can replace the mount node's contents; keep its stylesheet outside that node.
@@ -100,7 +97,6 @@ describe('renderRemote', () => {
           }
         }
         let element = React.createElement(RootContext.Provider, { value: rootContexts.get(rootElement).value }, React.createElement(App, args.props))
-        element = React.createElement(ModuleContext.Provider, { value: args?.renderOptions?.moduleId }, element)
         if (StyleSheetManager) element = React.createElement(StyleSheetManager, { target: styleTargets.get(rootElement), stylisPlugins: stylisPlugins.get(rootElement) }, element)
         // The host's React can't pause this root, so the host pauses the app through this Activity.
         // Keep it inside StrictMode: outside, it stops StrictMode double-invoking effects.
@@ -165,17 +161,12 @@ describe('renderRemote', () => {
       const StyleSheetManager = undefined
       import App from "./app.js"
 
-      // The SDK reads these slots via getDashboardModuleContext() and getDashboardRootContext(),
-      // so their symbols, key and values are a contract. Keyed by createContext, not the React
-      // namespace: Vite dev pre-bundling can give two importers of one React copy different namespaces.
-      function sharedContext(name) {
-        const slot = (globalThis[Symbol.for(name)] ??= new WeakMap())
-        if (!slot.has(React.createContext)) slot.set(React.createContext, React.createContext(undefined))
-        return slot.get(React.createContext)
-      }
-      const ModuleContext = sharedContext('sanity.os.module')
-      // Older SDKs read ModuleContext as a plain string, so the root's signal has its own context.
-      const RootContext = sharedContext('sanity.os.root')
+      // The SDK reads this slot via getDashboardRootContext(), so its symbol, key and value are a
+      // contract. Keyed by createContext, not the React namespace: Vite dev pre-bundling can give two
+      // importers of one React copy different namespaces.
+      const rootSlot = (globalThis[Symbol.for('sanity.os.root')] ??= new WeakMap())
+      if (!rootSlot.has(React.createContext)) rootSlot.set(React.createContext, React.createContext(undefined))
+      const RootContext = rootSlot.get(React.createContext)
       const rootMap = new Map()
       const rootContexts = new Map()
       // A shared default sheet can overwrite another app's global rules; each root needs its own sheet.
@@ -206,7 +197,9 @@ describe('renderRemote', () => {
           root = createRoot(rootElement, args?.renderOptions?.rootOptions)
           rootMap.set(rootElement, root)
           const controller = new AbortController()
-          rootContexts.set(rootElement, { controller, value: { signal: controller.signal } })
+          // Read once: the SDK pins the root's bus identity when it first connects.
+          const { moduleId, parentKey } = args?.renderOptions ?? {}
+          rootContexts.set(rootElement, { controller, value: { signal: controller.signal, moduleId, parentKey } })
           if (StyleSheetManager) {
             const target = rootElement.ownerDocument.createElement('sanity-styles')
             // React can replace the mount node's contents; keep its stylesheet outside that node.
@@ -216,7 +209,6 @@ describe('renderRemote', () => {
           }
         }
         let element = React.createElement(RootContext.Provider, { value: rootContexts.get(rootElement).value }, React.createElement(App, args.props))
-        element = React.createElement(ModuleContext.Provider, { value: args?.renderOptions?.moduleId }, element)
         if (StyleSheetManager) element = React.createElement(StyleSheetManager, { target: styleTargets.get(rootElement), stylisPlugins: stylisPlugins.get(rootElement) }, element)
         // The host's React can't pause this root, so the host pauses the app through this Activity.
         // Keep it inside StrictMode: outside, it stops StrictMode double-invoking effects.

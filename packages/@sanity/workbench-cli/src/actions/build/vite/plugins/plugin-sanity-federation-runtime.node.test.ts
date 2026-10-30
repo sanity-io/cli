@@ -12,7 +12,6 @@ const roots: string[] = []
 
 afterEach(() => {
   for (const root of roots.splice(0)) fs.rmSync(root, {force: true, recursive: true})
-  delete (globalThis as Record<symbol, unknown>)[Symbol.for('sanity.os.module')]
   delete (globalThis as Record<symbol, unknown>)[Symbol.for('sanity.os.root')]
 })
 
@@ -75,9 +74,9 @@ function find(element: Element, matches: (node: Element) => boolean): Element | 
   return node
 }
 
-/** The element providing the module context the entry stored for this React stub. */
-function moduleProviderOf(element: Element, React: object): Element | undefined {
-  const slot = (globalThis as Record<symbol, unknown>)[Symbol.for('sanity.os.module')]
+/** The element providing the root context the entry stored for this React stub. */
+function rootProviderOf(element: Element, React: object): Element | undefined {
+  const slot = (globalThis as Record<symbol, unknown>)[Symbol.for('sanity.os.root')]
   const context = (slot as WeakMap<object, {Provider: object}> | undefined)?.get(
     (React as {createContext: object}).createContext,
   )
@@ -94,7 +93,9 @@ test('the studio entry renders Studio with the config, the auto-updates props an
   // after the template switched to `import * as React`; it threw here.
   mod.render({}, {scheme: 'dark'}, {moduleId: 'studio/App'})
 
-  expect(moduleProviderOf(mod.rendered[0], mod.React)?.props.value).toBe('studio/App')
+  expect(rootProviderOf(mod.rendered[0], mod.React)?.props.value).toMatchObject({
+    moduleId: 'studio/App',
+  })
   const app = appOf(mod.rendered[0])!
   expect(app.props).toEqual({scheme: 'dark'})
   // Render the bound App the way React would to reach the studio expression.
