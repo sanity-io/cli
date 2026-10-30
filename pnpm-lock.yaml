@@ -197,6 +197,12 @@ catalogs:
     '@sanity/types':
       specifier: ^6.17.0
       version: 6.17.0
+    '@sanity/util':
+      specifier: ^6.21.0
+      version: 6.21.0
+    '@sanity/validation':
+      specifier: ^6.21.0
+      version: 6.21.0
     '@sanity/vision':
       specifier: ^6.17.0
       version: 6.17.0
@@ -785,6 +791,12 @@ importers:
       '@sanity/types':
         specifier: 'catalog:'
         version: 6.17.0(@types/react@19.3.0)(vitest@4.1.11)
+      '@sanity/util':
+        specifier: 'catalog:'
+        version: 6.21.0(@types/react@19.3.0)(vitest@4.1.11)
+      '@sanity/validation':
+        specifier: 'catalog:'
+        version: 6.21.0(@types/react@19.3.0)(typescript@6.0.3)(vitest@4.1.11)
       '@sanity/workbench-cli':
         specifier: workspace:^
         version: link:../workbench-cli
@@ -4569,6 +4581,10 @@ packages:
     resolution: {integrity: sha512-8vvJrloMwxWbn5YkFsEZa5rWjktqnmWYxQTGsrHMYYhRoQzAlaHmo4obvZ/0W7ro/VUrDGaPtB/jCClikEboWA==}
     engines: {node: '>=22.12.0'}
 
+  '@sanity/client@8.14.1':
+    resolution: {integrity: sha512-NQNo0yigdHF4edYwUEVqyDi4ZsTUmWT2YMGUn/sQOW6/T+KPAuVXbVZk6gO+Vzd7dTAhaWj8AV/gIddjpo5P6Q==}
+    engines: {node: '>=22.12.0'}
+
   '@sanity/code-input@7.3.8':
     resolution: {integrity: sha512-Tqf/OpatSUTUkUeM1y37ncXY6cbL+cMV6y0b0WpWDFQ10oCnXnT1vo+jBk2oOCzjtAwwM/fdH49P/pYGUuzqPg==}
     engines: {node: '>=20.19 <22 || >=22.12'}
@@ -4796,6 +4812,10 @@ packages:
     resolution: {integrity: sha512-UQQBfupBWDdrzxPQ93Btt66Fq0JHCA9ZYf8vLsMsvV51GGZhsCoYrpXEUqnmWwt5Eyqp+poUvheXcKkYzkGqEg==}
     engines: {node: '>=22.12'}
 
+  '@sanity/schema@6.21.0':
+    resolution: {integrity: sha512-E5+6cE/132qaOJkgy10Wv6IVaLBWmCuzO1StYAeuRcarowyki/L7atMiBIBMA6Jb8/FjTX+VmclDfdqQQ3Upng==}
+    engines: {node: '>=22.12'}
+
   '@sanity/sdk-react@2.20.2':
     resolution: {integrity: sha512-o/eekngFiYmKWhnTxE+FMkx9pFxXOluxix36l9RgwRdLKN0DhrQh4TI4bmHiGqyJDyTKe8hWHFmzKFqpAQsVCg==}
     peerDependencies:
@@ -4877,6 +4897,12 @@ packages:
     peerDependencies:
       '@types/react': '*'
 
+  '@sanity/types@6.21.0':
+    resolution: {integrity: sha512-0zrdFeHfZg3jPM2yJA2myE+FMOsUaBHQWcEDQL+KmHOMiTg6iL712PK7u18YGd8OgP7tljZKueK5SQ2hgA00CA==}
+    engines: {node: '>=22.12'}
+    peerDependencies:
+      '@types/react': '*'
+
   '@sanity/ui@3.5.4':
     resolution: {integrity: sha512-YFFUfcrYWVa/54nmwetifJl3m41D+aZp+fcszCPjzB2Y7dH9Q8llY//MHKc4Xwgk6ujANgqtPkVAYTMLE/g4uQ==}
     engines: {node: '>=20.19 <22 || >=22.12'}
@@ -4911,12 +4937,12 @@ packages:
       react: ^19.2
       react-dom: ^19.2
 
-  '@sanity/util@6.15.0':
-    resolution: {integrity: sha512-k3svmPqvJBc2jX28f6oK4AUJPIDTBmES4jjszm/THr1h4NlSrVZdXIWx2Bh3Rg6GLQHyvrrjT3ZSbMWH1Gdmag==}
-    engines: {node: '>=22.12'}
-
   '@sanity/util@6.17.0':
     resolution: {integrity: sha512-8VcmyWlA3xez67ltNh/Sf0Wswmp5qGEth9hwRzRQRQIfaTLMXtP3HpG58k4V1eD9QazEDiQPKS3FHDO0S9bitQ==}
+    engines: {node: '>=22.12'}
+
+  '@sanity/util@6.21.0':
+    resolution: {integrity: sha512-qRF4PiLA7pJ0QVEbiwG58Bh3QzCjjM67NG6lVtEXQaSF61nweV/FfKb3fzRRxEG+xNPG9iqbaHgWNjCuS0UXmw==}
     engines: {node: '>=22.12'}
 
   '@sanity/uuid@3.0.3':
@@ -4924,6 +4950,10 @@ packages:
 
   '@sanity/validation@6.17.0':
     resolution: {integrity: sha512-RbhTc5toCQj963tjWlCgHk4ULPgB8tM1axVfoSro5cOvt/Y7Edma6516d1cR7/BnsA8etSAZlfEr5ZkVmvJteA==}
+    engines: {node: '>=22.12'}
+
+  '@sanity/validation@6.21.0':
+    resolution: {integrity: sha512-GMjDomV2F4uDCLuh8RWcoeSYWx65z/7S/LjBds8UdcpsF/gH45OWnpKvsAezkosL3hX8PjKSh9tAMrZBfDqmtQ==}
     engines: {node: '>=22.12'}
 
   '@sanity/vanilla-extract-integration@0.1.17':
@@ -7009,6 +7039,10 @@ packages:
     resolution: {integrity: sha512-rkZZeKloVPdaZ9tj/AoUPxp7Oz4iGC+8ZIxnauSTZZm6vAMSKX0YjrueNBDHVq5oTsUf/Q9Q/PEzGokVxRBkJg==}
     engines: {node: '>=22.12.0'}
 
+  eventsource@5.1.4:
+    resolution: {integrity: sha512-awkjURTcaMUKjtEqM/78nMtFSfGcgGST6EbXGV2/E7LJXzWwnNaByn1zACiX9VluWzokVeHpjRdzo3nZr9zhMg==}
+    engines: {node: '>=22.12.0'}
+
   execa@10.0.1:
     resolution: {integrity: sha512-ge98qjkRK4IB7tL7Ju/6qmm5LHoH1eEMt5FNZrz3f4UIYhF28lggX20z3FaX1sgc67msLEn0N0BscOs29iuwyw==}
     engines: {node: '>=22'}
@@ -7513,6 +7547,14 @@ packages:
 
   i18next@26.4.2:
     resolution: {integrity: sha512-RX+R0VLg13IbvRuJSxnqykUFS9vQZTl8wYpWPCIUDWVrSGjsQywB5Y+pjzrkboxGAuYfJZVH1InFTdgBdxq6ug==}
+    peerDependencies:
+      typescript: ^5 || ^6 || ^7
+    peerDependenciesMeta:
+      typescript:
+        optional: true
+
+  i18next@26.5.11:
+    resolution: {integrity: sha512-Wc0klBPKxqZ2tL2qdAnF8xvvnWgr1IMGSY2ikTiAvaFVbz7xiFARtkoU4RidBDw1SyziGROp0qxu6qnJ7l2Wug==}
     peerDependencies:
       typescript: ^5 || ^6 || ^7
     peerDependenciesMeta:
@@ -13338,6 +13380,15 @@ snapshots:
     transitivePeerDependencies:
       - vitest
 
+  '@sanity/client@8.14.1(vitest@4.1.11)':
+    dependencies:
+      eventsource: 5.1.4
+      get-it: 9.6.2(vitest@4.1.11)
+      obug: 3.0.0
+      rxjs: 7.8.2
+    transitivePeerDependencies:
+      - vitest
+
   '@sanity/code-input@7.3.8(@babel/runtime@7.29.7)(@codemirror/autocomplete@6.20.3)(@codemirror/lint@6.9.7)(@codemirror/search@6.7.2)(@codemirror/theme-one-dark@6.1.3)(codemirror@6.0.2)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(sanity@6.17.0(@noble/hashes@2.4.0)(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(immer@11.1.18)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(styled-components@6.5.3(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(supports-color@8.1.1)(typescript@6.0.3)(vitest@4.1.11))(styled-components@6.5.3(react-dom@19.3.0(react@19.3.0))(react@19.3.0))':
     dependencies:
       '@codemirror/lang-html': 6.4.12
@@ -13529,6 +13580,10 @@ snapshots:
     dependencies:
       '@sanity/types': 6.17.0(@types/react@19.3.0)(vitest@4.1.11)
 
+  '@sanity/media-library-types@1.7.1(@sanity/types@6.21.0(@types/react@19.3.0)(vitest@4.1.11))':
+    dependencies:
+      '@sanity/types': 6.21.0(@types/react@19.3.0)(vitest@4.1.11)
+
   '@sanity/message-protocol@0.24.0':
     dependencies:
       '@sanity/comlink': 4.0.3
@@ -13538,7 +13593,7 @@ snapshots:
       '@sanity/client': 8.13.0(vitest@4.1.11)
       '@sanity/mutate': 0.18.2(vitest@4.1.11)(xstate@5.33.2)
       '@sanity/types': 6.15.0(@types/react@19.3.0)(vitest@4.1.11)
-      '@sanity/util': 6.15.0(@types/react@19.3.0)(vitest@4.1.11)
+      '@sanity/util': 6.21.0(@types/react@19.3.0)(vitest@4.1.11)
       arrify: 3.0.0
       get-it: 9.5.4(vitest@4.1.11)
       groq-js: 2.0.0
@@ -13757,6 +13812,22 @@ snapshots:
       - '@types/react'
       - vitest
 
+  '@sanity/schema@6.21.0(@types/react@19.3.0)(vitest@4.1.11)':
+    dependencies:
+      '@sanity/descriptors': 1.3.0
+      '@sanity/generate-help-url': 4.0.0
+      '@sanity/types': 6.21.0(@types/react@19.3.0)(vitest@4.1.11)
+      arrify: 3.0.0
+      dequal: 2.0.3
+      get-it: 9.6.2(vitest@4.1.11)
+      groq-js: 2.0.0
+      humanize-list: 1.0.1
+      leven: 4.1.0
+      lodash-es: 4.18.1
+    transitivePeerDependencies:
+      - '@types/react'
+      - vitest
+
   '@sanity/sdk-react@2.20.2(@types/react@19.3.0)(immer@11.1.18)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(use-sync-external-store@1.7.0(react@19.3.0))(vitest@4.1.11)(xstate@5.32.6)':
     dependencies:
       '@sanity/client': 7.26.2
@@ -13921,6 +13992,14 @@ snapshots:
     transitivePeerDependencies:
       - vitest
 
+  '@sanity/types@6.21.0(@types/react@19.3.0)(vitest@4.1.11)':
+    dependencies:
+      '@sanity/client': 8.13.0(vitest@4.1.11)
+      '@sanity/media-library-types': 1.7.1(@sanity/types@6.21.0(@types/react@19.3.0)(vitest@4.1.11))
+      '@types/react': 19.3.0
+    transitivePeerDependencies:
+      - vitest
+
   '@sanity/ui@3.5.4(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(styled-components@6.5.3(react-dom@19.3.0(react@19.3.0))(react@19.3.0))':
     dependencies:
       '@floating-ui/react-dom': 2.1.9(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
@@ -13979,19 +14058,6 @@ snapshots:
       react-dom: 19.3.0(react@19.3.0)
       react-refractor: 4.0.0(react@19.3.0)
 
-  '@sanity/util@6.15.0(@types/react@19.3.0)(vitest@4.1.11)':
-    dependencies:
-      '@date-fns/tz': 1.5.0
-      '@date-fns/utc': 2.1.1
-      '@sanity/client': 8.13.0(vitest@4.1.11)
-      '@sanity/types': 6.15.0(@types/react@19.3.0)(vitest@4.1.11)
-      date-fns: 4.4.0
-      get-it: 9.5.4(vitest@4.1.11)
-      rxjs: 7.8.2
-    transitivePeerDependencies:
-      - '@types/react'
-      - vitest
-
   '@sanity/util@6.17.0(@types/react@19.3.0)(vitest@4.1.11)':
     dependencies:
       '@date-fns/tz': 1.5.0
@@ -14000,6 +14066,19 @@ snapshots:
       '@sanity/types': 6.17.0(@types/react@19.3.0)(vitest@4.1.11)
       date-fns: 4.4.0
       get-it: 9.6.1(vitest@4.1.11)
+      rxjs: 7.8.2
+    transitivePeerDependencies:
+      - '@types/react'
+      - vitest
+
+  '@sanity/util@6.21.0(@types/react@19.3.0)(vitest@4.1.11)':
+    dependencies:
+      '@date-fns/tz': 1.5.0
+      '@date-fns/utc': 2.1.1
+      '@sanity/client': 8.13.0(vitest@4.1.11)
+      '@sanity/types': 6.21.0(@types/react@19.3.0)(vitest@4.1.11)
+      date-fns: 4.4.0
+      get-it: 9.6.2(vitest@4.1.11)
       rxjs: 7.8.2
     transitivePeerDependencies:
       - '@types/react'
@@ -14018,6 +14097,22 @@ snapshots:
       '@sanity/util': 6.17.0(@types/react@19.3.0)(vitest@4.1.11)
       dequal: 2.0.3
       i18next: 26.4.2(typescript@6.0.3)
+      lodash-es: 4.18.1
+      rxjs: 7.8.2
+    transitivePeerDependencies:
+      - '@types/react'
+      - typescript
+      - vitest
+
+  '@sanity/validation@6.21.0(@types/react@19.3.0)(typescript@6.0.3)(vitest@4.1.11)':
+    dependencies:
+      '@sanity/client': 8.14.1(vitest@4.1.11)
+      '@sanity/id-utils': 1.1.0
+      '@sanity/schema': 6.21.0(@types/react@19.3.0)(vitest@4.1.11)
+      '@sanity/types': 6.21.0(@types/react@19.3.0)(vitest@4.1.11)
+      '@sanity/util': 6.21.0(@types/react@19.3.0)(vitest@4.1.11)
+      dequal: 2.0.3
+      i18next: 26.5.11(typescript@6.0.3)
       lodash-es: 4.18.1
       rxjs: 7.8.2
     transitivePeerDependencies:
@@ -16136,6 +16231,10 @@ snapshots:
     dependencies:
       eventsource-parser: 4.1.2
 
+  eventsource@5.1.4:
+    dependencies:
+      eventsource-parser: 4.1.2
+
   execa@10.0.1:
     dependencies:
       '@sindresorhus/merge-streams': 4.0.0
@@ -16691,6 +16790,10 @@ snapshots:
   husky@9.1.7: {}
 
   i18next@26.4.2(typescript@6.0.3):
+    optionalDependencies:
+      typescript: 6.0.3
+
+  i18next@26.5.11(typescript@6.0.3):
     optionalDependencies:
       typescript: 6.0.3
 

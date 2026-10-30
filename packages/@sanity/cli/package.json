@@ -103,6 +103,8 @@
     "@sanity/telemetry": "catalog:",
     "@sanity/template-validator": "^3.1.1",
     "@sanity/types": "catalog:",
+    "@sanity/util": "catalog:",
+    "@sanity/validation": "catalog:",
     "@sanity/workbench-cli": "workspace:^",
     "@sanity/worker-channels": "^2.0.0",
     "@sanity/workflow-cli": "0.36.0",
