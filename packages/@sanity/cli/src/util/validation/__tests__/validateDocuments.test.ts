@@ -3,6 +3,7 @@ import {describe, expect, test} from 'vitest'
 
 import {
   DOCUMENT_VALIDATION_TIMEOUT,
+  documentExists,
   getReferenceIds,
   isValidId,
   levelValues,
@@ -12,6 +13,35 @@ import {
 } from '../validateDocumentsUtils'
 
 describe('validateDocumentsUtils', () => {
+  describe('documentExists', () => {
+    const existingIds = new Map([
+      ['drafts.draft-author', true],
+      ['published-author', true],
+      ['removed-author', true],
+      ['versions.release-a.release-author', true],
+      ['versions.release-a.removed-author', false],
+      ['versions.release-b.other-release-author', true],
+    ])
+
+    test.each([
+      ['post', 'published-author', true],
+      ['drafts.post', 'published-author', true],
+      ['versions.release-a.post', 'published-author', true],
+      ['versions.release-a.post', 'release-author', true],
+      ['versions.release-a.post', 'other-release-author', false],
+      ['versions.release-a.post', 'draft-author', false],
+      ['versions.release-a.post', 'missing-author', false],
+      ['versions.release-a.post', 'removed-author', false],
+      ['versions.release-b.post', 'removed-author', true],
+      ['post', 'release-author', false],
+      ['drafts.post', 'release-author', false],
+      ['post', 'draft-author', false],
+      ['post', 'missing-author', false],
+    ])('%s referencing %s exists: %s', (documentId, id, expected) => {
+      expect(documentExists(id, documentId, existingIds)).toBe(expected)
+    })
+  })
+
   describe('constants', () => {
     test('should have correct values', () => {
       expect(DOCUMENT_VALIDATION_TIMEOUT).toBe(30_000)

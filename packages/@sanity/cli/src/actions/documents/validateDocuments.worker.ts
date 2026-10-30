@@ -22,6 +22,7 @@ import {
 import {extractDocumentsFromNdjsonOrTarball} from '../../util/extractDocumentsFromNdjsonOrTarball.js'
 import {
   DOCUMENT_VALIDATION_TIMEOUT,
+  documentExists,
   getReferenceIds,
   isValidId,
   levelValues,
@@ -105,7 +106,7 @@ async function downloadFromExport({
 
   let downloadedCount = 0
   const referencedIds = new Set<string>()
-  const documentIds = new Set<string>()
+  const documentIds = new Map<string, boolean>()
   const lines = readline.createInterface({input: Readable.from(readerToGenerator(reader))})
 
   // Note: we stream the export to a file and then re-read from that file to
@@ -122,7 +123,7 @@ async function downloadFromExport({
     const document = JSON.parse(line) as SanityDocument
 
     if (shouldIncludeDocument(document)) {
-      documentIds.add(document._id)
+      documentIds.set(document._id, document._system?.delete !== true)
       for (const referenceId of getReferenceIds(document)) {
         referencedIds.add(referenceId)
       }
@@ -149,12 +150,12 @@ async function downloadFromExport({
 
 async function downloadFromFile(filePath: string) {
   const referencedIds = new Set<string>()
-  const documentIds = new Set<string>()
+  const documentIds = new Map<string, boolean>()
   const getDocuments = () => extractDocumentsFromNdjsonOrTarball(fs.createReadStream(filePath))
 
   for await (const document of getDocuments()) {
     if (shouldIncludeDocument(document)) {
-      documentIds.add(document._id)
+      documentIds.set(document._id, document._system?.delete !== true)
       for (const referenceId of getReferenceIds(document)) {
         referencedIds.add(referenceId)
       }
@@ -168,7 +169,7 @@ async function downloadFromFile(filePath: string) {
 
 interface CheckReferenceExistenceOptions {
   dataset: string
-  documentIds: Set<string>
+  documentIds: Map<string, boolean>
   projectId: string
   referencedIds: Set<string>
 }
@@ -200,7 +201,7 @@ async function checkReferenceExistence({
       // unless the document ID is in the `omitted` object explictly due to
       // the reason `'existence'`, then it should exist
       if (omittedIds[id] !== 'existence') {
-        existingIds.add(id)
+        existingIds.set(id, true)
       }
     }
   }
@@ -247,7 +248,8 @@ async function main() {
         const result = await validateDocument({
           client: validationClient,
           document,
-          getDocumentExists: ({id}) => Promise.resolve(existingIds.has(id)),
+          getDocumentExists: ({id}) =>
+            Promise.resolve(documentExists(id, document._id, existingIds)),
           maxCustomValidationConcurrency,
           maxFetchConcurrency,
           schema: workspace.schema,
