@@ -48,12 +48,7 @@ export class ListIssuesCommand extends SanityCommand<typeof ListIssuesCommand> {
       description: 'Only list issues of this kind',
       // A Record forces every kind the client knows to be listed, so the options can't drift
       options: Object.keys({
-        add_entry: true,
         conflict: true,
-        gap: true,
-        merge_entry: true,
-        remove_entry: true,
-        split_entry: true,
         update_required: true,
       } satisfies Record<IssueKind, true>),
     })(),
