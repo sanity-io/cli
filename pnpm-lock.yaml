@@ -197,6 +197,12 @@ catalogs:
     '@sanity/types':
       specifier: ^6.22.0
       version: 6.22.0
+    '@sanity/util':
+      specifier: ^6.22.0
+      version: 6.22.0
+    '@sanity/validation':
+      specifier: ^6.22.0
+      version: 6.22.0
     '@sanity/vision':
       specifier: ^6.22.0
       version: 6.22.0
@@ -785,6 +791,12 @@ importers:
       '@sanity/types':
         specifier: 'catalog:'
         version: 6.22.0(@types/react@19.3.0)(vitest@5.1.0)
+      '@sanity/util':
+        specifier: 'catalog:'
+        version: 6.22.0(@types/react@19.3.0)(vitest@5.1.0)
+      '@sanity/validation':
+        specifier: 'catalog:'
+        version: 6.22.0(@types/react@19.3.0)(typescript@6.0.3)(vitest@5.1.0)
       '@sanity/workbench-cli':
         specifier: workspace:^
         version: link:../workbench-cli
@@ -5006,9 +5018,6 @@ packages:
     peerDependencies:
       react: ^18.3 || ^19.0.0-0
 
-  '@sanity/media-library-types@1.6.0':
-    resolution: {integrity: sha512-1Nqw8GSUr7E8AFue9luyTOM4Ev0ZlJ35SHcQrHZ6T68G5llfXw99e3GkLXzk6qYFk9r9fJaBTSpW5IyO2mObZQ==}
-
   '@sanity/media-library-types@1.7.1':
     resolution: {integrity: sha512-gugG7V+TIbHcmsWWIIukstDmz73ajD4pHPooGpMENVujtuMV8XZZHn/jgYBut6X0Afdxqk/BE9DsSQ7+1Xe1yA==}
     peerDependencies:
@@ -5174,12 +5183,6 @@ packages:
     peerDependencies:
       '@types/react': ^19.2
 
-  '@sanity/types@6.15.0':
-    resolution: {integrity: sha512-kWBP0Leb5yy8zwHC0Mb1hRcc7CBDQrK1L+DRNhMOVd9nm37orO/RJ30G33f3NynX5iJxlOUgO6WiPObDDzRMOQ==}
-    engines: {node: '>=22.12'}
-    peerDependencies:
-      '@types/react': '*'
-
   '@sanity/types@6.17.0':
     resolution: {integrity: sha512-v1/YgSfSeMmdn9crj3l8O/Sx/9PgZGlZ8dAEGepANwwiAQlxIrQpH0uFu9QLF09OvV+D2GVrsDOyyLZ/EdvvTA==}
     engines: {node: '>=22.12'}
@@ -5223,10 +5226,6 @@ packages:
     peerDependencies:
       react: ^19.2
       react-dom: ^19.2
-
-  '@sanity/util@6.15.0':
-    resolution: {integrity: sha512-k3svmPqvJBc2jX28f6oK4AUJPIDTBmES4jjszm/THr1h4NlSrVZdXIWx2Bh3Rg6GLQHyvrrjT3ZSbMWH1Gdmag==}
-    engines: {node: '>=22.12'}
 
   '@sanity/util@6.17.0':
     resolution: {integrity: sha512-8VcmyWlA3xez67ltNh/Sf0Wswmp5qGEth9hwRzRQRQIfaTLMXtP3HpG58k4V1eD9QazEDiQPKS3FHDO0S9bitQ==}
@@ -14389,8 +14388,6 @@ snapshots:
       '@sanity/color': 3.0.9
       react: 19.3.0
 
-  '@sanity/media-library-types@1.6.0': {}
-
   '@sanity/media-library-types@1.7.1(@sanity/types@5.31.2(@types/react@19.3.0))':
     dependencies:
       '@sanity/types': 5.31.2(@types/react@19.3.0)
@@ -14412,7 +14409,7 @@ snapshots:
       '@sanity/client': 8.15.0(vitest@5.1.0)
       '@sanity/mutate': 0.18.2(vitest@5.1.0)(xstate@5.33.2)
       '@sanity/types': 6.22.0(@types/react@19.3.0)(vitest@5.1.0)
-      '@sanity/util': 6.15.0(@types/react@19.3.0)(vitest@5.1.0)
+      '@sanity/util': 6.22.0(@types/react@19.3.0)(vitest@5.1.0)
       arrify: 3.0.0
       get-it: 9.6.1(vitest@5.1.0)
       groq-js: 2.0.1
@@ -14429,7 +14426,7 @@ snapshots:
       '@sanity/client': 8.15.0(vitest@5.1.0)
       '@sanity/mutate': 0.18.2(vitest@5.1.0)(xstate@5.33.3)
       '@sanity/types': 6.22.0(@types/react@19.3.0)(vitest@5.1.0)
-      '@sanity/util': 6.15.0(@types/react@19.3.0)(vitest@5.1.0)
+      '@sanity/util': 6.22.0(@types/react@19.3.0)(vitest@5.1.0)
       arrify: 3.0.0
       get-it: 9.6.1(vitest@5.1.0)
       groq-js: 2.0.1
@@ -14947,14 +14944,6 @@ snapshots:
       '@sanity/media-library-types': 1.7.1(@sanity/types@5.31.2(@types/react@19.3.0))
       '@types/react': 19.3.0
 
-  '@sanity/types@6.15.0(@types/react@19.3.0)(vitest@5.1.0)':
-    dependencies:
-      '@sanity/client': 8.15.0(vitest@5.1.0)
-      '@sanity/media-library-types': 1.6.0
-      '@types/react': 19.3.0
-    transitivePeerDependencies:
-      - vitest
-
   '@sanity/types@6.17.0(@types/react@19.3.0)(vitest@5.1.0)':
     dependencies:
       '@sanity/client': 8.15.0(vitest@5.1.0)
@@ -15027,19 +15016,6 @@ snapshots:
       react: 19.3.0
       react-dom: 19.3.0(react@19.3.0)
       react-refractor: 4.0.0(react@19.3.0)
-
-  '@sanity/util@6.15.0(@types/react@19.3.0)(vitest@5.1.0)':
-    dependencies:
-      '@date-fns/tz': 1.5.0
-      '@date-fns/utc': 2.1.1
-      '@sanity/client': 8.15.0(vitest@5.1.0)
-      '@sanity/types': 6.15.0(@types/react@19.3.0)(vitest@5.1.0)
-      date-fns: 4.4.0
-      get-it: 9.6.1(vitest@5.1.0)
-      rxjs: 7.8.2
-    transitivePeerDependencies:
-      - '@types/react'
-      - vitest
 
   '@sanity/util@6.17.0(@types/react@19.3.0)(vitest@5.1.0)':
     dependencies:
