@@ -40,6 +40,13 @@ import {EXTERNAL_APP_NOT_SUPPORTED, NO_ORGANIZATION_ID} from '../../util/errorMe
 import {pluralize} from '../../util/pluralize.js'
 import {buildApp} from '../build/buildApp.js'
 import {
+  type AppFunctionManifest,
+  readAppFunctionManifest,
+} from '../functions/appFunctionManifest.js'
+import {deployAppFunctions} from '../functions/deployAppFunctions.js'
+import {discoverAppFunctions} from '../functions/discoverAppFunctions.js'
+import {ensureAppFunctionStack} from '../functions/ensureAppFunctionStack.js'
+import {
   applyAspectSync,
   type AspectSyncPlan,
   planAspectSync,
@@ -76,10 +83,11 @@ async function runAppDeployment(
   options: DeployAppOptions,
   reporter: DeployCheckReporter,
 ): Promise<DeployResult | void> {
-  const {cliConfig, flags, output, sourceDir} = options
+  const {flags, output, sourceDir} = options
+  let {cliConfig} = options
   const workDir = options.projectRoot.directory
   const organizationId = cliConfig.app?.organizationId
-  const appId = getAppId(cliConfig)
+  let appId = getAppId(cliConfig)
   const workbench = getWorkbench(cliConfig)
   // A config (the Media Library) is not an app — it resolves through its own
   // brand and persists to the org's installation instead of hosting an application.
@@ -145,8 +153,43 @@ async function runAppDeployment(
 
   await checkBlueprintManaged(reporter, {kind: 'coreApp', projectRootDir: workDir})
 
+  // Validate the icon before registering an app or stack.
+  const appIcon =
+    !dryRun && workbench?.icon ? await readIconFromPath(workDir, workbench.icon) : undefined
+
+  const functionStack = flags.external
+    ? null
+    : await runStep(reporter, {
+        name: 'App function stack',
+        work: () =>
+          ensureAppFunctionStack({
+            allowCreateApp: !workbench || !!flags.build,
+            cliConfig,
+            create: flags.create,
+            dryRun,
+            output,
+            selectExisting: !flags.create,
+            title: flags.title,
+            unattended: !!flags.yes,
+            useBuild: !flags.build,
+            workDir,
+          }),
+      })
+  if (functionStack) {
+    if (functionStack.appId) {
+      appId = functionStack.appId
+      cliConfig = {...cliConfig, deployment: {...cliConfig.deployment, appId}}
+    }
+    reporter.report({
+      message: functionStack.stackId
+        ? `App function stack: ${functionStack.stackId}`
+        : 'An app function stack will be created before building',
+      status: functionStack.stackId ? 'pass' : 'warn',
+    })
+  }
+
   let application: UserApplicationResolved | null = null
-  let appCreated = false
+  let appCreated = functionStack?.createdApp ?? false
   let workbenchApp: object | undefined
   let targetAppId = appId
   if (flags.external) {
@@ -168,7 +211,18 @@ async function runAppDeployment(
       })
     )?.application
   } else if (deployApplication) {
-    ;({application, created: appCreated} = await resolveAppApplication(options, {dryRun, reporter}))
+    const resolved = await resolveAppApplication(
+      {
+        ...options,
+        cliConfig,
+        flags: functionStack
+          ? {...flags, title: flags.title || cliConfig.app?.title || basename(workDir)}
+          : flags,
+      },
+      {dryRun, reporter},
+    )
+    application = resolved.application
+    appCreated ||= resolved.created
   }
 
   // A first deploy mints the app id and the build inlines it; --no-build would
@@ -182,14 +236,10 @@ async function runAppDeployment(
     })
   }
 
-  // Read up front so a bad icon path fails before we create or build.
-  const appIcon =
-    !dryRun && workbench?.icon ? await readIconFromPath(workDir, workbench.icon) : undefined
-
   // Create the app before the build so the bundle carries its real id. A
   // redeploy already has it from `deployment.appId`; a dry run skips creation.
   let applicationId = targetAppId
-  let applicationCreated = false
+  let applicationCreated = functionStack?.createdApp ?? false
   let rollbackApp: (() => Promise<void>) | undefined
   if (!dryRun && deployApplication && workbench && organizationId && !applicationId) {
     const created = await createCoreApp({
@@ -217,6 +267,7 @@ async function runAppDeployment(
           calledFromDeploy: true,
           cliConfig,
           flags,
+          functionStackId: functionStack?.stackId,
           outDir: sourceDir,
           output,
           workDir,
@@ -235,6 +286,34 @@ async function runAppDeployment(
         reporter,
         sourceDir,
       }))
+
+    let functionManifest: AppFunctionManifest | null = null
+    if (functionStack && organizationId) {
+      if (dryRun && !appId && flags.build) {
+        const functions = await discoverAppFunctions(workDir)
+        reporter.report({
+          message: `${functions.length} app function(s) will deploy after the app and stack are registered`,
+          status: 'warn',
+        })
+      } else {
+        functionManifest = await runStep(reporter, {
+          name: 'Built app functions',
+          work: () =>
+            readAppFunctionManifest({
+              appId,
+              organizationId,
+              stackId: functionStack.stackId,
+              workDir,
+            }),
+        })
+        if (functionManifest) {
+          reporter.report({
+            message: `${functionManifest.functions.length} app function(s) ready to deploy`,
+            status: 'pass',
+          })
+        }
+      }
+    }
 
     // Workbench apps and configs ship a federation remote and don't read the
     // core-app manifest; only plain core-apps do. Manifests aren't strictly
@@ -345,6 +424,9 @@ async function runAppDeployment(
             },
           }
         : {}),
+      ...(functionManifest
+        ? {functions: functionManifest.functions, functionStackId: functionStack?.stackId}
+        : {}),
     }
 
     // Dry run stops here — everything below mutates.
@@ -383,6 +465,18 @@ async function runAppDeployment(
 
     // A real deploy already exited on a version-resolution failure; this narrows the type.
     if (!version) return
+
+    if (functionManifest) {
+      if (!functionStack?.stackId) {
+        throw new Error('The app function stack is missing. Run sanity build before deploying.')
+      }
+      await deployAppFunctions({
+        manifest: functionManifest,
+        output,
+        stackId: functionStack.stackId,
+        workDir,
+      })
+    }
 
     // The app was created (or resolved from `deployment.appId`) before the build,
     // so this only ships the deployment; plain coreApps use user-applications below.
