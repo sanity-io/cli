@@ -4,6 +4,8 @@ import {type Context, EXPERIMENTAL_API_WARNING, isHttpError} from '@sanity/clien
 const CONTEXT_API_VERSION = 'v2026-08-25'
 const BLUEPRINTS_API_VERSION = 'vX'
 const BLUEPRINTS_LOOKUP_TIMEOUT_MS = 5000
+// The version in the URLs the Context API returns for agents to connect to MCP endpoints
+const MCP_CONNECT_API_VERSION = 'v2026-11-10'
 
 const blueprintOwnershipDebug = subdebug('context:blueprint-ownership')
 
@@ -97,15 +99,40 @@ export function describeBlueprintManager(stackName: string | null): string {
 }
 
 /**
- * Whether a live blueprint stack manages the knowledge base, from the
- * Blueprints resource search. Fails open: a failed lookup answers not managed,
- * so a Blueprints outage never blocks a command.
+ * Whether a live blueprint stack manages the knowledge base
  */
-export async function getKnowledgeBaseBlueprintOwnership(
+export function getKnowledgeBaseBlueprintOwnership(
   knowledgeBaseId: string,
 ): Promise<BlueprintOwnership> {
-  try {
+  return getBlueprintOwnership('sanity.context.knowledge-base', async () => {
     const {organizationId, publicId} = await getKnowledgeBase(knowledgeBaseId)
+    return {organizationId, publicId}
+  })
+}
+
+/**
+ * Whether a live blueprint stack manages the MCP endpoint
+ */
+export function getMcpEndpointBlueprintOwnership(
+  organizationId: string,
+  {id}: Pick<Context.McpEndpoint, 'id'>,
+): Promise<BlueprintOwnership> {
+  return getBlueprintOwnership('sanity.context.mcp', async () => ({organizationId, publicId: id}))
+}
+
+/**
+ * Looks the resource up in the Blueprints resource search. Fails open: a
+ * failed lookup answers not managed, so a Blueprints outage never blocks a
+ * command. A resource that doesn't exist isn't managed either.
+ */
+async function getBlueprintOwnership(
+  type: string,
+  resolveResource: () => Promise<{organizationId: string; publicId: string} | null>,
+): Promise<BlueprintOwnership> {
+  try {
+    const resource = await resolveResource()
+    if (!resource) return {managed: false}
+    const {organizationId, publicId} = resource
     const client = await getGlobalCliClient({
       apiVersion: BLUEPRINTS_API_VERSION,
       // The Blueprints API has no stable version yet, and the warning would interrupt command output.
@@ -122,7 +149,7 @@ export async function getKnowledgeBaseBlueprintOwnership(
     }
     const matches = await client.request<{stackId?: string}[]>({
       headers,
-      query: {id: publicId, type: 'sanity.context.knowledge-base'},
+      query: {id: publicId, type},
       url: '/blueprints/resources/search',
     })
     const stackId = matches.find((match) => typeof match.stackId === 'string')?.stackId
@@ -366,4 +393,96 @@ export async function queryContext(
 ): Promise<unknown> {
   const client = await getContextClient(undefined, organizationId)
   return client.context.fetch(query, params)
+}
+
+/**
+ * List an organization's MCP endpoints, oldest first
+ */
+export async function listMcpEndpoints(organizationId: string): Promise<Context.McpEndpoint[]> {
+  const client = await getContextClient(undefined, organizationId)
+  const docs = await client.context.mcpEndpoints.list()
+  const connectClient = client.withConfig({apiVersion: MCP_CONNECT_API_VERSION})
+  return docs.map((doc) => toMcpEndpoint(connectClient, doc))
+}
+
+/**
+ * Get an MCP endpoint by name or ID, or `null` when the organization has none.
+ * Update and delete accept either, so the lookups guarding them must too.
+ */
+export async function getMcpEndpoint(
+  organizationId: string,
+  nameOrId: string,
+): Promise<Context.McpEndpoint | null> {
+  const client = await getContextClient(undefined, organizationId)
+  const doc = await client.context.fetch<Context.McpDoc | null>(
+    '*[_type == "sanity.context.mcp" && organizationId == $org && (name == $nameOrId || publicId == $nameOrId)][0]',
+    {nameOrId, org: organizationId},
+  )
+  return doc && toMcpEndpoint(client.withConfig({apiVersion: MCP_CONNECT_API_VERSION}), doc)
+}
+
+/**
+ * The stored configuration in the shape create and edit return, so every command outputs the
+ * same fields. The URL isn't stored, so it is built from the same route and API version.
+ */
+function toMcpEndpoint(
+  connectClient: {getUrl: (uri: string) => string},
+  doc: Context.McpDoc,
+): Context.McpEndpoint {
+  return {
+    createdAt: doc._createdAt,
+    groqFilter: doc.groqFilter ?? null,
+    id: doc.publicId,
+    instructions: doc.instructions ?? null,
+    name: doc.name,
+    organizationId: doc.organizationId,
+    sources: doc.sources,
+    title: doc.title,
+    updatedAt: doc._updatedAt,
+    url: connectClient.getUrl(
+      `/context/organizations/${encodeURIComponent(doc.organizationId)}/mcp/${encodeURIComponent(doc.name)}`,
+    ),
+  }
+}
+
+/**
+ * Create an MCP endpoint
+ */
+export async function createMcpEndpoint(
+  organizationId: string,
+  params: Context.CreateMcpEndpointParams,
+): Promise<Context.McpEndpoint> {
+  const client = await getContextClient(undefined, organizationId)
+  return client.context.mcpEndpoints.create(params)
+}
+
+/**
+ * Update an MCP endpoint's configuration
+ */
+export async function updateMcpEndpoint(
+  organizationId: string,
+  name: string,
+  params: Context.EditMcpEndpointParams,
+): Promise<Context.McpEndpoint> {
+  const client = await getContextClient(undefined, organizationId)
+  return client.context.mcpEndpoints.edit({...params, name})
+}
+
+/**
+ * Delete an MCP endpoint
+ */
+export async function deleteMcpEndpoint(organizationId: string, name: string): Promise<void> {
+  const client = await getContextClient(undefined, organizationId)
+  await client.context.mcpEndpoints.delete({name})
+}
+
+/**
+ * Check whether an agent connecting with the current credentials can use an MCP endpoint
+ */
+export async function getMcpEndpointStatus(
+  organizationId: string,
+  name: string,
+): Promise<Context.McpEndpointStatus> {
+  const client = await getContextClient(undefined, organizationId)
+  return client.context.mcpEndpoints.status({name})
 }
