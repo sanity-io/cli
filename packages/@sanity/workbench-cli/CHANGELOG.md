@@ -1,5 +1,30 @@
 # @sanity/workbench-cli
 
+## 2.15.0
+
+[Compare changes](https://github.com/sanity-io/cli/compare/workbench-cli-v2.14.1...workbench-cli-v2.15.0)
+
+_2026-10-30_
+
+### Features
+
+- **workbench-cli:** identify the deployed app each local app replaces ([#2036](https://github.com/sanity-io/cli/pull/2036)) ([4554779](https://github.com/sanity-io/cli/commit/455477936cd47a58d904a8d9c63eeac16b271f0a))
+- **cli:** auto-update apps inside Workbench ([#2041](https://github.com/sanity-io/cli/pull/2041)) ([8b0d1e7](https://github.com/sanity-io/cli/commit/8b0d1e7aced1a4edcf5e003f76e69bb2e7c912d1))
+- **workbench-cli:** give each root an abort signal that fires when it is disposed ([#2089](https://github.com/sanity-io/cli/pull/2089)) ([221d7e3](https://github.com/sanity-io/cli/commit/221d7e3601896cd9205e399056263c75d8dce53d))
+- **workbench-cli:** pass the module id and parent key to the rendered app in one context ([#2101](https://github.com/sanity-io/cli/pull/2101)) ([de27a5e](https://github.com/sanity-io/cli/commit/de27a5e3c1a48cc1bbb29e55048991ea848304bd))
+- **workbench:** pass a bus refusal's fix and docs link to workers ([#2084](https://github.com/sanity-io/cli/pull/2084)) ([47b8f08](https://github.com/sanity-io/cli/commit/47b8f08ff04585a6fe22b13568b6ac1da703dc33))
+
+### Bug Fixes
+
+- **deploy:** offer existing apps on workbench deploys ([#2079](https://github.com/sanity-io/cli/pull/2079)) ([aa471fd](https://github.com/sanity-io/cli/commit/aa471fddcd87d1a6129395743708f852960852cf))
+- **cli:** stop bundling auto-updated packages ([#2087](https://github.com/sanity-io/cli/pull/2087)) ([814e76f](https://github.com/sanity-io/cli/commit/814e76f910a01059367ac18f4d6f3b2ebf01645f))
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/cli-core bumped to 3.14.1
+
 ## 2.14.1
 
 [Compare changes](https://github.com/sanity-io/cli/compare/workbench-cli-v2.14.0...workbench-cli-v2.14.1)

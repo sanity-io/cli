@@ -1,5 +1,23 @@
 # Changelog
 
+## 7.1.0
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-build-v7.0.3...cli-build-v7.1.0)
+
+_2026-10-30_
+
+### Features
+
+- **cli:** auto-update standalone workbench apps ([#2040](https://github.com/sanity-io/cli/pull/2040)) ([0e8db45](https://github.com/sanity-io/cli/commit/0e8db4512a40c975173404b042d43e226467f356))
+- **cli:** auto-update apps inside Workbench ([#2041](https://github.com/sanity-io/cli/pull/2041)) ([8b0d1e7](https://github.com/sanity-io/cli/commit/8b0d1e7aced1a4edcf5e003f76e69bb2e7c912d1))
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/workbench-cli bumped to 2.15.0
+    - @sanity/cli-core bumped to 3.14.1
+
 ## 7.0.3
 
 [Compare changes](https://github.com/sanity-io/cli/compare/cli-build-v7.0.2...cli-build-v7.0.3)

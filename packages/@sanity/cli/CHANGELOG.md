@@ -1,5 +1,36 @@
 # Change Log
 
+## 8.26.0
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-v8.25.0...cli-v8.26.0)
+
+_2026-10-30_
+
+### Features
+
+- **cli:** auto-update standalone workbench apps ([#2040](https://github.com/sanity-io/cli/pull/2040)) ([0e8db45](https://github.com/sanity-io/cli/commit/0e8db4512a40c975173404b042d43e226467f356))
+- **cli:** auto-update apps inside Workbench ([#2041](https://github.com/sanity-io/cli/pull/2041)) ([8b0d1e7](https://github.com/sanity-io/cli/commit/8b0d1e7aced1a4edcf5e003f76e69bb2e7c912d1))
+- **typegen:** record typegen.resources usage in telemetry ([#2075](https://github.com/sanity-io/cli/pull/2075)) ([a435782](https://github.com/sanity-io/cli/commit/a43578257ca0f47e228f6d64c4428ac7972facc0))
+- **schema:** accept explicit studio config path ([#2082](https://github.com/sanity-io/cli/pull/2082)) ([1800783](https://github.com/sanity-io/cli/commit/18007839c835c87a5554660957f0354a9c9bff24))
+- **context:** update and delete refuse a knowledge base a blueprint manages ([#2085](https://github.com/sanity-io/cli/pull/2085)) ([54fb98d](https://github.com/sanity-io/cli/commit/54fb98d7fb858157265f73023960f1dcc97ee80f))
+
+### Bug Fixes
+
+- **deps:** upgrade @sanity/import and @sanity/export to 7.1.0 ([#2078](https://github.com/sanity-io/cli/pull/2078)) ([0a769a7](https://github.com/sanity-io/cli/commit/0a769a761075650f7487f53cb647de04cde479ea))
+- **deploy:** offer existing apps on workbench deploys ([#2079](https://github.com/sanity-io/cli/pull/2079)) ([aa471fd](https://github.com/sanity-io/cli/commit/aa471fddcd87d1a6129395743708f852960852cf))
+- **exec:** preserve script argument order ([#2081](https://github.com/sanity-io/cli/pull/2081)) ([06b89be](https://github.com/sanity-io/cli/commit/06b89beba4de987237bc43f3322e4fe4c1e5cc51))
+- **cli:** stop bundling auto-updated packages ([#2087](https://github.com/sanity-io/cli/pull/2087)) ([814e76f](https://github.com/sanity-io/cli/commit/814e76f910a01059367ac18f4d6f3b2ebf01645f))
+- redact sensitive cli telemetry while preserving usage metrics ([#1975](https://github.com/sanity-io/cli/pull/1975)) ([a605834](https://github.com/sanity-io/cli/commit/a605834a34d7ab5f2c31043cfd44077fee4a72b1))
+- **cli:** replace typeid-js with uuid ([#2077](https://github.com/sanity-io/cli/pull/2077)) ([6eff2bc](https://github.com/sanity-io/cli/commit/6eff2bc160d44a50e777ad19d047f18d89dd307b))
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/workbench-cli bumped to 2.15.0
+    - @sanity/cli-build bumped to 7.1.0
+    - @sanity/cli-core bumped to 3.14.1
+
 ## 8.25.0
 
 [Compare changes](https://github.com/sanity-io/cli/compare/cli-v8.24.0...cli-v8.25.0)
