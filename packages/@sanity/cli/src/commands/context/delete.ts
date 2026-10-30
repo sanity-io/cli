@@ -5,7 +5,11 @@ import {getErrorMessage} from '@sanity/cli-core/errors'
 import {confirm} from '@sanity/cli-core/ux'
 import {isHttpError} from '@sanity/client'
 
-import {deleteKnowledgeBase, getKnowledgeBaseBlueprintOwnership} from '../../services/context.js'
+import {
+  deleteKnowledgeBase,
+  describeBlueprintManager,
+  getKnowledgeBaseBlueprintOwnership,
+} from '../../services/context.js'
 
 const deleteContextDebug = subdebug('context:delete')
 
@@ -44,9 +48,7 @@ export class DeleteKnowledgeBaseCommand extends SanityCommand<typeof DeleteKnowl
 
     const ownership = await getKnowledgeBaseBlueprintOwnership(knowledgeBaseId)
     if (ownership.managed) {
-      const manager = ownership.stackName
-        ? `The blueprint stack "${ownership.stackName}"`
-        : 'A blueprint'
+      const manager = describeBlueprintManager(ownership.stackName)
       this.error(
         `${manager} manages knowledge base "${knowledgeBaseId}". To delete it, deploy it with \`lifecycle: {deletionPolicy: 'allow'}\` in the blueprint, then remove it from the blueprint and deploy again.`,
         {exit: exitCodes.USAGE_ERROR},
