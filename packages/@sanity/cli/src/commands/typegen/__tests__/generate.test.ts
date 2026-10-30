@@ -57,6 +57,7 @@ const watchResourceTypes = vi.hoisted(() =>
 vi.mock(import('../../../actions/typegen/watchResourceTypes.js'), () => ({watchResourceTypes}))
 
 const {TypegenGenerateCommand} = await import('../generate.js')
+const {TypegenResourcesTrace} = await import('../../../telemetry/typegen.telemetry.js')
 
 const baseResult = {
   code: 'export type X = 1',
@@ -82,6 +83,21 @@ const defaultMocks = {
 }
 
 /**
+ * Returns a telemetry `trace` mock and the `log` spy shared by every trace it creates.
+ */
+function mockTrace() {
+  const log = vi.fn()
+  const trace = vi.fn().mockReturnValue({
+    complete: vi.fn(),
+    error: vi.fn(),
+    log,
+    newContext: vi.fn(),
+    start: vi.fn(),
+  })
+  return {log, trace}
+}
+
+/**
  * Polls until the command under test has registered a `SIGINT` listener, so the
  * watch-mode test can trigger it deterministically instead of relying on a fixed
  * sleep or emitting a real OS signal (which risks tripping other process-wide
@@ -102,10 +118,14 @@ describe('#typegen:generate', () => {
 
   test('runs a single generation using CLI config and wires up onProgress', async () => {
     runTypegenGenerate.mockResolvedValue(baseResult)
+    const {trace} = mockTrace()
 
-    const {error} = await testCommand(TypegenGenerateCommand, [], {mocks: defaultMocks})
+    const {error} = await testCommand(TypegenGenerateCommand, [], {
+      mocks: {...defaultMocks, trace},
+    })
     if (error) throw error
 
+    expect(trace).not.toHaveBeenCalledWith(TypegenResourcesTrace)
     expect(runTypegenGenerate).toHaveBeenCalledOnce()
     const [options] = runTypegenGenerate.mock.calls[0]
     if (!options.config) throw new Error('Expected a config to be passed to runTypegenGenerate')
@@ -251,9 +271,20 @@ describe('#typegen:generate', () => {
         {key: 'abc123.production', result: baseResult},
         {key: 'abc123.staging', result: baseResult},
       ])
+      const {log, trace} = mockTrace()
 
-      const {error, stderr} = await testCommand(TypegenGenerateCommand, [], {mocks: resourceMocks})
+      const {error, stderr} = await testCommand(TypegenGenerateCommand, [], {
+        mocks: {...resourceMocks, trace},
+      })
       if (error) throw error
+
+      expect(trace).toHaveBeenCalledWith(TypegenResourcesTrace)
+      expect(log).toHaveBeenCalledWith({
+        boundSchemaCount: 1,
+        mode: 'generate',
+        resourceCount: 2,
+        resourceKeys: ['abc123.production', 'abc123.staging'],
+      })
 
       expect(resolveResourceSchemas).toHaveBeenCalledOnce()
       const [resolveOptions] = resolveResourceSchemas.mock.calls[0]
@@ -324,7 +355,11 @@ describe('#typegen:generate', () => {
         stop,
       })
 
-      const promise = testCommand(TypegenGenerateCommand, ['--watch'], {mocks: resourceMocks})
+      const {log, trace} = mockTrace()
+
+      const promise = testCommand(TypegenGenerateCommand, ['--watch'], {
+        mocks: {...resourceMocks, trace},
+      })
 
       await waitForSigintListener()
       const [options] = watchResourceTypes.mock.calls[0]
@@ -337,6 +372,14 @@ describe('#typegen:generate', () => {
 
       const {error, stderr, stdout} = await promise
       if (error) throw error
+
+      expect(trace).toHaveBeenCalledWith(TypegenResourcesTrace)
+      expect(log).toHaveBeenCalledWith({
+        boundSchemaCount: 1,
+        mode: 'watch',
+        resourceCount: 2,
+        resourceKeys: ['abc123.production', 'abc123.staging'],
+      })
 
       expect(resolveResourceSchemas).toHaveBeenCalledOnce()
       // A missing local schema file is reported on each run until it appears.

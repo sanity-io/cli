@@ -29,6 +29,13 @@ const listOf =
 const version = matching(/^v?\d{1,4}\.\d{1,4}\.\d{1,4}$/)
 const cliProjectId = (value: unknown): string | undefined =>
   typeof value === 'string' && /^[a-z0-9]{8}$/.test(value) ? value : undefined
+// `projectId.dataset`, the key a resource's generated types are registered under. Both halves
+// are constrained: a project id is eight lowercase alphanumerics, and a dataset name allows
+// only lowercase alphanumerics, dashes and underscores.
+const cliResourceKey = (value: unknown): string | undefined =>
+  typeof value === 'string' && /^[a-z0-9]{8}\.[a-z0-9][a-z0-9_-]{0,63}$/.test(value)
+    ? value
+    : undefined
 const sessionId = matching(/^session_[0-7][0-9a-hjkmnp-tv-z]{25}$/)
 const traceId = matching(
   /^trace_(?:[0-7][0-9a-hjkmnp-tv-z]{25}|[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})$/,
@@ -188,6 +195,15 @@ const eventSchemas: Record<string, {fields: Schema; versions: number[]}> = {
     versions: [0],
   },
   'Studio Build Completed': {fields: {outputSize: number}, versions: [0]},
+  'Typegen Resources Used': {
+    fields: {
+      boundSchemaCount: number,
+      mode: oneOf('generate', 'watch'),
+      resourceCount: number,
+      resourceKeys: listOf(cliResourceKey),
+    },
+    versions: [1],
+  },
   'Typegen Watch Mode Started': {
     fields: {
       averageGenerationDuration: number,
