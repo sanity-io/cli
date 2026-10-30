@@ -1,5 +1,19 @@
 # Change Log
 
+## 8.27.0
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-v8.26.0...cli-v8.27.0)
+
+_2026-10-30_
+
+### Features
+
+- New `sanity context mcp` commands list, inspect, create, update, delete and check Context MCP endpoints. `update` and `delete` refuse endpoints a blueprint manages. ([#2086](https://github.com/sanity-io/cli/pull/2086)) ([6fc170e](https://github.com/sanity-io/cli/commit/6fc170e18295fb6edda38b0b86bd90a731afa137))
+
+### Bug Fixes
+
+- **deps:** bump @sanity/client to 8.13.0 ([#2092](https://github.com/sanity-io/cli/pull/2092)) ([0674a55](https://github.com/sanity-io/cli/commit/0674a55f252dac42aafc2cdc3c5ab87affe70d53))
+
 ## 8.26.0
 
 [Compare changes](https://github.com/sanity-io/cli/compare/cli-v8.25.0...cli-v8.26.0)
