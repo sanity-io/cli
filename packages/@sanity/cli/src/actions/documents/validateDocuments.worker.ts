@@ -5,9 +5,11 @@ import readline from 'node:readline'
 import {Readable} from 'node:stream'
 import {workerData as _workerData, isMainThread, parentPort} from 'node:worker_threads'
 
-import {getStudioWorkspaces, getWorkspace, resolveLocalPackage} from '@sanity/cli-core'
-import {type ClientConfig, createClient, type SanityDocument} from '@sanity/client'
-import {type ValidationContext, type ValidationMarker} from '@sanity/types'
+import {getStudioWorkspaces, getWorkspace} from '@sanity/cli-core'
+import {createClient, type SanityDocument} from '@sanity/client'
+import {type ValidationMarker} from '@sanity/types'
+import {createClientConcurrencyLimiter} from '@sanity/util/client'
+import {validateDocument} from '@sanity/validation'
 import {WorkerChannelReporter} from '@sanity/worker-channels'
 import pMap from 'p-map'
 
@@ -173,21 +175,16 @@ interface CheckReferenceExistenceOptions {
 
 async function checkReferenceExistence({
   dataset: datasetName,
-  documentIds,
+  documentIds: existingIds,
   projectId: projId,
   referencedIds: _referencedIds,
 }: CheckReferenceExistenceOptions) {
-  const existingIds = new Set(documentIds)
   const idsToCheck = [..._referencedIds]
     .filter((id) => !existingIds.has(id) && isValidId(id))
     .toSorted()
 
-  const batches: string[][] = []
   for (let i = 0; i < idsToCheck.length; i += REFERENCE_INTEGRITY_BATCH_SIZE) {
-    batches.push(idsToCheck.slice(i, i + REFERENCE_INTEGRITY_BATCH_SIZE))
-  }
-
-  for (const batch of batches) {
+    const batch = idsToCheck.slice(i, i + REFERENCE_INTEGRITY_BATCH_SIZE)
     const {omitted} = await checkDocumentAvailability({
       dataset: datasetName,
       documentIds: batch,
@@ -228,12 +225,6 @@ async function main() {
       referencedIds,
     })
 
-    const getClient = <TOptions extends Partial<ClientConfig>>(options: TOptions) =>
-      client.withConfig(options)
-
-    const getDocumentExists: ValidationContext['getDocumentExists'] = ({id}) =>
-      Promise.resolve(existingIds.has(id))
-
     const getLevel = (markers: ValidationMarker[]) => {
       let foundWarning = false
       for (const marker of markers) {
@@ -245,41 +236,25 @@ async function main() {
       return 'info'
     }
 
+    // Share the fetch limit across documents, including clients reconfigured by validators.
+    const validationClient = createClientConcurrencyLimiter(maxFetchConcurrency ?? 25)(client)
     let validatedCount = 0
 
     const validate = async (document: SanityDocument) => {
       let markers: ValidationMarker[]
 
       try {
-        const timeout = Symbol('timeout')
+        const result = await validateDocument({
+          client: validationClient,
+          document,
+          getDocumentExists: ({id}) => Promise.resolve(existingIds.has(id)),
+          maxCustomValidationConcurrency,
+          maxFetchConcurrency,
+          schema: workspace.schema,
+          signal: AbortSignal.timeout(DOCUMENT_VALIDATION_TIMEOUT),
+        })
 
-        const {validateDocument} = await resolveLocalPackage<typeof import('sanity')>(
-          'sanity',
-          workDir,
-        )
-
-        const result = await Promise.race([
-          validateDocument({
-            document,
-            environment: 'cli',
-            getClient,
-            getDocumentExists,
-            maxCustomValidationConcurrency,
-            maxFetchConcurrency,
-            workspace,
-          }),
-          new Promise<typeof timeout>((resolve) =>
-            setTimeout(() => resolve(timeout), DOCUMENT_VALIDATION_TIMEOUT),
-          ),
-        ])
-
-        if (result === timeout) {
-          throw new Error(
-            `Document '${document._id}' failed to validate within ${DOCUMENT_VALIDATION_TIMEOUT}ms.`,
-          )
-        }
-
-        markers = result
+        markers = result.markers
           // filter out unwanted levels
           .filter((marker) => {
             const markerValue = levelValues[marker.level]
@@ -287,6 +262,15 @@ async function main() {
               levelValues[level as keyof typeof levelValues] ?? levelValues.info
             return markerValue <= flagLevelValue
           })
+
+        if (!result.complete && !markers.some((marker) => marker.level === 'error')) {
+          markers.push({
+            level: 'error',
+            message:
+              'Document validation is incomplete. Check the schema and any reported validation errors, then rerun this command.',
+            path: [],
+          })
+        }
       } catch (err) {
         const errorMessage = err instanceof Error ? err.message : 'Unknown error'
 
