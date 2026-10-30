@@ -53,6 +53,12 @@ Code for sanity cli
 - [`sanity context issues resolve KNOWLEDGEBASEID ISSUEID`](#sanity-context-issues-resolve-knowledgebaseid-issueid)
 - [`sanity context jobs get KNOWLEDGEBASEID JOBID`](#sanity-context-jobs-get-knowledgebaseid-jobid)
 - [`sanity context list`](#sanity-context-list)
+- [`sanity context mcp create NAME`](#sanity-context-mcp-create-name)
+- [`sanity context mcp delete NAME`](#sanity-context-mcp-delete-name)
+- [`sanity context mcp get NAME`](#sanity-context-mcp-get-name)
+- [`sanity context mcp list`](#sanity-context-mcp-list)
+- [`sanity context mcp status NAME`](#sanity-context-mcp-status-name)
+- [`sanity context mcp update NAME`](#sanity-context-mcp-update-name)
 - [`sanity context query QUERY`](#sanity-context-query-query)
 - [`sanity context refresh KNOWLEDGEBASEID`](#sanity-context-refresh-knowledgebaseid)
 - [`sanity context update KNOWLEDGEBASEID`](#sanity-context-update-knowledgebaseid)
@@ -1418,8 +1424,7 @@ List issues found by knowledge base builds
 
 ```
 USAGE
-  $ sanity context issues list KNOWLEDGEBASEID [--json] [--kind
-    add_entry|conflict|gap|merge_entry|remove_entry|split_entry|update_required] [--scope <path>] [--severity
+  $ sanity context issues list KNOWLEDGEBASEID [--json] [--kind conflict|update_required] [--scope <path>] [--severity
     critical|suggestion] [--status open|accepted|rejected]
 
 ARGUMENTS
@@ -1427,7 +1432,7 @@ ARGUMENTS
 
 FLAGS
   --kind=<option>      Only list issues of this kind
-                       <options: add_entry|conflict|gap|merge_entry|remove_entry|split_entry|update_required>
+                       <options: conflict|update_required>
   --scope=<path>       Only list issues about this entry path or anything under it (`*` for knowledge-base-wide issues)
   --severity=<option>  Only list issues of this severity
                        <options: critical|suggestion>
@@ -1578,6 +1583,221 @@ EXAMPLES
   Output knowledge bases as JSON
 
     $ sanity context list --organization org-abc123 --json
+```
+
+## `sanity context mcp create NAME`
+
+Create a Context MCP endpoint that serves knowledge bases and a dataset to agents
+
+```
+USAGE
+  $ sanity context mcp create NAME [--organization <id>] [-p <id> -d <name>] [--groq-filter <value> ] [--instructions
+    <value>] [--knowledge-base <id>...] [--perspective published|drafts|raw ] [--semantic-search ] [--title <value>]
+    [--workspace <value> ]
+
+ARGUMENTS
+  NAME  Permanent MCP endpoint name used in its URL, made of lowercase letters, digits and hyphens
+
+FLAGS
+  -d, --dataset=<name>          Dataset the endpoint serves
+      --groq-filter=<value>     GROQ filter that limits which dataset documents the endpoint serves
+      --instructions=<value>    Instructions the endpoint serves to connecting agents
+      --knowledge-base=<id>...  Knowledge base the endpoint serves; repeat the flag to serve several
+      --perspective=<option>    Perspective agents query the dataset with
+                                <options: published|drafts|raw>
+      --[no-]semantic-search    Let agents use semantic search on the dataset (--no-semantic-search to turn it off)
+      --title=<value>           MCP endpoint title
+      --workspace=<value>       Studio workspace whose schema agents use, instead of the first workspace
+
+OVERRIDE FLAGS
+  -p, --project=<id>       Project the dataset belongs to (overrides CLI configuration)
+      --organization=<id>  Organization to create the MCP endpoint in (overrides CLI configuration)
+
+DESCRIPTION
+  Create a Context MCP endpoint that serves knowledge bases and a dataset to agents
+
+EXAMPLES
+  Create an MCP endpoint that serves two knowledge bases
+
+    $ sanity context mcp create support --title "Support" --knowledge-base kb-abc123 --knowledge-base kb-def456
+
+  Create an MCP endpoint that serves the products in a dataset
+
+    $ sanity context mcp create catalog --title "Catalog" --project abc123 --dataset production --perspective drafts \
+      --groq-filter '_type in ["product"]'
+```
+
+## `sanity context mcp delete NAME`
+
+Delete a Context MCP endpoint, which disconnects any agents using it
+
+```
+USAGE
+  $ sanity context mcp delete NAME [--organization <id>] [-y]
+
+ARGUMENTS
+  NAME  MCP endpoint name, as in its URL
+
+FLAGS
+  -y, --yes  Skip confirmation prompt (unattended mode)
+
+OVERRIDE FLAGS
+  --organization=<id>  Organization the MCP endpoint belongs to (overrides CLI configuration)
+
+DESCRIPTION
+  Delete a Context MCP endpoint, which disconnects any agents using it
+
+EXAMPLES
+  Delete an MCP endpoint after confirmation
+
+    $ sanity context mcp delete support
+
+  Delete an MCP endpoint without confirmation prompt
+
+    $ sanity context mcp delete support --yes
+```
+
+## `sanity context mcp get NAME`
+
+Get details of a Context MCP endpoint, including its URL
+
+```
+USAGE
+  $ sanity context mcp get NAME [--json] [--organization <id>]
+
+ARGUMENTS
+  NAME  MCP endpoint name, as in its URL
+
+GLOBAL FLAGS
+  --json  Format output as json.
+
+OVERRIDE FLAGS
+  --organization=<id>  Organization the MCP endpoint belongs to (overrides CLI configuration)
+
+DESCRIPTION
+  Get details of a Context MCP endpoint, including its URL
+
+EXAMPLES
+  Get details of the "support" MCP endpoint
+
+    $ sanity context mcp get support
+
+  Output an MCP endpoint in a specific organization as JSON
+
+    $ sanity context mcp get support --organization org-abc123 --json
+```
+
+## `sanity context mcp list`
+
+List Context MCP endpoints in an organization
+
+```
+USAGE
+  $ sanity context mcp list [--json] [--organization <id>]
+
+GLOBAL FLAGS
+  --json  Format output as json.
+
+OVERRIDE FLAGS
+  --organization=<id>  Organization to list MCP endpoints for (overrides CLI configuration)
+
+DESCRIPTION
+  List Context MCP endpoints in an organization
+
+EXAMPLES
+  List MCP endpoints, selecting the organization interactively
+
+    $ sanity context mcp list
+
+  Output the MCP endpoints of a specific organization as JSON
+
+    $ sanity context mcp list --organization org-abc123 --json
+```
+
+## `sanity context mcp status NAME`
+
+Check whether an agent connecting with your credentials can use a Context MCP endpoint
+
+```
+USAGE
+  $ sanity context mcp status NAME [--json] [--organization <id>]
+
+ARGUMENTS
+  NAME  MCP endpoint name, as in its URL
+
+GLOBAL FLAGS
+  --json  Format output as json.
+
+OVERRIDE FLAGS
+  --organization=<id>  Organization the MCP endpoint belongs to (overrides CLI configuration)
+
+DESCRIPTION
+  Check whether an agent connecting with your credentials can use a Context MCP endpoint
+
+EXAMPLES
+  Check the "support" MCP endpoint
+
+    $ sanity context mcp status support
+```
+
+## `sanity context mcp update NAME`
+
+Update a Context MCP endpoint
+
+```
+USAGE
+  $ sanity context mcp update NAME [--organization <id>] [--add-knowledge-base <id>...] [-p <id> -d <name>]
+    [--groq-filter <value>] [--instructions <value>] [--no-dataset | ] [--perspective published|drafts|raw]
+    [--remove-knowledge-base <id>...] [--semantic-search] [--title <value>] [--workspace <value>]
+
+ARGUMENTS
+  NAME  MCP endpoint name, as in its URL
+
+FLAGS
+  -d, --dataset=<name>                 Dataset the endpoint serves, replacing its current dataset
+      --add-knowledge-base=<id>...     Knowledge base to add to the endpoint; repeat the flag to add several
+      --groq-filter=<value>            GROQ filter that limits which dataset documents the endpoint serves ("" removes
+                                       it)
+      --instructions=<value>           Instructions the endpoint serves to connecting agents ("" removes them)
+      --no-dataset                     Stop serving the dataset, which also removes the GROQ filter
+      --perspective=<option>           Perspective agents query the dataset with
+                                       <options: published|drafts|raw>
+      --remove-knowledge-base=<id>...  Knowledge base to remove from the endpoint; repeat the flag to remove several
+      --[no-]semantic-search           Let agents use semantic search on the dataset (--no-semantic-search to turn it
+                                       off)
+      --title=<value>                  New MCP endpoint title
+      --workspace=<value>              Studio workspace whose schema agents use ("" goes back to the first workspace)
+
+OVERRIDE FLAGS
+  -p, --project=<id>       Project the dataset belongs to (overrides CLI configuration)
+      --organization=<id>  Organization the MCP endpoint belongs to (overrides CLI configuration)
+
+DESCRIPTION
+  Update a Context MCP endpoint
+
+  Only the settings you pass change. Dataset settings (--workspace, --perspective, --semantic-search) apply to the
+  endpoint's dataset and start from the defaults when --dataset switches to another dataset.
+
+EXAMPLES
+  Rename an MCP endpoint
+
+    $ sanity context mcp update support --title "Customer support"
+
+  Serve a different knowledge base
+
+    $ sanity context mcp update support --add-knowledge-base kb-def456 --remove-knowledge-base kb-abc123
+
+  Switch to another dataset and query its drafts
+
+    $ sanity context mcp update catalog --project abc123 --dataset staging --perspective drafts
+
+  Stop serving the dataset
+
+    $ sanity context mcp update support --no-dataset
+
+  Remove the instructions
+
+    $ sanity context mcp update support --instructions ""
 ```
 
 ## `sanity context query QUERY`
