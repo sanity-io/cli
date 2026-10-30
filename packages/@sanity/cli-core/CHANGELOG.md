@@ -1,5 +1,15 @@
 # Changelog
 
+## 3.14.1
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-core-v3.14.0...cli-core-v3.14.1)
+
+_2026-10-30_
+
+### Bug Fixes
+
+- **cli-core:** support package resolution with yarn pnp ([#2083](https://github.com/sanity-io/cli/pull/2083)) ([315b70e](https://github.com/sanity-io/cli/commit/315b70ee9fe5ef8bfe47cbdef091734c931b3c40))
+
 ## 3.14.0
 
 [Compare changes](https://github.com/sanity-io/cli/compare/cli-core-v3.13.0...cli-core-v3.14.0)
