@@ -85,16 +85,20 @@ export function sanityBuildEntries(options: {
       // For auto-updating studios/apps the import map combines the vendor
       // chunks emitted by this very build (hashed filenames, resolved from the
       // bundle) with the module-CDN imports for auto-updated packages.
+      const vendorImports = autoUpdates
+        ? createVendorImportMapFromBundle(
+            bundle,
+            autoUpdates.vendor.specifiersByChunkName,
+            basePath,
+          )
+        : {}
+      const pinned = autoUpdates?.pinned
       const importMap = autoUpdates
         ? {
-            imports: {
-              ...createVendorImportMapFromBundle(
-                bundle,
-                autoUpdates.vendor.specifiersByChunkName,
-                basePath,
-              ),
-              ...autoUpdates.imports,
-            },
+            imports: {...vendorImports, ...autoUpdates.imports},
+            ...(pinned && {
+              pinned: {cssUrls: pinned.cssUrls, imports: {...vendorImports, ...pinned.imports}},
+            }),
           }
         : undefined
 

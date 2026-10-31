@@ -65,6 +65,31 @@ describe('addTimestampedImportMapScriptToHtml', () => {
     )
   })
 
+  test('bakes the pinned map into the __imports JSON and keeps the timestamped injector', () => {
+    const pinned = {
+      cssUrls: ['https://modules.sanity-cdn.com/modules/v1/sanity/3.2.0/bare/index.css'],
+      imports: {sanity: 'https://modules.sanity-cdn.com/modules/v1/sanity/3.2.0/bare/index.mjs'},
+    }
+    const cssUrls = [
+      'https://sanity-cdn.com/v1/modules/sanity/default/%5E3.2.0/t1234567890/index.css',
+    ]
+
+    addTimestampedImportMapScriptToHtml(baseHtml, {...importMap, pinned}, cssUrls)
+
+    expect(mockInsert).toHaveBeenCalledWith(
+      'beforeend',
+      `<script type="application/json" id="__imports">${JSON.stringify({
+        ...importMap,
+        css: cssUrls,
+        pinned: {css: pinned.cssUrls, imports: pinned.imports},
+      })}</script>`,
+    )
+    expect(mockInsert).toHaveBeenCalledWith(
+      'beforeend',
+      expect.stringContaining('const { imports = {}, css = [], pinned, ...rest }'),
+    )
+  })
+
   test('handles html string with no <html> wrapper', () => {
     // Make first call to querySelector return falsy, triggering lack-of-html-el conditional
     mockQuerySelector.mockReturnValueOnce(null as unknown as typeof fakeDom)
