@@ -4,6 +4,7 @@ import {
   checkRequiredDependencies,
   checkStudioDependencyVersions,
   compareDependencyVersions,
+  getUnavailableVersionsWarning,
 } from '@sanity/cli-build/_internal/build'
 import {exitCodes, getLocalPackageVersion, isInteractive} from '@sanity/cli-core'
 import {confirm, logSymbols, spinner} from '@sanity/cli-core/ux'
@@ -69,6 +70,10 @@ export async function startStudioDevServer(
       result = await compareDependencyVersions(sanityDependencies, workDir, {appId})
     } catch (err) {
       output.warn(`Failed to compare local versions against auto-updating versions: ${err}`)
+    }
+
+    if (result?.unavailable?.length) {
+      output.warn(getUnavailableVersionsWarning(result.unavailable))
     }
 
     if (result?.unresolvedPrerelease.length) {
