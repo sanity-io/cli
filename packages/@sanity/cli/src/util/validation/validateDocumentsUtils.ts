@@ -7,17 +7,6 @@ export const REFERENCE_INTEGRITY_BATCH_SIZE = 100
 
 export const levelValues = {error: 0, info: 2, warning: 1} as const
 
-export function documentExists(
-  id: string,
-  documentId: string,
-  existingIds: ReadonlyMap<string, boolean>,
-): boolean {
-  const release = documentId.match(/^versions\.([^.]+)\./)?.[1]
-  // A release's unpublish marker overrides the published document's existence.
-  const versionExists = release ? existingIds.get(`versions.${release}.${id}`) : undefined
-  return versionExists ?? existingIds.get(id) ?? false
-}
-
 export const getReferenceIds = (value: unknown) => {
   const ids = new Set<string>()
 
