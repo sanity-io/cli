@@ -9,7 +9,7 @@ import {getStudioWorkspaces, getWorkspace} from '@sanity/cli-core'
 import {createClient, type SanityDocument} from '@sanity/client'
 import {type ValidationMarker} from '@sanity/types'
 import {createClientConcurrencyLimiter} from '@sanity/util/client'
-import {validateDocument} from '@sanity/validation'
+import {validateDocument, withReleaseReferences} from '@sanity/validation'
 import {WorkerChannelReporter} from '@sanity/worker-channels'
 import pMap from 'p-map'
 
@@ -22,7 +22,6 @@ import {
 import {extractDocumentsFromNdjsonOrTarball} from '../../util/extractDocumentsFromNdjsonOrTarball.js'
 import {
   DOCUMENT_VALIDATION_TIMEOUT,
-  documentExists,
   getReferenceIds,
   isValidId,
   levelValues,
@@ -248,8 +247,11 @@ async function main() {
         const result = await validateDocument({
           client: validationClient,
           document,
-          getDocumentExists: ({id}) =>
-            Promise.resolve(documentExists(id, document._id, existingIds)),
+          getDocumentExists: withReleaseReferences({
+            documentId: document._id,
+            getDocumentExists: ({id}) => Promise.resolve(existingIds.has(id)),
+            isUnpublished: ({id}) => Promise.resolve(existingIds.get(id) === false),
+          }),
           maxCustomValidationConcurrency,
           maxFetchConcurrency,
           schema: workspace.schema,
