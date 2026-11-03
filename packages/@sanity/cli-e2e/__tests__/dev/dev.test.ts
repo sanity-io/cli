@@ -22,7 +22,12 @@ describe('sanity dev', {timeout: 120_000}, () => {
     async ({fixture, kind, port, rootMarker}) => {
       const cwd = await testFixture(fixture)
       const session = await runCli({
-        args: ['dev', '--port', String(port)],
+        // Serve the locally installed studio/app, not the auto-update CDN runtime.
+        // The fixture resolves Sanity packages at install time, so right after a
+        // release it sits ahead of the version the CDN serves; auto-updates then
+        // raises an interactive "upgrade local versions?" prompt that blocks the
+        // dev server from ever starting (and this test never answers it).
+        args: ['dev', '--port', String(port), '--no-auto-updates'],
         cwd,
         interactive: true,
       })
