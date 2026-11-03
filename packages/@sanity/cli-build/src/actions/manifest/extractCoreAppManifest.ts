@@ -54,6 +54,10 @@ async function lazySanitizeIcon(): Promise<typeof sanitizeIconFn> {
  * @internal
  */
 export async function readIconFromPath(workDir: string, iconPath: string): Promise<string> {
+  if (!/\.svg$/i.test(iconPath)) {
+    throw new Error(`Icon path "${iconPath}" must point to an .svg file.`)
+  }
+
   const resolvedPath = resolve(workDir, iconPath)
   const pathRelativeToWorkDir = relative(workDir, resolvedPath)
   if (pathRelativeToWorkDir.startsWith('..')) {
