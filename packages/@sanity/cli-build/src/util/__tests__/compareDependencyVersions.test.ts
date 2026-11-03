@@ -1,7 +1,10 @@
 import {mockRequest} from '@sanity/cli-test/mocks/cli-core/request'
 import {beforeEach, describe, expect, it, vi} from 'vitest'
 
-import {compareDependencyVersions} from '../compareDependencyVersions.js'
+import {
+  compareDependencyVersions,
+  getUnavailableVersionsWarning,
+} from '../compareDependencyVersions.js'
 
 const mockReadPackageJson = vi.hoisted(() => vi.fn())
 const mockGetLocalPackageVersion = vi.hoisted(() => vi.fn())
@@ -662,6 +665,32 @@ describe('compareDependencyVersions', () => {
         {pkg: 'sanity', version: '5.11.1-alpha.14'},
         {pkg: '@sanity/vision', version: '5.11.1-beta.1'},
       ])
+    })
+  })
+
+  describe('getUnavailableVersionsWarning', () => {
+    it('should format a single reason shared by multiple packages', () => {
+      const warning = getUnavailableVersionsWarning([
+        {pkg: 'sanity', reason: 'HTTP 503 Service Unavailable'},
+        {pkg: '@sanity/vision', reason: 'HTTP 503 Service Unavailable'},
+      ])
+
+      expect(warning).toBe(
+        'Could not check the runtime version of sanity, @sanity/vision: ' +
+          'the Sanity module CDN request failed (HTTP 503 Service Unavailable). Continuing without the check.',
+      )
+    })
+
+    it('should join distinct reasons with a semicolon', () => {
+      const warning = getUnavailableVersionsWarning([
+        {pkg: 'sanity', reason: 'socket hang up'},
+        {pkg: '@sanity/vision', reason: 'HTTP 502 Bad Gateway'},
+      ])
+
+      expect(warning).toBe(
+        'Could not check the runtime version of sanity, @sanity/vision: ' +
+          'the Sanity module CDN request failed (socket hang up; HTTP 502 Bad Gateway). Continuing without the check.',
+      )
     })
   })
 })

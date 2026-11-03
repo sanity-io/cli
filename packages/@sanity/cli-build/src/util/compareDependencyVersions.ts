@@ -112,9 +112,11 @@ export async function compareDependencyVersions(
  * @internal
  */
 export function getUnavailableVersionsWarning(unavailable: UnavailableDependencyVersion[]): string {
+  const packageNames = unavailable.map((entry) => entry.pkg).join(', ')
+  const reasons = [...new Set(unavailable.map((entry) => entry.reason))].join('; ')
   return (
-    `Could not check the runtime version of ${unavailable.map((entry) => entry.pkg).join(', ')}: ` +
-    `the Sanity module CDN did not respond. Continuing without the check.`
+    `Could not check the runtime version of ${packageNames}: ` +
+    `the Sanity module CDN request failed (${reasons}). Continuing without the check.`
   )
 }
 
