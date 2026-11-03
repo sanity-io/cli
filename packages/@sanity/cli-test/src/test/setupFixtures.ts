@@ -150,7 +150,9 @@ export async function setup(_: TestProject, options: SetupTestFixturesOptions = 
         // A fixture-local workspace both isolates the install and applies the repository's policy.
         await writeFile(
           join(toPath, 'pnpm-workspace.yaml'),
-          "allowBuilds:\n  '@swc/core': true\n  esbuild: true\n  node-pty: true\n  sharp: false\n  unrs-resolver: false\n",
+          "allowBuilds:\n  '@swc/core': true\n  esbuild: true\n  node-pty: true\n  sharp: false\n  unrs-resolver: false\n" +
+            // @pierre/diffs@1.6.3 ships unresolvable `workspace:`/`catalog:` deps; drop once @sanity/vision pins it.
+            "overrides:\n  '@pierre/diffs@1.6.3': 1.6.2\n",
         )
       }
 
