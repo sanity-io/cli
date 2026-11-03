@@ -500,6 +500,9 @@ describe('#buildStudio', () => {
     expect(output.warn).toHaveBeenCalledWith(
       expect.stringContaining('Could not check the runtime version of sanity, @sanity/vision'),
     )
+    expect(output.warn).toHaveBeenCalledWith(
+      expect.stringContaining('HTTP 503 Service Unavailable'),
+    )
     expect(onBuildStart).toHaveBeenCalledWith({message: 'Build Sanity Studio'})
   })
 
