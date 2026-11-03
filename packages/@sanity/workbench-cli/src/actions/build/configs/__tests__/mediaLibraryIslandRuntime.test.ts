@@ -1,3 +1,4 @@
+import {execFileSync} from 'node:child_process'
 import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
@@ -65,7 +66,22 @@ describe('hasMediaLibraryIslandRuntime', () => {
     const appRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'island-runtime-probe-'))
     createdDirs.push(appRoot)
     fs.writeFileSync(path.join(appRoot, 'package.json'), JSON.stringify({name: 'app'}))
-    expect(hasMediaLibraryIslandRuntime(appRoot)).toBe(false)
+    // pnpm adds the workspace's packages to NODE_PATH. Probe in a fresh process so
+    // its Sanity install cannot satisfy this deliberately missing dependency.
+    const result = execFileSync(
+      process.execPath,
+      [
+        '--experimental-strip-types',
+        '--input-type=module',
+        '--eval',
+        `const {hasMediaLibraryIslandRuntime} = await import(process.argv[1])
+         process.stdout.write(JSON.stringify(hasMediaLibraryIslandRuntime(process.argv[2])))`,
+        new URL('../mediaLibraryIslandRuntime.ts', import.meta.url).href,
+        appRoot,
+      ],
+      {encoding: 'utf8', env: {...process.env, NODE_PATH: ''}},
+    )
+    expect(JSON.parse(result)).toBe(false)
   })
 
   test('module id matches what the generated expose imports', () => {

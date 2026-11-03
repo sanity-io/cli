@@ -25,13 +25,13 @@ catalog:
   groq-js: ^2.0.0
 
   # Sanity
-  sanity: ^6.17.0
-  '@sanity/vision': ^6.17.0
-  '@sanity/types': ^6.17.0
-  '@sanity/schema': ^6.17.0
-  '@sanity/util': ^6.21.0
-  '@sanity/validation': ^6.21.0
-  '@sanity/client': ^8.13.0
+  sanity: ^6.22.0
+  '@sanity/vision': ^6.22.0
+  '@sanity/types': ^6.22.0
+  '@sanity/schema': ^6.22.0
+  '@sanity/util': ^6.22.0
+  '@sanity/validation': ^6.22.0
+  '@sanity/client': ^8.14.1
   '@sanity/codegen': ^8.2.0
   '@sanity/sdk': ^3.8.0
   '@sanity/telemetry': ^1.1.0
