@@ -248,7 +248,7 @@ async function main() {
           client: validationClient,
           document,
           getDocumentExists: withReleaseReferences({
-            documentId: document._id,
+            document,
             getDocumentExists: ({id}) => Promise.resolve(existingIds.has(id)),
             isUnpublished: ({id}) => Promise.resolve(existingIds.get(id) === false),
           }),
