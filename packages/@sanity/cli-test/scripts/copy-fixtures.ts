@@ -7,9 +7,9 @@
 import {cp, mkdir, readFile, writeFile} from 'node:fs/promises'
 import {dirname, join, resolve} from 'node:path'
 
-import {parse as parseYaml} from 'yaml'
+import {parse as parseYaml, stringify as stringifyYaml} from 'yaml'
 
-import {DEFAULT_FIXTURES} from '../src/index.js'
+import {DEFAULT_FIXTURES, FIXTURE_WORKSPACE_FILE} from '../src/index.js'
 
 const packageRoot = dirname(import.meta.dirname)
 // Go up 3 levels to get to the repo root (packages/@sanity/cli-test -> packages/@sanity -> packages -> root)
@@ -40,6 +40,36 @@ async function parseCatalog(yamlPath: string) {
   }
 
   return catalog
+}
+
+/**
+ * Builds the `pnpm-workspace.yaml` that fixture setup writes into each fixture.
+ *
+ * A fixture install runs in its own workspace, so it picks up none of the repository's
+ * install policy by default. That includes `minimumReleaseAge`, pnpm's quarantine on
+ * freshly-published versions — without it, a dependency published minutes ago can enter
+ * every fixture tree at once, and a broken release (unresolvable `workspace:`/`catalog:`
+ * specs, say) takes the whole suite down. Carrying the repository's own settings over
+ * keeps the quarantine, while `minimumReleaseAgeExclude` still lets the Sanity packages
+ * under test resolve the moment they are published.
+ *
+ * @param yamlPath - Path to the repository's pnpm-workspace.yaml
+ * @returns Serialized workspace config for fixtures
+ */
+async function buildFixtureWorkspace(yamlPath: string) {
+  const workspace = parseYaml(await readFile(yamlPath, 'utf8'))
+
+  for (const key of ['allowBuilds', 'minimumReleaseAge', 'minimumReleaseAgeExclude'] as const) {
+    if (!(key in workspace)) {
+      throw new Error(`Could not find '${key}' in ${yamlPath}`)
+    }
+  }
+
+  return stringifyYaml({
+    allowBuilds: workspace.allowBuilds,
+    minimumReleaseAge: workspace.minimumReleaseAge,
+    minimumReleaseAgeExclude: workspace.minimumReleaseAgeExclude,
+  })
 }
 
 /**
@@ -75,9 +105,16 @@ async function copyFixtures() {
   console.log('Copying fixtures to cli-test package...')
 
   // Load catalog once at the start
-  const catalog = await parseCatalog(join(repoRoot, 'pnpm-workspace.yaml'))
+  const workspacePath = join(repoRoot, 'pnpm-workspace.yaml')
+  const catalog = await parseCatalog(workspacePath)
 
   await mkdir(targetFixturesDir, {recursive: true})
+
+  await writeFile(
+    join(targetFixturesDir, FIXTURE_WORKSPACE_FILE),
+    await buildFixtureWorkspace(workspacePath),
+    'utf8',
+  )
 
   for (const [fixture, options] of Object.entries(DEFAULT_FIXTURES)) {
     const sourceDir = join(sourceFixturesDir, fixture)
