@@ -157,11 +157,12 @@ Code for sanity cli
 - [`sanity versions`](#sanity-versions)
 - [`sanity whoami`](#sanity-whoami)
 - [`sanity workflows abort INSTANCEID`](#sanity-workflows-abort-instanceid)
-- [`sanity workflows blueprint generate`](#sanity-workflows-blueprint-generate)
-- [`sanity workflows definition delete NAME`](#sanity-workflows-definition-delete-name)
-- [`sanity workflows definition diff NAME`](#sanity-workflows-definition-diff-name)
-- [`sanity workflows definition list`](#sanity-workflows-definition-list)
-- [`sanity workflows definition show NAME`](#sanity-workflows-definition-show-name)
+- [`sanity workflows blueprints generate`](#sanity-workflows-blueprints-generate)
+- [`sanity workflows definitions delete NAME`](#sanity-workflows-definitions-delete-name)
+- [`sanity workflows definitions diff NAME`](#sanity-workflows-definitions-diff-name)
+- [`sanity workflows definitions list`](#sanity-workflows-definitions-list)
+- [`sanity workflows definitions show NAME`](#sanity-workflows-definitions-show-name)
+- [`sanity workflows definitions validate FILE`](#sanity-workflows-definitions-validate-file)
 - [`sanity workflows deploy`](#sanity-workflows-deploy)
 - [`sanity workflows diagnose INSTANCEID`](#sanity-workflows-diagnose-instanceid)
 - [`sanity workflows fire-action INSTANCEID`](#sanity-workflows-fire-action-instanceid)
@@ -445,8 +446,8 @@ EXAMPLES
 USAGE
   $ sanity blueprints add TYPE [--json] [--example <value> | -n <value> | --fn-type
     document-publish|document-create|document-delete|document-update|media-library-asset-create|media-library-asset-dele
-    te|media-library-asset-update|pub-sub|scheduled-function|sync-tag-invalidate... | --language ts|js | --javascript |
-    --fn-helpers | --fn-installer skip|npm|pnpm|yarn] [-i | ]
+    te|media-library-asset-update|pub-sub|scheduled-function|sync-tag-invalidate|durable-function... | --language ts|js
+    | --javascript | --fn-helpers | --fn-installer skip|npm|pnpm|yarn] [-i | ]
 
 ARGUMENTS
   TYPE  (function) Type of resource to add (only "function" is supported)
@@ -463,7 +464,7 @@ FLAGS
                                events by specifying this flag multiple times
                                <options: document-publish|document-create|document-delete|document-update|media-library-
                                asset-create|media-library-asset-delete|media-library-asset-update|pub-sub|scheduled-func
-                               tion|sync-tag-invalidate>
+                               tion|sync-tag-invalidate|durable-function>
       --javascript             Use JavaScript instead of TypeScript
       --json                   Format output as json
       --language=<option>      [default: ts] Language of the new function
@@ -3009,8 +3010,8 @@ Add a Function to your Blueprint
 USAGE
   $ sanity functions add [--json] [--example <value> | -n <value> | --type
     document-publish|document-create|document-delete|document-update|media-library-asset-create|media-library-asset-dele
-    te|media-library-asset-update|pub-sub|scheduled-function|sync-tag-invalidate... | --language ts|js | --javascript |
-    --helpers | --installer skip|npm|pnpm|yarn | -i]
+    te|media-library-asset-update|pub-sub|scheduled-function|sync-tag-invalidate|durable-function... | --language ts|js
+    | --javascript | --helpers | --installer skip|npm|pnpm|yarn | -i]
 
 FLAGS
   -i, --install             Shortcut for --installer npm
@@ -3027,7 +3028,7 @@ FLAGS
                             by specifying this flag multiple times
                             <options: document-publish|document-create|document-delete|document-update|media-library-ass
                             et-create|media-library-asset-delete|media-library-asset-update|pub-sub|scheduled-function|s
-                            ync-tag-invalidate>
+                            ync-tag-invalidate|durable-function>
 
 DESCRIPTION
   Add a Function to your Blueprint
@@ -5014,17 +5015,20 @@ Abort an in-flight workflow instance — a hard stop: pending effects are cancel
 
 ```
 USAGE
-  $ sanity workflows abort INSTANCEID [--deployment <value> | --tag <value>] [--reason <value>]
+  $ sanity workflows abort INSTANCEID [--path <file|dir>] [--deployment <value> | --partition <value>] [--reason
+    <value>]
 
 ARGUMENTS
   INSTANCEID  Workflow instance id.
 
 FLAGS
-  --deployment=<value>  Deployment name — narrow the instance search to the resource that deployment targets; the tag
+  --deployment=<value>  Deployment name — narrow the instance search to the resource that deployment targets; the
                         partition still comes from the loaded instance.
+  --partition=<value>   Workflow environment partition (e.g. prod, test) — narrows which resources are searched for the
+                        instance; the instance's stored partition is what the command uses.
+  --path=<file|dir>     Path to a sanity.workflow file, or a directory to search from upward through its parents.
+                        Defaults to the current directory.
   --reason=<value>      Reason for aborting (recorded in history).
-  --tag=<value>         Workflow environment tag (e.g. prod, test) — an optional query filter that also narrows which
-                        resources are searched; omit to span them all.
 
 DESCRIPTION
   Abort an in-flight workflow instance — a hard stop: pending effects are cancelled, stage guards removed, and the
@@ -5036,17 +5040,19 @@ EXAMPLES
   $ sanity workflows abort wf-instance.abc123 --reason 'superseded by relaunch'
 ```
 
-## `sanity workflows blueprint generate`
+## `sanity workflows blueprints generate`
 
 Experimental: generate the Sanity Blueprints runtime the definitions require, next to sanity.workflow.ts. Writes the workflow resources, one function per derived need, the effect-handler registry, and a handler stub per declared effect. Covers every deployment in the config, because the emitted resources module declares them all. These flags and this output may change before the Blueprints backend accepts the sanity.workflow resource.
 
 ```
 USAGE
-  $ sanity workflows blueprint generate [--check]
+  $ sanity workflows blueprints generate [--path <file|dir>] [--check]
 
 FLAGS
-  --check  Experimental: verify the tree on disk still matches the definitions; write nothing and exit non-zero on any
-           difference. The CI drift gate.
+  --check            Experimental: verify the tree on disk still matches the definitions; write nothing and exit
+                     non-zero on any difference. The CI drift gate.
+  --path=<file|dir>  Path to a sanity.workflow file, or a directory to search from upward through its parents. Defaults
+                     to the current directory.
 
 DESCRIPTION
   Experimental: generate the Sanity Blueprints runtime the definitions require, next to sanity.workflow.ts. Writes the
@@ -5055,19 +5061,19 @@ DESCRIPTION
   this output may change before the Blueprints backend accepts the sanity.workflow resource.
 
 EXAMPLES
-  $ sanity workflows blueprint generate
+  $ sanity workflows blueprints generate
 
-  $ sanity workflows blueprint generate --check
+  $ sanity workflows blueprints generate --check
 ```
 
-## `sanity workflows definition delete NAME`
+## `sanity workflows definitions delete NAME`
 
 Delete a deployed workflow definition (every version, or one via --version). Refuses while non-terminal instances exist unless --cascade aborts them first — instances are aborted in place, never deleted.
 
 ```
 USAGE
-  $ sanity workflows definition delete NAME [--deployment <value> | --tag <value>] [--version <value>] [--cascade] [--reason
-    <value>]
+  $ sanity workflows definitions delete NAME [--path <file|dir>] [--deployment <value> | --partition <value>] [--version <value>]
+    [--cascade] [--reason <value>]
 
 ARGUMENTS
   NAME  Workflow definition name.
@@ -5075,9 +5081,11 @@ ARGUMENTS
 FLAGS
   --cascade             Abort every non-terminal instance pinned to the targeted versions, then delete.
   --deployment=<value>  Deployment name — the unique identity of one deployment in the config.
+  --partition=<value>   Workflow environment partition (e.g. prod, test) — selects the deployment to act on while the
+                        partition names exactly one; pass --deployment when it spans several.
+  --path=<file|dir>     Path to a sanity.workflow file, or a directory to search from upward through its parents.
+                        Defaults to the current directory.
   --reason=<value>      Free-text reason — recorded on each cascade-abort history entry.
-  --tag=<value>         Workflow environment tag (e.g. prod, test) — selects the deployment to act on while the tag
-                        names exactly one; pass --deployment when it spans several.
   --version=<value>     Delete only this deployed version (default: every version).
 
 DESCRIPTION
@@ -5085,97 +5093,148 @@ DESCRIPTION
   exist unless --cascade aborts them first — instances are aborted in place, never deleted.
 
 EXAMPLES
-  $ sanity workflows definition delete my-workflow
+  $ sanity workflows definitions delete my-workflow
 
-  $ sanity workflows definition delete my-workflow --version 2
+  $ sanity workflows definitions delete my-workflow --version 2
 
-  $ sanity workflows definition delete my-workflow --cascade --reason 'workflow retired'
+  $ sanity workflows definitions delete my-workflow --cascade --reason 'workflow retired'
 ```
 
-## `sanity workflows definition diff NAME`
+## `sanity workflows definitions diff NAME`
 
 Diff an in-code definition against the deployed version (latest by default).
 
 ```
 USAGE
-  $ sanity workflows definition diff NAME [--deployment <value> | --tag <value>] [--version <value>]
+  $ sanity workflows definitions diff NAME [--path <file|dir>] [--deployment <value> | --partition <value>] [--version
+  <value>]
 
 ARGUMENTS
   NAME  Workflow definition name.
 
 FLAGS
   --deployment=<value>  Deployment name — the unique identity of one deployment in the config.
-  --tag=<value>         Workflow environment tag (e.g. prod, test) — selects the deployment to act on while the tag
-                        names exactly one; pass --deployment when it spans several.
+  --partition=<value>   Workflow environment partition (e.g. prod, test) — selects the deployment to act on while the
+                        partition names exactly one; pass --deployment when it spans several.
+  --path=<file|dir>     Path to a sanity.workflow file, or a directory to search from upward through its parents.
+                        Defaults to the current directory.
   --version=<value>     Deployed version to diff against (default: latest).
 
 DESCRIPTION
   Diff an in-code definition against the deployed version (latest by default).
 
 EXAMPLES
-  $ sanity workflows definition diff productLaunch
+  $ sanity workflows definitions diff productLaunch
 
-  $ sanity workflows definition diff productLaunch --version 2
+  $ sanity workflows definitions diff productLaunch --version 2
 ```
 
-## `sanity workflows definition list`
+## `sanity workflows definitions list`
 
 List deployed workflow definitions.
 
 ```
 USAGE
-  $ sanity workflows definition list [--tag <value>] [--limit <value>] [--name <value>] [--json]
+  $ sanity workflows definitions list [--media-library-id <id> | [-p <id> -d <name>] |  | --path <file|dir> | [--deployment
+    <value> | --partition <value>]] [--limit <value>] [--name <value>] [--json]
 
 FLAGS
-  --json           Emit structured JSON instead of rendered output.
-  --limit=<value>  [default: 100] The maximum number of definitions to return.
-  --name=<value>   Filter to a single workflow definition name (e.g. product-launch).
-  --tag=<value>    Workflow environment tag (e.g. prod, test) — an optional query filter that also narrows which
-                   resources are searched; omit to span them all.
+  --deployment=<value>  Deployment name — read only the resource and partition that deployment targets.
+  --json                Emit structured JSON instead of rendered output.
+  --limit=<value>       [default: 100] The maximum number of definitions to return.
+  --name=<value>        Filter to a single workflow definition name (e.g. product-launch).
+  --partition=<value>   Workflow environment partition (e.g. prod, test) — an optional query filter that also narrows
+                        which resources are searched; omit to span them all.
+  --path=<file|dir>     Path to a sanity.workflow file, or a directory to search from upward through its parents.
+                        Defaults to the current directory.
+
+OVERRIDE FLAGS
+  -d, --dataset=<name>         Dataset to read (overrides sanity.workflow.ts)
+  -p, --project-id=<id>        Project ID of the dataset to read (overrides sanity.workflow.ts)
+      --media-library-id=<id>  Media library to read (overrides sanity.workflow.ts)
 
 DESCRIPTION
   List deployed workflow definitions.
 
 EXAMPLES
-  $ sanity workflows definition list
+  $ sanity workflows definitions list
 
-  $ sanity workflows definition list --tag prod
+  $ sanity workflows definitions list --partition prod
 
-  $ sanity workflows definition list --json
+  $ sanity workflows definitions list --json
 ```
 
-## `sanity workflows definition show NAME`
+## `sanity workflows definitions show NAME`
 
 Show a deployed workflow definition.
 
 ```
 USAGE
-  $ sanity workflows definition show NAME [--tag <value>] [--version <value>] [--json]
+  $ sanity workflows definitions show NAME [--media-library-id <id> | [-p <id> -d <name>] |  | --path <file|dir> | [--deployment
+    <value> | --partition <value>]] [--version <value>] [--json]
 
 ARGUMENTS
   NAME  Workflow definition name.
 
 FLAGS
-  --json             Emit structured JSON instead of rendered output.
-  --tag=<value>      Workflow environment tag (e.g. prod, test) — an optional query filter that also narrows which
-                     resources are searched; omit to span them all.
-  --version=<value>  Specific version (default: latest).
+  --deployment=<value>  Deployment name — read only the resource and partition that deployment targets.
+  --json                Emit structured JSON instead of rendered output.
+  --partition=<value>   Workflow environment partition (e.g. prod, test) — an optional query filter that also narrows
+                        which resources are searched; omit to span them all.
+  --path=<file|dir>     Path to a sanity.workflow file, or a directory to search from upward through its parents.
+                        Defaults to the current directory.
+  --version=<value>     Specific version (default: latest).
+
+OVERRIDE FLAGS
+  -d, --dataset=<name>         Dataset to read (overrides sanity.workflow.ts)
+  -p, --project-id=<id>        Project ID of the dataset to read (overrides sanity.workflow.ts)
+      --media-library-id=<id>  Media library to read (overrides sanity.workflow.ts)
 
 DESCRIPTION
   Show a deployed workflow definition.
 ```
 
-## `sanity workflows deploy`
+## `sanity workflows definitions validate FILE`
 
-Validate workflow definitions, check any generated runtime beside the config against them, then diff and deploy to the resource bound by the selected deployment. A generated runtime that no longer matches the definitions fails the deploy before anything is written; regenerate it with `sanity-workflows blueprint generate`.
+Validate workflow definitions in JSON files without a config, login, or network access. Checks shape, cross-field rules, and GROQ syntax; deploy additionally checks duplicate names, spawn dependencies, resource bindings, project roles, and the reader-model acknowledgement. Exits non-zero when any definition is invalid. A file that cannot be read, is not valid JSON, or does not hold definition objects stops the command with an error message instead of a report, including with --json.
 
 ```
 USAGE
-  $ sanity workflows deploy [--all-tags |  | [--deployment <value> | --tag <value>]] [--dry-run] [--check] [--only
-    <value>] [--share-defs]
+  $ sanity workflows definitions validate FILE... [--json]
+
+ARGUMENTS
+  FILE...  JSON file holding one definition or an array of them. Pass several files to validate a parent and its child
+           workflows together.
 
 FLAGS
-  --all-tags            Deploy every deployment in the config, not just a selection.
+  --json  Emit structured JSON instead of rendered output.
+
+DESCRIPTION
+  Validate workflow definitions in JSON files without a config, login, or network access. Checks shape, cross-field
+  rules, and GROQ syntax; deploy additionally checks duplicate names, spawn dependencies, resource bindings, project
+  roles, and the reader-model acknowledgement. Exits non-zero when any definition is invalid. A file that cannot be
+  read, is not valid JSON, or does not hold definition objects stops the command with an error message instead of a
+  report, including with --json.
+
+EXAMPLES
+  $ sanity workflows definitions validate review.json
+
+  $ sanity workflows definitions validate parent.json child.json
+
+  $ sanity workflows definitions validate review.json --json
+```
+
+## `sanity workflows deploy`
+
+Validate workflow definitions, check any generated runtime beside the config against them, then diff and deploy to the resource bound by the selected deployment. A generated runtime that no longer matches the definitions fails the deploy before anything is written; regenerate it with `sanity-workflows blueprints generate`.
+
+```
+USAGE
+  $ sanity workflows deploy [--path <file|dir>] [--all-partitions |  | [--deployment <value> | --partition <value>]]
+    [--dry-run] [--check] [--verbose] [--only <value>] [--share-defs]
+
+FLAGS
+  --all-partitions      Deploy every deployment in the config, not just a selection.
   --check               Validate definitions and check any generated runtime against them; do not contact the dataset.
   --deployment=<value>  Deployment name — the unique identity of one deployment in the config.
   --dry-run             Validate definitions, check any generated runtime against them, and diff against the deployed
@@ -5183,29 +5242,35 @@ FLAGS
   --only=<value>        Limit deploy/check/diff to a single workflow definition by name (deployments are selected with
                         --deployment). Every targeted deployment must contain it. The generated-runtime check still
                         covers the whole config, because the generated tree declares every deployment in it.
+  --partition=<value>   Workflow partition (e.g. prod, test) — deploys every deployment using that partition across
+                        configured resources.
+  --path=<file|dir>     Path to a sanity.workflow file, or a directory to search from upward through its parents.
+                        Defaults to the current directory.
   --[no-]share-defs     Share the definition documents newly created by this deploy with Sanity — the full document,
                         verbatim (structure, names, filters, effect configuration, seeded values), plus its deployment
                         coordinates (project and dataset, or resource id); never content documents, instances, or your
                         Sanity auth token. Sharing is the default in every environment, including CI / non-TTY /
                         DO_NOT_TRACK. Use --no-share-defs to opt out.
-  --tag=<value>         Workflow environment tag (e.g. prod, test) — deploys every deployment carrying the tag (a tag is
-                        an environment group).
+  --verbose             When no generated runtime is here, print the full report of the Sanity Functions the selected
+                        deployments need, in place of the summary.
 
 DESCRIPTION
   Validate workflow definitions, check any generated runtime beside the config against them, then diff and deploy to the
   resource bound by the selected deployment. A generated runtime that no longer matches the definitions fails the deploy
-  before anything is written; regenerate it with `sanity-workflows blueprint generate`.
+  before anything is written; regenerate it with `sanity-workflows blueprints generate`.
 
 EXAMPLES
   $ sanity workflows deploy --deployment review-prod
 
-  $ sanity workflows deploy --tag prod
+  $ sanity workflows deploy --partition prod
 
-  $ sanity workflows deploy --all-tags
+  $ sanity workflows deploy --all-partitions
 
   $ sanity workflows deploy --check
 
   $ sanity workflows deploy --dry-run
+
+  $ sanity workflows deploy --check --verbose
 
   $ sanity workflows deploy --only productLaunch
 ```
@@ -5216,17 +5281,25 @@ Explain why a workflow instance is or isn't progressing, and what would unstick 
 
 ```
 USAGE
-  $ sanity workflows diagnose INSTANCEID [--deployment <value> | --tag <value>] [--json]
+  $ sanity workflows diagnose INSTANCEID [--media-library-id <id> | [-p <id> -d <name>] |  | --path <file|dir> |
+    [--deployment <value> | --partition <value>]] [--json]
 
 ARGUMENTS
   INSTANCEID  Workflow instance id.
 
 FLAGS
-  --deployment=<value>  Deployment name — narrow the instance search to the resource that deployment targets; the tag
+  --deployment=<value>  Deployment name — narrow the instance search to the resource that deployment targets; the
                         partition still comes from the loaded instance.
   --json                Emit structured JSON instead of rendered output.
-  --tag=<value>         Workflow environment tag (e.g. prod, test) — an optional query filter that also narrows which
-                        resources are searched; omit to span them all.
+  --partition=<value>   Workflow environment partition (e.g. prod, test) — narrows which resources are searched for the
+                        instance; the instance's stored partition is what the command uses.
+  --path=<file|dir>     Path to a sanity.workflow file, or a directory to search from upward through its parents.
+                        Defaults to the current directory.
+
+OVERRIDE FLAGS
+  -d, --dataset=<name>         Dataset to read (overrides sanity.workflow.ts)
+  -p, --project-id=<id>        Project ID of the dataset to read (overrides sanity.workflow.ts)
+      --media-library-id=<id>  Media library to read (overrides sanity.workflow.ts)
 
 DESCRIPTION
   Explain why a workflow instance is or isn't progressing, and what would unstick it.
@@ -5234,7 +5307,7 @@ DESCRIPTION
 EXAMPLES
   $ sanity workflows diagnose wf-instance.abc123
 
-  $ sanity workflows diagnose wf-instance.abc123 --tag prod
+  $ sanity workflows diagnose wf-instance.abc123 --partition prod
 
   $ sanity workflows diagnose wf-instance.abc123 --json
 ```
@@ -5245,8 +5318,8 @@ Fire an action on an instance to unstick a waiting activity — the write acts a
 
 ```
 USAGE
-  $ sanity workflows fire-action INSTANCEID [--deployment <value> | --tag <value>] [--activity <value>] [--action <value>]
-    [--param <value>...] [--json]
+  $ sanity workflows fire-action INSTANCEID [--path <file|dir>] [--deployment <value> | --partition <value>] [--activity
+    <value>] [--action <value>] [--param <value>...] [--json]
 
 ARGUMENTS
   INSTANCEID  Workflow instance id.
@@ -5254,13 +5327,15 @@ ARGUMENTS
 FLAGS
   --action=<value>      Action to fire. Omit to list the actions available on the instance.
   --activity=<value>    Activity the action belongs to. Required to fire; omit --action to list.
-  --deployment=<value>  Deployment name — narrow the instance search to the resource that deployment targets; the tag
+  --deployment=<value>  Deployment name — narrow the instance search to the resource that deployment targets; the
                         partition still comes from the loaded instance.
   --json                Emit structured JSON instead of rendered output.
   --param=<value>...    [default: ] Action param as key=value (repeatable). Values are JSON-parsed, falling back to a
                         string.
-  --tag=<value>         Workflow environment tag (e.g. prod, test) — an optional query filter that also narrows which
-                        resources are searched; omit to span them all.
+  --partition=<value>   Workflow environment partition (e.g. prod, test) — narrows which resources are searched for the
+                        instance; the instance's stored partition is what the command uses.
+  --path=<file|dir>     Path to a sanity.workflow file, or a directory to search from upward through its parents.
+                        Defaults to the current directory.
 
 DESCRIPTION
   Fire an action on an instance to unstick a waiting activity — the write acts as the configured token. Omit --action to
@@ -5276,13 +5351,14 @@ EXAMPLES
 
 ## `sanity workflows list`
 
-List workflow instances in the configured dataset (in-flight by default).
+List workflow instances (in-flight by default) across the resources sanity.workflow.ts declares, or in the one resource --project-id/--dataset or --media-library-id names.
 
 ```
 USAGE
-  $ sanity workflows list [--tag <value>] [--include-completed] [--failed] [--definition <value>] [--document
-    <value>] [--assignment-user <value>] [--assignment-role <value>...] [--assignment-state unrouted|routed|held...]
-    [--limit <value>] [--json]
+  $ sanity workflows list [--media-library-id <id> | [-p <id> -d <name>] |  | --path <file|dir> | [--deployment
+    <value> | --partition <value>]] [--include-completed] [--failed] [--definition <value>] [--document <value>]
+    [--assignment-user <value>] [--assignment-role <value>...] [--assignment-state unrouted|routed|held...] [--limit
+    <value>] [--json]
 
 FLAGS
   --assignment-role=<value>...    A literal project role held by --assignment-user. Repeat for multiple roles.
@@ -5292,17 +5368,26 @@ FLAGS
   --assignment-user=<value>       Account-global user id used for viewer-scoped assignment filtering and counts.
   --definition=<value>            Only instances of this workflow definition (its `name`; the instance's `definition`
                                   field).
+  --deployment=<value>            Deployment name — read only the resource and partition that deployment targets.
   --document=<value>              Only instances that reference this document (resource-qualified GDR URI, e.g.
                                   "dataset:proj:ds:article-1").
   --failed                        Only instances with at least one failed activity.
   --include-completed             Include completed/aborted instances (default: in-flight only).
   --json                          Emit structured JSON instead of rendered output.
   --limit=<value>                 [default: 50] Maximum rows to return.
-  --tag=<value>                   Workflow environment tag (e.g. prod, test) — an optional query filter that also
+  --partition=<value>             Workflow environment partition (e.g. prod, test) — an optional query filter that also
                                   narrows which resources are searched; omit to span them all.
+  --path=<file|dir>               Path to a sanity.workflow file, or a directory to search from upward through its
+                                  parents. Defaults to the current directory.
+
+OVERRIDE FLAGS
+  -d, --dataset=<name>         Dataset to read (overrides sanity.workflow.ts)
+  -p, --project-id=<id>        Project ID of the dataset to read (overrides sanity.workflow.ts)
+      --media-library-id=<id>  Media library to read (overrides sanity.workflow.ts)
 
 DESCRIPTION
-  List workflow instances in the configured dataset (in-flight by default).
+  List workflow instances (in-flight by default) across the resources sanity.workflow.ts declares, or in the one
+  resource --project-id/--dataset or --media-library-id names.
 
 EXAMPLES
   $ sanity workflows list
@@ -5315,39 +5400,42 @@ EXAMPLES
 
   $ sanity workflows list --assignment-user gAda --assignment-role legal --assignment-state routed
 
-  $ sanity workflows list --tag prod
+  $ sanity workflows list --partition prod
 
   $ sanity workflows list --json
 ```
 
 ## `sanity workflows nuke`
 
-Delete engine-owned documents — a whole deployment tag, or a single instance.
+Delete engine-owned documents — a whole deployment partition, or a single instance.
 
 ```
 USAGE
-  $ sanity workflows nuke [--deployment <value>] [--tag <value>] [--instance <value>] [--force]
+  $ sanity workflows nuke [--path <file|dir>] [--deployment <value>] [--partition <value>] [--instance <value>]
+    [--force]
 
 FLAGS
   --deployment=<value>  The deployment name to reset. With --instance, narrows which deployment the instance is looked
-                        up in when its tag spans several.
+                        up in when its partition spans several.
   --force               Skip the confirmation prompt (for scripts/CI). The plan still prints.
-  --instance=<value>    Delete a single terminal instance by id, plus its guard docs, instead of a tag.
-  --tag=<value>         The deployment tag to reset (while it names exactly one deployment). Not valid with --instance,
-                        which reads its tag from the instance id.
+  --instance=<value>    Delete a single terminal instance by id, plus its guard docs, instead of a partition.
+  --partition=<value>   The deployment partition to reset (while it names exactly one deployment). Not valid with
+                        --instance, which reads its partition from the stored instance.
+  --path=<file|dir>     Path to a sanity.workflow file, or a directory to search from upward through its parents.
+                        Defaults to the current directory.
 
 DESCRIPTION
-  Delete engine-owned documents — a whole deployment tag, or a single instance.
+  Delete engine-owned documents — a whole deployment partition, or a single instance.
 
-  The reset for a dataset holding engine documents the versioned upgrade framework cannot yet migrate: deletes the tag's
-  instances, definitions, and guards (across every alias-bound resource). --instance <id> instead deletes one terminal
-  instance plus its guards. Content documents are never touched. Prints a dry-run plan, then confirms (--force skips the
-  prompt; the plan still prints).
+  The reset for a dataset holding engine documents the versioned upgrade framework cannot yet migrate: deletes the
+  partition's instances, definitions, and guards (across every alias-bound resource). --instance <id> instead deletes
+  one terminal instance plus its guards. Content documents are never touched. Prints a dry-run plan, then confirms
+  (--force skips the prompt; the plan still prints).
 
 EXAMPLES
   $ sanity workflows nuke --deployment plugin-dev
 
-  $ sanity workflows nuke --tag plugin-dev --force
+  $ sanity workflows nuke --partition plugin-dev --force
 
   $ sanity workflows nuke --instance plugin-dev.wf-instance.abc123
 ```
@@ -5358,18 +5446,21 @@ Reset a failed activity on an in-flight instance — back to active to re-run it
 
 ```
 USAGE
-  $ sanity workflows reset-activity INSTANCEID ACTIVITY [--deployment <value> | --tag <value>] [--skip]
+  $ sanity workflows reset-activity INSTANCEID ACTIVITY [--path <file|dir>] [--deployment <value> | --partition <value>]
+    [--skip]
 
 ARGUMENTS
   INSTANCEID  Workflow instance id.
   ACTIVITY    Activity name within the current stage.
 
 FLAGS
-  --deployment=<value>  Deployment name — narrow the instance search to the resource that deployment targets; the tag
+  --deployment=<value>  Deployment name — narrow the instance search to the resource that deployment targets; the
                         partition still comes from the loaded instance.
+  --partition=<value>   Workflow environment partition (e.g. prod, test) — narrows which resources are searched for the
+                        instance; the instance's stored partition is what the command uses.
+  --path=<file|dir>     Path to a sanity.workflow file, or a directory to search from upward through its parents.
+                        Defaults to the current directory.
   --skip                Bypass the activity (mark it skipped) instead of re-running it (back to active).
-  --tag=<value>         Workflow environment tag (e.g. prod, test) — an optional query filter that also narrows which
-                        resources are searched; omit to span them all.
 
 DESCRIPTION
   Reset a failed activity on an in-flight instance — back to active to re-run it, or --skip to bypass it (mark it
@@ -5387,17 +5478,20 @@ Force an instance into a stage, regardless of its declared transitions and filte
 
 ```
 USAGE
-  $ sanity workflows set-stage INSTANCEID [--deployment <value> | --tag <value>] [--to <value>] [--reason <value>]
+  $ sanity workflows set-stage INSTANCEID [--path <file|dir>] [--deployment <value> | --partition <value>] [--to <value>]
+    [--reason <value>]
 
 ARGUMENTS
   INSTANCEID  Workflow instance id to move.
 
 FLAGS
-  --deployment=<value>  Deployment name — narrow the instance search to the resource that deployment targets; the tag
+  --deployment=<value>  Deployment name — narrow the instance search to the resource that deployment targets; the
                         partition still comes from the loaded instance.
+  --partition=<value>   Workflow environment partition (e.g. prod, test) — narrows which resources are searched for the
+                        instance; the instance's stored partition is what the command uses.
+  --path=<file|dir>     Path to a sanity.workflow file, or a directory to search from upward through its parents.
+                        Defaults to the current directory.
   --reason=<value>      Free-text reason — recorded on the history entry for audit.
-  --tag=<value>         Workflow environment tag (e.g. prod, test) — an optional query filter that also narrows which
-                        resources are searched; omit to span them all.
   --to=<value>          Target stage name. Omit on an interactive terminal to pick from the workflow’s stages.
 
 DESCRIPTION
@@ -5419,18 +5513,28 @@ Show the state, activities, and effects of a workflow instance.
 
 ```
 USAGE
-  $ sanity workflows show INSTANCEID [--tag <value>] [--include history...] [--json]
+  $ sanity workflows show INSTANCEID [--media-library-id <id> | [-p <id> -d <name>] |  | --path <file|dir> |
+    [--deployment <value> | --partition <value>]] [--include history...] [--json]
 
 ARGUMENTS
   INSTANCEID  Workflow instance document id.
 
 FLAGS
+  --deployment=<value>   Deployment name — narrow the instance search to the resource that deployment targets; the
+                         partition still comes from the loaded instance.
   --include=<option>...  [default: ] Optional sections to include in rendered output (--json always carries the full
                          document).
                          <options: history>
   --json                 Emit structured JSON instead of rendered output.
-  --tag=<value>          Workflow environment tag (e.g. prod, test) — an optional query filter that also narrows which
-                         resources are searched; omit to span them all.
+  --partition=<value>    Workflow environment partition (e.g. prod, test) — narrows which resources are searched for the
+                         instance; the instance's stored partition is what the command uses.
+  --path=<file|dir>      Path to a sanity.workflow file, or a directory to search from upward through its parents.
+                         Defaults to the current directory.
+
+OVERRIDE FLAGS
+  -d, --dataset=<name>         Dataset to read (overrides sanity.workflow.ts)
+  -p, --project-id=<id>        Project ID of the dataset to read (overrides sanity.workflow.ts)
+      --media-library-id=<id>  Media library to read (overrides sanity.workflow.ts)
 
 DESCRIPTION
   Show the state, activities, and effects of a workflow instance.
@@ -5449,8 +5553,8 @@ Start a workflow instance from a deployed definition. Supply values for the work
 
 ```
 USAGE
-  $ sanity workflows start NAME [--deployment <value> | --tag <value>] [--version <value>] [--field <value>...]
-    [--instance-id <value>] [--json]
+  $ sanity workflows start NAME [--path <file|dir>] [--deployment <value> | --partition <value>] [--version <value>]
+    [--field <value>...] [--instance-id <value>] [--json]
 
 ARGUMENTS
   NAME  Workflow definition name.
@@ -5464,8 +5568,10 @@ FLAGS
                          of a start that failed partway and the engine resumes it instead of creating a duplicate (an
                          already-settled start replays as a no-op). Omit to mint a fresh id.
   --json                 Emit structured JSON instead of rendered output.
-  --tag=<value>          Workflow environment tag (e.g. prod, test) — selects the deployment to act on while the tag
-                         names exactly one; pass --deployment when it spans several.
+  --partition=<value>    Workflow environment partition (e.g. prod, test) — selects the deployment to act on while the
+                         partition names exactly one; pass --deployment when it spans several.
+  --path=<file|dir>      Path to a sanity.workflow file, or a directory to search from upward through its parents.
+                         Defaults to the current directory.
   --version=<value>      Definition version to start from (default: highest deployed).
 
 DESCRIPTION
@@ -5477,7 +5583,7 @@ EXAMPLES
 
   $ sanity workflows start article-review --field subject='{"id":"dataset:proj:ds:article-1","type":"article"}'
 
-  $ sanity workflows start productLaunch --version 2 --tag prod
+  $ sanity workflows start productLaunch --version 2 --partition prod
 
   $ sanity workflows start productLaunch --instance-id prod.wf-instance.a1b2c3d4e5f6
 ```
@@ -5488,14 +5594,24 @@ Stream new history entries on a workflow instance as they land in the dataset.
 
 ```
 USAGE
-  $ sanity workflows tail INSTANCEID [--tag <value>]
+  $ sanity workflows tail INSTANCEID [--media-library-id <id> | [-p <id> -d <name>] |  | --path <file|dir> |
+    [--deployment <value> | --partition <value>]]
 
 ARGUMENTS
   INSTANCEID  Workflow instance id to tail.
 
 FLAGS
-  --tag=<value>  Workflow environment tag (e.g. prod, test) — an optional query filter that also narrows which resources
-                 are searched; omit to span them all.
+  --deployment=<value>  Deployment name — narrow the instance search to the resource that deployment targets; the
+                        partition still comes from the loaded instance.
+  --partition=<value>   Workflow environment partition (e.g. prod, test) — narrows which resources are searched for the
+                        instance; the instance's stored partition is what the command uses.
+  --path=<file|dir>     Path to a sanity.workflow file, or a directory to search from upward through its parents.
+                        Defaults to the current directory.
+
+OVERRIDE FLAGS
+  -d, --dataset=<name>         Dataset to read (overrides sanity.workflow.ts)
+  -p, --project-id=<id>        Project ID of the dataset to read (overrides sanity.workflow.ts)
+      --media-library-id=<id>  Media library to read (overrides sanity.workflow.ts)
 
 DESCRIPTION
   Stream new history entries on a workflow instance as they land in the dataset.
