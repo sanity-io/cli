@@ -94,7 +94,7 @@
     "@sanity/cli-test": "workspace:*",
     "@sanity/eslint-config-cli": "workspace:^",
     "@sanity/pkg-utils": "catalog:",
-    "@sanity/ui": "^4.3.1",
+    "@sanity/ui": "^4.4.10",
     "@swc/cli": "catalog:",
     "@swc/core": "catalog:",
     "@types/jsdom": "catalog:",
