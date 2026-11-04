@@ -1,8 +1,9 @@
 import fs from 'node:fs'
+import Module from 'node:module'
 import os from 'node:os'
 import path from 'node:path'
 
-import {afterEach, describe, expect, test} from 'vitest'
+import {afterEach, describe, expect, onTestFinished, test, vi} from 'vitest'
 
 import {
   hasMediaLibraryIslandRuntime,
@@ -53,7 +54,7 @@ afterEach(() => {
 })
 
 describe('hasMediaLibraryIslandRuntime', () => {
-  test('resolves the entry from the app root, not the CLI install', () => {
+  test('resolves the entry from the app root', () => {
     expect(hasMediaLibraryIslandRuntime(appWithSanity({islandRuntimeEntry: true}))).toBe(true)
   })
 
@@ -62,6 +63,22 @@ describe('hasMediaLibraryIslandRuntime', () => {
   })
 
   test('is false when sanity is not installed at all', () => {
+    const appRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'island-runtime-probe-'))
+    createdDirs.push(appRoot)
+    fs.writeFileSync(path.join(appRoot, 'package.json'), JSON.stringify({name: 'app'}))
+    expect(hasMediaLibraryIslandRuntime(appRoot)).toBe(false)
+  })
+
+  test('is false when sanity is reachable only through NODE_PATH', () => {
+    // Node reads NODE_PATH once at startup; `_initPaths` re-reads it.
+    const {_initPaths: initPaths} = Module as unknown as {_initPaths: () => void}
+    onTestFinished(() => {
+      vi.unstubAllEnvs()
+      initPaths()
+    })
+    vi.stubEnv('NODE_PATH', path.join(appWithSanity({islandRuntimeEntry: true}), 'node_modules'))
+    initPaths()
+
     const appRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'island-runtime-probe-'))
     createdDirs.push(appRoot)
     fs.writeFileSync(path.join(appRoot, 'package.json'), JSON.stringify({name: 'app'}))
