@@ -186,6 +186,11 @@ export async function startDevServerRegistration(
       registration.release()
       await watcher.close()
     },
-    path: dashboardPath({id, interfaces}),
+    path: dashboardPath({
+      id,
+      interfaces,
+      slug: identity?.slug,
+      type: isApp ? 'coreApp' : 'studio',
+    }),
   }
 }

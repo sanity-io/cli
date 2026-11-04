@@ -518,7 +518,7 @@ describe('startDevServerRegistration', () => {
     test('opens a studio at its slug', async () => {
       const {path} = await register({isApp: false})
 
-      expect(path).toBe('/local/test-app')
+      expect(path).toBe('/studios/test-app')
     })
 
     test('opens an app with an app view at its slug', async () => {
@@ -527,7 +527,7 @@ describe('startDevServerRegistration', () => {
         isApp: true,
       })
 
-      expect(path).toBe('/local/test-app')
+      expect(path).toBe('/applications/test-app')
     })
 
     test('has no path for an app without an app view, which the Dashboard 404s', async () => {

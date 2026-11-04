@@ -4,6 +4,7 @@ import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
 import {
   acquireWorkbenchLock,
+  dashboardPath,
   type DevServerManifest,
   getRegisteredServers,
   readWorkbenchLock,
@@ -12,7 +13,7 @@ import {
   waitForWorkbenchLock,
   watchRegistry,
 } from '../registry.js'
-import {FakeFsWatcher} from './devTestHelpers.js'
+import {FakeFsWatcher, panel} from './devTestHelpers.js'
 
 // A fresh in-memory `node:fs` for this file (see ./fsMock.ts): own state per
 // file, reset per test, so the registry's real read/write path runs with no disk I/O.
@@ -202,6 +203,18 @@ describe('registerDevServer', () => {
 
     expect(storedMs).toBeGreaterThanOrEqual(before)
     expect(storedMs).toBeLessThanOrEqual(Date.now())
+  })
+})
+
+describe('dashboardPath', () => {
+  test('falls back to the id when there is no slug', () => {
+    const path = dashboardPath({
+      id: 'app-id',
+      interfaces: [{...panel('main'), surface: 'window'}],
+      type: 'coreApp',
+    })
+
+    expect(path).toBe('/applications/app-id')
   })
 })
 
