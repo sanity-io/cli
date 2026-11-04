@@ -792,10 +792,10 @@ importers:
         specifier: ^2.0.0
         version: 2.0.0
       '@sanity/workflow-cli':
-        specifier: 0.37.0
+        specifier: ^0.37.0
         version: 0.37.0(@sanity/cli-core@packages+@sanity+cli-core)(@sanity/workflow-blueprint@0.37.0(@sanity/workflow-engine@0.37.0(@types/react@19.3.0)(supports-color@8.1.1)(typescript@6.0.3)))(@sanity/workflow-engine@0.37.0(@types/react@19.3.0)(supports-color@8.1.1)(typescript@6.0.3))(react@19.3.0)
       '@sanity/workflow-engine':
-        specifier: 0.37.0
+        specifier: ^0.37.0
         version: 0.37.0(@types/react@19.3.0)(supports-color@8.1.1)(typescript@6.0.3)
       '@vercel/frameworks':
         specifier: 3.29.0
