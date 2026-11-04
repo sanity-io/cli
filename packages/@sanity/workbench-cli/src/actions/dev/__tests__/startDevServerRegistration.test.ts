@@ -547,7 +547,7 @@ describe('startDevServerRegistration', () => {
       expect(path).toBeUndefined()
     })
 
-    test('has no path for a project that is not a workbench app', async () => {
+    test('has no path for a project without an app id', async () => {
       const {path} = await register({cliConfig: workbenchCliConfig({app: undefined}), isApp: false})
 
       expect(path).toBeUndefined()
