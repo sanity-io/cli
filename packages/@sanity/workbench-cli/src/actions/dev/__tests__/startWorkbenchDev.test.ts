@@ -109,14 +109,14 @@ describe('startWorkbenchDev', () => {
     test('links straight to the registered app in the Dashboard', async () => {
       mockStartDevServerRegistration.mockResolvedValue({
         close: vi.fn().mockResolvedValue(undefined),
-        path: '/local/my-app',
+        path: '/applications/my-app',
       })
       const output = createMockOutput()
 
       await run({output})
 
       expect(output.log).toHaveBeenCalledWith(
-        `Dashboard dev server started at ${styleText(['blue', 'underline'], 'http://localhost:3333/local/my-app')}`,
+        `Dashboard dev server started at ${styleText(['blue', 'underline'], 'http://localhost:3333/applications/my-app')}`,
       )
     })
 
