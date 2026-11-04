@@ -205,24 +205,26 @@ export function localAppIdentity(
 
 /**
  * Where the Dashboard shell opens a registered server, matching the Workbench's
- * `StudioApplication.href` and `CoreApplication.href`. Only servers with an id and a
+ * `StudioApplication.href` and `CoreApplication.href`. Only servers with a
  * `surface: 'window'` interface get one (see toWireInterface): studios always do,
  * configs and panel-only apps don't, so they'd 404.
  */
 export function dashboardPath(
-  server: Pick<DevServerManifest, 'id' | 'interfaces' | 'type'>,
+  server: Pick<DevServerManifest, 'id' | 'interfaces' | 'slug' | 'type'>,
 ): string | undefined {
   const hasAppView = (server.interfaces ?? []).some(
     (iface) => 'surface' in iface && iface.surface === 'window',
   )
 
-  if (!server.id || !hasAppView) {
+  const segment = server.slug ?? server.id
+
+  if (!segment || !hasAppView) {
     return undefined
   }
 
   const root = server.type === 'studio' ? 'studios' : 'applications'
 
-  return `/${root}/${encodeURIComponent(server.id)}`
+  return `/${root}/${encodeURIComponent(segment)}`
 }
 
 /**

@@ -261,21 +261,24 @@ describe('startWorkbenchPreview', () => {
       await run({isApp: false, output})
 
       expect(output.log).toHaveBeenCalledWith(
-        `Dashboard preview server started at ${styleText(['blue', 'underline'], `http://localhost:3333/studios/${readManifest().id}`)}`,
+        `Dashboard preview server started at ${styleText(['blue', 'underline'], 'http://localhost:3333/studios/test-app')}`,
       )
     })
 
-    test('links to an app build with an app view under the id the build inlined', async () => {
-      mockReadFile.mockResolvedValue('app_deployed_id\n')
+    test('links to an app build at its slug, not the id the build inlined', async () => {
+      mockReadFile.mockResolvedValue('app_build_hash\n')
       const output = createMockOutput()
 
       await run({
-        cliConfig: workbenchCliConfig({app: workbenchApp({entry: './src/App.tsx'})}),
+        cliConfig: workbenchCliConfig({
+          app: workbenchApp({entry: './src/App.tsx'}),
+          deployment: {appId: 'app_deployed_id'},
+        }),
         output,
       })
 
       expect(output.log).toHaveBeenCalledWith(
-        `Dashboard preview server started at ${styleText(['blue', 'underline'], 'http://localhost:3333/applications/app_deployed_id')}`,
+        `Dashboard preview server started at ${styleText(['blue', 'underline'], 'http://localhost:3333/applications/test-app')}`,
       )
     })
 
