@@ -29,7 +29,6 @@ export default defineConfig({
         '**/coverage/**',
         '**/.git/**',
       ],
-      // Coverage runs with --project, which matches these against each project's root
       include: ['**/*.{ts,tsx}'],
       provider: 'istanbul',
       reporter: ['html', 'json', 'json-summary'],
