@@ -248,6 +248,7 @@ async function main() {
           client: validationClient,
           document,
           getDocumentExists: ({id}) => Promise.resolve(existingIds.has(id)),
+          i18n: workspace.i18n,
           maxCustomValidationConcurrency,
           maxFetchConcurrency,
           schema: workspace.schema,

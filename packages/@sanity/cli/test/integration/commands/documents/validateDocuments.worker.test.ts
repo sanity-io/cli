@@ -1,12 +1,15 @@
 import {Readable} from 'node:stream'
 
+import {createClient} from '@sanity/client'
 import {type Rule, type ValidationContext} from '@sanity/types'
-import {createSchema} from 'sanity'
+import {type ValidationLocaleSource} from '@sanity/validation'
+import {of} from 'rxjs'
+import {createSchema, createWorkspaceFromConfig} from 'sanity'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
 const mocks = vi.hoisted(() => ({
   cleanup: vi.fn(),
-  customValidation: vi.fn<(value: unknown, context: ValidationContext) => Promise<true>>(),
+  customValidation: vi.fn<(value: unknown, context: ValidationContext) => Promise<string | true>>(),
   emit: vi.fn(),
   end: vi.fn(),
   getProjectCliClient: vi.fn(),
@@ -157,6 +160,84 @@ describe('document validation worker', () => {
     expect(fetch).toHaveBeenCalledTimes(documents.filter(({_type}) => _type === 'category').length)
     expect(peak).toBe(2)
     expect(mocks.end).toHaveBeenCalledOnce()
+  })
+
+  test.each([
+    {locale: 'en-US', message: 'Please enter the article title'},
+    {locale: 'nb-NO', message: 'Skriv inn artikkeltittelen'},
+  ])('preserves workspace translations and locale ($locale)', async ({locale, message}) => {
+    const workspace = await createWorkspaceFromConfig({
+      auth: {
+        state: of({
+          authenticated: false,
+          client: createClient({
+            apiVersion: '2025-02-19',
+            dataset: 'production',
+            projectId: 'test-project',
+            useCdn: false,
+          }),
+          currentUser: null,
+        }),
+      },
+      dataset: 'production',
+      i18n: {
+        bundles: [
+          {
+            locale,
+            namespace: 'custom-validation',
+            resources: async () => ({'title-required': message}),
+          },
+        ],
+        locales: () => [{id: locale, title: locale, weekInfo: {firstDay: 1, weekend: [6, 7]}}],
+      },
+      name: 'default',
+      projectId: 'test-project',
+      schema: {
+        types: [
+          {
+            fields: [
+              {
+                name: 'title',
+                type: 'string',
+                validation: (rule: Rule) =>
+                  rule.required().error({
+                    'en-US': 'Title is required',
+                    'nb-NO': 'Tittel er påkrevd',
+                  }),
+              },
+            ],
+            name: 'category',
+            type: 'document',
+            validation: (rule: Rule) => rule.custom(mocks.customValidation),
+          },
+        ],
+      },
+    })
+    await vi.waitFor(() => expect(workspace.i18n.currentLocale.id).toBe(locale))
+    mocks.getStudioWorkspaces.mockResolvedValue([workspace])
+    mocks.customValidation.mockImplementation(async (_value, context) => {
+      const {i18n} = context as ValidationContext & {i18n: ValidationLocaleSource}
+      await i18n.loadNamespaces(['custom-validation'])
+      return i18n.t('custom-validation:title-required')
+    })
+
+    await import('../../../../src/actions/documents/validateDocuments.worker.js')
+
+    expect(mocks.emit).toHaveBeenCalledTimes(documents.length)
+    expect(mocks.emit).toHaveBeenCalledWith(
+      expect.objectContaining({
+        documentId: 'published-category',
+        level: 'error',
+        markers: expect.arrayContaining([
+          expect.objectContaining({level: 'warning', message, path: []}),
+          expect.objectContaining({
+            level: 'error',
+            message: locale === 'en-US' ? 'Title is required' : 'Tittel er påkrevd',
+            path: ['title'],
+          }),
+        ]),
+      }),
+    )
   })
 
   test('reports incomplete validation even when warnings are filtered out', async () => {
