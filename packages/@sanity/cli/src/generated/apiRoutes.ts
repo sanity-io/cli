@@ -198,6 +198,34 @@ export const apiRoutes: ApiRouteEntry[] = [
     defaultApiVersion: 'vX',
     host: 'global',
     pathPatterns: [
+      'collaboration/comments',
+      'collaboration/comments/listen',
+      'collaboration/comments/query',
+      'collaboration/comments/{id}',
+      'collaboration/comments/{id}/reactions',
+      'collaboration/comments/{id}/reactions/{shortName}'
+    ],
+    slug: 'comments-api',
+    title: 'Comments API reference'
+  },
+  {
+    defaultApiVersion: 'vX',
+    host: 'project',
+    pathPatterns: [
+      'collaboration/comments',
+      'collaboration/comments/listen',
+      'collaboration/comments/query',
+      'collaboration/comments/{id}',
+      'collaboration/comments/{id}/reactions',
+      'collaboration/comments/{id}/reactions/{shortName}'
+    ],
+    slug: 'comments-api',
+    title: 'Comments API reference'
+  },
+  {
+    defaultApiVersion: 'vX',
+    host: 'global',
+    pathPatterns: [
       'agent/prompt',
       'agent/{organizationId}/threads/{threadId}'
     ],
