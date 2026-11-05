@@ -409,7 +409,7 @@ const mcporterTestCases: Array<{
 // Main test suite
 // ---------------------------------------------------------------------------
 
-describe.sequential('#mcp:configure', () => {
+describe('#mcp:configure', {concurrent: false}, () => {
   beforeEach(async () => {
     vi.spyOn(ConfigureMcpCommand.prototype, 'resolveIsInteractive').mockImplementation(
       mockIsInteractive,

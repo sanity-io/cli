@@ -20,8 +20,7 @@ export default defineConfig({
       exclude: [
         '**/*.{test,spec,stories,d}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}',
         'fixtures/**',
-        'packages/@sanity/cli/test/**',
-        'packages/@sanity/cli/templates/**',
+        'templates/**',
         // Vitest 4.0 no longer auto-excludes these directories
         '**/dist/**',
         '**/tmp/**',
@@ -30,13 +29,7 @@ export default defineConfig({
         '**/coverage/**',
         '**/.git/**',
       ],
-      include: [
-        'packages/@sanity/cli/**/*.{ts,tsx}',
-        'packages/@sanity/cli-build/**/*.{ts,tsx}',
-        'packages/@sanity/cli-core/**/*.{ts,tsx}',
-        'packages/@sanity/workbench-cli/**/*.{ts,tsx}',
-        'packages/create-sanity/**/*.{ts,tsx}',
-      ],
+      include: ['**/*.{ts,tsx}'],
       provider: 'istanbul',
       reporter: ['html', 'json', 'json-summary'],
     },

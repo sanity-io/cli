@@ -208,10 +208,18 @@ describe.each([false, true])(
   'a build reusing the standalone output: %s',
   (reuseStandaloneBuild) => {
     let build: Awaited<ReturnType<App['build']>>
+    let calls: Record<'closed' | 'finalized' | 'rendered' | 'warn', number>
 
     beforeAll(async () => {
       const app = await createApp()
       build = await app.build({reuseStandaloneBuild})
+      // clearMocks resets the spies before each test, so read the counts here
+      calls = {
+        closed: build.hooks.closed.mock.calls.length,
+        finalized: build.hooks.finalized.mock.calls.length,
+        rendered: build.hooks.rendered.mock.calls.length,
+        warn: build.warn.mock.calls.length,
+      }
     }, 60_000)
 
     test('publishes every provider at its exact installed version', async () => {
@@ -236,7 +244,7 @@ describe.each([false, true])(
           build.manifest.shared.map(({name, requiredVersion}) => [name, requiredVersion]),
         ),
       ).toEqual(versions)
-      expect(build.warn).not.toHaveBeenCalled()
+      expect(calls.warn).toBe(0)
     })
 
     test('writes the same exposes to the manifest and the stats', () => {
@@ -244,9 +252,9 @@ describe.each([false, true])(
     })
 
     test('stops discovery before it renders chunks', () => {
-      expect(build.hooks.finalized).toHaveBeenCalledTimes(2)
-      expect(build.hooks.rendered).toHaveBeenCalledTimes(2)
-      expect(build.hooks.closed).toHaveBeenCalledTimes(reuseStandaloneBuild ? 2 : 3)
+      expect(calls.finalized).toBe(2)
+      expect(calls.rendered).toBe(2)
+      expect(calls.closed).toBe(reuseStandaloneBuild ? 2 : 3)
     })
   },
 )
