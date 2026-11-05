@@ -877,7 +877,7 @@ importers:
         version: 1.5.23
       smol-toml:
         specifier: ^1.6.1
-        version: 1.8.0
+        version: 1.9.0
       string-argv:
         specifier: ^0.3.2
         version: 0.3.2
@@ -9569,8 +9569,8 @@ packages:
     resolution: {integrity: sha512-QlaZEqcAH3/RtNyet1IPIYPsEWAaYyXXv1Krsi+1L/QHppjX4Ifm8MQsBISz9vE8cHicIq3clogsheili5vhaQ==}
     engines: {node: '>= 18'}
 
-  smol-toml@1.8.0:
-    resolution: {integrity: sha512-kCZr2V3ch9i00x8zXRhjUNVcjG9ijES5dDudkXvUVCT5QlJNQWElSJdZqyPemffHoLNUYwOcou0Fy+ojN0uHSQ==}
+  smol-toml@1.9.0:
+    resolution: {integrity: sha512-hpd+HLON7HdZXqYchMM/+LaTTbdK0AU3NngIJ4KVyWbY9bfQqdL9cD+4yf6dUoU2Ap4VsU0JkQi6FxAI1B2mXQ==}
     engines: {node: '>= 18'}
 
   snake-case@3.0.4:
@@ -18003,7 +18003,7 @@ snapshots:
       oxc-parser: 0.147.0
       oxc-resolver: 11.24.2
       picomatch: 4.0.7
-      smol-toml: 1.8.0
+      smol-toml: 1.9.0
       strip-json-comments: 5.0.3
       tinyglobby: 0.2.17
       unbash: 4.0.10
@@ -19654,7 +19654,7 @@ snapshots:
 
   smol-toml@1.5.2: {}
 
-  smol-toml@1.8.0: {}
+  smol-toml@1.9.0: {}
 
   snake-case@3.0.4:
     dependencies:
