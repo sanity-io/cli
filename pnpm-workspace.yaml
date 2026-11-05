@@ -140,6 +140,8 @@ minimumReleaseAgeExclude:
   - react-i18next@17.0.13
   # Renovate security update: smol-toml@1.9.0
   - smol-toml@1.9.0
+  # Renovate security update: dompurify@3.4.17
+  - dompurify@3.4.17
 allowBuilds:
   '@swc/core': true
   esbuild: true
