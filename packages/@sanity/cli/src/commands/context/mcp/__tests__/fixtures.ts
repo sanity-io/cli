@@ -35,7 +35,7 @@ export const mcpEndpoint: Context.McpEndpoint = {
   sources: mcpDoc.sources,
   title: mcpDoc.title,
   updatedAt: '2026-10-02T00:00:00Z',
-  url: 'https://api.sanity.io/v2026-11-10/context/organizations/org-abc123/mcp/support',
+  url: 'https://api.sanity.io/v2026-11-03/context/organizations/org-abc123/mcp/support',
 }
 
 export function withConfig({apiVersion}: {apiVersion: string}) {

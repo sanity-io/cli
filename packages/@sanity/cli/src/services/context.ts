@@ -5,7 +5,7 @@ const CONTEXT_API_VERSION = 'v2026-08-25'
 const BLUEPRINTS_API_VERSION = 'vX'
 const BLUEPRINTS_LOOKUP_TIMEOUT_MS = 5000
 // The version in the URLs the Context API returns for agents to connect to MCP endpoints
-const MCP_CONNECT_API_VERSION = 'v2026-11-10'
+const MCP_CONNECT_API_VERSION = 'v2026-11-03'
 
 const blueprintOwnershipDebug = subdebug('context:blueprint-ownership')
 
