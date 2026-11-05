@@ -80,6 +80,10 @@ jobs:
           restore-keys: |
             vitest-cache-unit-${{ matrix.os }}-node${{ matrix.node-version }}-
 
+      - name: Test groq package exports
+        shell: bash
+        run: pnpm --filter groq test
+
       - name: Unit Test on ${{ matrix.os }}
         shell: bash
         run: pnpm test:unit --coverage --reporter=default --reporter=blob
