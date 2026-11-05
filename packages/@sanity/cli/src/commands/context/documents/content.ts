@@ -115,7 +115,12 @@ export class GetDocumentContentCommand extends BaseCommand {
     if (output === undefined) return printable
 
     try {
-      await writeFile(output, printable instanceof Uint8Array ? printable : String(printable))
+      await writeFile(
+        output,
+        printable instanceof Uint8Array || typeof printable === 'string'
+          ? printable
+          : JSON.stringify(printable, null, 2),
+      )
     } catch (error) {
       this.error(`Failed to write "${output}": ${getErrorMessage(error)}`, {
         exit: exitCodes.RUNTIME_ERROR,

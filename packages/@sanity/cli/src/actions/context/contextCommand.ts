@@ -120,7 +120,13 @@ export function contextCommand(id: ContextCommandId) {
 
     /** Fail the command with the API's error message */
     public fail(error: unknown): never {
-      if (error instanceof CLIError) throw error
+      // A usage error or a cancelled prompt is not a failed request
+      if (
+        error instanceof CLIError ||
+        (error instanceof Error && error.name === 'ExitPromptError')
+      ) {
+        throw error
+      }
       debug('Request failed', error)
       const notFound = isHttpError(error) && error.statusCode === 404
       this.error(
@@ -197,14 +203,18 @@ export function contextCommand(id: ContextCommandId) {
         this.fail(error)
       }
 
-      if (!values.watch || !knowledgeBaseId) {
+      const target =
+        entry.watch === 'sync'
+          ? (watchedSource ?? field(result, 'id'))
+          : (field(result, 'jobId') ?? stringValue(args, 'jobId'))
+      if (!values.watch || !knowledgeBaseId || !target) {
         this.render(result)
         return
       }
       if (!this.flags.json) this.render(result)
       await (entry.watch === 'sync'
-        ? this.watchSync(knowledgeBaseId, watchedSource ?? field(result, 'id'), previousSyncId)
-        : this.watchJob(knowledgeBaseId, field(result, 'jobId') ?? stringValue(args, 'jobId')))
+        ? this.watchSync(knowledgeBaseId, target, previousSyncId)
+        : this.watchJob(knowledgeBaseId, target))
     }
 
     /** Send the request; hand-written commands override this to upload a file or download bytes */
@@ -214,8 +224,7 @@ export function contextCommand(id: ContextCommandId) {
         : requestContext(operation.route, request)
     }
 
-    public async watchJob(knowledgeBaseId: string, jobId: string | undefined): Promise<void> {
-      if (!jobId) return
+    public async watchJob(knowledgeBaseId: string, jobId: string): Promise<void> {
       let job
       try {
         job = await watchJob(knowledgeBaseId, jobId, {label: `Waiting for job ${jobId}`})
@@ -232,10 +241,9 @@ export function contextCommand(id: ContextCommandId) {
 
     public async watchSync(
       knowledgeBaseId: string,
-      sourceId: string | undefined,
+      sourceId: string,
       previousSyncId: string | null,
     ): Promise<void> {
-      if (!sourceId) return
       let sync
       try {
         sync = await watchSourceSync(knowledgeBaseId, sourceId, previousSyncId)

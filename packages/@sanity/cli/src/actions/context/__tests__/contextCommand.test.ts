@@ -192,6 +192,20 @@ describe('generated context commands', () => {
     expect(error?.oclif?.exit).toBe(1)
   })
 
+  test('--json --watch prints the result when the response starts nothing to follow', async () => {
+    mockRequest.mockResolvedValueOnce({jobId: null})
+
+    const {error, stdout} = await testCommand(ApplyIssuesCommand, [
+      'kb-abc123',
+      'i1',
+      '--watch',
+      '--json',
+    ])
+
+    if (error) throw error
+    expect(JSON.parse(stdout)).toEqual({jobId: null})
+  })
+
   describe('delete', () => {
     beforeEach(() => {
       mockRequest.mockImplementation(

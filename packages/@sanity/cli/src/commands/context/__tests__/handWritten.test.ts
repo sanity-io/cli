@@ -213,6 +213,26 @@ describe('context documents content', () => {
     expect(stdout).toContain(`Wrote ${output}`)
   })
 
+  test('writes the JSON view to --output as JSON', async () => {
+    const output = join(await mkdtemp(join(tmpdir(), 'context-')), 'view.json')
+    mockRequest.mockResolvedValueOnce({content: 'first', slice: {end: 1, start: 1}})
+
+    const {error} = await testCommand(GetDocumentContentCommand, [
+      'kb-abc123',
+      'doc1',
+      '--format',
+      'json',
+      '--output',
+      output,
+    ])
+
+    if (error) throw error
+    expect(JSON.parse(await readFile(output, 'utf8'))).toEqual({
+      content: 'first',
+      slice: {end: 1, start: 1},
+    })
+  })
+
   test('numbers the lines of the JSON view with --line-numbers', async () => {
     mockRequest.mockResolvedValueOnce({content: 'first\nsecond', slice: {end: 11, start: 10}})
 
@@ -261,6 +281,27 @@ describe('context issues resolve', () => {
         query: {},
       },
     )
+  })
+
+  test('a cancelled side prompt is an abort, not a failed request', async () => {
+    mockRequest.mockImplementation(
+      contextRoutes({
+        'GET /knowledge-bases/{knowledgeBaseId}': () => ({
+          organizationId: 'org1',
+          publicId: 'kb-abc123',
+        }),
+      }),
+    )
+    mockFetch.mockResolvedValueOnce(conflict)
+    vi.mocked(select).mockRejectedValueOnce(
+      Object.assign(new Error('cancelled'), {name: 'ExitPromptError'}),
+    )
+
+    const {error} = await testCommand(ResolveIssueCommand, ['kb-abc123', 'issue1'], {
+      mocks: {isInteractive: true},
+    })
+
+    expect(error?.message).not.toContain('Resolve a conflict issue failed')
   })
 
   test('asks which side is correct without --side', async () => {
