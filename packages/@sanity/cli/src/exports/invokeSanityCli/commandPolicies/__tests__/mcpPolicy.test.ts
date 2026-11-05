@@ -59,3 +59,34 @@ describe('mcpPolicy media:import', () => {
     ).toBe(true)
   })
 })
+
+describe('mcpPolicy context sources and documents', () => {
+  test.each([
+    ['a website', {url: 'https://example.com'}],
+    ['a dataset', {dataset: 'production', 'project-id': 'abc123', query: '*'}],
+  ])('allows adding %s source', (_label, flags) => {
+    expect(validate('context:sources:create', {flags})).toBe(true)
+  })
+
+  test.each([
+    ['a local file', {file: './handbook.pdf'}],
+    ['text from a local file', {text: './notes.md'}],
+    ['text from stdin', {text: '-'}],
+  ])('refuses adding a source from %s', (_label, flags) => {
+    expect(validate('context:sources:create', {flags})).toBe(false)
+  })
+
+  test('refuses uploads, which always read a local file', () => {
+    expect(mcpPolicy['context:sources:upload']?.kind).toBe('deny')
+  })
+
+  test('refuses watching a sync, which has no deadline', () => {
+    expect(validate('context:sources:sync', {flags: {watch: false}})).toBe(true)
+    expect(validate('context:sources:sync', {flags: {watch: true}})).toBe(false)
+  })
+
+  test('refuses writing document content to a local file', () => {
+    expect(validate('context:documents:content', {flags: {format: 'markdown'}})).toBe(true)
+    expect(validate('context:documents:content', {flags: {output: 'out.md'}})).toBe(false)
+  })
+})

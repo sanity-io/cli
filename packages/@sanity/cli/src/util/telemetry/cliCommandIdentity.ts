@@ -1,3 +1,5 @@
+import {contextCommandTable} from '../../actions/context/commandTable.js'
+
 // Command paths only: positional user input must never become command identity.
 const commandPaths = new Set([
   'api',
@@ -25,26 +27,12 @@ const commandPaths = new Set([
   'build',
   'check',
   'codemod',
-  'context build',
-  'context create',
-  'context delete',
+  // Generated context commands come from the command table
+  ...contextCommandTable.map((entry) => entry.id),
   'context entries get',
   'context entries list',
-  'context entries rebuild',
-  'context get',
-  'context imports create',
-  'context imports delete',
-  'context imports download',
-  'context imports get',
-  'context imports list',
-  'context issues apply',
-  'context issues dismiss',
   'context issues get',
   'context issues list',
-  'context issues reopen',
-  'context issues resolve',
-  'context jobs get',
-  'context list',
   'context mcp create',
   'context mcp delete',
   'context mcp get',
@@ -52,8 +40,6 @@ const commandPaths = new Set([
   'context mcp status',
   'context mcp update',
   'context query',
-  'context refresh',
-  'context update',
   'cors add',
   'cors delete',
   'cors list',

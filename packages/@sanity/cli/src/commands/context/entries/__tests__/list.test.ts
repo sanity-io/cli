@@ -2,6 +2,7 @@ import {testCommand} from '@sanity/cli-test'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
 import {httpError} from '../../../../../test/helpers/httpError.js'
+import {contextRoutes} from '../../__tests__/contextRoutes.js'
 import {entry, knowledgeBase} from '../../__tests__/fixtures.js'
 import {ListEntriesCommand} from '../list.js'
 
@@ -25,7 +26,13 @@ const listedEntry = {
 describe('context entries list', () => {
   beforeEach(() => {
     mockGetGlobalCliClient.mockResolvedValue({
-      context: {entries: {list: mockEntriesList}, knowledgeBases: {get: mockKnowledgeBasesGet}},
+      context: {
+        fetch: () => mockEntriesList(),
+        request: contextRoutes({
+          'GET /knowledge-bases/{knowledgeBaseId}': ({params}) =>
+            mockKnowledgeBasesGet(params?.knowledgeBaseId),
+        }),
+      },
     })
     mockKnowledgeBasesGet.mockResolvedValue(knowledgeBase)
   })
@@ -43,12 +50,6 @@ describe('context entries list', () => {
     expect(stdout).toContain('billing/refunds')
     expect(stdout).toContain('Refunds')
     expect(stdout).toContain('filled')
-    expect(mockGetGlobalCliClient).toHaveBeenLastCalledWith(
-      expect.objectContaining({
-        context: {organizationId: 'org-abc123'},
-        resource: {id: 'kb-abc123', type: 'knowledge-base'},
-      }),
-    )
   })
 
   test('outputs JSON with --json', async () => {

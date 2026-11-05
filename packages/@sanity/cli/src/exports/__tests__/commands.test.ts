@@ -415,7 +415,7 @@ describe('invokeSanityCli', () => {
     })
 
     expect(result.exitCode).toBe(0)
-    expect(result.output).toBe('No knowledge bases found')
+    expect(result.output).toBe('No results')
   })
 
   test('a dropped JSON flag still reaches the command with its other flags', async () => {

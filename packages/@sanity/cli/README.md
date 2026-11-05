@@ -36,16 +36,19 @@ Code for sanity cli
 - [`sanity context build KNOWLEDGEBASEID`](#sanity-context-build-knowledgebaseid)
 - [`sanity context create`](#sanity-context-create)
 - [`sanity context delete KNOWLEDGEBASEID`](#sanity-context-delete-knowledgebaseid)
+- [`sanity context documents content KNOWLEDGEBASEID DOCUMENTID`](#sanity-context-documents-content-knowledgebaseid-documentid)
+- [`sanity context documents delete KNOWLEDGEBASEID DOCUMENTID`](#sanity-context-documents-delete-knowledgebaseid-documentid)
+- [`sanity context documents edit KNOWLEDGEBASEID DOCUMENTID`](#sanity-context-documents-edit-knowledgebaseid-documentid)
+- [`sanity context documents get KNOWLEDGEBASEID DOCUMENTID`](#sanity-context-documents-get-knowledgebaseid-documentid)
+- [`sanity context documents list KNOWLEDGEBASEID`](#sanity-context-documents-list-knowledgebaseid)
 - [`sanity context entries get KNOWLEDGEBASEID PATH`](#sanity-context-entries-get-knowledgebaseid-path)
 - [`sanity context entries list KNOWLEDGEBASEID`](#sanity-context-entries-list-knowledgebaseid)
-- [`sanity context entries rebuild KNOWLEDGEBASEID PATH`](#sanity-context-entries-rebuild-knowledgebaseid-path)
+- [`sanity context entries rebuild KNOWLEDGEBASEID ENTRYPATH`](#sanity-context-entries-rebuild-knowledgebaseid-entrypath)
 - [`sanity context get KNOWLEDGEBASEID`](#sanity-context-get-knowledgebaseid)
-- [`sanity context imports create KNOWLEDGEBASEID`](#sanity-context-imports-create-knowledgebaseid)
-- [`sanity context imports delete KNOWLEDGEBASEID IMPORTID`](#sanity-context-imports-delete-knowledgebaseid-importid)
-- [`sanity context imports download KNOWLEDGEBASEID IMPORTID`](#sanity-context-imports-download-knowledgebaseid-importid)
-- [`sanity context imports get KNOWLEDGEBASEID IMPORTID`](#sanity-context-imports-get-knowledgebaseid-importid)
-- [`sanity context imports list KNOWLEDGEBASEID`](#sanity-context-imports-list-knowledgebaseid)
-- [`sanity context issues apply KNOWLEDGEBASEID ISSUEID`](#sanity-context-issues-apply-knowledgebaseid-issueid)
+- [`sanity context instructions create KNOWLEDGEBASEID`](#sanity-context-instructions-create-knowledgebaseid)
+- [`sanity context instructions delete KNOWLEDGEBASEID INSTRUCTIONID`](#sanity-context-instructions-delete-knowledgebaseid-instructionid)
+- [`sanity context instructions edit KNOWLEDGEBASEID INSTRUCTIONID`](#sanity-context-instructions-edit-knowledgebaseid-instructionid)
+- [`sanity context issues apply KNOWLEDGEBASEID ISSUEIDS`](#sanity-context-issues-apply-knowledgebaseid-issueids)
 - [`sanity context issues dismiss KNOWLEDGEBASEID ISSUEID`](#sanity-context-issues-dismiss-knowledgebaseid-issueid)
 - [`sanity context issues get KNOWLEDGEBASEID ISSUEID`](#sanity-context-issues-get-knowledgebaseid-issueid)
 - [`sanity context issues list KNOWLEDGEBASEID`](#sanity-context-issues-list-knowledgebaseid)
@@ -56,11 +59,23 @@ Code for sanity cli
 - [`sanity context mcp create NAME`](#sanity-context-mcp-create-name)
 - [`sanity context mcp delete NAME`](#sanity-context-mcp-delete-name)
 - [`sanity context mcp get NAME`](#sanity-context-mcp-get-name)
+- [`sanity context mcp initial-context MCPENDPOINT`](#sanity-context-mcp-initial-context-mcpendpoint)
 - [`sanity context mcp list`](#sanity-context-mcp-list)
 - [`sanity context mcp status NAME`](#sanity-context-mcp-status-name)
 - [`sanity context mcp update NAME`](#sanity-context-mcp-update-name)
 - [`sanity context query QUERY`](#sanity-context-query-query)
-- [`sanity context refresh KNOWLEDGEBASEID`](#sanity-context-refresh-knowledgebaseid)
+- [`sanity context sources create KNOWLEDGEBASEID`](#sanity-context-sources-create-knowledgebaseid)
+- [`sanity context sources delete KNOWLEDGEBASEID SOURCEID`](#sanity-context-sources-delete-knowledgebaseid-sourceid)
+- [`sanity context sources edit KNOWLEDGEBASEID SOURCEID`](#sanity-context-sources-edit-knowledgebaseid-sourceid)
+- [`sanity context sources get KNOWLEDGEBASEID SOURCEID`](#sanity-context-sources-get-knowledgebaseid-sourceid)
+- [`sanity context sources list KNOWLEDGEBASEID`](#sanity-context-sources-list-knowledgebaseid)
+- [`sanity context sources sync KNOWLEDGEBASEID SOURCEID`](#sanity-context-sources-sync-knowledgebaseid-sourceid)
+- [`sanity context sources syncs confirm KNOWLEDGEBASEID SOURCEID SYNCID`](#sanity-context-sources-syncs-confirm-knowledgebaseid-sourceid-syncid)
+- [`sanity context sources syncs discard KNOWLEDGEBASEID SOURCEID SYNCID`](#sanity-context-sources-syncs-discard-knowledgebaseid-sourceid-syncid)
+- [`sanity context sources syncs get KNOWLEDGEBASEID SOURCEID SYNCID`](#sanity-context-sources-syncs-get-knowledgebaseid-sourceid-syncid)
+- [`sanity context sources syncs list KNOWLEDGEBASEID SOURCEID`](#sanity-context-sources-syncs-list-knowledgebaseid-sourceid)
+- [`sanity context sources upload KNOWLEDGEBASEID SOURCEID`](#sanity-context-sources-upload-knowledgebaseid-sourceid)
+- [`sanity context sync KNOWLEDGEBASEID`](#sanity-context-sync-knowledgebaseid)
 - [`sanity context update KNOWLEDGEBASEID`](#sanity-context-update-knowledgebaseid)
 - [`sanity cors add ORIGIN`](#sanity-cors-add-origin)
 - [`sanity cors delete [ORIGIN]`](#sanity-cors-delete-origin)
@@ -991,21 +1006,28 @@ EXAMPLES
 
 ## `sanity context build KNOWLEDGEBASEID`
 
-Build a knowledge base from its imported content
+Start a knowledge base build
 
 ```
 USAGE
-  $ sanity context build KNOWLEDGEBASEID [--cancel | --watch]
+  $ sanity context build KNOWLEDGEBASEID [--json] [--cancel | --watch]
 
 ARGUMENTS
-  KNOWLEDGEBASEID  Knowledge base ID
+  KNOWLEDGEBASEID  The knowledge base's ID (`kb...`), its `publicId`. Its UUID `id` is also accepted.
 
 FLAGS
   --cancel  Cancel the running build instead of starting one
-  --watch   Wait for the build to finish, exiting non-zero if it fails
+  --watch   Wait for the job to finish, exiting non-zero if it fails
+
+GLOBAL FLAGS
+  --json  Format output as json.
 
 DESCRIPTION
-  Build a knowledge base from its imported content
+  Start a knowledge base build
+
+  Queues a build over the knowledge base's current sources and returns a job ID immediately. If a build is already
+  running, the response returns that build's job ID instead of starting a second build. A draft can't be built: the
+  request returns `409` with code `knowledgeBaseIsDraft`.
 
 EXAMPLES
   Start a build and return the job ID
@@ -1027,54 +1049,261 @@ Create a knowledge base
 
 ```
 USAGE
-  $ sanity context create [--organization <id>] [--description <value>] [--title <value>]
+  $ sanity context create [--json] [--title <value>] [--description <value>] [--draft] [--organization <id>]
 
 FLAGS
-  --description=<value>  Knowledge base description
-  --title=<value>        Knowledge base title
+  --description=<value>  A short description of what the knowledge base covers. Required unless `draft` is `true`.
+  --[no-]draft           Whether to create the knowledge base as a draft. You can add sources to a draft, and they sync
+                         right away, but you can't build it, and the list leaves it out unless you set `includeDrafts`
+                         to `true`. A draft counts toward your plan's knowledge base limit. To finish it, update it with
+                         `draft` set to `false`.
+  --title=<value>        The knowledge base's title. Required unless `draft` is `true`.
+
+GLOBAL FLAGS
+  --json  Format output as json.
 
 OVERRIDE FLAGS
-  --organization=<id>  Organization to create the knowledge base in (overrides CLI configuration)
+  --organization=<id>  Organization ID (overrides CLI configuration)
 
 DESCRIPTION
   Create a knowledge base
 
+  Creates a knowledge base in your organization. To add content to it, add a source. Set `draft` to `true` to create a
+  draft, which needs no title or description until you finish it. If your organization's Context document store can't be
+  used, the request returns `503` with code `contextStoreUnavailable` and you can retry.
+
 EXAMPLES
-  Interactively create a knowledge base
+  Create a knowledge base
 
     $ sanity context create
 
-  Create a knowledge base in a specific organization
+  Create a knowledge base, as JSON
 
-    $ sanity context create --organization org-abc123 --title "Support docs" --description "Product docs and \
-      troubleshooting guides"
+    $ sanity context create --json
 ```
 
 ## `sanity context delete KNOWLEDGEBASEID`
 
-Delete a knowledge base and its generated content
+Delete a knowledge base
 
 ```
 USAGE
-  $ sanity context delete KNOWLEDGEBASEID [-y]
+  $ sanity context delete KNOWLEDGEBASEID [--json] [-y]
 
 ARGUMENTS
-  KNOWLEDGEBASEID  Knowledge base ID
+  KNOWLEDGEBASEID  The knowledge base's ID (`kb...`), its `publicId`. Its UUID `id` is also accepted.
 
 FLAGS
   -y, --yes  Skip confirmation prompt (unattended mode)
 
+GLOBAL FLAGS
+  --json  Format output as json.
+
 DESCRIPTION
-  Delete a knowledge base and its generated content
+  Delete a knowledge base
+
+  Deletes the knowledge base and everything it owns: its sources, revisions, stored source files, and its documents in
+  your organization's document store. While a build, refresh, apply, or sync is running, the request returns `409` with
+  code `buildInFlight`. Retry after that work finishes.
 
 EXAMPLES
-  Delete a knowledge base after confirmation
+  Delete a knowledge base
 
-    $ sanity context delete kb-abc123
+    $ sanity context delete <knowledgeBaseId>
 
-  Delete a knowledge base without confirmation prompt
+  Delete a knowledge base, as JSON
 
-    $ sanity context delete kb-abc123 --yes
+    $ sanity context delete <knowledgeBaseId> --json
+```
+
+## `sanity context documents content KNOWLEDGEBASEID DOCUMENTID`
+
+Get a document's markdown
+
+```
+USAGE
+  $ sanity context documents content KNOWLEDGEBASEID DOCUMENTID [--json] [--format json|markdown|plain|raw] [--chunk <value>]
+    [--lines <value>] [--line-numbers] [-o <file>]
+
+ARGUMENTS
+  KNOWLEDGEBASEID  The knowledge base's ID (`kb...`), its `publicId`. Its UUID `id` is also accepted.
+  DOCUMENTID       The document's ID.
+
+FLAGS
+  -o, --output=<file>    Write the content to this file instead of stdout
+      --chunk=<value>    Return only this chunk's lines. Citations name the chunk they quote.
+      --format=<option>  Response format. `json` (default) returns the markdown with its line numbers. `markdown` and
+                         `plain` return the markdown alone, ready to pass to a model. `raw` returns the bytes the source
+                         gave, before conversion: the uploaded file, the crawled page, the dataset document as JSON.
+                         <options: json|markdown|plain|raw>
+      --line-numbers     Number each line as citations number them
+      --lines=<value>    Return only these lines, from 1 and inclusive: `10-20`, or `10` for line 10 to the end. A range
+                         past the end returns up to the last line.
+
+GLOBAL FLAGS
+  --json  Format output as json.
+
+DESCRIPTION
+  Get a document's markdown
+
+  Returns the markdown a document converted to: the text builds read, and the line numbers citations use. Set `chunk` or
+  `lines` to get part of it, and `format` to `markdown` or `plain` to get the text alone instead of JSON. Until the
+  document is converted, the request returns `409` with code `documentNotConverted`. With `format=raw` it returns the
+  document as its source gave it, as an attachment, or `409` with code `documentNotStored` when the document was too
+  large to keep.
+
+EXAMPLES
+  Print a document's markdown
+
+    $ sanity context documents content kb-abc123 document-def456
+
+  Print lines 10 to 20, each with its line number
+
+    $ sanity context documents content kb-abc123 document-def456 --lines 10-20 --line-numbers
+
+  Download the original file
+
+    $ sanity context documents content kb-abc123 document-def456 --format raw --output handbook.pdf
+```
+
+## `sanity context documents delete KNOWLEDGEBASEID DOCUMENTID`
+
+Delete a document
+
+```
+USAGE
+  $ sanity context documents delete KNOWLEDGEBASEID DOCUMENTID [--json] [-y]
+
+ARGUMENTS
+  KNOWLEDGEBASEID  The knowledge base's ID (`kb...`), its `publicId`. Its UUID `id` is also accepted.
+  DOCUMENTID       The document's ID.
+
+FLAGS
+  -y, --yes  Skip confirmation prompt (unattended mode)
+
+GLOBAL FLAGS
+  --json  Format output as json.
+
+DESCRIPTION
+  Delete a document
+
+  Deletes a document from its source. A page that is still on the website comes back on the next sync of its source
+  unless the crawl options exclude it. Entries that cite the document stay the same until the next build or refresh,
+  which removes the citations.
+
+EXAMPLES
+  Delete a document
+
+    $ sanity context documents delete <knowledgeBaseId> <documentId>
+
+  Delete a document, as JSON
+
+    $ sanity context documents delete <knowledgeBaseId> <documentId> --json
+```
+
+## `sanity context documents edit KNOWLEDGEBASEID DOCUMENTID`
+
+Keep a missing document
+
+```
+USAGE
+  $ sanity context documents edit KNOWLEDGEBASEID DOCUMENTID --state active [--json]
+
+ARGUMENTS
+  KNOWLEDGEBASEID  The knowledge base's ID (`kb...`), its `publicId`. Its UUID `id` is also accepted.
+  DOCUMENTID       The document's ID.
+
+FLAGS
+  --state=<option>  (required) Set to `active` to keep a `missing` page in the knowledge base. The count of crawls that
+                    missed it starts again.
+                    <options: active>
+
+GLOBAL FLAGS
+  --json  Format output as json.
+
+DESCRIPTION
+  Keep a missing document
+
+  Keeps a `missing` web page in the knowledge base by setting its `state` back to `active`. A document that isn't
+  `missing` returns `409` with code `documentInvalidState`.
+
+EXAMPLES
+  Keep a missing document
+
+    $ sanity context documents edit <knowledgeBaseId> <documentId>
+
+  Keep a missing document, as JSON
+
+    $ sanity context documents edit <knowledgeBaseId> <documentId> --json
+```
+
+## `sanity context documents get KNOWLEDGEBASEID DOCUMENTID`
+
+Get a document
+
+```
+USAGE
+  $ sanity context documents get KNOWLEDGEBASEID DOCUMENTID [--json]
+
+ARGUMENTS
+  KNOWLEDGEBASEID  The knowledge base's ID (`kb...`), its `publicId`. Its UUID `id` is also accepted.
+  DOCUMENTID       The document's ID.
+
+GLOBAL FLAGS
+  --json  Format output as json.
+
+DESCRIPTION
+  Get a document
+
+  Returns a document with its conversion status and the chunks of its markdown. Entry citations point at a document's
+  chunks.
+
+EXAMPLES
+  Get a document
+
+    $ sanity context documents get <knowledgeBaseId> <documentId>
+
+  Get a document, as JSON
+
+    $ sanity context documents get <knowledgeBaseId> <documentId> --json
+```
+
+## `sanity context documents list KNOWLEDGEBASEID`
+
+List documents
+
+```
+USAGE
+  $ sanity context documents list KNOWLEDGEBASEID [--json] [--source <value>] [--state active|missing|deleted] [--ids
+    <value>]
+
+ARGUMENTS
+  KNOWLEDGEBASEID  The knowledge base's ID (`kb...`), its `publicId`. Its UUID `id` is also accepted.
+
+FLAGS
+  --ids=<value>     Comma-separated IDs of the documents to return, up to 200, in any state. Use it to look up the
+                    documents entry citations point at.
+  --source=<value>  Return only the documents of this source.
+  --state=<option>  Return only documents in this state. Without it, `deleted` documents are left out.
+                    <options: active|missing|deleted>
+
+GLOBAL FLAGS
+  --json  Format output as json.
+
+DESCRIPTION
+  List documents
+
+  Lists the documents in a knowledge base: the pages, dataset documents and files its sources yield, which builds read
+  and cite. Results are cursor-paginated, and you can filter them by `source` and `state`.
+
+EXAMPLES
+  List documents
+
+    $ sanity context documents list <knowledgeBaseId>
+
+  List documents, as JSON
+
+    $ sanity context documents list <knowledgeBaseId> --json
 ```
 
 ## `sanity context entries get KNOWLEDGEBASEID PATH`
@@ -1132,240 +1361,231 @@ EXAMPLES
     $ sanity context entries list kb-abc123 --json
 ```
 
-## `sanity context entries rebuild KNOWLEDGEBASEID PATH`
+## `sanity context entries rebuild KNOWLEDGEBASEID ENTRYPATH`
 
-Rebuild one entry from its sources
+Rebuild an entry from its sources
 
 ```
 USAGE
-  $ sanity context entries rebuild KNOWLEDGEBASEID PATH [--watch]
+  $ sanity context entries rebuild KNOWLEDGEBASEID ENTRYPATH [--json] [--watch]
 
 ARGUMENTS
-  KNOWLEDGEBASEID  Knowledge base ID
-  PATH             Entry path, as listed by `sanity context entries list`
+  KNOWLEDGEBASEID  The knowledge base's ID (`kb...`), its `publicId`. Its UUID `id` is also accepted.
+  ENTRYPATH        The entry's slash-delimited path, such as `pricing/plans/free`, URL-encoded.
 
 FLAGS
-  --watch  Wait for the rebuild to finish, exiting non-zero if it fails
+  --watch  Wait for the job to finish, exiting non-zero if it fails
+
+GLOBAL FLAGS
+  --json  Format output as json.
 
 DESCRIPTION
-  Rebuild one entry from its sources
+  Rebuild an entry from its sources
+
+  Queues a rewrite of the entry at `entryPath` from its cited sources and the active instructions, and returns a job ID
+  immediately. The response also lists the other entries built from any of the same sources. An instruction applies to
+  every entry built from its sources, so those entries can change too. Returns `422` with code `entryDocumentInvalid` if
+  the entry document was edited into a shape the API cannot read.
 
 EXAMPLES
-  Start a rebuild and return the job ID
+  Rebuild an entry from its sources
 
-    $ sanity context entries rebuild kb-abc123 billing/refunds
+    $ sanity context entries rebuild <knowledgeBaseId> <entryPath>
 
-  Rebuild an entry and wait for it to finish (non-zero exit on failure)
+  Rebuild an entry from its sources, as JSON
 
-    $ sanity context entries rebuild kb-abc123 billing/refunds --watch
+    $ sanity context entries rebuild <knowledgeBaseId> <entryPath> --json
 ```
 
 ## `sanity context get KNOWLEDGEBASEID`
 
-Get details of a knowledge base
+Get a knowledge base
 
 ```
 USAGE
   $ sanity context get KNOWLEDGEBASEID [--json]
 
 ARGUMENTS
-  KNOWLEDGEBASEID  Knowledge base ID
+  KNOWLEDGEBASEID  The knowledge base's ID (`kb...`), its `publicId`. Its UUID `id` is also accepted.
 
 GLOBAL FLAGS
   --json  Format output as json.
 
 DESCRIPTION
-  Get details of a knowledge base
+  Get a knowledge base
+
+  Returns a knowledge base's metadata and state. `knowledgeBaseId` accepts the public ID (`kb...`) or the UUID, and you
+  don't need to pass an organization. If you can't read the knowledge base, the request returns `404`. To read the built
+  entries, query `sanity.context.entry` documents with GROQ from your organization's document store.
 
 EXAMPLES
-  Get details of a specific knowledge base
+  Get a knowledge base
 
-    $ sanity context get kb-abc123
+    $ sanity context get <knowledgeBaseId>
 
-  Output the knowledge base as JSON
+  Get a knowledge base, as JSON
 
-    $ sanity context get kb-abc123 --json
+    $ sanity context get <knowledgeBaseId> --json
 ```
 
-## `sanity context imports create KNOWLEDGEBASEID`
+## `sanity context instructions create KNOWLEDGEBASEID`
 
-Import content into a knowledge base
+Create an instruction
 
 ```
 USAGE
-  $ sanity context imports create KNOWLEDGEBASEID [--content-type <mime>] [--file <path> | --text <value> | --url <url> |
-    --query <value>] [--sanity-dataset <name> ] [--sanity-project <id> ] [--title <value> ]
+  $ sanity context instructions create KNOWLEDGEBASEID --statement <value> --scope-document-ids <value>... [--json]
+    [--rebuild-paths <value>...] [--verified]
 
 ARGUMENTS
-  KNOWLEDGEBASEID  Knowledge base ID
+  KNOWLEDGEBASEID  The knowledge base's ID (`kb...`), its `publicId`. Its UUID `id` is also accepted.
 
 FLAGS
-  --content-type=<mime>    Content type of the import (--text: text/markdown or text/plain; --file: any MIME type,
-                           inferred from the file extension when omitted)
-  --file=<path>            Path to a local file to import
-  --query=<value>          GROQ query binding a Sanity dataset as a source
-  --sanity-dataset=<name>  Sanity dataset for a dataset import
-  --sanity-project=<id>    Sanity project ID for a dataset import
-  --text=<value>           Inline text content to import (requires --title)
-  --title=<value>          Title for an inline text import
-  --url=<url>              Website URL to crawl
+  --rebuild-paths=<value>...       Paths of entries to rebuild under the new instruction right away. The response
+                                   returns the rebuild job ID in `rebuildJobId`.
+  --scope-document-ids=<value>...  (required) IDs of the documents the instruction applies to. Builds apply it when they
+                                   write entries built from these documents. IDs of documents that no longer exist are
+                                   dropped. If none exist, the request returns `422` with code
+                                   `instructionScopeVanished`.
+  --statement=<value>              (required) The instruction in plain language. Builds follow it over what the sources
+                                   say.
+  --[no-]verified                  Whether you already checked the instruction for entries that contradict it. When
+                                   `true`, the background check that files issues for those entries is skipped. It still
+                                   runs if the rebuild you requested in `rebuildPaths` does not start.
+
+GLOBAL FLAGS
+  --json  Format output as json.
 
 DESCRIPTION
-  Import content into a knowledge base
+  Create an instruction
+
+  Creates a standing instruction for how entries built from its documents are written. Every instruction applies to
+  specific documents, set in `scopeDocumentIds`. To rebuild entries under the new instruction right away, pass their
+  paths in `rebuildPaths`. The response includes the rebuild job ID, or `null` if the rebuild could not start. The
+  instruction is saved either way. After the instruction is saved, a background check files issues for entries that
+  contradict it. If you already checked the instruction for contradictions, set `verified` to skip the background check.
+  If the requested rebuild does not start, the background check runs even when `verified` is set.
 
 EXAMPLES
-  Import inline text
+  Create an instruction
 
-    $ sanity context imports create kb-abc123 --text "Refunds are processed within 5 days" --title "Refund policy"
+    $ sanity context instructions create <knowledgeBaseId>
 
-  Upload and import a local file
+  Create an instruction, as JSON
 
-    $ sanity context imports create kb-abc123 --file ./handbook.pdf
-
-  Crawl a website
-
-    $ sanity context imports create kb-abc123 --url https://example.com/docs
-
-  Bind a Sanity dataset as a source
-
-    $ sanity context imports create kb-abc123 --query '*[_type == "article"]' --sanity-project abc123 \
-      --sanity-dataset production
+    $ sanity context instructions create <knowledgeBaseId> --json
 ```
 
-## `sanity context imports delete KNOWLEDGEBASEID IMPORTID`
+## `sanity context instructions delete KNOWLEDGEBASEID INSTRUCTIONID`
 
-Delete an import from a knowledge base
+Delete an instruction
 
 ```
 USAGE
-  $ sanity context imports delete KNOWLEDGEBASEID IMPORTID [-y]
+  $ sanity context instructions delete KNOWLEDGEBASEID INSTRUCTIONID [--json] [--rebuild] [-y]
 
 ARGUMENTS
-  KNOWLEDGEBASEID  Knowledge base ID
-  IMPORTID         Import ID
+  KNOWLEDGEBASEID  The knowledge base's ID (`kb...`), its `publicId`. Its UUID `id` is also accepted.
+  INSTRUCTIONID    The instruction's ID.
 
 FLAGS
-  -y, --yes  Skip confirmation prompt (unattended mode)
-
-DESCRIPTION
-  Delete an import from a knowledge base
-
-EXAMPLES
-  Delete an import after confirmation
-
-    $ sanity context imports delete kb-abc123 import-def456
-
-  Delete an import without confirmation prompt
-
-    $ sanity context imports delete kb-abc123 import-def456 --yes
-```
-
-## `sanity context imports download KNOWLEDGEBASEID IMPORTID`
-
-Get a short-lived signed URL for the original uploaded bytes of a file import
-
-```
-USAGE
-  $ sanity context imports download KNOWLEDGEBASEID IMPORTID [--json]
-
-ARGUMENTS
-  KNOWLEDGEBASEID  Knowledge base ID
-  IMPORTID         Import ID
+  -y, --yes           Skip confirmation prompt (unattended mode)
+      --[no-]rebuild  Set to `true` to rebuild every entry built from the instruction's documents once it is deleted, so
+                      pages written under the instruction reflect their documents again. The response returns the
+                      rebuild job ID in `rebuildJobId`.
 
 GLOBAL FLAGS
   --json  Format output as json.
 
 DESCRIPTION
-  Get a short-lived signed URL for the original uploaded bytes of a file import
+  Delete an instruction
+
+  Deletes the instruction. Builds stop applying it from the next run. Entries already written under it keep their text
+  until they are rebuilt; pass `rebuild=true` to rebuild every entry built from its documents right away.
 
 EXAMPLES
-  Get a download URL for an uploaded file
+  Delete an instruction
 
-    $ sanity context imports download kb-abc123 import-def456
+    $ sanity context instructions delete <knowledgeBaseId> <instructionId>
+
+  Delete an instruction, as JSON
+
+    $ sanity context instructions delete <knowledgeBaseId> <instructionId> --json
 ```
 
-## `sanity context imports get KNOWLEDGEBASEID IMPORTID`
+## `sanity context instructions edit KNOWLEDGEBASEID INSTRUCTIONID`
 
-Get details of an import
+Update an instruction
 
 ```
 USAGE
-  $ sanity context imports get KNOWLEDGEBASEID IMPORTID [--json]
+  $ sanity context instructions edit KNOWLEDGEBASEID INSTRUCTIONID [--json] [--statement <value>] [--scope-document-ids
+    <value>...]
 
 ARGUMENTS
-  KNOWLEDGEBASEID  Knowledge base ID
-  IMPORTID         Import ID
-
-GLOBAL FLAGS
-  --json  Format output as json.
-
-DESCRIPTION
-  Get details of an import
-
-EXAMPLES
-  Get details of a specific import
-
-    $ sanity context imports get kb-abc123 import-def456
-
-  Output the import as JSON
-
-    $ sanity context imports get kb-abc123 import-def456 --json
-```
-
-## `sanity context imports list KNOWLEDGEBASEID`
-
-List imports for a knowledge base
-
-```
-USAGE
-  $ sanity context imports list KNOWLEDGEBASEID [--json]
-
-ARGUMENTS
-  KNOWLEDGEBASEID  Knowledge base ID
-
-GLOBAL FLAGS
-  --json  Format output as json.
-
-DESCRIPTION
-  List imports for a knowledge base
-
-EXAMPLES
-  List all imports for a knowledge base
-
-    $ sanity context imports list kb-abc123
-
-  Output imports as JSON
-
-    $ sanity context imports list kb-abc123 --json
-```
-
-## `sanity context issues apply KNOWLEDGEBASEID ISSUEID`
-
-Accept and apply issues to a knowledge base
-
-```
-USAGE
-  $ sanity context issues apply KNOWLEDGEBASEID ISSUEID... [--watch]
-
-ARGUMENTS
-  KNOWLEDGEBASEID  Knowledge base ID
-  ISSUEID...       ID of an issue to accept and apply (pass several to apply them in one batch). Conflicts can't be
-                   applied; resolve them with `sanity context issues resolve`
+  KNOWLEDGEBASEID  The knowledge base's ID (`kb...`), its `publicId`. Its UUID `id` is also accepted.
+  INSTRUCTIONID    The instruction's ID.
 
 FLAGS
-  --watch  Wait for the apply to finish, exiting non-zero if it fails
+  --scope-document-ids=<value>...  IDs of the documents the instruction applies to. Replaces the current list. Omit it
+                                   to keep the current documents. IDs of documents that no longer exist are dropped. If
+                                   none exist, the request returns `422` with code `instructionScopeVanished`.
+  --statement=<value>              The new instruction text. Omit it to keep the current text.
+
+GLOBAL FLAGS
+  --json  Format output as json.
 
 DESCRIPTION
-  Accept and apply issues to a knowledge base
+  Update an instruction
+
+  Updates the instruction's statement or documents. The change applies from the next build. Any update also reactivates
+  an archived instruction and ties it to the current content of its documents.
 
 EXAMPLES
-  Accept and apply two issues in one batch
+  Update an instruction
 
-    $ sanity context issues apply kb-abc123 issue.def456 issue.ghi789
+    $ sanity context instructions edit <knowledgeBaseId> <instructionId>
 
-  Apply an issue and wait for it to finish (non-zero exit on failure)
+  Update an instruction, as JSON
 
-    $ sanity context issues apply kb-abc123 issue.def456 --watch
+    $ sanity context instructions edit <knowledgeBaseId> <instructionId> --json
+```
+
+## `sanity context issues apply KNOWLEDGEBASEID ISSUEIDS`
+
+Accept and apply issues
+
+```
+USAGE
+  $ sanity context issues apply KNOWLEDGEBASEID ISSUEIDS... [--json] [--watch]
+
+ARGUMENTS
+  KNOWLEDGEBASEID  The knowledge base's ID (`kb...`), its `publicId`. Its UUID `id` is also accepted.
+  ISSUEIDS...      The IDs of the issues to accept and apply.
+
+FLAGS
+  --watch  Wait for the job to finish, exiting non-zero if it fails
+
+GLOBAL FLAGS
+  --json  Format output as json.
+
+DESCRIPTION
+  Accept and apply issues
+
+  Accepts the issues in `issueIds`, then queues a job that applies them, rewrites the affected entries, and saves a new
+  revision. Returns a job ID. IDs of issues that no longer exist are skipped. Returns `409` with code
+  `issueNotAutoApplicable`, and accepts none of the issues, if any of them cannot be applied: a `conflict` (resolve it
+  with `POST .../issues/{issueId}/resolve`), or an `update_required` issue whose `scopePath` is `*` or names an entry
+  that no longer exists. Dismiss those instead.
+
+EXAMPLES
+  Accept and apply issues
+
+    $ sanity context issues apply <knowledgeBaseId>
+
+  Accept and apply issues, as JSON
+
+    $ sanity context issues apply <knowledgeBaseId> --json
 ```
 
 ## `sanity context issues dismiss KNOWLEDGEBASEID ISSUEID`
@@ -1374,21 +1594,30 @@ Dismiss an issue
 
 ```
 USAGE
-  $ sanity context issues dismiss KNOWLEDGEBASEID ISSUEID
+  $ sanity context issues dismiss KNOWLEDGEBASEID ISSUEID [--json]
 
 ARGUMENTS
-  KNOWLEDGEBASEID  Knowledge base ID
-  ISSUEID          Issue ID
+  KNOWLEDGEBASEID  The knowledge base's ID (`kb...`), its `publicId`. Its UUID `id` is also accepted.
+  ISSUEID          The issue's document ID.
+
+GLOBAL FLAGS
+  --json  Format output as json.
 
 DESCRIPTION
   Dismiss an issue
 
-  Dismissing is permanent: dismissed issues can't be reopened.
+  Marks the issue as rejected. If the issue already left triage, the request returns it unchanged. Returns `422` with
+  code `issueDocumentInvalid` if the issue document was edited into a shape the API cannot verify. Returns `409` with
+  code `issueTransitionConflict` if another change to the issue happened at the same time. You can safely retry a `409`.
 
 EXAMPLES
   Dismiss an issue
 
-    $ sanity context issues dismiss kb-abc123 issue.def456
+    $ sanity context issues dismiss <knowledgeBaseId> <issueId>
+
+  Dismiss an issue, as JSON
+
+    $ sanity context issues dismiss <knowledgeBaseId> <issueId> --json
 ```
 
 ## `sanity context issues get KNOWLEDGEBASEID ISSUEID`
@@ -1470,120 +1699,141 @@ EXAMPLES
 
 ## `sanity context issues reopen KNOWLEDGEBASEID ISSUEID`
 
-Reopen a resolved conflict issue
+Reopen an accepted conflict
 
 ```
 USAGE
-  $ sanity context issues reopen KNOWLEDGEBASEID ISSUEID
+  $ sanity context issues reopen KNOWLEDGEBASEID ISSUEID [--json]
 
 ARGUMENTS
-  KNOWLEDGEBASEID  Knowledge base ID
-  ISSUEID          Issue ID
+  KNOWLEDGEBASEID  The knowledge base's ID (`kb...`), its `publicId`. Its UUID `id` is also accepted.
+  ISSUEID          The issue's document ID.
+
+GLOBAL FLAGS
+  --json  Format output as json.
 
 DESCRIPTION
-  Reopen a resolved conflict issue
+  Reopen an accepted conflict
+
+  Returns an accepted conflict issue to triage, clears its resolution, and deletes the instruction the resolution
+  created. Reopening an open or dismissed conflict returns it unchanged. Other issue types return `422` with code
+  `issueNotResolvable`.
 
 EXAMPLES
-  Return a resolved conflict issue to triage
+  Reopen an accepted conflict
 
-    $ sanity context issues reopen kb-abc123 issue.def456
+    $ sanity context issues reopen <knowledgeBaseId> <issueId>
+
+  Reopen an accepted conflict, as JSON
+
+    $ sanity context issues reopen <knowledgeBaseId> <issueId> --json
 ```
 
 ## `sanity context issues resolve KNOWLEDGEBASEID ISSUEID`
 
-Resolve a conflict issue by choosing the correct side
+Resolve a conflict issue
 
 ```
 USAGE
-  $ sanity context issues resolve KNOWLEDGEBASEID ISSUEID [--side <value>] [--watch]
+  $ sanity context issues resolve KNOWLEDGEBASEID ISSUEID [--json] [--watch] [--side <value>]
 
 ARGUMENTS
-  KNOWLEDGEBASEID  Knowledge base ID
-  ISSUEID          Issue ID
+  KNOWLEDGEBASEID  The knowledge base's ID (`kb...`), its `publicId`. Its UUID `id` is also accepted.
+  ISSUEID          The issue's document ID.
 
 FLAGS
   --side=<value>  Index of the correct side, as listed by `sanity context issues get`
-  --watch         Wait for the entry rewrite to finish, exiting non-zero if it fails
+  --watch         Wait for the job to finish, exiting non-zero if it fails
+
+GLOBAL FLAGS
+  --json  Format output as json.
 
 DESCRIPTION
-  Resolve a conflict issue by choosing the correct side
+  Resolve a conflict issue
 
-  Resolving also creates a standing instruction that future builds follow. `sanity context issues reopen` removes it.
+  Resolves a conflict issue by choosing one of its sides. Set `resolution` to the index of a side in `content.sides`.
+  For a conflict on a single entry, index `0` is the entry's current content, so choosing it keeps the entry as it is.
+  Choosing any other side rewrites the entry, and the returned `jobId` tracks the rewrite. The decision becomes a
+  standing instruction for every future build, and `resolvedBy` records who made it. To change a decision, resolve the
+  accepted conflict again. Other issue types, dismissed conflicts, and out-of-range indexes return `422` with code
+  `issueNotResolvable`.
 
 EXAMPLES
-  Interactively choose the correct side of a conflict
+  Choose the correct side interactively
 
-    $ sanity context issues resolve kb-abc123 issue.def456
+    $ sanity context issues resolve kb-abc123 issue-def456
 
-  Choose side 1 and wait for the entry to be rewritten
+  Choose side 1 and wait for the entry rewrite
 
-    $ sanity context issues resolve kb-abc123 issue.def456 --side 1 --watch
-
-  Keep the entry as it is (for a conflict on a single entry)
-
-    $ sanity context issues resolve kb-abc123 issue.def456 --side 0
+    $ sanity context issues resolve kb-abc123 issue-def456 --side 1 --watch
 ```
 
 ## `sanity context jobs get KNOWLEDGEBASEID JOBID`
 
-Get the status of a knowledge base job
+Get a job
 
 ```
 USAGE
   $ sanity context jobs get KNOWLEDGEBASEID JOBID [--json] [--watch]
 
 ARGUMENTS
-  KNOWLEDGEBASEID  Knowledge base ID
-  JOBID            Job ID
+  KNOWLEDGEBASEID  The knowledge base's ID (`kb...`), its `publicId`. Its UUID `id` is also accepted.
+  JOBID            The job ID returned by the endpoint that started the work.
 
 FLAGS
-  --watch  Poll until the job reaches a terminal state
+  --watch  Wait for the job to finish, exiting non-zero if it fails
 
 GLOBAL FLAGS
   --json  Format output as json.
 
 DESCRIPTION
-  Get the status of a knowledge base job
+  Get a job
+
+  Returns the status of a background job, such as a build, sync, or refresh. The endpoint that starts the work returns
+  the job ID.
 
 EXAMPLES
-  Get the current status of a job
+  Get a job
 
-    $ sanity context jobs get kb-abc123 job-def456
+    $ sanity context jobs get <knowledgeBaseId> <jobId>
 
-  Wait for the job to finish (non-zero exit if it does not succeed)
+  Get a job, as JSON
 
-    $ sanity context jobs get kb-abc123 job-def456 --watch
+    $ sanity context jobs get <knowledgeBaseId> <jobId> --json
 ```
 
 ## `sanity context list`
 
-List knowledge bases in an organization
+List knowledge bases
 
 ```
 USAGE
-  $ sanity context list [--json] [--organization <id>]
+  $ sanity context list [--json] [--include-drafts] [--organization <id>]
+
+FLAGS
+  --[no-]include-drafts  Set to `true` to also list the organization's drafts, which have `state` set to `draft`. Drafts
+                         count toward the plan's knowledge base limit, and `createdBy` says who started each one.
 
 GLOBAL FLAGS
   --json  Format output as json.
 
 OVERRIDE FLAGS
-  --organization=<id>  Organization to list knowledge bases for (overrides CLI configuration)
+  --organization=<id>  Organization ID (overrides CLI configuration)
 
 DESCRIPTION
-  List knowledge bases in an organization
+  List knowledge bases
+
+  Returns the knowledge bases you can access in the organization set by `organizationId`. Drafts are left out unless you
+  set `includeDrafts` to `true`. Results are cursor-paginated, newest first.
 
 EXAMPLES
-  List knowledge bases, selecting the organization interactively
+  List knowledge bases
 
     $ sanity context list
 
-  List knowledge bases in a specific organization
+  List knowledge bases, as JSON
 
-    $ sanity context list --organization org-abc123
-
-  Output knowledge bases as JSON
-
-    $ sanity context list --organization org-abc123 --json
+    $ sanity context list --json
 ```
 
 ## `sanity context mcp create NAME`
@@ -1686,6 +1936,71 @@ EXAMPLES
   Output an MCP endpoint in a specific organization as JSON
 
     $ sanity context mcp get support --organization org-abc123 --json
+```
+
+## `sanity context mcp initial-context MCPENDPOINT`
+
+Get an MCP endpoint's initial context
+
+```
+USAGE
+  $ sanity context mcp initial-context MCPENDPOINT [--json] [--instructions <value>] [--perspective <value>] [--embeddings
+    <value>] [--groq-filter <value>] [--mode knowledge_base|groq] [--knowledge-bases <value>] [--link-resolver <value>]
+    [--workspace <value>] [--heading_offset <value>] [--organization <id>]
+
+ARGUMENTS
+  MCPENDPOINT  The MCP endpoint's name, set when the endpoint was created.
+
+FLAGS
+  --embeddings=<value>       Set to `true` or `false` to turn semantic search on or off. Omit it to use the dataset
+                             source setting. Deprecated: refused from API version `v2026-11-03`. Configure it on the MCP
+                             endpoint instead.
+  --groq-filter=<value>      A GROQ filter that narrows the endpoint's configured content filter for this request.
+                             Documents must match both. Deprecated: refused from API version `v2026-11-03`. Configure it
+                             on the MCP endpoint instead.
+  --heading_offset=<value>   How many levels to shift markdown headings down, from `0` to `6`. Defaults to `1`, so `#`
+                             becomes `##`.
+  --instructions=<value>     Agent instructions that replace the endpoint's configured instructions for this request.
+                             Deprecated: refused from API version `v2026-11-03`. Configure it on the MCP endpoint
+                             instead.
+  --knowledge-bases=<value>  Comma-separated knowledge base public IDs (`kb...`) that replace the endpoint's knowledge
+                             base sources for this request. Deprecated: refused from API version `v2026-11-03`.
+                             Configure it on the MCP endpoint instead.
+  --link-resolver=<value>    A JSON array that adds `_url` fields to query results. Each item has `types` (document
+                             types), `baseUrl`, and an optional `slugExpression`, a GROQ expression that defaults to
+                             `slug.current`. Invalid JSON is ignored.
+  --mode=<option>            Serves only one side of the endpoint for this request: `knowledge_base` serves its
+                             knowledge bases and `groq` serves its dataset. Omit it to serve every source the endpoint
+                             has. A request whose chosen side the endpoint doesn't have is refused. Deprecated: refused
+                             from API version `v2026-11-03`. Configure it on the MCP endpoint instead.
+                             <options: knowledge_base|groq>
+  --perspective=<value>      The perspective for GROQ queries: `published` (default), `previewDrafts`, `raw`, or a
+                             release. Deprecated: refused from API version `v2026-11-03`. Configure it on the MCP
+                             endpoint instead.
+  --workspace=<value>        The studio workspace to use. Replaces the dataset source's workspace for this request.
+                             Deprecated: refused from API version `v2026-11-03`. Configure it on the MCP endpoint
+                             instead.
+
+GLOBAL FLAGS
+  --json  Format output as json.
+
+OVERRIDE FLAGS
+  --organization=<id>  Organization ID (overrides CLI configuration)
+
+DESCRIPTION
+  Get an MCP endpoint's initial context
+
+  Returns the same text as the `initial_context` MCP tool, as plain text you can add to a system prompt.
+  `heading_offset` shifts markdown headings down by that many levels. The default is `1`, so `#` becomes `##`.
+
+EXAMPLES
+  Get an MCP endpoint's initial context
+
+    $ sanity context mcp initial-context <mcpEndpoint>
+
+  Get an MCP endpoint's initial context, as JSON
+
+    $ sanity context mcp initial-context <mcpEndpoint> --json
 ```
 
 ## `sanity context mcp list`
@@ -1835,24 +2150,491 @@ EXAMPLES
       "kb-abc123"}' --json
 ```
 
-## `sanity context refresh KNOWLEDGEBASEID`
+## `sanity context sources create KNOWLEDGEBASEID`
 
-Refresh a knowledge base: re-check sources and apply what changed
+Add a source
 
 ```
 USAGE
-  $ sanity context refresh KNOWLEDGEBASEID
+  $ sanity context sources create KNOWLEDGEBASEID [--json] [--type web|sanity-dataset|files] [--include-paths <value>...]
+    [--exclude-paths <value>...] [--max-depth <value>] [--sitemap-only] [--ignore-query-parameters] [--page-limit
+    <value>] [--dry-run] [--sanity-project-id <value>] [--sanity-dataset-id <value>] [--title <value>] [--content-type
+    text/markdown|text/plain] [--watch] [--file <path> | --url <value> | --query <value> | --text <path|->]
 
 ARGUMENTS
-  KNOWLEDGEBASEID  Knowledge base ID
+  KNOWLEDGEBASEID  The knowledge base's ID (`kb...`), its `publicId`. Its UUID `id` is also accepted.
+
+FLAGS
+  --content-type=<option>         The format of `content`: `text/markdown` (the default) or `text/plain`. Only with
+                                  `content`. Only for type files.
+                                  <options: text/markdown|text/plain>
+  --[no-]dry-run                  Set to `true` to estimate what a crawl would fetch without adding the source. The
+                                  response is then `200` with a preview of the pages the site has, grouped by path. Only
+                                  for type web.
+  --exclude-paths=<value>...      Regular expressions for URL paths to skip. Pages whose path matches one of them aren't
+                                  crawled. Only for type web.
+  --file=<path>                   Local file to upload as a files source: a document, or a zip, tar or gzip archive of
+                                  them
+  --[no-]ignore-query-parameters  Whether to treat URLs that differ only by query string as one page. New crawls set it
+                                  to `true` unless you set it. Set it to `false` when the query string selects different
+                                  content, such as pagination. Only for type web.
+  --include-paths=<value>...      Regular expressions for URL paths to crawl. When set, the crawl only includes pages
+                                  whose path matches one of them. Only for type web.
+  --max-depth=<value>             How many levels deep the crawl goes from the root URL. Only for type web.
+  --page-limit=<value>            The maximum number of pages to crawl. The crawl can stop sooner when the knowledge
+                                  base reaches its source limit. Only for type web.
+  --query=<value>                 A GROQ query that selects the documents, with an optional projection. It can match up
+                                  to 5,000 documents. Each sync runs it again. Only for type sanity-dataset.
+  --sanity-dataset-id=<value>     The dataset to read documents from. Only for type sanity-dataset.
+  --sanity-project-id=<value>     The ID of the Sanity project to read documents from. You need full read access to the
+                                  dataset and, on its project, the Administrator or Developer role or a custom role that
+                                  can create datasets. Only for type sanity-dataset.
+  --[no-]sitemap-only             Whether to crawl only the pages listed in the site's sitemap. Only for type web.
+  --text=<path|->                 Text or markdown to hold as a files source, read from a local file or `-` for stdin
+  --title=<value>                 The source's title. Only for type files.
+  --type=<option>                 The source type. `web` crawls a website. Inferred from the other flags when left out.
+                                  <options: web|sanity-dataset|files>
+  --url=<value>                   The URL to start crawling from. It must be a public `http` or `https` URL. Only for
+                                  type web.
+  --watch                         Wait for the sync to settle, exiting non-zero if it fails
+
+GLOBAL FLAGS
+  --json  Format output as json.
 
 DESCRIPTION
-  Refresh a knowledge base: re-check sources and apply what changed
+  Add a source
+
+  Adds a source to a knowledge base. Set `type` to choose what it reads:
+
+  - `web`: a website, crawled from `url`
+  - `sanity-dataset`: the documents a GROQ query selects in a Sanity dataset
+  - `files`: files you upload with `POST .../sources/{sourceId}/uploads`, or text you send in `content`
+
+  A website or dataset starts its first sync right away. A `files` source syncs when you upload a file, or right away
+  when you send `content`: one request stores the text, adds the source and starts its sync. For a website, set `dryRun`
+  to `true` to preview the crawl without adding the source.
+
+  Adding a website that is already a source returns `409` with code `webSourceRootConflict`, and adding more websites
+  than your limit allows returns `409` with code `webSourceRootLimitExceeded`. When the organization's knowledge bases
+  already hold as many source chunks as its plan allows, returns `403` with code `planLimitReached` and adds nothing.
+  Supports the `Idempotency-Key` header.
 
 EXAMPLES
-  Start an incremental refresh
+  Crawl a website
 
-    $ sanity context refresh kb-abc123
+    $ sanity context sources create kb-abc123 --url https://example.com/docs
+
+  Estimate how many pages a crawl of /docs would find, without adding it
+
+    $ sanity context sources create kb-abc123 --url https://example.com/docs --dry-run
+
+  Read the documents a GROQ query selects from a Sanity dataset
+
+    $ sanity context sources create kb-abc123 --query '*[_type == "article"]' --sanity-project-id abc123 \
+      --sanity-dataset-id production
+
+  Upload a local file and wait for its sync
+
+    $ sanity context sources create kb-abc123 --file ./handbook.pdf --watch
+
+  Add markdown from stdin
+
+    cat refunds.md | sanity context sources create kb-abc123 --text - --title "Refund policy"
+```
+
+## `sanity context sources delete KNOWLEDGEBASEID SOURCEID`
+
+Delete a source
+
+```
+USAGE
+  $ sanity context sources delete KNOWLEDGEBASEID SOURCEID [--json] [-y]
+
+ARGUMENTS
+  KNOWLEDGEBASEID  The knowledge base's ID (`kb...`), its `publicId`. Its UUID `id` is also accepted.
+  SOURCEID         The source's ID.
+
+FLAGS
+  -y, --yes  Skip confirmation prompt (unattended mode)
+
+GLOBAL FLAGS
+  --json  Format output as json.
+
+DESCRIPTION
+  Delete a source
+
+  Removes a source and its documents from the knowledge base, and starts a refresh that removes their citations from
+  entries and deletes the entries left with none. A source no other knowledge base uses stops syncing and is deleted
+  once that refresh has run.
+
+EXAMPLES
+  Delete a source
+
+    $ sanity context sources delete <knowledgeBaseId> <sourceId>
+
+  Delete a source, as JSON
+
+    $ sanity context sources delete <knowledgeBaseId> <sourceId> --json
+```
+
+## `sanity context sources edit KNOWLEDGEBASEID SOURCEID`
+
+Update a source
+
+```
+USAGE
+  $ sanity context sources edit KNOWLEDGEBASEID SOURCEID [--json] [--title <value>] [--include-paths <value>...]
+    [--exclude-paths <value>...] [--max-depth <value>] [--sitemap-only] [--ignore-query-parameters] [--page-limit
+    <value>] [--query <value>] [--sync-frequency weekly|monthly|null] [--confirm-deletions]
+
+ARGUMENTS
+  KNOWLEDGEBASEID  The knowledge base's ID (`kb...`), its `publicId`. Its UUID `id` is also accepted.
+  SOURCEID         The source's ID.
+
+FLAGS
+  --[no-]confirm-deletions        Set to `true` to apply new crawl options that delete many documents. Without it, a
+                                  change that would delete all of the documents, or five or more that are over a fifth
+                                  of them, returns `409` with code `sourceDeletionsUnconfirmed`.
+  --exclude-paths=<value>...      Regular expressions for URL paths to skip. Pages whose path matches one of them aren't
+                                  crawled.
+  --[no-]ignore-query-parameters  Whether to treat URLs that differ only by query string as one page. New crawls set it
+                                  to `true` unless you set it. Set it to `false` when the query string selects different
+                                  content, such as pagination.
+  --include-paths=<value>...      Regular expressions for URL paths to crawl. When set, the crawl only includes pages
+                                  whose path matches one of them.
+  --max-depth=<value>             How many levels deep the crawl goes from the root URL.
+  --page-limit=<value>            The maximum number of pages to crawl. The crawl can stop sooner when the knowledge
+                                  base reaches its source limit.
+  --query=<value>                 For a `sanity-dataset` source, the GROQ query, replacing the stored one. A sync is
+                                  queued, and removes the documents the query no longer returns.
+  --[no-]sitemap-only             Whether to crawl only the pages listed in the site's sitemap.
+  --sync-frequency=<option>       For a `web` or `sanity-dataset` source, how often it syncs on its own: `weekly` or
+                                  `monthly`. `null` stops scheduled syncs, and you can still start a sync yourself.
+                                  Setting a frequency requires a plan that includes scheduled syncs; without one, the
+                                  request returns `403` with code `featureNotInPlan`. Pass `null` to clear it.
+                                  <options: weekly|monthly|null>
+  --title=<value>                 The source's title.
+
+GLOBAL FLAGS
+  --json  Format output as json.
+
+DESCRIPTION
+  Update a source
+
+  Changes a source's title, a website's crawl options, a dataset's query, or how often a website or dataset syncs on its
+  own. New crawl options delete the documents whose path they leave out. When that would delete all of the source's
+  documents, or five or more that are over a fifth of them, the request returns `409` with code
+  `sourceDeletionsUnconfirmed` until you send it again with `confirmDeletions` set to `true`. New crawl options sent
+  while the source syncs return `409` with code `syncInProgress`; send them again once the sync finishes. A new query
+  queues a sync, which removes the documents the query no longer selects.
+
+  Crawl options on a source that isn't a website, a query on one that isn't a dataset, or a sync frequency on a `files`
+  source, return `422` with code `sourceTypeMismatch`. Setting a sync frequency on a plan without scheduled syncs
+  returns `403` with code `featureNotInPlan`; setting it to `null` always works.
+
+EXAMPLES
+  Update a source
+
+    $ sanity context sources edit <knowledgeBaseId> <sourceId>
+
+  Update a source, as JSON
+
+    $ sanity context sources edit <knowledgeBaseId> <sourceId> --json
+```
+
+## `sanity context sources get KNOWLEDGEBASEID SOURCEID`
+
+Get a source
+
+```
+USAGE
+  $ sanity context sources get KNOWLEDGEBASEID SOURCEID [--json]
+
+ARGUMENTS
+  KNOWLEDGEBASEID  The knowledge base's ID (`kb...`), its `publicId`. Its UUID `id` is also accepted.
+  SOURCEID         The source's ID.
+
+GLOBAL FLAGS
+  --json  Format output as json.
+
+DESCRIPTION
+  Get a source
+
+  Returns a source with its settings, document counts and latest sync.
+
+EXAMPLES
+  Get a source
+
+    $ sanity context sources get <knowledgeBaseId> <sourceId>
+
+  Get a source, as JSON
+
+    $ sanity context sources get <knowledgeBaseId> <sourceId> --json
+```
+
+## `sanity context sources list KNOWLEDGEBASEID`
+
+List sources
+
+```
+USAGE
+  $ sanity context sources list KNOWLEDGEBASEID [--json]
+
+ARGUMENTS
+  KNOWLEDGEBASEID  The knowledge base's ID (`kb...`), its `publicId`. Its UUID `id` is also accepted.
+
+GLOBAL FLAGS
+  --json  Format output as json.
+
+DESCRIPTION
+  List sources
+
+  Lists the sources of a knowledge base: the websites, Sanity datasets and files its documents come from, each with its
+  document counts and its latest sync. Results are cursor-paginated.
+
+EXAMPLES
+  List sources
+
+    $ sanity context sources list <knowledgeBaseId>
+
+  List sources, as JSON
+
+    $ sanity context sources list <knowledgeBaseId> --json
+```
+
+## `sanity context sources sync KNOWLEDGEBASEID SOURCEID`
+
+Sync a source
+
+```
+USAGE
+  $ sanity context sources sync KNOWLEDGEBASEID SOURCEID [--json] [--watch]
+
+ARGUMENTS
+  KNOWLEDGEBASEID  The knowledge base's ID (`kb...`), its `publicId`. Its UUID `id` is also accepted.
+  SOURCEID         The source's ID.
+
+FLAGS
+  --watch  Wait for the sync to settle, exiting non-zero if it fails
+
+GLOBAL FLAGS
+  --json  Format output as json.
+
+DESCRIPTION
+  Sync a source
+
+  Starts a sync of the source. A website or dataset is read again: its sync is queued, and starts once any sync of the
+  source that is running ends, including the first one that started when it was added. Asking again while one waits
+  queues nothing more. Follow it with the source's `latestSync`.
+
+  For a `files` source, set `uploadId` to the upload whose file the source should hold from now on; without it, the
+  source reads its current file again. Its sync starts at once and returns a job ID to poll; the finished job's `result`
+  names the sync and whether it is `held`. While a sync of a `files` source is running, including the first one, the
+  request returns `409` with code `syncInProgress` and leaves the upload for a later request. An `uploadId` whose file
+  never arrived returns `404` with code `uploadNotFound`, and an `uploadId` on a source that isn't `files` returns `422`
+  with code `sourceTypeMismatch`.
+
+  Supports the `Idempotency-Key` header.
+
+EXAMPLES
+  Sync a source
+
+    $ sanity context sources sync <knowledgeBaseId> <sourceId>
+
+  Sync a source, as JSON
+
+    $ sanity context sources sync <knowledgeBaseId> <sourceId> --json
+```
+
+## `sanity context sources syncs confirm KNOWLEDGEBASEID SOURCEID SYNCID`
+
+Confirm a held sync's deletions
+
+```
+USAGE
+  $ sanity context sources syncs confirm KNOWLEDGEBASEID SOURCEID SYNCID [--json]
+
+ARGUMENTS
+  KNOWLEDGEBASEID  The knowledge base's ID (`kb...`), its `publicId`. Its UUID `id` is also accepted.
+  SOURCEID         The source's ID.
+  SYNCID           The sync's ID.
+
+GLOBAL FLAGS
+  --json  Format output as json.
+
+DESCRIPTION
+  Confirm a held sync's deletions
+
+  Deletes the documents a `held` sync didn't find, unless a sync has found them since, completes the sync, and starts a
+  refresh of each knowledge base that uses the source, which removes their citations from entries. A sync that isn't
+  `held` returns `409` with code `syncNotHeld`.
+
+EXAMPLES
+  Confirm a held sync's deletions
+
+    $ sanity context sources syncs confirm <knowledgeBaseId> <sourceId> <syncId>
+
+  Confirm a held sync's deletions, as JSON
+
+    $ sanity context sources syncs confirm <knowledgeBaseId> <sourceId> <syncId> --json
+```
+
+## `sanity context sources syncs discard KNOWLEDGEBASEID SOURCEID SYNCID`
+
+Discard a held sync's deletions
+
+```
+USAGE
+  $ sanity context sources syncs discard KNOWLEDGEBASEID SOURCEID SYNCID [--json]
+
+ARGUMENTS
+  KNOWLEDGEBASEID  The knowledge base's ID (`kb...`), its `publicId`. Its UUID `id` is also accepted.
+  SOURCEID         The source's ID.
+  SYNCID           The sync's ID.
+
+GLOBAL FLAGS
+  --json  Format output as json.
+
+DESCRIPTION
+  Discard a held sync's deletions
+
+  Completes a `held` sync without deleting anything: every document stays as it is. A sync that isn't `held` returns
+  `409` with code `syncNotHeld`.
+
+EXAMPLES
+  Discard a held sync's deletions
+
+    $ sanity context sources syncs discard <knowledgeBaseId> <sourceId> <syncId>
+
+  Discard a held sync's deletions, as JSON
+
+    $ sanity context sources syncs discard <knowledgeBaseId> <sourceId> <syncId> --json
+```
+
+## `sanity context sources syncs get KNOWLEDGEBASEID SOURCEID SYNCID`
+
+Get a sync
+
+```
+USAGE
+  $ sanity context sources syncs get KNOWLEDGEBASEID SOURCEID SYNCID [--json]
+
+ARGUMENTS
+  KNOWLEDGEBASEID  The knowledge base's ID (`kb...`), its `publicId`. Its UUID `id` is also accepted.
+  SOURCEID         The source's ID.
+  SYNCID           The sync's ID.
+
+GLOBAL FLAGS
+  --json  Format output as json.
+
+DESCRIPTION
+  Get a sync
+
+  Returns one sync of a source with its status and counts.
+
+EXAMPLES
+  Get a sync
+
+    $ sanity context sources syncs get <knowledgeBaseId> <sourceId> <syncId>
+
+  Get a sync, as JSON
+
+    $ sanity context sources syncs get <knowledgeBaseId> <sourceId> <syncId> --json
+```
+
+## `sanity context sources syncs list KNOWLEDGEBASEID SOURCEID`
+
+List a source's syncs
+
+```
+USAGE
+  $ sanity context sources syncs list KNOWLEDGEBASEID SOURCEID [--json]
+
+ARGUMENTS
+  KNOWLEDGEBASEID  The knowledge base's ID (`kb...`), its `publicId`. Its UUID `id` is also accepted.
+  SOURCEID         The source's ID.
+
+GLOBAL FLAGS
+  --json  Format output as json.
+
+DESCRIPTION
+  List a source's syncs
+
+  Lists the syncs of a source, newest first. Results are cursor-paginated.
+
+EXAMPLES
+  List a source's syncs
+
+    $ sanity context sources syncs list <knowledgeBaseId> <sourceId>
+
+  List a source's syncs, as JSON
+
+    $ sanity context sources syncs list <knowledgeBaseId> <sourceId> --json
+```
+
+## `sanity context sources upload KNOWLEDGEBASEID SOURCEID`
+
+Upload a file to a source
+
+```
+USAGE
+  $ sanity context sources upload KNOWLEDGEBASEID SOURCEID --file <path> [--json] [--watch] [--content-type <type>]
+
+ARGUMENTS
+  KNOWLEDGEBASEID  The knowledge base's ID (`kb...`), its `publicId`. Its UUID `id` is also accepted.
+  SOURCEID         The source's ID.
+
+FLAGS
+  --content-type=<type>  MIME type of the file, inferred from the file extension when omitted
+  --file=<path>          (required) Local file to upload: a document, or a zip, tar or gzip archive of them
+  --watch                Wait for the sync to settle, exiting non-zero if it fails
+
+GLOBAL FLAGS
+  --json  Format output as json.
+
+DESCRIPTION
+  Upload a file to a source
+
+  Upload a new file to a files source, replacing the one it holds, and sync it
+
+EXAMPLES
+  Replace the file a source holds
+
+    $ sanity context sources upload kb-abc123 source-def456 --file ./handbook.pdf
+
+  Replace the file and wait for its sync to finish
+
+    $ sanity context sources upload kb-abc123 source-def456 --file ./handbook.pdf --watch
+```
+
+## `sanity context sync KNOWLEDGEBASEID`
+
+Sync every source
+
+```
+USAGE
+  $ sanity context sync KNOWLEDGEBASEID [--json]
+
+ARGUMENTS
+  KNOWLEDGEBASEID  The knowledge base's ID (`kb...`), its `publicId`. Its UUID `id` is also accepted.
+
+GLOBAL FLAGS
+  --json  Format output as json.
+
+DESCRIPTION
+  Sync every source
+
+  Queues a sync of every website and dataset source, which starts once any sync of the source that is running ends.
+  `files` sources sync when you upload a file.
+
+EXAMPLES
+  Sync every source
+
+    $ sanity context sync <knowledgeBaseId>
+
+  Sync every source, as JSON
+
+    $ sanity context sync <knowledgeBaseId> --json
 ```
 
 ## `sanity context update KNOWLEDGEBASEID`
@@ -1861,34 +2643,36 @@ Update a knowledge base
 
 ```
 USAGE
-  $ sanity context update KNOWLEDGEBASEID [--description <value>] [--refresh-enabled] [--refresh-frequency
-    weekly|monthly] [--title <value>]
+  $ sanity context update KNOWLEDGEBASEID [--json] [--title <value>] [--description <value>] [--draft]
 
 ARGUMENTS
-  KNOWLEDGEBASEID  Knowledge base ID
+  KNOWLEDGEBASEID  The knowledge base's ID (`kb...`), its `publicId`. Its UUID `id` is also accepted.
 
 FLAGS
-  --description=<value>         New knowledge base description
-  --[no-]refresh-enabled        Enable scheduled refresh (--no-refresh-enabled to disable)
-  --refresh-frequency=<option>  How often scheduled refresh runs
-                                <options: weekly|monthly>
-  --title=<value>               New knowledge base title
+  --description=<value>  The knowledge base's new description.
+  --[no-]draft           Set to `false` to finish a draft, so it can be built and is listed with your other knowledge
+                         bases. The knowledge base needs a title, sent here or set before. Ignored when the knowledge
+                         base isn't a draft. A finished knowledge base can't become a draft again.
+  --title=<value>        The knowledge base's new title.
+
+GLOBAL FLAGS
+  --json  Format output as json.
 
 DESCRIPTION
   Update a knowledge base
 
+  Updates the title or the description, or finishes a draft (`draft: false`). Fields equal to their current value are
+  ignored, so sending the current values changes nothing. Finishing a draft with no title returns `422` with code
+  `draftTitleRequired`. How often a website or dataset syncs is set on the source, with `PATCH .../sources/{sourceId}`.
+
 EXAMPLES
-  Rename a knowledge base
+  Update a knowledge base
 
-    $ sanity context update kb-abc123 --title "New title"
+    $ sanity context update <knowledgeBaseId>
 
-  Enable weekly scheduled refresh
+  Update a knowledge base, as JSON
 
-    $ sanity context update kb-abc123 --refresh-enabled --refresh-frequency weekly
-
-  Disable scheduled refresh
-
-    $ sanity context update kb-abc123 --no-refresh-enabled
+    $ sanity context update <knowledgeBaseId> --json
 ```
 
 ## `sanity cors add ORIGIN`
