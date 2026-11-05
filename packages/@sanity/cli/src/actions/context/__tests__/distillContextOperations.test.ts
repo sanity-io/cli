@@ -88,6 +88,7 @@ const spec: ContextOpenApiDocument = {
             'application/json': {
               schema: {
                 properties: {
+                  instructions: {nullable: true, type: 'string'},
                   metadata: {type: 'object'},
                   syncFrequency: {enum: ['weekly', 'monthly', null], type: ['string', 'null']},
                   title: {anyOf: [{type: 'string'}, {type: 'null'}]},
@@ -102,6 +103,22 @@ const spec: ContextOpenApiDocument = {
       },
     },
   },
+}
+
+const objectOf = (properties: Record<string, unknown>) => ({properties, type: 'object'})
+
+function withBody(properties: Record<string, unknown>): ContextOpenApiDocument {
+  return {
+    paths: {
+      '/{apiVersion}/context/knowledge-bases': {
+        post: {
+          operationId: 'op',
+          requestBody: {content: {'application/json': {schema: objectOf(properties)}}},
+          responses: {200: {}},
+        },
+      },
+    },
+  }
 }
 
 describe('distillContextOperations', () => {
@@ -153,6 +170,7 @@ describe('distillContextOperations', () => {
   test('nullable fields and free-form objects', () => {
     expect(operations.updateSource.body).toBe('optional')
     expect(operations.updateSource.fields).toEqual([
+      {in: 'body', name: 'instructions', nullable: true, type: 'string'},
       {in: 'body', name: 'metadata', type: 'json'},
       {
         in: 'body',
@@ -163,6 +181,31 @@ describe('distillContextOperations', () => {
       },
       {in: 'body', name: 'title', nullable: true, type: 'string'},
     ])
+  })
+
+  test('keeps the full path of a field nested more than one level deep', () => {
+    const nested = distillContextOperations(
+      withBody({limits: objectOf({crawl: objectOf({pages: {type: 'integer'}})})}),
+      ['op'],
+    )
+    expect(nested.op.fields).toEqual([
+      {in: 'body', name: 'pages', parent: 'limits.crawl', type: 'integer'},
+    ])
+  })
+
+  test('fails when two fields, or a field and a command flag, would share a flag', () => {
+    expect(() =>
+      distillContextOperations(
+        withBody({
+          a: objectOf({depth: {type: 'integer'}}),
+          b: objectOf({depth: {type: 'integer'}}),
+        }),
+        ['op'],
+      ),
+    ).toThrow('Field "depth" of op would collide with another flag')
+    expect(() => distillContextOperations(withBody({watch: {type: 'boolean'}}), ['op'])).toThrow(
+      'Field "watch" of op would collide with another flag',
+    )
   })
 
   test('refuses an operation the spec lacks', () => {

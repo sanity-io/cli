@@ -17,7 +17,7 @@ export interface OperationField {
   readonly nullable?: boolean
   /** The enum's values */
   readonly options?: readonly string[]
-  /** The object field the field nests in, such as `crawlOptions` */
+  /** The object fields the field nests in, dot-separated, such as `crawlOptions` */
   readonly parent?: string
   readonly required?: boolean
   /** The body variants (values of the discriminating `type`) the field belongs to */

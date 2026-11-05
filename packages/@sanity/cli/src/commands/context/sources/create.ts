@@ -15,6 +15,8 @@ import {defineCommandTelemetry} from '../../../util/telemetry/commandTelemetry.j
 
 const BaseCommand = contextCommand('context sources create')
 
+const SOURCE_FLAGS = ['url', 'query', 'file', 'text'] as const
+
 const flags = {
   ...BaseCommand.flags,
   file: Flags.string({
@@ -23,12 +25,14 @@ const flags = {
     exclusive: ['url', 'query', 'text'],
     helpValue: '<path>',
   }),
+  query: {...BaseCommand.flags.query, exclusive: ['url', 'file', 'text']},
   text: Flags.string({
     description:
       'Text or markdown to hold as a files source, read from a local file or `-` for stdin',
     exclusive: ['url', 'query', 'file'],
     helpValue: '<path|->',
   }),
+  url: {...BaseCommand.flags.url, exclusive: ['query', 'file', 'text']},
 } satisfies FlagInput
 
 /**
@@ -79,6 +83,14 @@ export class CreateSourceCommand extends BaseCommand {
     const body = request.body ?? {}
     const title = typeof body.title === 'string' ? body.title : undefined
     const {file, text} = values
+
+    const given = SOURCE_FLAGS.filter((name) => values[name] !== undefined)
+    if (given.length > 1 || (given.length === 0 && body.type !== 'files')) {
+      this.error(
+        'Provide exactly one of --url, --query, --file or --text, or `--type files --title <title>` for a files source whose file comes later with `sources upload`.',
+        {exit: exitCodes.USAGE_ERROR},
+      )
+    }
 
     if (typeof file === 'string') {
       const upload = await this.read(`file "${file}"`, () =>

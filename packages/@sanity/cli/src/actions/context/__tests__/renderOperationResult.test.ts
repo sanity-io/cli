@@ -8,18 +8,24 @@ const render = (result: unknown, columns?: readonly string[]) =>
   stripVTControlCharacters(renderOperationResult(result, {columns, summary: 'Delete a source'}))
 
 describe('renderOperationResult', () => {
-  test('an object as key-value lines, nested values as JSON and nothing as a dash', () => {
+  test('an object as key-value lines, with nested values on one readable line', () => {
     const output = render({
-      crawlOptions: {maxDepth: 2},
+      crawlOptions: {includePaths: ['^/docs/', '^/blog/'], maxDepth: 2},
       id: 'src1',
-      latestSync: null,
+      latestSync: {documentsSeen: 4, id: 'sync1', status: 'running'},
       openIssueCount: 3,
+      previousSync: null,
+      sourceIds: ['a', 'b'],
+      tags: [],
     })
     expect(output.split('\n')).toEqual([
-      '  Crawl options:    {"maxDepth":2}',
+      '  Crawl options:    Include paths: ^/docs/, ^/blog/; Max depth: 2',
       '  ID:               src1',
-      '  Latest sync:      -',
+      '  Latest sync:      sync1 (running)',
       '  Open issue count: 3',
+      '  Previous sync:    -',
+      '  Source IDs:       a, b',
+      '  Tags:             -',
     ])
   })
 

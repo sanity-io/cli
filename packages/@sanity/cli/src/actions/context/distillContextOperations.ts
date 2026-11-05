@@ -80,10 +80,11 @@ function unwrapNullable(
     return {nullable: true, schema: {...resolved, type: type.length === 1 ? type[0] : type}}
   }
   const options = Array.isArray(resolved.enum) ? resolved.enum : []
-  if (options.includes(null)) {
-    return {nullable: true, schema: {...resolved, enum: options.filter((value) => value !== null)}}
-  }
-  return {nullable: false, schema: resolved}
+  const withoutNull = options.includes(null)
+    ? {...resolved, enum: options.filter((value) => value !== null)}
+    : resolved
+  // OpenAPI 3.0 marks a nullable schema with `nullable: true`
+  return {nullable: options.includes(null) || resolved.nullable === true, schema: withoutNull}
 }
 
 function fieldType(schema: Schema): {options?: string[]; type: OperationFieldType} {
@@ -143,10 +144,10 @@ function objectFields(spec: ContextOpenApiDocument, object: Schema): OperationFi
     if (!isSchema(raw)) return []
     const {schema} = unwrapNullable(spec, raw)
     if (schema.type === 'object' && isSchema(schema.properties)) {
-      // A nested object's fields are optional on their own: the object is
+      // A nested field is never required on its own, and keeps its full path of parents
       return objectFields(spec, schema).map(({required: _required, ...child}) => ({
         ...child,
-        parent: name,
+        parent: child.parent ? `${name}.${child.parent}` : name,
       }))
     }
     return [field(spec, 'body', name, raw, required.has(name) ? {required: true} : {})]
@@ -253,6 +254,25 @@ function distillOperation(
   }
 }
 
+/** Names the commands give flags of their own */
+const RESERVED_FLAGS = new Set(['json', 'organization', 'watch', 'yes'])
+
+/**
+ * Each field becomes a flag named after it, nested fields included, so two
+ * fields with one name (under different parents) or a field named like a
+ * command's own flag would collide. Generation fails instead.
+ */
+function assertDistinctFlags(operationId: string, operation: ContextOperation): void {
+  const seen = new Set<string>()
+  for (const {name} of operation.fields) {
+    if (name === 'organizationId') continue
+    if (seen.has(name) || RESERVED_FLAGS.has(name)) {
+      throw new Error(`Field "${name}" of ${operationId} would collide with another flag`)
+    }
+    seen.add(name)
+  }
+}
+
 /**
  * Distill the named operations of the Context API spec into what a command
  * needs: the route, the summary and description, the path parameters, and the
@@ -276,6 +296,8 @@ export function distillContextOperations(
       )
     }
   }
+
+  for (const [operationId, operation] of found) assertDistinctFlags(operationId, operation)
 
   const missing = operationIds.filter((id) => !found.has(id))
   if (missing.length > 0) {

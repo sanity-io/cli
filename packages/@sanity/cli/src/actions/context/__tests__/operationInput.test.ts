@@ -230,6 +230,25 @@ describe('buildOperationRequest', () => {
     ).toThrow('`--page-limit` must be a number')
   })
 
+  test('nests a field under every one of its parents', () => {
+    const nested: ContextOperation = {
+      ...updateSource,
+      fields: [
+        {in: 'body', name: 'pages', parent: 'limits.crawl', type: 'integer'},
+        {in: 'body', name: 'depth', parent: 'limits', type: 'integer'},
+      ],
+    }
+    const request = buildOperationRequest(
+      nested,
+      {id: 'x', operationId: 'x'},
+      {
+        args: {},
+        flags: {depth: 2, pages: 10},
+      },
+    )
+    expect(request.body).toEqual({limits: {crawl: {pages: 10}, depth: 2}})
+  })
+
   test('takes a variadic field from the arguments', () => {
     const request = buildOperationRequest(
       applyIssues,

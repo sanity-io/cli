@@ -113,6 +113,19 @@ export async function getSource(
   })
 }
 
+/** Get a sync of a source by ID */
+export async function getSync(
+  knowledgeBaseId: string,
+  sourceId: string,
+  syncId: string,
+): Promise<Sync> {
+  const client = await getContextClient()
+  return client.context.request(
+    'GET /knowledge-bases/{knowledgeBaseId}/sources/{sourceId}/syncs/{syncId}',
+    {params: {knowledgeBaseId, sourceId, syncId}},
+  )
+}
+
 /** Get a job by ID */
 export async function getJob(knowledgeBaseId: string, jobId: string): Promise<Job> {
   const client = await getContextClient()

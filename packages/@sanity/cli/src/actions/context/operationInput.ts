@@ -143,7 +143,7 @@ export function operationFlags(operation: ContextOperation, entry: ContextComman
       description:
         entry.watch === 'job'
           ? 'Wait for the job to finish, exiting non-zero if it fails'
-          : 'Wait for the sync to settle, exiting non-zero if it fails',
+          : 'Wait for the sync to settle, exiting non-zero unless it completes: when it fails, is cancelled or is held for confirmation',
     })
   }
   if (operation.route.startsWith('DELETE ')) {
@@ -187,6 +187,19 @@ export function redactedFlags(operation: ContextOperation, entry: ContextCommand
         field.type === 'json',
     )
     .map((field) => flagName(field))
+}
+
+function setNested(target: Record<string, unknown>, path: string[], value: unknown): void {
+  const [key, ...rest] = path
+  if (rest.length === 0) {
+    target[key] = value
+    return
+  }
+  const existing = target[key]
+  const nested: Record<string, unknown> =
+    typeof existing === 'object' && existing !== null ? {...existing} : {}
+  setNested(nested, rest, value)
+  target[key] = nested
 }
 
 /** The variant of a discriminated body the given fields belong to, when exactly one fits */
@@ -233,9 +246,7 @@ export function buildOperationRequest(
       continue
     }
     if (field.parent) {
-      const parent = body[field.parent]
-      const nested = typeof parent === 'object' && parent !== null ? parent : {}
-      body[field.parent] = {...nested, [field.name]: value}
+      setNested(body, [...field.parent.split('.'), field.name], value)
       continue
     }
     body[field.name] = value

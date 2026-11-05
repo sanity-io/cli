@@ -14,11 +14,25 @@ function isScalar(value: unknown): boolean {
   return value === null || ['boolean', 'number', 'string'].includes(typeof value)
 }
 
-/** A value on one line: `-` for nothing, JSON for objects and arrays */
+/**
+ * A value on one line: `-` for nothing, a comma list for an array,
+ * `id (status)` for an object with an ID, and `Key: value` pairs for any
+ * other object
+ */
 function cell(value: unknown): string {
   if (value === null || value === undefined) return '-'
   if (typeof value === 'string') return value
   if (typeof value === 'number' || typeof value === 'boolean') return String(value)
+  if (Array.isArray(value))
+    return value.length === 0 ? '-' : value.map((item) => cell(item)).join(', ')
+  if (isRow(value)) {
+    if (typeof value.id === 'string') {
+      return typeof value.status === 'string' ? `${value.id} (${value.status})` : value.id
+    }
+    const entries = Object.entries(value).filter(([, item]) => item !== undefined)
+    if (entries.length === 0) return '-'
+    return entries.map(([key, item]) => `${humanize(key)}: ${cell(item)}`).join('; ')
+  }
   return JSON.stringify(value)
 }
 

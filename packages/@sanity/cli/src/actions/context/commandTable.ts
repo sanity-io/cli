@@ -18,6 +18,8 @@ export interface ContextCommandEntry {
   readonly columns?: readonly string[]
   /** A check that runs before the request, such as refusing a resource a blueprint manages */
   readonly guard?: 'knowledgeBaseBlueprint'
+  /** The body fields the guard protects; it guards every request when left out */
+  readonly guardFields?: readonly string[]
   /**
    * The command file is hand-written: a class extending `contextCommand(id)`
    * that adds what the spec can't describe, such as reading a local file
@@ -41,7 +43,12 @@ export const contextCommandTable = [
   },
   {id: 'context create', operationId: 'createKnowledgeBase', prompt: ['title', 'description']},
   {id: 'context get', operationId: 'getKnowledgeBase'},
-  {guard: 'knowledgeBaseBlueprint', id: 'context update', operationId: 'updateKnowledgeBase'},
+  {
+    guard: 'knowledgeBaseBlueprint',
+    guardFields: ['title', 'description'],
+    id: 'context update',
+    operationId: 'updateKnowledgeBase',
+  },
   {guard: 'knowledgeBaseBlueprint', id: 'context delete', operationId: 'deleteKnowledgeBase'},
   {id: 'context sync', operationId: 'syncAllSources'},
   {handWritten: true, id: 'context build', operationId: 'buildKnowledgeBase', watch: 'job'},

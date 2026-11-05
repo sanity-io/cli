@@ -1,7 +1,7 @@
 import {spinner} from '@sanity/cli-core/ux'
 
 import {type Sync} from '../../services/context.js'
-import {waitForSourceSync} from './waitForSourceSync.js'
+import {type SyncTarget, waitForSourceSync} from './waitForSourceSync.js'
 
 /**
  * Error message for a sync that failed or was cancelled, e.g. "Sync failed: <reason>"
@@ -22,18 +22,17 @@ export function formatSyncFailure(sync: Sync): string {
 export async function watchSourceSync(
   knowledgeBaseId: string,
   sourceId: string,
-  previousSyncId: string | null,
+  target: SyncTarget,
 ): Promise<Sync> {
   const label = 'Syncing source'
   const spin = spinner(label).start()
 
   let sync: Sync
   try {
-    sync = await waitForSourceSync(knowledgeBaseId, sourceId, {
+    sync = await waitForSourceSync(knowledgeBaseId, sourceId, target, {
       onPoll: (pending) => {
         spin.text = `${label} (${pending?.status ?? 'waiting to start'})`
       },
-      previousSyncId,
     })
   } catch (error) {
     spin.fail(label)

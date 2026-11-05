@@ -8,6 +8,8 @@ import {ApplyIssuesCommand} from '../../../commands/context/issues/apply.js'
 import {ListKnowledgeBasesCommand} from '../../../commands/context/list.js'
 import {UpdateSourceCommand} from '../../../commands/context/sources/edit.js'
 import {ListSourcesCommand} from '../../../commands/context/sources/list.js'
+import {StartSyncCommand} from '../../../commands/context/sources/sync.js'
+import {UpdateKnowledgeBaseCommand} from '../../../commands/context/update.js'
 
 const mockRequest = vi.hoisted(() => vi.fn())
 const mockBlueprintsRequest = vi.hoisted(() => vi.fn())
@@ -27,6 +29,7 @@ vi.mock('@sanity/cli-core/ux', async () => {
       start: vi.fn().mockReturnThis(),
       succeed: vi.fn(),
       text: '',
+      warn: vi.fn(),
     }),
   }
 })
@@ -44,6 +47,8 @@ describe('generated context commands', () => {
 
   afterEach(() => {
     vi.clearAllMocks()
+    mockBlueprintsRequest.mockReset()
+    mockRequest.mockReset()
   })
 
   test('drains every page of a list and renders the table columns', async () => {
@@ -204,6 +209,71 @@ describe('generated context commands', () => {
 
     if (error) throw error
     expect(JSON.parse(stdout)).toEqual({jobId: null})
+  })
+
+  test('--watch on a sync held for confirmation exits non-zero with the next steps', async () => {
+    const held = {heldDeletions: 3, id: 'sync-new', sourceId: 'src1', status: 'held'}
+    mockRequest.mockImplementation(
+      contextRoutes({
+        'GET /knowledge-bases/{knowledgeBaseId}/sources/{sourceId}': () =>
+          mockRequest.mock.calls.length === 1
+            ? {id: 'src1', latestSync: {id: 'sync-old', status: 'completed'}}
+            : {id: 'src1', latestSync: held},
+        'POST /knowledge-bases/{knowledgeBaseId}/sources/{sourceId}/syncs': () => ({
+          jobId: null,
+          sourceId: 'src1',
+        }),
+      }),
+    )
+
+    const {error} = await testCommand(StartSyncCommand, ['kb-abc123', 'src1', '--watch'])
+
+    expect(error?.message).toContain('Sync held: it would delete 3 documents')
+    expect(error?.message).toContain('sanity context sources syncs confirm kb-abc123 src1 sync-new')
+    expect(error?.oclif?.exit).toBe(1)
+  })
+
+  describe('update of a knowledge base a blueprint manages', () => {
+    beforeEach(() => {
+      mockRequest.mockImplementation(
+        contextRoutes({
+          'GET /knowledge-bases/{knowledgeBaseId}': () => kb,
+          'PATCH /knowledge-bases/{knowledgeBaseId}': ({body}) => ({...kb, ...body}),
+        }),
+      )
+      mockBlueprintsRequest
+        .mockResolvedValueOnce([{stackId: 'st1'}])
+        .mockResolvedValueOnce({name: 'prod'})
+    })
+
+    test('refuses a title or description change, which the next deploy would undo', async () => {
+      const {error} = await testCommand(UpdateKnowledgeBaseCommand, [
+        'kb-abc123',
+        '--title',
+        'Docs',
+      ])
+
+      expect(error?.message).toContain(
+        'The blueprint stack "prod" manages the title and description of knowledge base "kb-abc123"',
+      )
+      expect(mockRequest).not.toHaveBeenCalledWith(
+        'PATCH /knowledge-bases/{knowledgeBaseId}',
+        expect.anything(),
+      )
+    })
+
+    test('allows finishing a draft, which the blueprint does not manage', async () => {
+      mockBlueprintsRequest.mockResolvedValue([{stackId: 'st1'}])
+      const {error} = await testCommand(UpdateKnowledgeBaseCommand, ['kb-abc123', '--no-draft'])
+
+      if (error) throw error
+      expect(mockRequest).toHaveBeenCalledWith('PATCH /knowledge-bases/{knowledgeBaseId}', {
+        body: {draft: false},
+        params: {knowledgeBaseId: 'kb-abc123'},
+        query: {},
+      })
+      expect(mockBlueprintsRequest).not.toHaveBeenCalled()
+    })
   })
 
   describe('delete', () => {

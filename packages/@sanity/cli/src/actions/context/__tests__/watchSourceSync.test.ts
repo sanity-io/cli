@@ -29,7 +29,7 @@ describe('watchSourceSync', () => {
   })
 
   test('shows the sync status while polling and succeeds when it completes', async () => {
-    mockWaitForSourceSync.mockImplementation(async (_kb, _source, {onPoll, previousSyncId}) => {
+    mockWaitForSourceSync.mockImplementation(async (_kb, _source, {previousSyncId}, {onPoll}) => {
       expect(previousSyncId).toBe('sync-old')
       onPoll(null)
       expect(mockSpinner.text).toBe('Syncing source (waiting to start)')
@@ -38,7 +38,7 @@ describe('watchSourceSync', () => {
       return latestSync
     })
 
-    const sync = await watchSourceSync('kb-abc123', 'source-def456', 'sync-old')
+    const sync = await watchSourceSync('kb-abc123', 'source-def456', {previousSyncId: 'sync-old'})
 
     expect(sync).toEqual(latestSync)
     expect(mockSpinner.succeed).toHaveBeenCalledWith('Sync completed')
@@ -47,7 +47,7 @@ describe('watchSourceSync', () => {
   test('warns when the sync is held', async () => {
     mockWaitForSourceSync.mockResolvedValue(heldSync)
 
-    await watchSourceSync('kb-abc123', 'source-def456', null)
+    await watchSourceSync('kb-abc123', 'source-def456', {previousSyncId: null})
 
     expect(mockSpinner.warn).toHaveBeenCalledWith('Sync held for confirmation')
   })
@@ -55,7 +55,7 @@ describe('watchSourceSync', () => {
   test('fails the spinner when the sync fails', async () => {
     mockWaitForSourceSync.mockResolvedValue({...latestSync, status: 'failed'})
 
-    await watchSourceSync('kb-abc123', 'source-def456', null)
+    await watchSourceSync('kb-abc123', 'source-def456', {previousSyncId: null})
 
     expect(mockSpinner.fail).toHaveBeenCalledWith('Syncing source')
   })
@@ -63,9 +63,9 @@ describe('watchSourceSync', () => {
   test('fails the spinner and rethrows when polling fails', async () => {
     mockWaitForSourceSync.mockRejectedValue(new Error('Network down'))
 
-    await expect(watchSourceSync('kb-abc123', 'source-def456', null)).rejects.toThrow(
-      'Network down',
-    )
+    await expect(
+      watchSourceSync('kb-abc123', 'source-def456', {previousSyncId: null}),
+    ).rejects.toThrow('Network down')
     expect(mockSpinner.fail).toHaveBeenCalledWith('Syncing source')
   })
 })

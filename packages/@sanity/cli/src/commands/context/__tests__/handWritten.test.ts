@@ -143,6 +143,54 @@ describe('context sources create', () => {
     })
   })
 
+  test('takes exactly one of --url, --query, --file and --text', async () => {
+    const both = await testCommand(CreateSourceCommand, [
+      'kb-abc123',
+      '--url',
+      'https://x.example',
+      '--query',
+      '*',
+    ])
+    expect(both.error?.message).toMatch(
+      /--query=\* cannot also be provided when using --url|cannot also be provided/,
+    )
+
+    const none = await testCommand(CreateSourceCommand, ['kb-abc123', '--max-depth', '2'])
+    expect(none.error?.message).toContain('Provide exactly one of --url, --query, --file or --text')
+    expect(mockRequest).not.toHaveBeenCalled()
+  })
+
+  test('--watch follows the sync the create started', async () => {
+    mockRequest.mockImplementation(
+      contextRoutes({
+        'GET /knowledge-bases/{knowledgeBaseId}/sources/{sourceId}/syncs/{syncId}': ({params}) => ({
+          id: params?.syncId,
+          sourceId: 'src1',
+          status: 'completed',
+        }),
+        'POST /knowledge-bases/{knowledgeBaseId}/sources': () => ({
+          id: 'src1',
+          latestSync: {id: 'sync-mine', status: 'running'},
+          type: 'web',
+        }),
+      }),
+    )
+
+    const {error, stdout} = await testCommand(CreateSourceCommand, [
+      'kb-abc123',
+      '--url',
+      'https://x.example',
+      '--watch',
+    ])
+
+    if (error) throw error
+    expect(stdout).toContain('Latest sync: sync-mine (running)')
+    expect(mockRequest).toHaveBeenCalledWith(
+      'GET /knowledge-bases/{knowledgeBaseId}/sources/{sourceId}/syncs/{syncId}',
+      {params: {knowledgeBaseId: 'kb-abc123', sourceId: 'src1', syncId: 'sync-mine'}},
+    )
+  })
+
   test('--url crawls a website through the spec operation, the type inferred', async () => {
     mockRequest.mockResolvedValueOnce({...source, type: 'web'})
 
@@ -231,6 +279,20 @@ describe('context documents content', () => {
       content: 'first',
       slice: {end: 1, start: 1},
     })
+  })
+
+  test('refuses --line-numbers with --json, which prints the JSON view', async () => {
+    const {stdout} = await testCommand(GetDocumentContentCommand, [
+      'kb-abc123',
+      'doc1',
+      '--json',
+      '--line-numbers',
+    ])
+
+    expect(JSON.parse(stdout)).toMatchObject({
+      error: {message: expect.stringContaining('--line-numbers'), oclif: {exit: 2}},
+    })
+    expect(mockRequest).not.toHaveBeenCalled()
   })
 
   test('numbers the lines of the JSON view with --line-numbers', async () => {

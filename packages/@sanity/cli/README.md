@@ -2156,10 +2156,10 @@ Add a source
 
 ```
 USAGE
-  $ sanity context sources create KNOWLEDGEBASEID [--json] [--type web|sanity-dataset|files] [--include-paths <value>...]
-    [--exclude-paths <value>...] [--max-depth <value>] [--sitemap-only] [--ignore-query-parameters] [--page-limit
-    <value>] [--dry-run] [--sanity-project-id <value>] [--sanity-dataset-id <value>] [--title <value>] [--content-type
-    text/markdown|text/plain] [--watch] [--file <path> | --url <value> | --query <value> | --text <path|->]
+  $ sanity context sources create KNOWLEDGEBASEID [--json] [--type web|sanity-dataset|files] [--url <value> | --query
+    <value> | --file <path> | --text <path|->] [--include-paths <value>...] [--exclude-paths <value>...] [--max-depth
+    <value>] [--sitemap-only] [--ignore-query-parameters] [--page-limit <value>] [--dry-run] [--sanity-project-id
+    <value>] [--sanity-dataset-id <value>] [--title <value>] [--content-type text/markdown|text/plain] [--watch]
 
 ARGUMENTS
   KNOWLEDGEBASEID  The knowledge base's ID (`kb...`), its `publicId`. Its UUID `id` is also accepted.
@@ -2196,7 +2196,8 @@ FLAGS
                                   <options: web|sanity-dataset|files>
   --url=<value>                   The URL to start crawling from. It must be a public `http` or `https` URL. Only for
                                   type web.
-  --watch                         Wait for the sync to settle, exiting non-zero if it fails
+  --watch                         Wait for the sync to settle, exiting non-zero unless it completes: when it fails, is
+                                  cancelled or is held for confirmation
 
 GLOBAL FLAGS
   --json  Format output as json.
@@ -2415,7 +2416,8 @@ ARGUMENTS
   SOURCEID         The source's ID.
 
 FLAGS
-  --watch  Wait for the sync to settle, exiting non-zero if it fails
+  --watch  Wait for the sync to settle, exiting non-zero unless it completes: when it fails, is cancelled or is held for
+           confirmation
 
 GLOBAL FLAGS
   --json  Format output as json.
@@ -2587,7 +2589,8 @@ ARGUMENTS
 FLAGS
   --content-type=<type>  MIME type of the file, inferred from the file extension when omitted
   --file=<path>          (required) Local file to upload: a document, or a zip, tar or gzip archive of them
-  --watch                Wait for the sync to settle, exiting non-zero if it fails
+  --watch                Wait for the sync to settle, exiting non-zero unless it completes: when it fails, is cancelled
+                         or is held for confirmation
 
 GLOBAL FLAGS
   --json  Format output as json.

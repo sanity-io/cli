@@ -95,7 +95,7 @@ export class GetDocumentContentCommand extends BaseCommand {
         exit: exitCodes.USAGE_ERROR,
       })
     }
-    if (lineNumbers && format !== 'json') {
+    if (lineNumbers && (values.json || request.query.format !== undefined)) {
       this.error('--line-numbers only applies to markdown, without --json or --format.', {
         exit: exitCodes.USAGE_ERROR,
       })
