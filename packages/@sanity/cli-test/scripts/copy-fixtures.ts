@@ -69,6 +69,9 @@ async function buildFixtureWorkspace(yamlPath: string) {
     allowBuilds: workspace.allowBuilds,
     minimumReleaseAge: workspace.minimumReleaseAge,
     minimumReleaseAgeExclude: workspace.minimumReleaseAgeExclude,
+    // Fixtures install without a lockfile, so a mature parent can pin a still-immature dependency
+    // for a short window; accept that pick instead of failing the install.
+    minimumReleaseAgeStrict: false,
   })
 }
 
