@@ -8,10 +8,8 @@ import {afterAll, afterEach, beforeAll, describe, expect, test, vi} from 'vitest
 
 import {sanityAppStyles} from './plugin-sanity-app-styles.js'
 
-// Inside the package (not the OS temp dir) so the built modules resolve like an app's.
 const TMP_DIR = path.join(import.meta.dirname, 'tmp')
 
-// An app that loads a module with CSS on demand, as a remote entry loads its exposes.
 const app = {
   'index.js': "export const load = () => import('./lazy.js')",
   'lazy.css': 'body { color: red }',
@@ -26,18 +24,16 @@ async function fixture(): Promise<string> {
   return root
 }
 
-// Stands in for Rolldown's `this.error`, which throws.
 const fail = (message: string) => {
   throw new Error(message)
 }
 
 const importFile = (file: string) => import(/* @vite-ignore */ pathToFileURL(file).href)
 
-/** Build the app as `sanity build` does and return its entry file. */
 async function buildApp(plugins: Plugin[]): Promise<string> {
   const root = await fixture()
   const output = (await build({
-    base: './',
+    base: 'https://example.test/',
     build: {
       rolldownOptions: {input: path.join(root, 'index.js'), preserveEntrySignatures: 'strict'},
     },
@@ -50,8 +46,9 @@ async function buildApp(plugins: Plugin[]): Promise<string> {
   return path.join(root, 'dist', entry.fileName)
 }
 
-/** Run the CSS module the dev server serves, against the client it imports, as a browser would. */
-async function serveCss(plugins: Plugin[]): Promise<void> {
+async function serveCss(plugins: Plugin[]): Promise<{
+  updateStyle: (id: string, content: string) => void
+}> {
   const root = await fixture()
   const server = await createServer({
     appType: 'custom',
@@ -65,8 +62,6 @@ async function serveCss(plugins: Plugin[]): Promise<void> {
   try {
     const client = await server.transformRequest('/@vite/client')
     const cssModule = await server.transformRequest('/lazy.css')
-    // Node can't import the server's URLs: point the module at the client file, and drop the
-    // client's env import (it only fills `__DEFINES__`).
     await writeFile(
       path.join(root, 'client.mjs'),
       client!.code.replace(/^import ["']\/@vite\/env["'];?$/m, ''),
@@ -79,6 +74,7 @@ async function serveCss(plugins: Plugin[]): Promise<void> {
     await server.close()
   }
   await importFile(path.join(root, 'lazy.css.mjs'))
+  return importFile(path.join(root, 'client.mjs'))
 }
 
 beforeAll(async () => {
@@ -96,7 +92,6 @@ afterEach(() => {
 test("tags the <link> that Vite's preload helper inserts for a dynamic import's CSS", async () => {
   const {load} = await importFile(await buildApp([sanityAppStyles('favorites')]))
 
-  // jsdom never loads the stylesheet, so the import stays pending; the link is inserted up front.
   void load()
 
   const link = document.head.querySelector<HTMLLinkElement>('link[rel="stylesheet"]')
@@ -104,10 +99,23 @@ test("tags the <link> that Vite's preload helper inserts for a dynamic import's 
   expect(link?.dataset.applicationId).toBe('favorites')
 })
 
+test('keeps one stylesheet link per app for a shared CSS URL', async () => {
+  const apps = await Promise.all(
+    ['first', 'second', 'first'].map(async (appId) =>
+      importFile(await buildApp([sanityAppStyles(appId)])),
+    ),
+  )
+
+  for (const {load} of apps) void load()
+
+  const links = [...document.head.querySelectorAll<HTMLLinkElement>('link[rel="stylesheet"]')]
+  expect(links.map((link) => link.dataset.applicationId)).toEqual(['first', 'second'])
+  expect(links[0]?.href).toBe(links[1]?.href)
+})
+
 describe('dev server', () => {
   beforeAll(() => {
     vi.spyOn(console, 'debug').mockImplementation(() => {})
-    // The client connects for HMR on import; a socket that never opens keeps it idle.
     vi.stubGlobal(
       'WebSocket',
       class {
@@ -129,6 +137,25 @@ describe('dev server', () => {
     expect(style?.textContent).toContain('color: red')
     expect(style?.dataset.applicationId).toBe('favorites')
   })
+
+  test('keeps one style per app for a shared CSS module', async () => {
+    for (const [appId, color] of [
+      ['first', 'red'],
+      ['second', 'blue'],
+      ['first', 'green'],
+    ]) {
+      const client = await serveCss([sanityAppStyles(appId!)])
+      client.updateStyle('/shared.css', `body { color: ${color} }`)
+    }
+
+    const styles = document.head.querySelectorAll<HTMLStyleElement>(
+      'style[data-vite-dev-id="/shared.css"]',
+    )
+    expect([...styles].map((style) => [style.dataset.applicationId, style.textContent])).toEqual([
+      ['first', 'body { color: green }'],
+      ['second', 'body { color: blue }'],
+    ])
+  })
 })
 
 test('fails the build when a Vite upgrade drops the anchor, rather than tagging nothing', () => {
@@ -138,4 +165,8 @@ test('fails the build when a Vite upgrade drops the anchor, rather than tagging 
   expect(() =>
     handler.call({error: fail}, 'const link = createLink()', '\0vite/preload-helper.js'),
   ).toThrow('Could not find `document.createElement("link")` in \0vite/preload-helper.js')
+
+  expect(() =>
+    handler.call({error: fail}, 'document.createElement("link")', '\0vite/preload-helper.js'),
+  ).toThrow('Could not find `link.rel === "stylesheet"` in \0vite/preload-helper.js')
 })

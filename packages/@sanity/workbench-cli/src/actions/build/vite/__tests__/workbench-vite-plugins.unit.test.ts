@@ -33,7 +33,7 @@ describe('workbenchVitePlugins', () => {
     ])
   })
 
-  test('returns only the federation plugin without an appId, so no stylesheet is tagged', async () => {
+  test('returns only the federation plugin without an appId', async () => {
     const result = await workbenchVitePlugins({
       cwd,
       entries: {relativeConfigLocation: '../../sanity.config.ts', relativeEntry: null},

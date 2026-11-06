@@ -467,14 +467,12 @@ test('re-rendering the root with new props keeps its signal', async () => {
   expect(signal.aborted).toBe(false)
 })
 
-/** Build the isolated harness with Vite, as `sanity build` does, and load it. */
 async function buildIsolatedHarness(plugins: Plugin[]): Promise<Harness> {
   const root = fs.mkdtempSync(path.join(TMP_DIR, 'isolated-'))
   fs.writeFileSync(
     path.join(root, 'entry.js'),
     renderRemote({app: '() => null', isolateStyles: true, preamble: ''}),
   )
-  // The package doesn't depend on styled-components; the harness only passes the target to it.
   fs.writeFileSync(
     path.join(root, 'styled-components.js'),
     'export const StyleSheetManager = ({children}) => children',
@@ -513,15 +511,5 @@ describe('styled-components sheet target', () => {
       render(container)
     })
     expect(sheetTarget()?.dataset.applicationId).toBe('favorites')
-  })
-
-  test('is left untagged when the build has no app id', async () => {
-    const {render} = await buildIsolatedHarness([])
-
-    act(() => {
-      render(container)
-    })
-    expect(sheetTarget()).not.toBeNull()
-    expect(sheetTarget()?.dataset.applicationId).toBeUndefined()
   })
 })

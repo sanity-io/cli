@@ -1,47 +1,51 @@
 import {type Plugin} from 'vite'
 
-/** Marks the elements an app inserts, as Workbench marks app iframes. */
-const APP_ID_ATTRIBUTE = 'data-application-id'
-
-/**
- * The Vite runtime modules that insert an app's stylesheets into the page, and
- * the call that creates each element. Vite has no hook for these elements, so
- * the call is the anchor: it names no local variables, so it survives more
- * Vite releases than a statement around it would.
- */
-const INSERTERS = [
-  // Production: `__vitePreload` links the CSS of every dynamic import, such as
-  // the remote entry's. Each app bundles its own copy of the helper.
-  {create: 'document.createElement("link")', id: /^\0vite\/preload-helper\.js$/},
-  // `sanity dev`: each app's server has its own client, which injects every CSS
-  // module as a `<style data-vite-dev-id>`. The client adopts an existing
-  // element with the same id instead of creating one, so two apps that import
-  // the same CSS file share the first app's element and attribute.
-  {create: 'document.createElement("style")', id: /\/vite\/dist\/client\/client\.mjs$/},
-]
+const APP_ID_ATTRIBUTE = JSON.stringify('data-application-id')
 
 /**
  * Tag every stylesheet element the app's own bundle inserts with the app id,
  * so Workbench can switch an app's CSS off while the app is off stage.
- * The render harness tags shared styled-components' sheets; a local copy
- * (all of `sanity dev`, or a build with sharing off) writes untagged sheets.
  */
 export function sanityAppStyles(appId: string): Plugin {
+  const id = JSON.stringify(appId)
   const tagged = (create: string) =>
-    `((el) => (el.setAttribute(${JSON.stringify(APP_ID_ATTRIBUTE)}, ${JSON.stringify(appId)}), el))(${create})`
+    `((el) => (el.setAttribute(${APP_ID_ATTRIBUTE}, ${id}), el))(${create})`
+  const owned = (element: string) => `${element}.getAttribute(${APP_ID_ATTRIBUTE}) === ${id}`
+
+  const inserters = [
+    {
+      edits: [
+        ['document.createElement("link")', tagged('document.createElement("link")')],
+        ['link.rel === "stylesheet"', `link.rel === "stylesheet" && ${owned('link')}`],
+      ],
+      id: /^\0vite\/preload-helper\.js$/,
+    },
+    {
+      edits: [
+        ['document.createElement("style")', tagged('document.createElement("style")')],
+        [
+          'document.querySelectorAll("style[data-vite-dev-id]")',
+          `Array.from(document.querySelectorAll("style[data-vite-dev-id]")).filter((el) => ${owned('el')})`,
+        ],
+      ],
+      id: /\/vite\/dist\/client\/client\.mjs$/,
+    },
+  ]
 
   return {
     name: 'sanity/workbench/app-styles',
     transform: {
-      filter: {id: INSERTERS.map(({id}) => id)},
-      handler(code, id) {
-        const {create} = INSERTERS.find((inserter) => inserter.id.test(id))!
-        // A Vite upgrade that drops the anchor would leave every stylesheet untagged.
-        if (!code.includes(create)) {
-          this.error(`Could not find \`${create}\` in ${id} to tag the app's stylesheets`)
+      filter: {id: inserters.map((inserter) => inserter.id)},
+      handler(code, moduleId) {
+        const {edits} = inserters.find((inserter) => inserter.id.test(moduleId))!
+        let result = code
+        for (const [anchor, replacement] of edits) {
+          if (!result.includes(anchor)) {
+            this.error(`Could not find \`${anchor}\` in ${moduleId} to tag the app's stylesheets`)
+          }
+          result = result.replaceAll(anchor, replacement)
         }
-        // Same-line edits keep the line mappings intact.
-        return {code: code.replaceAll(create, tagged(create)), map: null}
+        return {code: result, map: null}
       },
     },
   }
