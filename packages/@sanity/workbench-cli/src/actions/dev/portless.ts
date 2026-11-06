@@ -45,7 +45,7 @@ export async function startPortlessProxy(options: {
 
     for (const entry of servers) {
       if (entry.slug && entry.organizationId) {
-        routes.set(`${entry.slug}.${entry.organizationId.toLowerCase()}.${domain}`, {
+        routes.set(`${entry.slug}-apps-${entry.organizationId.toLowerCase()}.${domain}`, {
           host: toDisplayHost(entry.host),
           port: entry.port,
         })
@@ -149,7 +149,11 @@ export async function startPortlessProxy(options: {
     toPublicAddresses: (servers: DevServerManifest[]) =>
       servers.map((entry) =>
         entry.slug
-          ? {...entry, host: `${entry.slug}.${shellHostname}`, port: proxied ? port : entry.port}
+          ? {
+              ...entry,
+              host: `${entry.slug}-apps-${shellHostname}`,
+              port: proxied ? port : entry.port,
+            }
           : entry,
       ),
     url: new URL(`http://${shellHostname}:${proxied ? port : shellPort}`).origin,

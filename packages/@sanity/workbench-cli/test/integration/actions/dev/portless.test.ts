@@ -150,7 +150,7 @@ describe('startPortlessProxy', () => {
     expect((await get(port, 'ootherorg.sanity.localhost')).body).toBe(`shell ${OTHER_ORG} /`)
   })
 
-  test('toPublicAddresses rewrites app addresses to `<slug>.<org>.sanity.localhost` on the proxy port', async () => {
+  test('toPublicAddresses rewrites app addresses to `<slug>-apps-<org>.sanity.localhost` on the proxy port', async () => {
     const port = await freePort()
     const proxy = await startProxy(port)
 
@@ -160,7 +160,7 @@ describe('startPortlessProxy', () => {
     ])
 
     expect(routed.map(({host, port}) => ({host, port}))).toEqual([
-      {host: 'my-app.osyh1iet5.sanity.localhost', port},
+      {host: 'my-app-apps-osyh1iet5.sanity.localhost', port},
       {host: 'localhost', port: 4000},
     ])
   })
@@ -171,11 +171,11 @@ describe('startPortlessProxy', () => {
     const app = await upstream('app')
     registerApp(ORG, 'my-app', app.port)
 
-    const res = await get(port, 'my-app.osyh1iet5.sanity.localhost', '/mf-manifest.json')
+    const res = await get(port, 'my-app-apps-osyh1iet5.sanity.localhost', '/mf-manifest.json')
 
     expect(res).toMatchObject({body: 'app /mf-manifest.json', status: 201})
     expect(res.headers['content-type']).toBe('text/javascript')
-    expect(app.received[0].host).toBe(`my-app.osyh1iet5.sanity.localhost:${port}`)
+    expect(app.received[0].host).toBe(`my-app-apps-osyh1iet5.sanity.localhost:${port}`)
   })
 
   test('follows an app to the port it registers again on', async () => {
@@ -183,14 +183,14 @@ describe('startPortlessProxy', () => {
     await startProxy(port)
     const before = await upstream('before')
     const pid = registerApp(ORG, 'my-app', before.port)
-    expect((await get(port, 'my-app.osyh1iet5.sanity.localhost')).body).toBe('before /')
+    expect((await get(port, 'my-app-apps-osyh1iet5.sanity.localhost')).body).toBe('before /')
 
     const after = await upstream('after')
     registerApp(ORG, 'my-app', after.port, pid)
 
     await vi.waitFor(
       async () =>
-        expect((await get(port, 'my-app.osyh1iet5.sanity.localhost')).body).toBe('after /'),
+        expect((await get(port, 'my-app-apps-osyh1iet5.sanity.localhost')).body).toBe('after /'),
       {timeout: 10_000},
     )
   })
@@ -207,7 +207,7 @@ describe('startPortlessProxy', () => {
     await startProxy(port)
     registerApp(ORG, 'my-app', await freePort())
 
-    expect((await get(port, 'my-app.osyh1iet5.sanity.localhost')).status).toBe(502)
+    expect((await get(port, 'my-app-apps-osyh1iet5.sanity.localhost')).status).toBe(502)
   })
 
   test('forwards websocket upgrades with their handshake headers', async () => {
@@ -232,7 +232,7 @@ describe('startPortlessProxy', () => {
     const port = await freePort()
     await startProxy(port)
     registerApp(ORG, 'my-app', await freePort())
-    const socket = await upgrade(port, 'my-app.osyh1iet5.sanity.localhost')
+    const socket = await upgrade(port, 'my-app-apps-osyh1iet5.sanity.localhost')
 
     await once(socket, 'close')
 
@@ -250,7 +250,7 @@ describe('startPortlessProxy', () => {
     const upstreamClosed = once(app, 'upstream-closed')
 
     const req = request(
-      {headers: {host: `my-app.osyh1iet5.sanity.localhost:${port}`}, host: HOST, port},
+      {headers: {host: `my-app-apps-osyh1iet5.sanity.localhost:${port}`}, host: HOST, port},
       (res) => res.once('data', () => req.destroy()),
     )
     req.on('error', () => {}).end()
@@ -307,7 +307,7 @@ describe('startPortlessProxy', () => {
       expect(proxy.url).toBe('http://osyh1iet5.sanity.localhost:3333')
       expect(
         proxy.toPublicAddresses([aDevServerManifest({port: 3334, slug: 'my-app'})]),
-      ).toMatchObject([{host: 'my-app.osyh1iet5.sanity.localhost', port: 3334}])
+      ).toMatchObject([{host: 'my-app-apps-osyh1iet5.sanity.localhost', port: 3334}])
       expect(output.warn).toHaveBeenCalledWith(expect.stringContaining('EADDRINUSE'))
     },
   )
