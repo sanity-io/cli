@@ -1,9 +1,15 @@
 import {Args, Flags} from '@oclif/core'
 import {type CliConfig, exitCodes, SanityCommand} from '@sanity/cli-core'
+import {isProjectRootNotFoundError} from '@sanity/cli-core/errors'
+import {getCliExecutionContext} from '@sanity/cli-core/executionContext'
 import {type UndeployAdapter} from '@sanity/cli-core/undeploy'
 import {getWorkbench, resolveWorkbenchConfig} from '@sanity/workbench-cli/deploy'
 import {createWorkbenchUndeployAdapter} from '@sanity/workbench-cli/undeploy'
 
+import {
+  resolveAppFunctionCleanupContext,
+  withAppFunctionCleanup,
+} from '../actions/functions/undeployAppFunctions.js'
 import {
   createAppUndeployAdapter,
   createStudioUndeployAdapter,
@@ -11,6 +17,7 @@ import {
 import {runUndeploy} from '../actions/undeploy/runUndeploy.js'
 import {getAppId} from '../util/appId.js'
 import {determineIsApp} from '../util/determineIsApp.js'
+import {toStderrOutput} from '../util/toStderrOutput.js'
 
 export class UndeployCommand extends SanityCommand<typeof UndeployCommand> {
   static override args = {
@@ -69,9 +76,20 @@ export class UndeployCommand extends SanityCommand<typeof UndeployCommand> {
     if (args.appId) this.warnIfOverridingConfig(args.appId, projectConfig, isApp)
     // An explicit ID stands in for `deployment.appId`, which every adapter
     // already prefers over `studioHost` and the deprecated `app.id`.
-    const cliConfig = args.appId
+    let cliConfig = args.appId
       ? {...projectConfig, deployment: {...projectConfig.deployment, appId: args.appId}}
       : projectConfig
+
+    const functionCleanup =
+      isApp && cliConfig.app?.organizationId && !resolveWorkbenchConfig(cliConfig)
+        ? await resolveAppFunctionCleanupContext(cliConfig, await this.getFunctionWorkDir())
+        : null
+    if (functionCleanup && !getAppId(cliConfig)) {
+      cliConfig = {
+        ...cliConfig,
+        deployment: {...cliConfig.deployment, appId: functionCleanup.appId},
+      }
+    }
 
     // Workbench apps and configs deploy through Brett, so they undeploy through
     // it too; plain projects keep the user-applications backend.
@@ -83,7 +101,7 @@ export class UndeployCommand extends SanityCommand<typeof UndeployCommand> {
       })
     }
 
-    const adapter: UndeployAdapter =
+    let adapter: UndeployAdapter =
       workbench || config
         ? createWorkbenchUndeployAdapter({
             appId: getAppId(cliConfig),
@@ -96,7 +114,25 @@ export class UndeployCommand extends SanityCommand<typeof UndeployCommand> {
           ? createAppUndeployAdapter(cliConfig)
           : createStudioUndeployAdapter(cliConfig)
 
+    if (functionCleanup) {
+      adapter = withAppFunctionCleanup(
+        adapter,
+        functionCleanup,
+        flags.json ? toStderrOutput(this.output) : this.output,
+      )
+    }
+
     await runUndeploy({flags, isUnattended: this.isUnattended(), output: this.output}, adapter)
+  }
+
+  private async getFunctionWorkDir(): Promise<string | undefined> {
+    if (getCliExecutionContext()) return undefined
+    try {
+      return (await this.getProjectRoot()).directory
+    } catch (error) {
+      if (isProjectRootNotFoundError(error)) return undefined
+      throw error
+    }
   }
 
   private warnIfOverridingConfig(appId: string, cliConfig: CliConfig, isApp: boolean): void {

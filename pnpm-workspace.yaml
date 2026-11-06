@@ -1,6 +1,8 @@
 linkWorkspacePackages: true
 overrides:
   '@sanity/cli': 'workspace:*'
+  '@sanity/sdk': 3.10.0-app-functions.20261021170453
+  '@sanity/sdk-react': 3.10.0-app-functions.20261021170453
   '@types/node': 'catalog:'
 
 packages:

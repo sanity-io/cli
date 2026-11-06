@@ -151,7 +151,7 @@ async function undeployApp(
     undeployDebug(`Error undeploying ${label}`, error)
     // Labeled here, where the target is known — `normalizeFailure` only sees the adapter type.
     throw new CLIError(`Error undeploying ${label}: ${getErrorMessage(error)}`, {
-      exit: exitCodes.RUNTIME_ERROR,
+      exit: error instanceof CLIError ? (error.oclif?.exit ?? 1) : exitCodes.RUNTIME_ERROR,
     })
   }
   spin.succeed()
@@ -196,6 +196,11 @@ async function resolveTarget(
 }
 
 function confirmUndeployMessage(target: UndeployTarget): string {
+  if (target.deletes === 'functionStack') {
+    return target.payload?.functionStackId
+      ? `Delete function stack ${target.payload.functionStackId}, all its functions, and the saved app binding?`
+      : `The app and its function stack are already absent. Remove the saved app function binding?`
+  }
   if (target.deletes === 'config') {
     return `This will delete the deployed config for ${styleText(
       'yellow',
@@ -211,6 +216,7 @@ Are you ${styleText('red', 'sure')} you want to undeploy?`
     ID:    ${styleText('yellow', target.id)}
 
 The application will no longer be available for any of your users if you proceed.
+${target.payload?.functionStackId ? `\nFunction stack ${target.payload.functionStackId} and all its functions will also be deleted.\n` : ''}
 
 Are you ${styleText('red', 'sure')} you want to undeploy?`
   }
@@ -220,6 +226,13 @@ Are you ${styleText('red', 'sure')} you want to undeploy?`
 }
 
 function printUndeployed(target: UndeployTarget, output: Output): void {
+  if (target.deletes === 'functionStack') {
+    output.log('\nApp function cleanup completed.')
+    return
+  }
+  if (target.payload?.functionStackId) {
+    output.log(`\nDeleted function stack ${target.payload.functionStackId} and its functions.`)
+  }
   if (target.deletes === 'config') {
     output.log(`\n${styleText('bold', 'Config deleted.')}`)
     return

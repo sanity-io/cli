@@ -8,6 +8,9 @@ import {
 
 import {startDevServer} from '../../../server/devServer.js'
 import {gracefulServerDeath} from '../../../server/gracefulServerDeath.js'
+import {getAppId} from '../../../util/appId.js'
+import {generateAppFunctionContracts} from '../../functions/generateAppFunctionContracts.js'
+import {prepareAppFunctionsEntry} from '../../functions/prepareAppFunctionsEntry.js'
 import {devDebug} from '../devDebug.js'
 import {type DevActionOptions, type StartDevServerResult} from '../types.js'
 import {getDashboardAppURL} from './getDashboardAppUrl.js'
@@ -52,12 +55,20 @@ export async function startAppDevServer(options: DevActionOptions): Promise<Star
   const config = getDevServerConfig({cliConfig, flags, httpPort, output, workDir})
 
   try {
+    await generateAppFunctionContracts(workDir)
     output.log('Starting dev server')
 
     const appTitle = cliConfig && 'app' in cliConfig ? cliConfig.app?.title : undefined
+    const entry = await prepareAppFunctionsEntry({
+      appId: getAppId(cliConfig),
+      entry: config.entry ?? (isWorkbenchApp ? undefined : './src/App'),
+      organizationId,
+      workDir,
+    })
     const {close, server} = await startDevServer({
       ...config,
       appTitle,
+      entry,
       isApp: true,
     })
 
