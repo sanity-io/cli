@@ -1274,8 +1274,8 @@ List documents
 
 ```
 USAGE
-  $ sanity context documents list KNOWLEDGEBASEID [--json] [--source <value>] [--state active|missing|deleted] [--ids
-    <value>]
+  $ sanity context documents list KNOWLEDGEBASEID [--json] [--limit <value>] [--source <value>] [--state
+    active|missing|deleted] [--ids <value>]
 
 ARGUMENTS
   KNOWLEDGEBASEID  The knowledge base's ID (`kb...`), its `publicId`. Its UUID `id` is also accepted.
@@ -1283,6 +1283,7 @@ ARGUMENTS
 FLAGS
   --ids=<value>     Comma-separated IDs of the documents to return, up to 200, in any state. Use it to look up the
                     documents entry citations point at.
+  --limit=<value>   The maximum number of items to return.
   --source=<value>  Return only the documents of this source.
   --state=<option>  Return only documents in this state. Without it, `deleted` documents are left out.
                     <options: active|missing|deleted>
@@ -1808,11 +1809,12 @@ List knowledge bases
 
 ```
 USAGE
-  $ sanity context list [--json] [--include-drafts] [--organization <id>]
+  $ sanity context list [--json] [--limit <value>] [--include-drafts] [--organization <id>]
 
 FLAGS
   --[no-]include-drafts  Set to `true` to also list the organization's drafts, which have `state` set to `draft`. Drafts
                          count toward the plan's knowledge base limit, and `createdBy` says who started each one.
+  --limit=<value>        The maximum number of items to return.
 
 GLOBAL FLAGS
   --json  Format output as json.
@@ -1944,42 +1946,18 @@ Get an MCP endpoint's initial context
 
 ```
 USAGE
-  $ sanity context mcp initial-context MCPENDPOINT [--json] [--instructions <value>] [--perspective <value>] [--embeddings
-    <value>] [--groq-filter <value>] [--mode knowledge_base|groq] [--knowledge-bases <value>] [--link-resolver <value>]
-    [--workspace <value>] [--heading_offset <value>] [--organization <id>]
+  $ sanity context mcp initial-context MCPENDPOINT [--json] [--link-resolver <value>] [--heading_offset <value>] [--organization
+    <id>]
 
 ARGUMENTS
   MCPENDPOINT  The MCP endpoint's name, set when the endpoint was created.
 
 FLAGS
-  --embeddings=<value>       Set to `true` or `false` to turn semantic search on or off. Omit it to use the dataset
-                             source setting. Deprecated: refused from API version `v2026-11-03`. Configure it on the MCP
-                             endpoint instead.
-  --groq-filter=<value>      A GROQ filter that narrows the endpoint's configured content filter for this request.
-                             Documents must match both. Deprecated: refused from API version `v2026-11-03`. Configure it
-                             on the MCP endpoint instead.
-  --heading_offset=<value>   How many levels to shift markdown headings down, from `0` to `6`. Defaults to `1`, so `#`
-                             becomes `##`.
-  --instructions=<value>     Agent instructions that replace the endpoint's configured instructions for this request.
-                             Deprecated: refused from API version `v2026-11-03`. Configure it on the MCP endpoint
-                             instead.
-  --knowledge-bases=<value>  Comma-separated knowledge base public IDs (`kb...`) that replace the endpoint's knowledge
-                             base sources for this request. Deprecated: refused from API version `v2026-11-03`.
-                             Configure it on the MCP endpoint instead.
-  --link-resolver=<value>    A JSON array that adds `_url` fields to query results. Each item has `types` (document
-                             types), `baseUrl`, and an optional `slugExpression`, a GROQ expression that defaults to
-                             `slug.current`. Invalid JSON is ignored.
-  --mode=<option>            Serves only one side of the endpoint for this request: `knowledge_base` serves its
-                             knowledge bases and `groq` serves its dataset. Omit it to serve every source the endpoint
-                             has. A request whose chosen side the endpoint doesn't have is refused. Deprecated: refused
-                             from API version `v2026-11-03`. Configure it on the MCP endpoint instead.
-                             <options: knowledge_base|groq>
-  --perspective=<value>      The perspective for GROQ queries: `published` (default), `previewDrafts`, `raw`, or a
-                             release. Deprecated: refused from API version `v2026-11-03`. Configure it on the MCP
-                             endpoint instead.
-  --workspace=<value>        The studio workspace to use. Replaces the dataset source's workspace for this request.
-                             Deprecated: refused from API version `v2026-11-03`. Configure it on the MCP endpoint
-                             instead.
+  --heading_offset=<value>  How many levels to shift markdown headings down, from `0` to `6`. Defaults to `1`, so `#`
+                            becomes `##`.
+  --link-resolver=<value>   A JSON array that adds `_url` fields to query results. Each item has `types` (document
+                            types), `baseUrl`, and an optional `slugExpression`, a GROQ expression that defaults to
+                            `slug.current`. Invalid JSON is ignored.
 
 GLOBAL FLAGS
   --json  Format output as json.
@@ -2183,8 +2161,8 @@ FLAGS
   --max-depth=<value>             How many levels deep the crawl goes from the root URL. Only for type web.
   --page-limit=<value>            The maximum number of pages to crawl. The crawl can stop sooner when the knowledge
                                   base reaches its source limit. Only for type web.
-  --query=<value>                 A GROQ query that selects the documents, with an optional projection. It can match up
-                                  to 5,000 documents. Each sync runs it again. Only for type sanity-dataset.
+  --query=<value>                 A GROQ query that selects the documents, with an optional projection. Each sync runs
+                                  it again. Only for type sanity-dataset.
   --sanity-dataset-id=<value>     The dataset to read documents from. Only for type sanity-dataset.
   --sanity-project-id=<value>     The ID of the Sanity project to read documents from. You need full read access to the
                                   dataset and, on its project, the Administrator or Developer role or a custom role that
@@ -2379,10 +2357,13 @@ List sources
 
 ```
 USAGE
-  $ sanity context sources list KNOWLEDGEBASEID [--json]
+  $ sanity context sources list KNOWLEDGEBASEID [--json] [--limit <value>]
 
 ARGUMENTS
   KNOWLEDGEBASEID  The knowledge base's ID (`kb...`), its `publicId`. Its UUID `id` is also accepted.
+
+FLAGS
+  --limit=<value>  The maximum number of items to return.
 
 GLOBAL FLAGS
   --json  Format output as json.
@@ -2550,11 +2531,14 @@ List a source's syncs
 
 ```
 USAGE
-  $ sanity context sources syncs list KNOWLEDGEBASEID SOURCEID [--json]
+  $ sanity context sources syncs list KNOWLEDGEBASEID SOURCEID [--json] [--limit <value>]
 
 ARGUMENTS
   KNOWLEDGEBASEID  The knowledge base's ID (`kb...`), its `publicId`. Its UUID `id` is also accepted.
   SOURCEID         The source's ID.
+
+FLAGS
+  --limit=<value>  The maximum number of items to return.
 
 GLOBAL FLAGS
   --json  Format output as json.
