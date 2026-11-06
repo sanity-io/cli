@@ -4,10 +4,29 @@ import path from 'node:path'
 import {isStaging} from '@sanity/cli-core/util'
 import {z} from 'zod'
 
+const functionName = z.string().regex(/^[^./\\][^/\\]*$/)
+const cronField = z.string().min(1)
+
 const manifestSchema = z.object({
   appId: z.string().min(1),
   environment: z.enum(['production', 'staging']),
-  functions: z.array(z.object({name: z.string().regex(/^[^./\\][^/\\]*$/)})),
+  functions: z.array(
+    z.discriminatedUnion('type', [
+      z.object({name: functionName, type: z.literal('pubsub')}),
+      z.object({
+        event: z.object({
+          dayOfMonth: cronField,
+          dayOfWeek: cronField,
+          hour: cronField,
+          minute: cronField,
+          month: cronField,
+        }),
+        name: functionName,
+        timezone: z.string().min(1).optional(),
+        type: z.literal('cron'),
+      }),
+    ]),
+  ),
   organizationId: z.string().min(1),
   stackId: z.string().min(1).optional(),
   version: z.literal(1),

@@ -4,7 +4,7 @@ import path from 'node:path'
 import {type Output} from '@sanity/cli-core'
 import {isStaging} from '@sanity/cli-core/util'
 import {spinner} from '@sanity/cli-core/ux'
-import {type FunctionContract} from '@sanity/runtime-cli/functions/contracts'
+import {type FunctionContract, functionTrigger} from '@sanity/runtime-cli/functions/contracts'
 
 import {writeAppFunctionManifest} from '../functions/appFunctionManifest.js'
 import {readAppFunctionState} from '../functions/appFunctionState.js'
@@ -79,7 +79,10 @@ export async function buildAppFunctions({
     if (appId && organizationId) {
       await writeAppFunctionManifest(workDir, {
         appId,
-        functions: functions.map(({name}) => ({name})),
+        functions: functions.map((contract) => ({
+          name: contract.name,
+          ...functionTrigger(contract),
+        })),
         organizationId,
         stackId,
       })

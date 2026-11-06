@@ -24,9 +24,9 @@ export async function deployAppFunctions({
   const result = await deployFunctions({
     ...transport,
     appId: manifest.appId,
-    functions: manifest.functions.map(({name}) => ({
-      name,
-      src: path.join('.sanity', 'functions', name),
+    functions: manifest.functions.map((fn) => ({
+      ...fn,
+      src: path.join('.sanity', 'functions', fn.name),
     })),
     log: (message) => output.log(message),
     organizationId: manifest.organizationId,
