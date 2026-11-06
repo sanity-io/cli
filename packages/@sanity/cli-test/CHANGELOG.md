@@ -1,5 +1,15 @@
 # Changelog
 
+## 24.0.2
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-test-v24.0.1...cli-test-v24.0.2)
+
+_2026-11-06_
+
+### Bug Fixes
+
+- **deps:** update vitest-tooling to v5 ([#2117](https://github.com/sanity-io/cli/pull/2117)) ([caa7415](https://github.com/sanity-io/cli/commit/caa74155d51278ffc98f9d9cb41c71d697fbd984))
+
 ## 24.0.1
 
 [Compare changes](https://github.com/sanity-io/cli/compare/cli-test-v24.0.0...cli-test-v24.0.1)
