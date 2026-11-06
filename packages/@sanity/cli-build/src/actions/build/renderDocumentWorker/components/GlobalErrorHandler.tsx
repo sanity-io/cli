@@ -84,11 +84,26 @@ const errorHandlerScript = `
     var colno = params.event.colno
     var lineno = params.event.lineno
     var filename = params.event.filename
+    // NOTE: a thrown value is not always an Error, so message and stack can be undefined
+    // here. Fall back to the browser-supplied message rather than interpolating undefined
+    // into the overlay.
+    var message = error.message
+    var stack = error.stack
+
+    if (!message) {
+      // params.event is the raw message string when coming from window.onerror, and an
+      // ErrorEvent when coming from the error event listener.
+      message = typeof params.event === 'string' ? params.event : params.event.message
+    }
+
+    if (!message) {
+      message = 'Unknown error'
+    }
 
     errorElement.id = '__sanityError'
     errorElement.innerHTML = [
       '<div style="' + ERROR_BOX_STYLE + '">',
-      '<div style="font-weight: 700;">Uncaught error: ' + error.message + '</div>',
+      '<div style="font-weight: 700;">Uncaught error: ' + message + '</div>',
       '<div style="color: #515E72; font-size: 13px; line-height: 17px; margin: 10px 0;">' +
         filename +
         ':' +
@@ -96,7 +111,7 @@ const errorHandlerScript = `
         ':' +
         colno +
         '</div>',
-      '<pre style="' + ERROR_CODE_STYLE + '">' + error.stack + '</pre>',
+      '<pre style="' + ERROR_CODE_STYLE + '">' + (stack || '') + '</pre>',
       '</div>',
     ].join('')
 
