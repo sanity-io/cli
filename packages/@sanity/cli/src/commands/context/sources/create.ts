@@ -98,7 +98,7 @@ export class CreateSourceCommand extends BaseCommand {
     if (typeof file === 'string') {
       // Nested fields such as `crawlOptions.maxDepth` come from flags named after the field itself
       const ignored = Object.entries(body).flatMap(([key, value]) => {
-        if (key === 'type') return value === 'files' ? [] : [key]
+        if (key === 'type') return value === 'files' || values.type === undefined ? [] : [key]
         if (FILE_BODY_FIELDS.has(key)) return []
         return typeof value === 'object' && value !== null && !Array.isArray(value)
           ? Object.keys(value)

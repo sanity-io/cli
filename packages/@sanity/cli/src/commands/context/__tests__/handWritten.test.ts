@@ -131,7 +131,7 @@ describe('context sources create', () => {
 
     const {error} = await testCommand(CreateSourceCommand, ['kb-abc123', '--file', path, ...extra])
 
-    expect(error?.message).toContain(`Remove ${named}`)
+    expect(error?.message).toContain(`Remove ${named}.`)
     expect(error?.oclif?.exit).toBe(2)
     expect(mockCreateFileSource).not.toHaveBeenCalled()
   })

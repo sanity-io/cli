@@ -13,10 +13,17 @@ const REPLACEMENTS: Record<string, string> = {
   'context:refresh': 'sanity context sync',
 }
 
-/** The message for a removed context command, or `undefined` for any other id */
-export function removedContextCommandHint(id: string): string | undefined {
+/**
+ * The message for a removed context command, or `undefined` for any other id. oclif joins the
+ * arguments onto the id it can't find (`context:refresh:kb123`), so the longest known prefix wins.
+ */
+export function removedContextCommandHint(fullId: string): string | undefined {
+  const parts = fullId.split(':')
+  const id = parts
+    .map((_, i) => parts.slice(0, parts.length - i).join(':'))
+    .find((prefix) => prefix in REPLACEMENTS)
+  if (id === undefined) return undefined
   const replacement = REPLACEMENTS[id]
-  if (replacement === undefined) return undefined
   const removed = `sanity ${id.replaceAll(':', ' ')}`
   return id === 'context:refresh'
     ? `\`${removed}\` was removed. To sync every source of a knowledge base, use \`${replacement}\`.`

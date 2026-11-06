@@ -192,5 +192,19 @@ describe('commandNotFound topic aliases hook', () => {
 
       expect(context.error).toHaveBeenCalledWith(expect.stringContaining(replacement), {exit: 2})
     })
+
+    test.each([
+      ['context:refresh:kb123', 'sanity context refresh', 'sanity context sync'],
+      ['context:imports:list:kb123', 'sanity context imports list', 'sanity context sources list'],
+    ])(
+      'names what replaced "%s", whose id carries its arguments',
+      async (id, removed, replacement) => {
+        await hook.call(context, {argv: [], config, context, id})
+
+        const [message] = vi.mocked(context.error).mock.calls[0]
+        expect(message).toContain(`\`${removed}\` was removed`)
+        expect(message).toContain(replacement)
+      },
+    )
   })
 })
