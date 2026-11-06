@@ -14,6 +14,7 @@ import {type WorkbenchExposes} from '../../../resolveWorkbenchApp.js'
 import {isMediaLibraryConfigApp} from '../configs/configApp.js'
 import {federation} from './plugin.js'
 import {sanityAppId} from './plugins/plugin-sanity-app-id.js'
+import {sanityAppStyles} from './plugins/plugin-sanity-app-styles.js'
 import {type AutoUpdates} from './plugins/plugin-sanity-auto-updates.js'
 import {stripSuiGlobalReset} from './plugins/plugin-strip-sui-global-reset.js'
 
@@ -93,6 +94,6 @@ export async function workbenchVitePlugins(options: WorkbenchViteOptions): Promi
   return [
     ...configAppPlugins,
     federationPlugin,
-    ...(appId === undefined ? [] : [sanityAppId(appId)]),
+    ...(appId === undefined ? [] : [sanityAppId(appId), sanityAppStyles(appId)]),
   ]
 }
