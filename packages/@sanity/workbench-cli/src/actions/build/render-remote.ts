@@ -92,7 +92,6 @@ function mount(rootElement, args) {
     rootContexts.set(rootElement, { controller, value: { signal: controller.signal, moduleId, parentKey } })
     if (StyleSheetManager) {
       const target = rootElement.ownerDocument.createElement('sanity-styles')
-      // styled-components puts its sheets inside the target, so the host finds the app's sheets through it.
       if (typeof __SANITY_APP_ID__ === 'string') target.setAttribute('data-application-id', __SANITY_APP_ID__)
       // React can replace the mount node's contents; keep its stylesheet outside that node.
       rootElement.ownerDocument.head.appendChild(target)
