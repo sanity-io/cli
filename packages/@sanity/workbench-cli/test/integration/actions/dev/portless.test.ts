@@ -1,14 +1,17 @@
 import assert from 'node:assert'
 import {once} from 'node:events'
 import {mkdirSync, mkdtempSync, rmSync, writeFileSync} from 'node:fs'
-import {createServer, type IncomingHttpHeaders, request, type Server} from 'node:http'
-import {connect, createServer as createTcpServer} from 'node:net'
+import {createServer, type IncomingHttpHeaders, request} from 'node:http'
+import {connect, createServer as createTcpServer, type Server} from 'node:net'
 import {tmpdir} from 'node:os'
 import {join} from 'node:path'
 
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
-import {aDevServerManifest} from '../../../../src/actions/dev/__tests__/devTestHelpers.js'
+import {
+  aDevServerManifest,
+  createMockOutput,
+} from '../../../../src/actions/dev/__tests__/devTestHelpers.js'
 import {startPortlessProxy} from '../../../../src/actions/dev/portless.js'
 import {acquireWorkbenchLock} from '../../../../src/actions/dev/registry.js'
 
@@ -28,12 +31,14 @@ const ORG = 'oSyH1iET5'
 const OTHER_ORG = 'oOtherOrg'
 const cleanups: Array<() => Promise<unknown> | void> = []
 let dataDir: string
+let output: ReturnType<typeof createMockOutput>
 let nextPid = 1000
 
 beforeEach(() => {
   dataDir = mkdtempSync(join(tmpdir(), 'portless-'))
   mkdirSync(join(dataDir, 'dev-servers'))
   mockGetSanityDataDir.mockReturnValue(dataDir)
+  output = createMockOutput()
 })
 
 afterEach(async () => {
@@ -101,7 +106,7 @@ function registerApp(organizationId: string, slug: string, port: number, pid = n
 }
 
 async function startProxy(port: number, organizationId = ORG) {
-  const proxy = await startPortlessProxy({organizationId, port})
+  const proxy = await startPortlessProxy({organizationId, output, port, shellPort: 3333})
   cleanups.push(() => proxy.close())
 
   return proxy
@@ -287,25 +292,23 @@ describe('startPortlessProxy', () => {
     expect(vi.getTimerCount()).toBe(0)
   })
 
-  test('rejects when the server holding the port never answers', async () => {
-    const silent = createTcpServer((socket) => cleanups.push(() => socket.destroy())).listen(0)
-    cleanups.push(() => new Promise((resolve) => silent.close(resolve)))
-    await once(silent, 'listening')
-    const address = silent.address()
-    assert.ok(address !== null && typeof address === 'object')
+  test.each([
+    ['never answers', () => createTcpServer((socket) => cleanups.push(() => socket.destroy()))],
+    ['is another kind of server', () => createServer((_, res) => res.end())],
+  ])(
+    'keeps the hostnames on the dev server ports when the server holding the port %s',
+    async (_, createHolder) => {
+      const holder = createHolder().listen(0)
+      cleanups.push(() => new Promise((resolve) => holder.close(resolve)))
+      await once(holder, 'listening')
 
-    await expect(
-      startPortlessProxy({organizationId: ORG, port: address.port}),
-    ).rejects.toMatchObject({code: 'EADDRINUSE'})
-  })
+      const proxy = await startProxy(portOf(holder))
 
-  test('rejects when another kind of server holds the port', async () => {
-    const blocker = createServer((_, res) => res.end()).listen(0)
-    cleanups.push(() => new Promise((resolve) => blocker.close(resolve)))
-    await once(blocker, 'listening')
-
-    await expect(
-      startPortlessProxy({organizationId: ORG, port: portOf(blocker)}),
-    ).rejects.toMatchObject({code: 'EADDRINUSE'})
-  })
+      expect(proxy.url).toBe('http://osyh1iet5.sanity.localhost:3333')
+      expect(proxy.route([aDevServerManifest({port: 3334, slug: 'my-app'})])).toMatchObject([
+        {host: 'my-app.osyh1iet5.sanity.localhost', port: 3334},
+      ])
+      expect(output.warn).toHaveBeenCalledWith(expect.stringContaining('EADDRINUSE'))
+    },
+  )
 })

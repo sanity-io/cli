@@ -903,7 +903,9 @@ describe('startWorkbenchDevServer', () => {
         workbenchAvailable: true,
         workbenchPort: 3333,
       })
-      expect(mockStartPortlessProxy).toHaveBeenCalledWith({organizationId: 'oSyH1iET5', port: 80})
+      expect(mockStartPortlessProxy).toHaveBeenCalledWith(
+        expect.objectContaining({organizationId: 'oSyH1iET5', port: 80, shellPort: 3333}),
+      )
     })
 
     test('records the shell URL in the workbench lock', async () => {
@@ -945,17 +947,6 @@ describe('startWorkbenchDevServer', () => {
       expect(proxy.close.mock.invocationCallOrder[0]).toBeLessThan(
         mockServer.close.mock.invocationCallOrder[0],
       )
-    })
-
-    test('falls back to localhost ports when the proxy cannot start', async () => {
-      mockStartPortlessProxy.mockRejectedValue(new Error('listen EACCES: permission denied :::80'))
-      const {output, result} = startPortless()
-
-      expect(await result).toMatchObject({
-        url: 'http://localhost:3333',
-        workbenchAvailable: true,
-      })
-      expect(output.warn).toHaveBeenCalledWith(expect.stringContaining('EACCES'))
     })
 
     test('keeps localhost URLs without unstable_portless', async () => {

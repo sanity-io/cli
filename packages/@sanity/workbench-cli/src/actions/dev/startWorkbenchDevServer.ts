@@ -322,17 +322,9 @@ async function createWorkbenchViteServer(
   const addr = server.httpServer?.address()
   const actualPort = typeof addr === 'object' && addr ? addr.port : workbenchPort
 
-  let proxy: Awaited<ReturnType<typeof startPortlessProxy>> | undefined
-
-  if (portless) {
-    try {
-      proxy = await startPortlessProxy({organizationId, port: 80})
-    } catch (err) {
-      output.warn(
-        `Dashboard can't use *.sanity.localhost URLs, serving on localhost ports instead: ${err instanceof Error ? err.message : String(err)}`,
-      )
-    }
-  }
+  const proxy = portless
+    ? await startPortlessProxy({organizationId, output, port: 80, shellPort: actualPort})
+    : undefined
 
   // Fire-and-forget: warm the workbench remote's Vite transform pipeline so
   // the first browser request hits a pre-populated module graph.

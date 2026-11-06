@@ -1,7 +1,9 @@
 import {once} from 'node:events'
-import {createServer, get, type IncomingMessage, request} from 'node:http'
+import {createServer, get, request} from 'node:http'
 import {connect, type Socket} from 'node:net'
 import {pipeline} from 'node:stream'
+
+import {type Output} from '@sanity/cli-core'
 
 import {toDisplayHost} from '../../util/serverOrchestration.js'
 import {
@@ -11,10 +13,15 @@ import {
   watchRegistry,
 } from './registry.js'
 
-export async function startPortlessProxy(options: {organizationId: string; port: number}) {
-  const {organizationId, port} = options
+export async function startPortlessProxy(options: {
+  organizationId: string
+  output: Output
+  port: number
+  shellPort: number
+}) {
+  const {organizationId, output, port, shellPort} = options
   const domain = new URL(`http://sanity.localhost:${port}`).host
-  const shellUrl = new URL(`http://${organizationId.toLowerCase()}.${domain}`)
+  const shellHostname = `${organizationId.toLowerCase()}.sanity.localhost`
   const routes = new Map<string | undefined, Pick<DevServerManifest, 'host' | 'port'>>()
 
   const readRoutes = (servers: DevServerManifest[]) => {
@@ -100,6 +107,7 @@ export async function startPortlessProxy(options: {organizationId: string; port:
 
   let watcher: ReturnType<typeof watchRegistry> | undefined
   let takeover: ReturnType<typeof setInterval> | undefined
+  let proxied = true
   server.on('listening', () => {
     clearInterval(takeover)
     watcher = watchRegistry(readRoutes)
@@ -110,20 +118,25 @@ export async function startPortlessProxy(options: {organizationId: string; port:
     server.listen(port)
     await once(server, 'listening')
   } catch (err) {
-    const owner = await new Promise<IncomingMessage>((resolve, reject) => {
+    const isSanityProxy = await new Promise<boolean>((resolve) => {
       get(
         {headers: {host: domain}, host: '127.0.0.1', port, signal: AbortSignal.timeout(1000)},
-        resolve,
-      ).on('error', reject)
-    }).catch(() => {
-      throw err
+        (response) => {
+          response.resume()
+          resolve(response.headers['x-sanity-portless'] === 'true')
+        },
+      ).on('error', () => resolve(false))
     })
-    owner.resume()
 
-    if (owner.headers['x-sanity-portless'] !== 'true') throw err
-
-    server.on('error', () => {})
-    takeover = setInterval(() => server.listening || server.listen(port), 1000)
+    if (isSanityProxy) {
+      server.on('error', () => {})
+      takeover = setInterval(() => server.listening || server.listen(port), 1000)
+    } else {
+      proxied = false
+      output.warn(
+        `Can't use port ${port} for *.sanity.localhost URLs, so they include the dev server port: ${err instanceof Error ? err.message : String(err)}`,
+      )
+    }
   }
 
   return {
@@ -135,8 +148,10 @@ export async function startPortlessProxy(options: {organizationId: string; port:
     },
     route: (servers: DevServerManifest[]) =>
       servers.map((entry) =>
-        entry.slug ? {...entry, host: `${entry.slug}.${shellUrl.hostname}`, port} : entry,
+        entry.slug
+          ? {...entry, host: `${entry.slug}.${shellHostname}`, port: proxied ? port : entry.port}
+          : entry,
       ),
-    url: shellUrl.origin,
+    url: new URL(`http://${shellHostname}:${proxied ? port : shellPort}`).origin,
   }
 }
