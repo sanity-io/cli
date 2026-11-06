@@ -768,8 +768,8 @@ importers:
         specifier: ^8.0.5
         version: 8.0.5(@types/react@19.3.0)(vitest@5.1.0)(xstate@5.33.2)
       '@sanity/runtime-cli':
-        specifier: ^17.20.0
-        version: 17.20.0(@babel/core@7.29.7(supports-color@8.1.1))(@babel/runtime@7.29.7)(@noble/hashes@2.4.0)(@types/node@22.20.5)(@types/react@19.3.0)(babel-plugin-react-compiler@1.0.0)(esbuild@0.28.2)(immer@11.1.18)(oxc-transform-react@0.156.0)(rolldown@1.2.16)(sanity@6.22.0(@noble/hashes@2.4.0)(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(immer@11.1.18)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(styled-components@6.5.3(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(supports-color@8.1.1)(typescript@6.0.3)(vitest@5.1.0))(tsx@4.23.13)(typescript@6.0.3)(use-sync-external-store@1.7.0(react@19.3.0))(vitest@5.1.0)(xstate@5.33.2)(yaml@2.9.0)
+        specifier: ^17.21.0
+        version: 17.21.0(@babel/core@7.29.7(supports-color@8.1.1))(@babel/runtime@7.29.7)(@noble/hashes@2.4.0)(@types/node@22.20.5)(@types/react@19.3.0)(babel-plugin-react-compiler@1.0.0)(esbuild@0.28.2)(immer@11.1.18)(oxc-transform-react@0.156.0)(rolldown@1.2.16)(sanity@6.22.0(@noble/hashes@2.4.0)(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(immer@11.1.18)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(styled-components@6.5.3(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(supports-color@8.1.1)(typescript@6.0.3)(vitest@5.1.0))(tsx@4.23.13)(typescript@6.0.3)(use-sync-external-store@1.7.0(react@19.3.0))(vitest@5.1.0)(xstate@5.33.2)(yaml@2.9.0)
       '@sanity/schema':
         specifier: 'catalog:'
         version: 6.22.0(@types/react@19.3.0)(vitest@5.1.0)
@@ -5058,8 +5058,8 @@ packages:
       prismjs:
         optional: true
 
-  '@sanity/runtime-cli@17.20.0':
-    resolution: {integrity: sha512-M1WwIXD/APX8PITs85/0tveGqOez49Wiaua4Mcoqg03q3vkb03hEPujtqsgw9sY+QH+vhz7QldcIFPVJOgg91w==}
+  '@sanity/runtime-cli@17.21.0':
+    resolution: {integrity: sha512-Ohy7Il2HUMaDQ+VJYSqF/uquJV9eAlh1zScF/o3KnoLH0tOjY/JivgbaA3A5n+BsQbo5mdQT/xBeVHTIr3ttnA==}
     engines: {node: '>=22.12'}
     hasBin: true
 
@@ -14011,7 +14011,7 @@ snapshots:
       chokidar: 5.0.0
       cjs-module-lexer: 2.2.1
       dompurify: 3.4.17
-      empathic: 2.0.1
+      empathic: 2.1.0
       jsdom: 29.1.1(@noble/hashes@2.4.0)
       lightningcss: 1.33.0
       lodash-es: 4.18.1
@@ -14019,7 +14019,7 @@ snapshots:
       oneline: 2.0.0
       picomatch: 4.0.7
       react: 19.3.0
-      react-is: 19.3.0
+      react-is: 19.3.1
       semver: 7.8.5
       vite: 8.3.6(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.13)(yaml@2.9.0)
       zod: 4.5.4
@@ -14063,7 +14063,7 @@ snapshots:
       '@oclif/core': 4.14.0
       '@sanity/client': 8.14.1(vitest@5.1.0)
       boxen: 8.0.1
-      empathic: 2.0.1
+      empathic: 2.1.0
       get-it: 9.6.1(vitest@5.1.0)
       get-tsconfig: 4.14.3
       import-meta-resolve: 4.2.0
@@ -14506,7 +14506,7 @@ snapshots:
 
   '@sanity/prism-groq@1.1.2': {}
 
-  '@sanity/runtime-cli@17.20.0(@babel/core@7.29.7(supports-color@8.1.1))(@babel/runtime@7.29.7)(@noble/hashes@2.4.0)(@types/node@22.20.5)(@types/react@19.3.0)(babel-plugin-react-compiler@1.0.0)(esbuild@0.28.2)(immer@11.1.18)(oxc-transform-react@0.156.0)(rolldown@1.2.16)(sanity@6.22.0(@noble/hashes@2.4.0)(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(immer@11.1.18)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(styled-components@6.5.3(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(supports-color@8.1.1)(typescript@6.0.3)(vitest@5.1.0))(tsx@4.23.13)(typescript@6.0.3)(use-sync-external-store@1.7.0(react@19.3.0))(vitest@5.1.0)(xstate@5.33.2)(yaml@2.9.0)':
+  '@sanity/runtime-cli@17.21.0(@babel/core@7.29.7(supports-color@8.1.1))(@babel/runtime@7.29.7)(@noble/hashes@2.4.0)(@types/node@22.20.5)(@types/react@19.3.0)(babel-plugin-react-compiler@1.0.0)(esbuild@0.28.2)(immer@11.1.18)(oxc-transform-react@0.156.0)(rolldown@1.2.16)(sanity@6.22.0(@noble/hashes@2.4.0)(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(immer@11.1.18)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(styled-components@6.5.3(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(supports-color@8.1.1)(typescript@6.0.3)(vitest@5.1.0))(tsx@4.23.13)(typescript@6.0.3)(use-sync-external-store@1.7.0(react@19.3.0))(vitest@5.1.0)(xstate@5.33.2)(yaml@2.9.0)':
     dependencies:
       '@architect/hydrate': 6.0.2
       '@architect/inventory': 6.1.0
@@ -14522,7 +14522,7 @@ snapshots:
       adm-zip: 0.6.1
       array-treeify: 0.2.0
       cardinal: 2.1.1
-      empathic: 2.0.1
+      empathic: 2.1.0
       eventsource: 5.1.3
       groq-js: 2.0.1
       jiti: 2.7.0
