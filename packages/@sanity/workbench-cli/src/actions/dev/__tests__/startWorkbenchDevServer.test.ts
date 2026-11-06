@@ -1,5 +1,8 @@
+import {type CliConfig} from '@sanity/cli-core'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
+import {type startPortlessProxy} from '../portless.js'
+import {type DevServerManifest} from '../registry.js'
 import {startWorkbenchDevServer} from '../startWorkbenchDevServer.js'
 import {
   aDevServerManifest,
@@ -17,9 +20,11 @@ const mockAcquireWorkbenchLock = vi.hoisted(() => vi.fn())
 const mockGetRegisteredServers = vi.hoisted(() => vi.fn())
 const mockWaitForWorkbenchLock = vi.hoisted(() => vi.fn())
 const mockWatchRegistry = vi.hoisted(() => vi.fn())
+const mockStartPortlessProxy = vi.hoisted(() => vi.fn())
 
 vi.mock('vite', () => ({createServer: mockCreateServer}))
 vi.mock('@vitejs/plugin-react', () => ({default: vi.fn(() => [])}))
+vi.mock('../portless.js', () => ({startPortlessProxy: mockStartPortlessProxy}))
 vi.mock('../writeWorkbenchRuntime.js', () => ({
   writeWorkbenchRuntime: mockWriteWorkbenchRuntime,
 }))
@@ -32,6 +37,16 @@ vi.mock('../registry.js', async (importOriginal) => ({
   waitForWorkbenchLock: mockWaitForWorkbenchLock,
   watchRegistry: mockWatchRegistry,
 }))
+
+function aProxy() {
+  return {
+    close: vi.fn<() => Promise<void>>().mockResolvedValue(),
+    route: vi.fn((servers: DevServerManifest[]) =>
+      servers.map((server) => ({...server, host: 'routed', port: 80})),
+    ),
+    url: 'http://osyh1iet5.sanity.localhost',
+  } satisfies Awaited<ReturnType<typeof startPortlessProxy>>
+}
 
 describe('startWorkbenchDevServer', () => {
   beforeEach(() => {
@@ -56,12 +71,11 @@ describe('startWorkbenchDevServer', () => {
       expect(mockCreateServer).not.toHaveBeenCalled()
     })
 
-    test('returns httpHost and workbenchPort even when federation is disabled', async () => {
+    test('returns workbenchPort even when federation is disabled', async () => {
       const result = await startWorkbenchDevServer(
         createDevOptions({httpHost: '0.0.0.0', httpPort: 4000}),
       )
 
-      expect(result.httpHost).toBe('0.0.0.0')
       expect(result.workbenchPort).toBe(4000)
     })
   })
@@ -88,10 +102,10 @@ describe('startWorkbenchDevServer', () => {
       app: workbenchApp({organizationId: 'org-test'}),
     } as const
 
-    test('returns the provided httpHost and Vite’s actual bound port', async () => {
+    test('returns the shell URL at Vite’s actual bound port', async () => {
       // Vite may bind a different port than requested (3333 occupied → 3334); the
-      // result must report the bound port, not the requested one, and pass the
-      // configured host through.
+      // result must report the bound port, not the requested one, and show a
+      // bind-only host as localhost.
       const mockServer = createMockViteServer({port: 3334})
       mockServer.httpServer.address.mockReturnValue({
         address: '127.0.0.1',
@@ -104,7 +118,7 @@ describe('startWorkbenchDevServer', () => {
         createDevOptions({cliConfig: federationConfig, httpHost: '0.0.0.0'}),
       )
 
-      expect(result.httpHost).toBe('0.0.0.0')
+      expect(result).toMatchObject({url: 'http://localhost:3334'})
       expect(result.workbenchPort).toBe(3334)
     })
 
@@ -391,9 +405,23 @@ describe('startWorkbenchDevServer', () => {
 
       expect(result.workbenchAvailable).toBe(true)
       expect(result.workbenchPort).toBe(4000)
-      expect(result.httpHost).toBe('0.0.0.0')
+      expect(result).toMatchObject({url: 'http://localhost:4000'})
       expect(result.close).toBeTypeOf('function')
       expect(mockCreateServer).not.toHaveBeenCalled()
+    })
+
+    test('links to the shell URL the lock holder recorded', async () => {
+      mockAcquireWorkbenchLock.mockReturnValue(undefined)
+      mockWaitForWorkbenchLock.mockResolvedValue({
+        host: 'localhost',
+        pid: 12_345,
+        port: 3333,
+        url: 'http://osyh1iet5.sanity.localhost',
+      })
+
+      const result = await startWorkbenchDevServer(createDevOptions({cliConfig: federationConfig}))
+
+      expect(result).toMatchObject({url: 'http://osyh1iet5.sanity.localhost'})
     })
 
     test('falls back to configured host/port when lock is held but lock file unreadable', async () => {
@@ -404,7 +432,7 @@ describe('startWorkbenchDevServer', () => {
 
       expect(result.workbenchAvailable).toBe(true)
       expect(result.workbenchPort).toBe(3333)
-      expect(result.httpHost).toBe('localhost')
+      expect(result).toMatchObject({url: 'http://localhost:3333'})
       expect(mockCreateServer).not.toHaveBeenCalled()
     })
   })
@@ -421,7 +449,7 @@ describe('startWorkbenchDevServer', () => {
 
       await startWorkbenchDevServer(createDevOptions({cliConfig: federationConfig}))
 
-      expect(mockUpdatePort).toHaveBeenCalledWith(3334)
+      expect(mockUpdatePort).toHaveBeenCalledWith(3334, 'http://localhost:3334')
     })
 
     test('starts watching registry after successful startup', async () => {
@@ -843,6 +871,98 @@ describe('startWorkbenchDevServer', () => {
       await startWorkbenchDevServer(createDevOptions({cliConfig: federationConfig}))
 
       expect(mockReleaseLock).toHaveBeenCalled()
+    })
+  })
+
+  describe('unstable_portless', () => {
+    const portlessConfig = {
+      app: workbenchApp({organizationId: 'oSyH1iET5', unstable_portless: true}),
+    }
+
+    function startPortless(cliConfig: CliConfig = portlessConfig) {
+      const updatePort = vi.fn()
+      mockAcquireWorkbenchLock.mockReturnValue({release: vi.fn(), updatePort})
+      const mockServer = createMockViteServer()
+      mockCreateServer.mockResolvedValue(mockServer)
+      const output = createMockOutput()
+
+      return {
+        mockServer,
+        output,
+        result: startWorkbenchDevServer(createDevOptions({cliConfig, output})),
+        updatePort,
+      }
+    }
+
+    test('reports the shell URL at the org hostname when the proxy starts', async () => {
+      mockStartPortlessProxy.mockResolvedValue(aProxy())
+      const {result} = startPortless()
+
+      expect(await result).toMatchObject({
+        url: 'http://osyh1iet5.sanity.localhost',
+        workbenchAvailable: true,
+        workbenchPort: 3333,
+      })
+      expect(mockStartPortlessProxy).toHaveBeenCalledWith({organizationId: 'oSyH1iET5', port: 80})
+    })
+
+    test('records the shell URL in the workbench lock', async () => {
+      mockStartPortlessProxy.mockResolvedValue(aProxy())
+      const {result, updatePort} = startPortless()
+      await result
+
+      expect(updatePort).toHaveBeenCalledWith(3333, 'http://osyh1iet5.sanity.localhost')
+    })
+
+    test('broadcasts apps at their routed addresses', async () => {
+      mockStartPortlessProxy.mockResolvedValue(aProxy())
+      mockGetRegisteredServers.mockReturnValue([
+        aDevServerManifest({id: 'app-1', organizationId: 'oSyH1iET5', port: 3334}),
+      ])
+      const {mockServer, result} = startPortless()
+      await result
+      const mockClient = {send: vi.fn()}
+
+      mockServer.ws.on.mock.calls.find(
+        (args) => args[0] === 'sanity:workbench:get-local-applications',
+      )?.[1](undefined, mockClient)
+
+      expect(mockClient.send).toHaveBeenCalledWith(
+        'sanity:workbench:local-applications',
+        expect.objectContaining({
+          applications: [expect.objectContaining({host: 'routed', id: 'app-1', port: 80})],
+        }),
+      )
+    })
+
+    test('close stops the proxy before the shell', async () => {
+      const proxy = aProxy()
+      mockStartPortlessProxy.mockResolvedValue(proxy)
+      const {mockServer, result} = startPortless()
+
+      await (await result).close()
+
+      expect(proxy.close.mock.invocationCallOrder[0]).toBeLessThan(
+        mockServer.close.mock.invocationCallOrder[0],
+      )
+    })
+
+    test('falls back to localhost ports when the proxy cannot start', async () => {
+      mockStartPortlessProxy.mockRejectedValue(new Error('listen EACCES: permission denied :::80'))
+      const {output, result} = startPortless()
+
+      expect(await result).toMatchObject({
+        url: 'http://localhost:3333',
+        workbenchAvailable: true,
+      })
+      expect(output.warn).toHaveBeenCalledWith(expect.stringContaining('EACCES'))
+    })
+
+    test('keeps localhost URLs without unstable_portless', async () => {
+      const {result} = startPortless({app: workbenchApp({organizationId: 'oSyH1iET5'})})
+
+      expect(await result).toMatchObject({url: 'http://localhost:3333'})
+      expect(mockStartPortlessProxy).not.toHaveBeenCalled()
     })
   })
 })

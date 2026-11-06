@@ -7,7 +7,9 @@ import {createServer, type InlineConfig, type Plugin, type ViteDevServer} from '
 import {z} from 'zod/mini'
 
 import {isWorkbenchApp, isWorkbenchConfig} from '../../defineApp.js'
+import {toDisplayHost} from '../../util/serverOrchestration.js'
 import {createExposesTracker} from './exposesSetId.js'
+import {startPortlessProxy} from './portless.js'
 import {
   acquireWorkbenchLock,
   type DevServerManifest,
@@ -83,20 +85,20 @@ const toApplicationsPayload = (servers: DevServerManifest[]) => ({
  * rebuilt remote — full-reload to drop the stale remote-entry; otherwise
  * rebroadcast for a soft reconcile. Returns a detach fn.
  */
-function attachViteDevServerBridge(server: ViteDevServer, organizationId?: string): () => void {
-  const ownServers = (servers: DevServerManifest[]) =>
-    organizationId ? servers.filter((entry) => entry.organizationId === organizationId) : servers
-
+function attachViteDevServerBridge(
+  server: ViteDevServer,
+  selectServers: (servers: DevServerManifest[]) => DevServerManifest[],
+): () => void {
   server.ws.on('sanity:workbench:get-local-applications', (_, client) => {
     client.send(
       'sanity:workbench:local-applications',
-      toApplicationsPayload(ownServers(getRegisteredServers())),
+      toApplicationsPayload(selectServers(getRegisteredServers())),
     )
   })
 
   const setTracker = createExposesTracker()
   const registryWatcher = watchRegistry((allServers) => {
-    const servers = ownServers(allServers)
+    const servers = selectServers(allServers)
     if (setTracker.hasChanged(servers)) {
       server.ws.send({type: 'full-reload'})
       return
@@ -115,19 +117,16 @@ function attachViteDevServerBridge(server: ViteDevServer, organizationId?: strin
 export function startWorkbenchRemoteCoordinator(options: {server: ViteDevServer}): {
   close: () => Promise<void>
 } {
-  const detachBridge = attachViteDevServerBridge(options.server)
+  const detachBridge = attachViteDevServerBridge(options.server, (servers) => servers)
 
   return {
     close: async () => detachBridge(),
   }
 }
 
-interface WorkbenchDevServerResult {
-  close: () => Promise<void>
-  httpHost: string | undefined
-  workbenchAvailable: boolean
-  workbenchPort: number
-}
+type WorkbenchDevServerResult =
+  | {close: () => Promise<void>; url: string; workbenchAvailable: true; workbenchPort: number}
+  | {close: () => Promise<void>; workbenchAvailable: false; workbenchPort: number}
 
 export interface StartWorkbenchOptions {
   /** Dependency-cache dir for the workbench Vite server, kept apart from the user's own. */
@@ -159,7 +158,7 @@ export async function startWorkbenchDevServer(
   // render it.
   if (!isWorkbenchApp(cliConfig?.app) && !isWorkbenchConfig(cliConfig?.app)) {
     devDebug('Not a workbench app or config, skipping workbench dev server')
-    return {close: noop, httpHost, workbenchAvailable: false, workbenchPort}
+    return {close: noop, workbenchAvailable: false, workbenchPort}
   }
 
   const organizationId = resolveOrganizationId(cliConfig)
@@ -181,7 +180,9 @@ export async function startWorkbenchDevServer(
     )
     return {
       close: noop,
-      httpHost: existing?.host ?? httpHost,
+      url:
+        existing?.url ??
+        `http://${toDisplayHost(existing?.host ?? httpHost)}:${existing?.port ?? workbenchPort}`,
       workbenchAvailable: true,
       workbenchPort: existing?.port ?? workbenchPort,
     }
@@ -197,6 +198,7 @@ export async function startWorkbenchDevServer(
       httpHost,
       organizationId,
       output,
+      portless: isWorkbenchApp(cliConfig.app) && cliConfig.app.unstable_portless === true,
       reactStrictMode,
       workbenchPort,
       workDir,
@@ -208,18 +210,18 @@ export async function startWorkbenchDevServer(
 
   if (!result) {
     workbenchLock.release()
-    return {close: noop, httpHost, workbenchAvailable: false, workbenchPort}
+    return {close: noop, workbenchAvailable: false, workbenchPort}
   }
 
-  const {actualPort, close} = result
-  workbenchLock.updatePort(actualPort)
+  const {actualPort, close, url} = result
+  workbenchLock.updatePort(actualPort, url)
 
   return {
     close: async () => {
       workbenchLock.release()
       await close()
     },
-    httpHost,
+    url,
     workbenchAvailable: true,
     workbenchPort: actualPort,
   }
@@ -230,6 +232,7 @@ interface CreateWorkbenchViteServerOptions {
   httpHost: string | undefined
   organizationId: string
   output: Output
+  portless: boolean
   reactStrictMode: boolean
   workbenchPort: number
   workDir: string
@@ -238,13 +241,22 @@ interface CreateWorkbenchViteServerOptions {
 interface CreateWorkbenchViteServerResult {
   actualPort: number
   close: () => Promise<void>
+  url: string
 }
 
 async function createWorkbenchViteServer(
   options: CreateWorkbenchViteServerOptions,
 ): Promise<CreateWorkbenchViteServerResult | undefined> {
-  const {cacheDir, httpHost, organizationId, output, reactStrictMode, workbenchPort, workDir} =
-    options
+  const {
+    cacheDir,
+    httpHost,
+    organizationId,
+    output,
+    portless,
+    reactStrictMode,
+    workbenchPort,
+    workDir,
+  } = options
 
   const remoteUrl = parseRemoteUrl(process.env.SANITY_INTERNAL_WORKBENCH_REMOTE_URL)
 
@@ -310,6 +322,18 @@ async function createWorkbenchViteServer(
   const addr = server.httpServer?.address()
   const actualPort = typeof addr === 'object' && addr ? addr.port : workbenchPort
 
+  let proxy: Awaited<ReturnType<typeof startPortlessProxy>> | undefined
+
+  if (portless) {
+    try {
+      proxy = await startPortlessProxy({organizationId, port: 80})
+    } catch (err) {
+      output.warn(
+        `Dashboard can't use *.sanity.localhost URLs, serving on localhost ports instead: ${err instanceof Error ? err.message : String(err)}`,
+      )
+    }
+  }
+
   // Fire-and-forget: warm the workbench remote's Vite transform pipeline so
   // the first browser request hits a pre-populated module graph.
   if (remoteUrl) {
@@ -319,14 +343,20 @@ async function createWorkbenchViteServer(
     devDebug('Warming workbench remote at %s', remoteUrl)
   }
 
-  const detachBridge = attachViteDevServerBridge(server, organizationId)
+  const detachBridge = attachViteDevServerBridge(server, (servers) => {
+    const organizationServers = servers.filter((entry) => entry.organizationId === organizationId)
+
+    return proxy ? proxy.route(organizationServers) : organizationServers
+  })
 
   return {
     actualPort,
     close: async () => {
       detachBridge()
+      await proxy?.close()
       await server.close()
     },
+    url: proxy?.url ?? `http://${toDisplayHost(httpHost)}:${actualPort}`,
   }
 }
 

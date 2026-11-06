@@ -423,6 +423,7 @@ const workbenchLockSchema = z.object({
   port: z.number(),
   ready: z.optional(z.boolean()),
   startedAt: z.string(),
+  url: z.optional(z.string()),
   version: z.literal(REGISTRY_VERSION),
 })
 
@@ -522,7 +523,7 @@ interface WorkbenchLock {
   /** Release the lock file. */
   release: () => void
   /** Update the lock with the actual port after the server starts listening. */
-  updatePort: (port: number) => void
+  updatePort: (port: number, url: string) => void
 }
 
 /**
@@ -580,8 +581,8 @@ export function acquireWorkbenchLock(
           // Already cleaned up
         }
       },
-      updatePort(port: number) {
-        writeFileSync(lockPath, JSON.stringify({...lockData, port, ready: true}))
+      updatePort(port: number, url: string) {
+        writeFileSync(lockPath, JSON.stringify({...lockData, port, ready: true, url}))
       },
     }
   } catch (err: unknown) {

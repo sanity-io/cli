@@ -310,10 +310,10 @@ describe('acquireWorkbenchLock', () => {
     expect(acquireWorkbenchLock({host: 'localhost', organizationId: ORG, port: 3333})).toBeDefined()
   })
 
-  test('updatePort records the bound port and marks the lock ready', () => {
+  test('updatePort records the bound port and shell URL and marks the lock ready', () => {
     const lock = acquireWorkbenchLock({host: 'localhost', organizationId: ORG, port: 3333})
 
-    lock!.updatePort(3334)
+    lock!.updatePort(3334, 'http://osyh1iet5.sanity.localhost')
 
     expect(readJson(lockPath())).toEqual({
       host: 'localhost',
@@ -321,6 +321,7 @@ describe('acquireWorkbenchLock', () => {
       port: 3334,
       ready: true,
       startedAt: OS_START.toISOString(),
+      url: 'http://osyh1iet5.sanity.localhost',
       version: 2,
     })
   })
@@ -390,7 +391,7 @@ describe('waitForWorkbenchLock', () => {
     await vi.advanceTimersByTimeAsync(200)
     expect(settled).toBe(false)
 
-    lock.updatePort(3334)
+    lock.updatePort(3334, 'http://localhost:3334')
     await vi.advanceTimersByTimeAsync(50)
 
     await expect(pending).resolves.toMatchObject({port: 3334, ready: true})
@@ -405,7 +406,7 @@ describe('waitForWorkbenchLock', () => {
     await vi.advanceTimersByTimeAsync(100)
     expect(fsMock.module.existsSync(lockPath())).toBe(true)
 
-    lock.updatePort(3334)
+    lock.updatePort(3334, 'http://localhost:3334')
     await vi.advanceTimersByTimeAsync(50)
 
     await expect(pending).resolves.toMatchObject({port: 3334})

@@ -2,7 +2,7 @@ import {styleText} from 'node:util'
 
 import {type CliConfig, type Output} from '@sanity/cli-core'
 
-import {createServerLifecycle, toDisplayHost} from '../../util/serverOrchestration.js'
+import {createServerLifecycle} from '../../util/serverOrchestration.js'
 import {type AppServerResult, startAppServerSupervisor} from './appServerSupervisor.js'
 import {type DevServerManifest} from './registry.js'
 import {startDevServerRegistration} from './startDevServerRegistration.js'
@@ -140,7 +140,7 @@ export async function startWorkbenchDev(
   }
 
   if (workbench.workbenchAvailable) {
-    const appUrl = `http://${toDisplayHost(workbench.httpHost)}:${workbench.workbenchPort}${dashboardAppPath ?? ''}`
+    const appUrl = `${workbench.url}${dashboardAppPath ?? ''}`
     output.log(`Dashboard dev server started at ${styleText(['blue', 'underline'], appUrl)}`)
   }
 

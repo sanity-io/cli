@@ -291,13 +291,17 @@ describe('startWorkbenchPreview', () => {
       )
     })
 
-    test('shows the existing lock host, not the caller host', async () => {
-      mockStartWorkbenchDevServer.mockResolvedValue(mockWorkbenchServer({httpHost: 'mydev.local'}))
+    test('links to the shell at the URL the workbench reports', async () => {
+      mockStartWorkbenchDevServer.mockResolvedValue(
+        mockWorkbenchServer({url: 'http://osyh1iet5.sanity.localhost'}),
+      )
       const output = createMockOutput()
 
       await run({output})
 
-      expect(output.log).toHaveBeenCalledWith(expect.stringContaining('mydev.local:3333'))
+      expect(output.log).toHaveBeenCalledWith(
+        expect.stringContaining('http://osyh1iet5.sanity.localhost'),
+      )
     })
 
     test('announces the build URL directly when no workbench runs', async () => {

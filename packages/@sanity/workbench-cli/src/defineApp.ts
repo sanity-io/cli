@@ -74,6 +74,7 @@ export const DefineAppInputSchema = z
       ),
     /** User-facing app title. Wins over studio.config.ts title on merge. */
     title: z.string(),
+    unstable_portless: z.optional(z.boolean()),
     /** Views the app exposes (e.g. a window, dock panels, and tiles). */
     views: z.optional(z.array(InterfaceDeclarationSchema, 'must be an array of views')),
     /** Dashboard visibility of the app. Defaults to `default` when omitted. */
@@ -106,7 +107,7 @@ export const DefineAppInputSchema = z
  */
 export type DefineAppInput = Omit<
   z.output<typeof DefineAppInputSchema>,
-  'applicationType' | 'isSingleton'
+  'applicationType' | 'isSingleton' | 'unstable_portless'
 >
 
 /**
