@@ -77,7 +77,7 @@
     "watch": "swc --delete-dir-on-start --strip-leading-paths --out-dir dist/ --watch src"
   },
   "dependencies": {
-    "@module-federation/runtime": "2.9.2",
+    "@module-federation/runtime": "2.9.3",
     "@module-federation/vite": "1.23.8",
     "@sanity/cli-core": "workspace:^",
     "@sanity/sdk": "catalog:",
