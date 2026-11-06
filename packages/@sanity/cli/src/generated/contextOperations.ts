@@ -266,7 +266,7 @@ export const contextOperations = {
         ]
       },
       {
-        description: 'A GROQ query that selects the documents, with an optional projection. It can match up to 5,000 documents. Each sync runs it again.',
+        description: 'A GROQ query that selects the documents, with an optional projection. Each sync runs it again.',
         in: 'body',
         name: 'query',
         type: 'string',
