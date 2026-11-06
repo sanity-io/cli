@@ -1,12 +1,13 @@
 import {testCommand} from '@sanity/cli-test'
 import {afterEach, describe, expect, test} from 'vitest'
 
+import {GetDocumentCommand} from '../../../src/commands/context/documents/get.js'
+import {ListDocumentsCommand} from '../../../src/commands/context/documents/list.js'
 import {GetKnowledgeBaseCommand} from '../../../src/commands/context/get.js'
-import {DownloadImportCommand} from '../../../src/commands/context/imports/download.js'
-import {GetImportCommand} from '../../../src/commands/context/imports/get.js'
-import {ListImportsCommand} from '../../../src/commands/context/imports/list.js'
 import {GetJobCommand} from '../../../src/commands/context/jobs/get.js'
 import {ListKnowledgeBasesCommand} from '../../../src/commands/context/list.js'
+import {GetSourceCommand} from '../../../src/commands/context/sources/get.js'
+import {ListSourcesCommand} from '../../../src/commands/context/sources/list.js'
 import {DeployCommand} from '../../../src/commands/deploy.js'
 import {DoctorCommand} from '../../../src/commands/doctor.js'
 import {InitCommand} from '../../../src/commands/init.js'
@@ -30,9 +31,10 @@ describe('JSON argument errors', () => {
   test.each([
     GetKnowledgeBaseCommand,
     ListKnowledgeBasesCommand,
-    DownloadImportCommand,
-    GetImportCommand,
-    ListImportsCommand,
+    GetSourceCommand,
+    ListSourcesCommand,
+    GetDocumentCommand,
+    ListDocumentsCommand,
     GetJobCommand,
     DeployCommand,
     DoctorCommand,

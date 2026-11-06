@@ -1,7 +1,7 @@
 import {type FlagInput} from '@oclif/core/interfaces'
 import {exitCodes, SanityCommand, subdebug} from '@sanity/cli-core'
 import {getErrorMessage} from '@sanity/cli-core/errors'
-import {type Context, isHttpError} from '@sanity/client'
+import {isHttpError} from '@sanity/client'
 
 import {
   findMcpEndpoint,
@@ -10,7 +10,7 @@ import {
 } from '../../../actions/context/mcpEndpoint.js'
 import {resolveOrganizationId} from '../../../actions/context/resolveOrganizationId.js'
 import {formatKeyValue} from '../../../actions/debug/output.js'
-import {getMcpEndpointStatus} from '../../../services/context.js'
+import {getMcpEndpointStatus, type McpEndpointStatus} from '../../../services/context.js'
 
 const statusMcpDebug = subdebug('context:mcp:status')
 
@@ -71,7 +71,7 @@ export class McpEndpointStatusCommand extends SanityCommand<typeof McpEndpointSt
     if (!status.requiredOk) this.exit(exitCodes.RUNTIME_ERROR)
   }
 
-  private printStatus(status: Context.McpEndpointStatus): void {
+  private printStatus(status: McpEndpointStatus): void {
     const {knowledgeBases, schema, semanticSearch, studio} = status.checks
     const padTo = 15 // "Knowledge bases" and "Semantic search" are the longest keys
     this.log(
@@ -118,7 +118,7 @@ function isPassed<Check extends {ok: boolean}>(check: Check): check is Extract<C
   return check.ok
 }
 
-type SemanticSearchCheck = Context.McpEndpointStatus['checks']['semanticSearch']
+type SemanticSearchCheck = McpEndpointStatus['checks']['semanticSearch']
 
 const INACTIVE_REASONS = {
   datasetEmbeddingsNotReady: 'embeddings are still being prepared',

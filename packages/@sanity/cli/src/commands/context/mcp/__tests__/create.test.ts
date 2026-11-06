@@ -2,6 +2,7 @@ import {testCommand} from '@sanity/cli-test'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
 import {parseArguments} from '../../../../util/parseArguments.js'
+import {contextRoutes} from '../../__tests__/contextRoutes.js'
 import {CreateMcpEndpointCommand} from '../create.js'
 import {mcpEndpoint} from './fixtures.js'
 
@@ -31,7 +32,13 @@ const base = ['support', '--organization', 'org-abc123']
 
 describe('context mcp create', () => {
   beforeEach(() => {
-    mockGetGlobalCliClient.mockResolvedValue({context: {mcpEndpoints: {create: mockCreate}}})
+    mockGetGlobalCliClient.mockResolvedValue({
+      context: {
+        request: contextRoutes({
+          'POST /organizations/{organizationId}/mcp': ({body}) => mockCreate(body),
+        }),
+      },
+    })
     mockCreate.mockResolvedValue(mcpEndpoint)
   })
 
@@ -81,9 +88,6 @@ describe('context mcp create', () => {
       ],
       title: 'Support',
     })
-    expect(mockGetGlobalCliClient).toHaveBeenCalledWith(
-      expect.objectContaining({context: {organizationId: 'org-abc123'}}),
-    )
     expect(stdout).toContain(`URL:             ${mcpEndpoint.url}`)
   })
 

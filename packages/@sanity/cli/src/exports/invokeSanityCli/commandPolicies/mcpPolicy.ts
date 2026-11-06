@@ -6,6 +6,7 @@ import {
   deny,
 } from '@sanity/cli-core/commandPolicy'
 
+import {contextCommandTable} from '../../../actions/context/commandTable.js'
 import {isRemoteAssetSource} from '../../../util/isRemoteAssetSource.js'
 
 function apiValidator({
@@ -43,6 +44,36 @@ function apiValidator({
 
   return !urlEmbedsCredentials
 }
+
+/**
+ * The context commands of the command table. Each is a remote request, except:
+ * `--watch` polls with no deadline, so a stuck job or sync would hang the MCP
+ * tool call; `sources create --file`/`--text` and `sources upload` read local
+ * files or stdin; `documents content --output` writes a local file; and
+ * `documents content --format raw` writes bytes straight to the process's
+ * stdout, past the output capture, so they would land in the MCP host's own
+ * stream.
+ */
+const contextCommandPolicies: CommandPolicySet = Object.fromEntries(
+  contextCommandTable.map((entry) => {
+    const id = entry.id.replaceAll(' ', ':')
+    if (entry.id === 'context sources upload') return [id, deny]
+    if (entry.id === 'context documents content') {
+      return [
+        id,
+        conditionalPolicy({
+          deniedFlags: ['output'],
+          validate: ({flags}) => flags.format !== 'raw',
+        }),
+      ]
+    }
+    const denied = [
+      ...('watch' in entry ? ['watch'] : []),
+      ...(entry.id === 'context sources create' ? ['file', 'text'] : []),
+    ]
+    return [id, denied.length > 0 ? conditionalDenyFlags(...denied) : allow]
+  }),
+)
 
 /**
  * MCP programmatic mode disables local project/config discovery (see the CLI
@@ -89,34 +120,11 @@ export const mcpPolicy: CommandPolicySet = {
   // Reads and rewrites local source code.
   codemod: deny,
 
-  // --watch polls a job with no deadline; a stuck job would hang the MCP tool
-  // call indefinitely. Non-watch invocations are single remote requests.
-  'context:build': conditionalDenyFlags('watch'),
-  'context:create': allow,
-  'context:delete': allow,
+  ...contextCommandPolicies,
   'context:entries:get': allow,
   'context:entries:list': allow,
-  // See context:build — --watch has no deadline and would hang the MCP tool call.
-  'context:entries:rebuild': conditionalDenyFlags('watch'),
-  'context:get': allow,
-  // --file reads the import payload from the local filesystem; text, URL and
-  // dataset imports are remote-only.
-  'context:imports:create': conditionalDenyFlags('file'),
-  'context:imports:delete': allow,
-  'context:imports:download': allow,
-  'context:imports:get': allow,
-  'context:imports:list': allow,
-  // See context:build — --watch has no deadline and would hang the MCP tool call.
-  'context:issues:apply': conditionalDenyFlags('watch'),
-  'context:issues:dismiss': allow,
   'context:issues:get': allow,
   'context:issues:list': allow,
-  'context:issues:reopen': allow,
-  // See context:build — --watch has no deadline and would hang the MCP tool call.
-  'context:issues:resolve': conditionalDenyFlags('watch'),
-  // See context:build — --watch has no deadline and would hang the MCP tool call.
-  'context:jobs:get': conditionalDenyFlags('watch'),
-  'context:list': allow,
   'context:mcp:create': allow,
   'context:mcp:delete': allow,
   'context:mcp:get': allow,
@@ -124,8 +132,6 @@ export const mcpPolicy: CommandPolicySet = {
   'context:mcp:status': allow,
   'context:mcp:update': allow,
   'context:query': allow,
-  'context:refresh': allow,
-  'context:update': allow,
 
   'cors:add': allow,
   'cors:delete': allow,

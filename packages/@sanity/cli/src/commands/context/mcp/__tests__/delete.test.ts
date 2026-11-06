@@ -2,6 +2,7 @@ import {testCommand} from '@sanity/cli-test'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
 import {httpError} from '../../../../../test/helpers/httpError.js'
+import {contextRoutes} from '../../__tests__/contextRoutes.js'
 import {DeleteMcpEndpointCommand} from '../delete.js'
 import {mcpDoc, withConfig} from './fixtures.js'
 
@@ -27,7 +28,13 @@ const base = ['support', '--organization', 'org-abc123']
 describe('context mcp delete', () => {
   beforeEach(() => {
     mockGetGlobalCliClient.mockResolvedValue({
-      context: {fetch: mockGet, mcpEndpoints: {delete: mockDelete}},
+      context: {
+        fetch: mockGet,
+        request: contextRoutes({
+          'DELETE /organizations/{organizationId}/mcp/{mcpEndpoint}': ({params}) =>
+            mockDelete({name: params?.mcpEndpoint}),
+        }),
+      },
       request: mockRequest,
       withConfig,
     })
