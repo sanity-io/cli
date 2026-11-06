@@ -180,7 +180,9 @@ export function contextCommand(id: ContextCommandId) {
           })
         : undefined
 
-      for (const name of entry.prompt ?? []) {
+      const promptsSkipped =
+        entry.promptUnless !== undefined && values[flagName({name: entry.promptUnless})] === true
+      for (const name of promptsSkipped ? [] : (entry.prompt ?? [])) {
         const flag = flagName({name})
         if (values[flag] === undefined && !this.isUnattended()) {
           values[flag] = await promptForText(`${humanize(name)}:`)

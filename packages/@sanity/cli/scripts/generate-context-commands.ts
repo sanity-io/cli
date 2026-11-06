@@ -13,7 +13,7 @@
 
 /* eslint-disable no-console */
 import {mkdirSync, writeFileSync} from 'node:fs'
-import {dirname, join, relative} from 'node:path'
+import {dirname, join, relative, sep} from 'node:path'
 
 import {contextCommandTable} from '../src/actions/context/commandTable.ts'
 import {
@@ -82,7 +82,10 @@ export const contextOperations = ${serialize(operations)} as const satisfies Rec
 for (const entry of contextCommandTable) {
   if ('handWritten' in entry) continue
   const file = join(ROOT, commandFilePath(entry.id))
+  // Import specifiers take `/` on every platform, and `relative` uses `\\` on Windows
   const factory = relative(dirname(file), join(ROOT, 'src/actions/context/contextCommand.js'))
+    .split(sep)
+    .join('/')
   mkdirSync(dirname(file), {recursive: true})
   writeFileSync(
     file,

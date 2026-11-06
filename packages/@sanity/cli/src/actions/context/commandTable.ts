@@ -29,6 +29,8 @@ export interface ContextCommandEntry {
   readonly omit?: readonly string[]
   /** Body fields to prompt for when interactive and not passed as flags */
   readonly prompt?: readonly string[]
+  /** A boolean body field that, when true, makes the prompted fields optional and skips their prompts */
+  readonly promptUnless?: string
   /** A string array body field taken from the remaining arguments instead of a flag */
   readonly variadicArg?: string
   /** What `--watch` waits for: the job the response starts, or the sync of the source */
@@ -41,7 +43,12 @@ export const contextCommandTable = [
     id: 'context list',
     operationId: 'listKnowledgeBases',
   },
-  {id: 'context create', operationId: 'createKnowledgeBase', prompt: ['title', 'description']},
+  {
+    id: 'context create',
+    operationId: 'createKnowledgeBase',
+    prompt: ['title', 'description'],
+    promptUnless: 'draft',
+  },
   {id: 'context get', operationId: 'getKnowledgeBase'},
   {
     guard: 'knowledgeBaseBlueprint',

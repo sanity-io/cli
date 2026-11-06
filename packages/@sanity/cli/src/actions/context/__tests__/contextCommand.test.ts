@@ -3,6 +3,7 @@ import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
 import {httpError} from '../../../../test/helpers/httpError.js'
 import {contextRoutes} from '../../../commands/context/__tests__/contextRoutes.js'
+import {CreateKnowledgeBaseCommand} from '../../../commands/context/create.js'
 import {DeleteKnowledgeBaseCommand} from '../../../commands/context/delete.js'
 import {ApplyIssuesCommand} from '../../../commands/context/issues/apply.js'
 import {ListKnowledgeBasesCommand} from '../../../commands/context/list.js'
@@ -14,6 +15,10 @@ import {UpdateKnowledgeBaseCommand} from '../../../commands/context/update.js'
 const mockRequest = vi.hoisted(() => vi.fn())
 const mockBlueprintsRequest = vi.hoisted(() => vi.fn())
 const mockGetGlobalCliClient = vi.hoisted(() => vi.fn())
+
+const mockPromptForText = vi.hoisted(() => vi.fn())
+
+vi.mock('../../../prompts/promptForText.js', () => ({promptForText: mockPromptForText}))
 
 vi.mock('@sanity/cli-core', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@sanity/cli-core')>()
@@ -83,6 +88,41 @@ describe('generated context commands', () => {
 
     if (error) throw error
     expect(JSON.parse(stdout)).toEqual([{id: 'src1'}])
+  })
+
+  describe('interactive prompts', () => {
+    let interactive: ReturnType<typeof vi.spyOn>
+    afterEach(() => interactive.mockRestore())
+
+    beforeEach(() => {
+      interactive = vi
+        .spyOn(CreateKnowledgeBaseCommand.prototype, 'isUnattended')
+        .mockReturnValue(false)
+      mockPromptForText.mockReset().mockResolvedValue('Prompted')
+      mockRequest.mockResolvedValue({publicId: 'kb-new'})
+    })
+
+    test('asks for the title and description a knowledge base needs', async () => {
+      const {error} = await testCommand(CreateKnowledgeBaseCommand, ['--organization', 'org-a'])
+
+      if (error) throw error
+      expect(mockPromptForText).toHaveBeenCalledTimes(2)
+      expect(mockRequest).toHaveBeenCalledWith(
+        'POST /knowledge-bases',
+        expect.objectContaining({body: expect.objectContaining({title: 'Prompted'})}),
+      )
+    })
+
+    test('asks for neither with --draft, since a draft needs neither', async () => {
+      const {error} = await testCommand(CreateKnowledgeBaseCommand, [
+        '--organization',
+        'org-a',
+        '--draft',
+      ])
+
+      if (error) throw error
+      expect(mockPromptForText).not.toHaveBeenCalled()
+    })
   })
 
   test('fails when a list answers with something other than a page', async () => {
