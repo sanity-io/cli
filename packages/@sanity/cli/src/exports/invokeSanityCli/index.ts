@@ -33,6 +33,7 @@ import {
   type InvocationSource,
   isConditionalInvocationPolicy,
 } from '@sanity/cli-core/commandPolicy'
+import {prettyPrintError} from '@sanity/cli-core/errors'
 import {runWithCliExecutionContext, type SanityEnvironment} from '@sanity/cli-core/executionContext'
 import {type SanityCommand} from '@sanity/cli-core/SanityCommand'
 import {type FetchFunction} from 'get-it'
@@ -41,7 +42,6 @@ import {parseArgsStringToArgv} from 'string-argv'
 import {resolveTopicAliasInArgv} from '../../topicAliases.js'
 import {resolveCommandPolicies} from './commandPolicies/index.js'
 import {isHelpRequest, renderInvokableHelp} from './help.js'
-import {prettyPrintError} from './prettyPrintError.js'
 
 type InvokableCommand = Pick<SanityCommand<typeof Command>, 'runInExecutionContext'>
 
