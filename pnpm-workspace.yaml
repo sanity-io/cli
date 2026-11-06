@@ -142,6 +142,8 @@ minimumReleaseAgeExclude:
   - smol-toml@1.9.0
   # Renovate security update: dompurify@3.4.17
   - dompurify@3.4.17
+  # Renovate security update: zod@4.6.6
+  - zod@4.6.6
 allowBuilds:
   '@swc/core': true
   esbuild: true
