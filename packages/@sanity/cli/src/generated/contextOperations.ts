@@ -551,55 +551,9 @@ export const contextOperations = {
     description: 'Returns the same text as the `initial_context` MCP tool, as plain text you can add to a system prompt. `heading_offset` shifts markdown headings down by that many levels. The default is `1`, so `#` becomes `##`.',
     fields: [
       {
-        description: 'Agent instructions that replace the endpoint\'s configured instructions for this request. Deprecated: refused from API version `v2026-11-03`. Configure it on the MCP endpoint instead.',
-        in: 'query',
-        name: 'instructions',
-        type: 'string'
-      },
-      {
-        description: 'The perspective for GROQ queries: `published` (default), `previewDrafts`, `raw`, or a release. Deprecated: refused from API version `v2026-11-03`. Configure it on the MCP endpoint instead.',
-        in: 'query',
-        name: 'perspective',
-        type: 'string'
-      },
-      {
-        description: 'Set to `true` or `false` to turn semantic search on or off. Omit it to use the dataset source setting. Deprecated: refused from API version `v2026-11-03`. Configure it on the MCP endpoint instead.',
-        in: 'query',
-        name: 'embeddings',
-        type: 'string'
-      },
-      {
-        description: 'A GROQ filter that narrows the endpoint\'s configured content filter for this request. Documents must match both. Deprecated: refused from API version `v2026-11-03`. Configure it on the MCP endpoint instead.',
-        in: 'query',
-        name: 'groqFilter',
-        type: 'string'
-      },
-      {
-        description: 'Serves only one side of the endpoint for this request: `knowledge_base` serves its knowledge bases and `groq` serves its dataset. Omit it to serve every source the endpoint has. A request whose chosen side the endpoint doesn\'t have is refused. Deprecated: refused from API version `v2026-11-03`. Configure it on the MCP endpoint instead.',
-        in: 'query',
-        name: 'mode',
-        options: [
-          'knowledge_base',
-          'groq'
-        ],
-        type: 'string'
-      },
-      {
-        description: 'Comma-separated knowledge base public IDs (`kb...`) that replace the endpoint\'s knowledge base sources for this request. Deprecated: refused from API version `v2026-11-03`. Configure it on the MCP endpoint instead.',
-        in: 'query',
-        name: 'knowledgeBases',
-        type: 'string'
-      },
-      {
         description: 'A JSON array that adds `_url` fields to query results. Each item has `types` (document types), `baseUrl`, and an optional `slugExpression`, a GROQ expression that defaults to `slug.current`. Invalid JSON is ignored.',
         in: 'query',
         name: 'linkResolver',
-        type: 'string'
-      },
-      {
-        description: 'The studio workspace to use. Replaces the dataset source\'s workspace for this request. Deprecated: refused from API version `v2026-11-03`. Configure it on the MCP endpoint instead.',
-        in: 'query',
-        name: 'workspace',
         type: 'string'
       },
       {
@@ -710,6 +664,7 @@ export const contextOperations = {
       }
     ],
     noContent: false,
+    pageSize: 200,
     paginated: true,
     pathParams: [
       {
@@ -752,6 +707,7 @@ export const contextOperations = {
       }
     ],
     noContent: false,
+    pageSize: 200,
     paginated: true,
     pathParams: [],
     route: 'GET /knowledge-bases',
@@ -776,6 +732,7 @@ export const contextOperations = {
       }
     ],
     noContent: false,
+    pageSize: 200,
     paginated: true,
     pathParams: [
       {
@@ -805,6 +762,7 @@ export const contextOperations = {
       }
     ],
     noContent: false,
+    pageSize: 200,
     paginated: true,
     pathParams: [
       {

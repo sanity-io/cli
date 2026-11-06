@@ -104,7 +104,7 @@ describe('context build', () => {
 describe('context sources create', () => {
   test('--file adds a files source holding the file, titled by its name', async () => {
     const path = await tempFile('handbook.pdf', 'pdf bytes')
-    mockCreateFileSource.mockResolvedValueOnce(source)
+    mockCreateFileSource.mockResolvedValueOnce({source, sync: {jobId: 'job1', sourceId: 'src1'}})
 
     const {error, stdout} = await testCommand(CreateSourceCommand, ['kb-abc123', '--file', path])
 
@@ -118,6 +118,49 @@ describe('context sources create', () => {
       type: 'files',
     })
     expect(stdout).toContain('ID:')
+    expect(stdout).toContain('job1')
+  })
+
+  test.each([
+    [['--dry-run'], '--dry-run'],
+    [['--max-depth', '2'], '--max-depth'],
+    [['--sanity-project-id', 'abc123'], '--sanity-project-id'],
+    [['--type', 'web'], '--type'],
+  ])('--file refuses %j, which a files source would drop', async (extra, named) => {
+    const path = await tempFile('handbook.pdf', 'pdf bytes')
+
+    const {error} = await testCommand(CreateSourceCommand, ['kb-abc123', '--file', path, ...extra])
+
+    expect(error?.message).toContain(`Remove ${named}`)
+    expect(error?.oclif?.exit).toBe(2)
+    expect(mockCreateFileSource).not.toHaveBeenCalled()
+  })
+
+  test('--file --watch follows the sync of the upload, through its job', async () => {
+    const path = await tempFile('handbook.pdf', 'pdf bytes')
+    mockCreateFileSource.mockResolvedValueOnce({source, sync: {jobId: 'job1', sourceId: 'src1'}})
+    mockRequest.mockImplementation(
+      contextRoutes({
+        'GET /knowledge-bases/{knowledgeBaseId}/jobs/{jobId}': () => ({
+          id: 'job1',
+          result: {syncId: 'sync-upload'},
+          status: 'succeeded',
+        }),
+        'GET /knowledge-bases/{knowledgeBaseId}/sources/{sourceId}/syncs/{syncId}': ({params}) => ({
+          id: params?.syncId,
+          sourceId: 'src1',
+          status: 'completed',
+        }),
+      }),
+    )
+
+    const {error} = await testCommand(CreateSourceCommand, ['kb-abc123', '--file', path, '--watch'])
+
+    if (error) throw error
+    expect(mockRequest).toHaveBeenCalledWith(
+      'GET /knowledge-bases/{knowledgeBaseId}/sources/{sourceId}/syncs/{syncId}',
+      {params: {knowledgeBaseId: 'kb-abc123', sourceId: 'src1', syncId: 'sync-upload'}},
+    )
   })
 
   test('--text - reads the content from stdin and needs a title', async () => {

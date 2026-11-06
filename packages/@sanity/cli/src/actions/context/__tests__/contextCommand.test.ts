@@ -70,15 +70,35 @@ describe('generated context commands', () => {
     expect(mockRequest.mock.calls).toEqual([
       [
         'GET /knowledge-bases/{knowledgeBaseId}/sources',
-        {params: {knowledgeBaseId: 'kb-abc123'}, query: {}},
+        {params: {knowledgeBaseId: 'kb-abc123'}, query: {limit: '200'}},
       ],
       [
         'GET /knowledge-bases/{knowledgeBaseId}/sources',
-        {params: {knowledgeBaseId: 'kb-abc123'}, query: {cursor: 'c2'}},
+        {params: {knowledgeBaseId: 'kb-abc123'}, query: {cursor: 'c2', limit: '200'}},
       ],
     ])
     expect(stdout).toContain('Handbook')
     expect(stdout).toContain('Title')
+  })
+
+  test('--limit caps the total across pages, asking for no more than it needs', async () => {
+    mockRequest
+      .mockResolvedValueOnce({data: [{id: 'src1'}, {id: 'src2'}], nextCursor: 'c2'})
+      .mockResolvedValueOnce({data: [{id: 'src3'}, {id: 'src4'}], nextCursor: 'c3'})
+
+    const {error, stdout} = await testCommand(ListSourcesCommand, [
+      'kb-abc123',
+      '--limit',
+      '3',
+      '--json',
+    ])
+
+    if (error) throw error
+    expect(mockRequest.mock.calls.map(([, request]) => request.query)).toEqual([
+      {limit: '3'},
+      {cursor: 'c2', limit: '1'},
+    ])
+    expect(JSON.parse(stdout)).toEqual([{id: 'src1'}, {id: 'src2'}, {id: 'src3'}])
   })
 
   test('prints the drained list as JSON with --json', async () => {
@@ -146,7 +166,7 @@ describe('generated context commands', () => {
     if (error) throw error
     expect(mockRequest).toHaveBeenCalledWith('GET /knowledge-bases', {
       params: {},
-      query: {includeDrafts: 'true', organizationId: 'org-abc123'},
+      query: {includeDrafts: 'true', limit: '200', organizationId: 'org-abc123'},
     })
     expect(stdout).toContain('No results')
   })

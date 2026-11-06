@@ -247,7 +247,7 @@ export function contextCommand(id: ContextCommandId) {
     /** Send the request; hand-written commands override this to upload a file or download bytes */
     public async send(request: OperationRequest, _flags: Values): Promise<unknown> {
       return operation.paginated
-        ? requestAllPages(operation.route, request)
+        ? requestAllPages(operation.route, request, operation.pageSize)
         : requestContext(operation.route, request)
     }
 

@@ -193,6 +193,37 @@ describe('distillContextOperations', () => {
     ])
   })
 
+  test('leaves out deprecated query parameters and body fields', () => {
+    const distilled = distillContextOperations(
+      {
+        paths: {
+          '/{apiVersion}/context/knowledge-bases': {
+            post: {
+              operationId: 'op',
+              parameters: [
+                {in: 'query', name: 'mode', schema: {type: 'string'}},
+                {deprecated: true, in: 'query', name: 'perspective', schema: {type: 'string'}},
+              ],
+              requestBody: {
+                content: {
+                  'application/json': {
+                    schema: objectOf({
+                      groqFilter: {deprecated: true, type: 'string'},
+                      title: {type: 'string'},
+                    }),
+                  },
+                },
+              },
+              responses: {200: {}},
+            },
+          },
+        },
+      },
+      ['op'],
+    )
+    expect(distilled.op.fields.map((item) => item.name)).toEqual(['mode', 'title'])
+  })
+
   test('fails when two fields, or a field and a command flag, would share a flag', () => {
     expect(() =>
       distillContextOperations(

@@ -89,4 +89,9 @@ describe('mcpPolicy context sources and documents', () => {
     expect(validate('context:documents:content', {flags: {format: 'markdown'}})).toBe(true)
     expect(validate('context:documents:content', {flags: {output: 'out.md'}})).toBe(false)
   })
+
+  test('refuses raw document bytes, which bypass the output capture', () => {
+    expect(validate('context:documents:content', {flags: {format: 'json'}})).toBe(true)
+    expect(validate('context:documents:content', {flags: {format: 'raw'}})).toBe(false)
+  })
 })

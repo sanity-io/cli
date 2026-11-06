@@ -61,23 +61,32 @@ export async function requestContext(
   return call.call(client.context, route, request)
 }
 
-/** Call a paginated list operation and drain every page into one list */
+/**
+ * Call a paginated list operation and drain its pages into one list, asking
+ * for `pageSize` items a page. A `limit` in the query caps the total instead of
+ * one page, so the list stops once it has that many.
+ */
 export async function requestAllPages(
   route: Context.Route,
   request: ContextRequest = {},
+  pageSize?: number,
 ): Promise<unknown[]> {
+  const {limit, ...query} = request.query ?? {}
+  const total = limit === undefined ? undefined : Number(limit)
   const items: unknown[] = []
   let cursor: string | undefined
   do {
+    const remaining = total === undefined ? undefined : total - items.length
+    const size = remaining === undefined ? pageSize : Math.min(pageSize ?? remaining, remaining)
     const page = await requestContext(route, {
       ...request,
-      query: {...request.query, ...(cursor && {cursor})},
+      query: {...query, ...(size !== undefined && {limit: String(size)}), ...(cursor && {cursor})},
     })
     if (!isPage(page)) throw new Error(`${route} answered with something other than a page`)
     items.push(...page.data)
     cursor = page.nextCursor ?? undefined
-  } while (cursor !== undefined)
-  return items
+  } while (cursor !== undefined && (total === undefined || items.length < total))
+  return total === undefined ? items : items.slice(0, total)
 }
 
 /** A document's content as the bytes its source gave (`format: 'raw'`) */
@@ -134,11 +143,14 @@ export async function getJob(knowledgeBaseId: string, jobId: string): Promise<Jo
   })
 }
 
-/** Add a `files` source holding a local file: add the source, upload the file and sync it */
+/**
+ * Add a `files` source holding a local file: add the source, upload the file
+ * and sync it. Resolves with the source as created and the sync's `jobId`.
+ */
 export async function createFileSource(
   knowledgeBaseId: string,
   params: Omit<Context.CreateFileSourceParams, 'knowledgeBaseId'>,
-): Promise<Context.Source> {
+): Promise<{source: Context.Source; sync: Context.SyncAccepted}> {
   const client = await getContextClient()
   return client.context.createFileSource({...params, knowledgeBaseId})
 }

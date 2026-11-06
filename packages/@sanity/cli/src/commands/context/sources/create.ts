@@ -8,7 +8,7 @@ import {exitCodes} from '@sanity/cli-core'
 import {getErrorMessage} from '@sanity/cli-core/errors'
 
 import {contextCommand} from '../../../actions/context/contextCommand.js'
-import {type OperationRequest} from '../../../actions/context/operationInput.js'
+import {flagName, type OperationRequest} from '../../../actions/context/operationInput.js'
 import {readSourceFile} from '../../../actions/context/sourceFile.js'
 import {createFileSource} from '../../../services/context.js'
 import {defineCommandTelemetry} from '../../../util/telemetry/commandTelemetry.js'
@@ -16,6 +16,9 @@ import {defineCommandTelemetry} from '../../../util/telemetry/commandTelemetry.j
 const BaseCommand = contextCommand('context sources create')
 
 const SOURCE_FLAGS = ['url', 'query', 'file', 'text'] as const
+
+/** The body fields a `--file` source takes; the file supplies the rest */
+const FILE_BODY_FIELDS = new Set(['contentType', 'title'])
 
 const flags = {
   ...BaseCommand.flags,
@@ -93,14 +96,30 @@ export class CreateSourceCommand extends BaseCommand {
     }
 
     if (typeof file === 'string') {
+      // Nested fields such as `crawlOptions.maxDepth` come from flags named after the field itself
+      const ignored = Object.entries(body).flatMap(([key, value]) => {
+        if (key === 'type') return value === 'files' ? [] : [key]
+        if (FILE_BODY_FIELDS.has(key)) return []
+        return typeof value === 'object' && value !== null && !Array.isArray(value)
+          ? Object.keys(value)
+          : [key]
+      })
+      if (ignored.length > 0) {
+        this.error(
+          `--file adds a files source, which takes only --title and --content-type. Remove ${ignored.map((name) => `--${flagName({name})}`).join(', ')}.`,
+          {exit: exitCodes.USAGE_ERROR},
+        )
+      }
       const upload = await this.read(`file "${file}"`, () =>
         readSourceFile(file, typeof body.contentType === 'string' ? body.contentType : undefined),
       )
-      return createFileSource(request.params.knowledgeBaseId, {
+      // The created source has no sync yet; `jobId` lets the output and `--watch` follow the upload's
+      const {source, sync} = await createFileSource(request.params.knowledgeBaseId, {
         ...upload,
         title: title ?? upload.filename,
         type: 'files',
       })
+      return {...source, jobId: sync.jobId}
     }
 
     if (typeof text === 'string') {

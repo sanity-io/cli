@@ -181,4 +181,16 @@ describe('commandNotFound topic aliases hook', () => {
       runCommand.mockRestore()
     })
   })
+
+  describe('removed context commands', () => {
+    test.each([
+      ['context:imports:create', 'sanity context sources create'],
+      ['context:imports:download', 'sanity context documents content --format raw'],
+      ['context:refresh', 'sanity context sync'],
+    ])('names what replaced "%s"', async (id, replacement) => {
+      await hook.call(context, {argv: [], config, context, id})
+
+      expect(context.error).toHaveBeenCalledWith(expect.stringContaining(replacement), {exit: 2})
+    })
+  })
 })

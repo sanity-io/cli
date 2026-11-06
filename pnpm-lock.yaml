@@ -177,8 +177,8 @@ catalogs:
       specifier: ^3.2.88
       version: 3.3.0
     '@sanity/client':
-      specifier: https://pkg.pr.new/@sanity/client@8617d11
-      version: https://pkg.pr.new/@sanity/client@8617d11
+      specifier: https://pkg.pr.new/@sanity/client@9d71749
+      version: https://pkg.pr.new/@sanity/client@9d71749
     '@sanity/codegen':
       specifier: ^8.3.0
       version: 8.3.0
@@ -696,7 +696,7 @@ importers:
         version: 4.14.0
       '@sanity/client':
         specifier: 'catalog:'
-        version: https://pkg.pr.new/@sanity/client@8617d11(vitest@5.1.0)
+        version: https://pkg.pr.new/@sanity/client@9d71749(vitest@5.1.0)
       '@sanity/id-utils':
         specifier: ^1.1.0
         version: 1.1.0
@@ -745,7 +745,7 @@ importers:
         version: link:../cli-core
       '@sanity/client':
         specifier: 'catalog:'
-        version: https://pkg.pr.new/@sanity/client@8617d11(vitest@5.1.0)
+        version: https://pkg.pr.new/@sanity/client@9d71749(vitest@5.1.0)
       '@sanity/codegen':
         specifier: 'catalog:'
         version: 8.3.0(oxfmt@0.76.0)(react@19.3.0)(supports-color@8.1.1)(typescript@6.0.3)
@@ -763,7 +763,7 @@ importers:
         version: 1.1.0
       '@sanity/import':
         specifier: ^7.1.0
-        version: 7.1.0(@sanity/client@https://pkg.pr.new/@sanity/client@8617d11(vitest@5.1.0))(@types/react@19.3.0)(vitest@5.1.0)
+        version: 7.1.0(@sanity/client@https://pkg.pr.new/@sanity/client@9d71749(vitest@5.1.0))(@types/react@19.3.0)(vitest@5.1.0)
       '@sanity/migrate':
         specifier: ^8.0.5
         version: 8.0.5(@types/react@19.3.0)(vitest@5.1.0)(xstate@5.33.2)
@@ -1176,7 +1176,7 @@ importers:
         version: 4.14.0
       '@sanity/client':
         specifier: 'catalog:'
-        version: https://pkg.pr.new/@sanity/client@8617d11(vitest@5.1.0)
+        version: https://pkg.pr.new/@sanity/client@9d71749(vitest@5.1.0)
       boxen:
         specifier: ^8.0.1
         version: 8.0.1
@@ -1358,7 +1358,7 @@ importers:
         version: link:../../@repo/tsconfig
       '@sanity/client':
         specifier: 'catalog:'
-        version: https://pkg.pr.new/@sanity/client@8617d11(vitest@5.1.0)
+        version: https://pkg.pr.new/@sanity/client@9d71749(vitest@5.1.0)
       '@sanity/eslint-config-cli':
         specifier: workspace:*
         version: link:../eslint-config-cli
@@ -4848,8 +4848,8 @@ packages:
     resolution: {integrity: sha512-NQNo0yigdHF4edYwUEVqyDi4ZsTUmWT2YMGUn/sQOW6/T+KPAuVXbVZk6gO+Vzd7dTAhaWj8AV/gIddjpo5P6Q==}
     engines: {node: '>=22.12.0'}
 
-  '@sanity/client@https://pkg.pr.new/@sanity/client@8617d11':
-    resolution: {integrity: sha512-HBcDRebnQp6dbP1ZRhYHne+n/ITXMF7gQ3egCtgAeX8uTnMUSv0EfoL+ZmnehfXUW35kM2bD1dmNy7vG0YdcwA==, tarball: https://pkg.pr.new/@sanity/client@8617d11}
+  '@sanity/client@https://pkg.pr.new/@sanity/client@9d71749':
+    resolution: {integrity: sha512-F/Lb2gDG+R/MieNLiD1ExgljZTOQgib1oEMMdrJgvVslp62ObeBom3ELrxp4ASFF5XPELduODbnjSPn0uBAZAw==, tarball: https://pkg.pr.new/@sanity/client@9d71749}
     version: 8.14.1
     engines: {node: '>=22.12.0'}
 
@@ -14145,7 +14145,7 @@ snapshots:
     transitivePeerDependencies:
       - vitest
 
-  '@sanity/client@https://pkg.pr.new/@sanity/client@8617d11(vitest@5.1.0)':
+  '@sanity/client@https://pkg.pr.new/@sanity/client@9d71749(vitest@5.1.0)':
     dependencies:
       eventsource: 5.1.4
       get-it: 9.6.2(vitest@5.1.0)
@@ -14315,10 +14315,10 @@ snapshots:
     dependencies:
       '@sanity/signed-urls': 2.0.5
 
-  '@sanity/import@7.1.0(@sanity/client@https://pkg.pr.new/@sanity/client@8617d11(vitest@5.1.0))(@types/react@19.3.0)(vitest@5.1.0)':
+  '@sanity/import@7.1.0(@sanity/client@https://pkg.pr.new/@sanity/client@9d71749(vitest@5.1.0))(@types/react@19.3.0)(vitest@5.1.0)':
     dependencies:
       '@sanity/asset-utils': 2.3.0
-      '@sanity/client': https://pkg.pr.new/@sanity/client@8617d11(vitest@5.1.0)
+      '@sanity/client': https://pkg.pr.new/@sanity/client@9d71749(vitest@5.1.0)
       '@sanity/generate-help-url': 4.0.0
       '@sanity/mutator': 6.17.0(@types/react@19.3.0)(vitest@5.1.0)
       get-it: 9.6.1(vitest@5.1.0)

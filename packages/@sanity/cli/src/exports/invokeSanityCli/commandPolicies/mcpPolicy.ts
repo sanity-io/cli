@@ -49,16 +49,27 @@ function apiValidator({
  * The context commands of the command table. Each is a remote request, except:
  * `--watch` polls with no deadline, so a stuck job or sync would hang the MCP
  * tool call; `sources create --file`/`--text` and `sources upload` read local
- * files or stdin; and `documents content --output` writes a local file.
+ * files or stdin; `documents content --output` writes a local file; and
+ * `documents content --format raw` writes bytes straight to the process's
+ * stdout, past the output capture, so they would land in the MCP host's own
+ * stream.
  */
 const contextCommandPolicies: CommandPolicySet = Object.fromEntries(
   contextCommandTable.map((entry) => {
     const id = entry.id.replaceAll(' ', ':')
     if (entry.id === 'context sources upload') return [id, deny]
+    if (entry.id === 'context documents content') {
+      return [
+        id,
+        conditionalPolicy({
+          deniedFlags: ['output'],
+          validate: ({flags}) => flags.format !== 'raw',
+        }),
+      ]
+    }
     const denied = [
       ...('watch' in entry ? ['watch'] : []),
       ...(entry.id === 'context sources create' ? ['file', 'text'] : []),
-      ...(entry.id === 'context documents content' ? ['output'] : []),
     ]
     return [id, denied.length > 0 ? conditionalDenyFlags(...denied) : allow]
   }),

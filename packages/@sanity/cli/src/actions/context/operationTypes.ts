@@ -44,4 +44,7 @@ export interface ContextOperation {
   /** The response carries the `jobId` of the job it starts */
   readonly startsJob: boolean
   readonly summary: string
+
+  /** Items a paginated list asks for per page: the most its `limit` allows, up to 200 */
+  readonly pageSize?: number
 }

@@ -10,12 +10,14 @@
  * Flow:
  * 1. Check if the unrecognized name is a known alias (eg "dataset" for "datasets")
  * 2. If yes: rewrite and run the resolved command (or show topic help for bare topics)
- * 3. If no: fall back to oclif plugin-not-found's "did you mean?" behavior
+ * 3. If it names a removed context command, say what replaced it
+ * 4. Otherwise: fall back to oclif plugin-not-found's "did you mean?" behavior
  */
 
 import {type Hook, toStandardizedId} from '@oclif/core'
-import {subdebug} from '@sanity/cli-core'
+import {exitCodes, subdebug} from '@sanity/cli-core'
 
+import {removedContextCommandHint} from '../../actions/context/removedCommands.js'
 import {resolveTopicAlias} from '../../topicAliases.js'
 
 const debug = subdebug('hooks:topicAliases')
@@ -42,6 +44,9 @@ const hook: Hook.CommandNotFound = async function (opts) {
     // Full command (eg "sanity dataset create") -> run the resolved command
     return config.runCommand(rewrittenId, opts.argv ?? [])
   }
+
+  const removed = removedContextCommandHint(standardId)
+  if (removed) return this.error(removed, {exit: exitCodes.USAGE_ERROR})
 
   // No alias match - fall back to oclif plugin-not-found's "did you mean?" behavior
   // eslint-disable-next-line no-restricted-syntax -- package import, not a file path

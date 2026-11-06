@@ -100,9 +100,9 @@ describe('operation flags and arguments', () => {
     expect(flags.title).not.toHaveProperty('required', true)
   })
 
-  test('a paginated list drops the page flags, takes the organization as a flag, and query booleans as booleans', () => {
+  test('a paginated list drops the cursor but keeps --limit, takes the organization as a flag, and query booleans as booleans', () => {
     const flags = operationFlags(listKnowledgeBases, {id: 'context list', operationId: 'x'})
-    expect(Object.keys(flags).toSorted()).toEqual(['include-drafts', 'organization'])
+    expect(Object.keys(flags).toSorted()).toEqual(['include-drafts', 'limit', 'organization'])
     expect(flags['include-drafts']).toMatchObject({allowNo: true, type: 'boolean'})
   })
 

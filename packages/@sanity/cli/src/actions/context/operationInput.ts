@@ -45,7 +45,7 @@ export function needsOrganization(operation: ContextOperation): boolean {
   )
 }
 
-/** The fields that become flags: not the organization, a variadic argument, an omitted field or a page cursor */
+/** The fields that become flags: not the organization, a variadic argument, an omitted field or a page cursor. A list's `limit` caps the total its pages add up to */
 function flagFields(operation: ContextOperation, entry: ContextCommandEntry): OperationField[] {
   const omit = new Set<string>(entry.omit)
   return operation.fields.filter(
@@ -53,7 +53,7 @@ function flagFields(operation: ContextOperation, entry: ContextCommandEntry): Op
       field.name !== ORGANIZATION &&
       field.name !== entry.variadicArg &&
       !omit.has(field.name) &&
-      !(operation.paginated && field.in === 'query' && ['cursor', 'limit'].includes(field.name)),
+      !(operation.paginated && field.in === 'query' && field.name === 'cursor'),
   )
 }
 

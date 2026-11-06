@@ -10,6 +10,7 @@ interface SpecParameter {
   in: string
   name: string
 
+  deprecated?: boolean
   description?: string
   required?: boolean
   schema?: Schema
@@ -141,7 +142,7 @@ function objectFields(spec: ContextOpenApiDocument, object: Schema): OperationFi
   const required = new Set(strings(object.required))
   const properties = isSchema(object.properties) ? object.properties : {}
   return Object.entries(properties).flatMap(([name, raw]) => {
-    if (!isSchema(raw)) return []
+    if (!isSchema(raw) || raw.deprecated === true) return []
     const {schema} = unwrapNullable(spec, raw)
     if (schema.type === 'object' && isSchema(schema.properties)) {
       // A nested field is never required on its own, and keeps its full path of parents
@@ -208,6 +209,9 @@ function hasProperty(schema: Schema, name: string): boolean {
   return isSchema(schema.properties) && name in schema.properties
 }
 
+/** The most items a paginated command asks for in one request, whatever the route allows */
+const MAX_PAGE_SIZE = 200
+
 /** Distill one operation of the spec */
 function distillOperation(
   spec: ContextOpenApiDocument,
@@ -226,8 +230,9 @@ function distillOperation(
       )
       return {name, ...(description && {description})}
     })
+  // A deprecated parameter only works on the older API versions the CLI pins, so no flag offers it
   const queryFields = parameters
-    .filter((parameter) => parameter.in === 'query')
+    .filter((parameter) => parameter.in === 'query' && !parameter.deprecated)
     .map((parameter) =>
       field(spec, 'query', parameter.name, parameter.schema ?? {}, {
         ...(parameter.required && {required: true}),
@@ -236,6 +241,13 @@ function distillOperation(
     )
   const bodySchema = operation.requestBody?.content?.['application/json']?.schema
   const responses = successSchemas(spec, operation)
+  const paginated =
+    queryFields.some((item) => item.name === 'cursor') &&
+    responses.some((schema) => hasProperty(schema, 'data') && hasProperty(schema, 'nextCursor'))
+  const limit = parameters.find(
+    (parameter) => parameter.in === 'query' && parameter.name === 'limit',
+  )
+  const maximum = limit && resolve(spec, limit.schema ?? {}).maximum
   const statuses = Object.keys(operation.responses ?? {}).filter((status) => status.startsWith('2'))
 
   return {
@@ -243,9 +255,11 @@ function distillOperation(
     description: text(operation.description) ?? '',
     fields: [...queryFields, ...(bodySchema ? bodyFields(spec, bodySchema) : [])],
     noContent: statuses.length > 0 && statuses.every((status) => status === '204'),
-    paginated:
-      queryFields.some((item) => item.name === 'cursor') &&
-      responses.some((schema) => hasProperty(schema, 'data') && hasProperty(schema, 'nextCursor')),
+    paginated,
+    ...(paginated &&
+      limit && {
+        pageSize: Math.min(MAX_PAGE_SIZE, typeof maximum === 'number' ? maximum : MAX_PAGE_SIZE),
+      }),
     pathParams,
     // The route type is checked where the generated module is compiled
     route: `${method.toUpperCase()} ${path.slice(PATH_PREFIX.length)}` as ContextOperation['route'],
