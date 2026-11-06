@@ -47,7 +47,12 @@ export class UploadSourceFileCommand extends BaseCommand {
 
   static override flags = flags
 
-  static override telemetry = defineCommandTelemetry(flags, {redact: ['file']})
+  static override telemetry = {
+    redactedFlags: [
+      ...BaseCommand.telemetry.redactedFlags,
+      ...defineCommandTelemetry(flags, {redact: ['file']}).redactedFlags,
+    ],
+  }
 
   public override async send(
     request: OperationRequest,

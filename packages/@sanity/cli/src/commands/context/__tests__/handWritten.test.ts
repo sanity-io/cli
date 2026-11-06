@@ -402,3 +402,15 @@ describe('context issues resolve', () => {
     )
   })
 })
+
+describe('hand-written command telemetry', () => {
+  test.each([
+    [GetDocumentContentCommand, ['--chunk', '--lines', '--output']],
+    [UploadSourceFileCommand, ['--file']],
+    [CreateSourceCommand, ['--file', '--text', '--title']],
+  ])('%o redacts the generated free-text flags as well as its own', (command, expected) => {
+    const redacted = command.telemetry.redactedFlags.map((flag) => flag.canonical)
+
+    expect(redacted).toEqual(expect.arrayContaining(expected))
+  })
+})

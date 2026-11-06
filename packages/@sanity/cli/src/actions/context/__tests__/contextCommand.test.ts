@@ -85,6 +85,15 @@ describe('generated context commands', () => {
     expect(JSON.parse(stdout)).toEqual([{id: 'src1'}])
   })
 
+  test('fails when a list answers with something other than a page', async () => {
+    mockRequest.mockResolvedValueOnce({})
+
+    const {error} = await testCommand(ListSourcesCommand, ['kb-abc123'])
+
+    expect(error?.message).toContain('answered with something other than a page')
+    expect(error?.oclif?.exit).toBe(1)
+  })
+
   test('sends the organization flag in the query and query booleans as strings', async () => {
     mockRequest.mockResolvedValueOnce({data: [], nextCursor: null})
 

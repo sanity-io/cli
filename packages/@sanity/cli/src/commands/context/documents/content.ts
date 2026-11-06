@@ -68,7 +68,12 @@ export class GetDocumentContentCommand extends BaseCommand {
 
   static override flags = flags
 
-  static override telemetry = defineCommandTelemetry(flags, {redact: ['output']})
+  static override telemetry = {
+    redactedFlags: [
+      ...BaseCommand.telemetry.redactedFlags,
+      ...defineCommandTelemetry(flags, {redact: ['output']}).redactedFlags,
+    ],
+  }
 
   public override render(result: unknown): void {
     if (result instanceof Uint8Array && !this.flags.json && this.flags.output === undefined) {

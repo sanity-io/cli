@@ -73,7 +73,7 @@ export async function requestAllPages(
       ...request,
       query: {...request.query, ...(cursor && {cursor})},
     })
-    if (!isPage(page)) return items
+    if (!isPage(page)) throw new Error(`${route} answered with something other than a page`)
     items.push(...page.data)
     cursor = page.nextCursor ?? undefined
   } while (cursor !== undefined)
