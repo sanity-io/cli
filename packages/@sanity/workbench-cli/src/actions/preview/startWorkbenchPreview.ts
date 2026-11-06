@@ -139,7 +139,7 @@ export async function startWorkbenchPreview(
   }
 
   if (workbench.workbenchAvailable) {
-    const appUrl = `http://${toDisplayHost(workbench.httpHost)}:${workbench.workbenchPort}${dashboardAppPath ?? ''}`
+    const appUrl = `${workbench.url}${dashboardAppPath ?? ''}`
     output.log(`Dashboard preview server started at ${styleText(['blue', 'underline'], appUrl)}`)
   } else {
     const remoteUrl = `http://${toDisplayHost(remote.host)}:${remote.port}`

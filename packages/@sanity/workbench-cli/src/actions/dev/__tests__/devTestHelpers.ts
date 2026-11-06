@@ -140,14 +140,14 @@ export function createMockViteServer({host, port = 3333}: {host?: string; port?:
 /** A `startWorkbenchDevServer` result — the singleton shell as seen by its callers. */
 export function mockWorkbenchServer(
   overrides: {
-    httpHost?: string
+    url?: string
     workbenchAvailable?: boolean
     workbenchPort?: number
   } = {},
 ) {
   return {
     close: vi.fn<() => Promise<void>>().mockResolvedValue(),
-    httpHost: 'localhost',
+    url: 'http://localhost:3333',
     workbenchAvailable: true,
     workbenchPort: 3333,
     ...overrides,
