@@ -146,7 +146,7 @@ export async function startPortlessProxy(options: {
       for (const socket of sockets) socket.destroy()
       await new Promise((resolve) => server.close(resolve))
     },
-    route: (servers: DevServerManifest[]) =>
+    toPublicAddresses: (servers: DevServerManifest[]) =>
       servers.map((entry) =>
         entry.slug
           ? {...entry, host: `${entry.slug}.${shellHostname}`, port: proxied ? port : entry.port}

@@ -338,7 +338,7 @@ async function createWorkbenchViteServer(
   const detachBridge = attachViteDevServerBridge(server, (servers) => {
     const organizationServers = servers.filter((entry) => entry.organizationId === organizationId)
 
-    return proxy ? proxy.route(organizationServers) : organizationServers
+    return proxy ? proxy.toPublicAddresses(organizationServers) : organizationServers
   })
 
   return {

@@ -41,7 +41,7 @@ vi.mock('../registry.js', async (importOriginal) => ({
 function aProxy() {
   return {
     close: vi.fn<() => Promise<void>>().mockResolvedValue(),
-    route: vi.fn((servers: DevServerManifest[]) =>
+    toPublicAddresses: vi.fn((servers: DevServerManifest[]) =>
       servers.map((server) => ({...server, host: 'routed', port: 80})),
     ),
     url: 'http://osyh1iet5.sanity.localhost',

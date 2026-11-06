@@ -150,11 +150,11 @@ describe('startPortlessProxy', () => {
     expect((await get(port, 'ootherorg.sanity.localhost')).body).toBe(`shell ${OTHER_ORG} /`)
   })
 
-  test('route rewrites app addresses to `<slug>.<org>.sanity.localhost` on the proxy port', async () => {
+  test('toPublicAddresses rewrites app addresses to `<slug>.<org>.sanity.localhost` on the proxy port', async () => {
     const port = await freePort()
     const proxy = await startProxy(port)
 
-    const routed = proxy.route([
+    const routed = proxy.toPublicAddresses([
       aDevServerManifest({host: 'localhost', port: 3334, slug: 'my-app'}),
       aDevServerManifest({host: 'localhost', id: 'config:mediaLibrary', port: 4000}),
     ])
@@ -305,9 +305,9 @@ describe('startPortlessProxy', () => {
       const proxy = await startProxy(portOf(holder))
 
       expect(proxy.url).toBe('http://osyh1iet5.sanity.localhost:3333')
-      expect(proxy.route([aDevServerManifest({port: 3334, slug: 'my-app'})])).toMatchObject([
-        {host: 'my-app.osyh1iet5.sanity.localhost', port: 3334},
-      ])
+      expect(
+        proxy.toPublicAddresses([aDevServerManifest({port: 3334, slug: 'my-app'})]),
+      ).toMatchObject([{host: 'my-app.osyh1iet5.sanity.localhost', port: 3334}])
       expect(output.warn).toHaveBeenCalledWith(expect.stringContaining('EADDRINUSE'))
     },
   )
