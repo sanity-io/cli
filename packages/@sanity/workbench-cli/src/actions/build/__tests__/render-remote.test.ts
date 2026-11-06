@@ -12,9 +12,11 @@ import {
   useEffect,
   useState,
 } from 'react'
+import {build, type Plugin, type Rolldown} from 'vite'
 import {afterAll, beforeAll, beforeEach, describe, expect, test} from 'vitest'
 
 import {renderRemote} from '../render-remote.js'
+import {sanityAppId} from '../vite/plugins/plugin-sanity-app-id.js'
 
 describe('renderRemote', () => {
   test('exports a render entry that mounts the bound App into the host node', () => {
@@ -90,6 +92,8 @@ describe('renderRemote', () => {
           rootContexts.set(rootElement, { controller, value: { signal: controller.signal, moduleId, parentKey } })
           if (StyleSheetManager) {
             const target = rootElement.ownerDocument.createElement('sanity-styles')
+            // styled-components puts its sheets inside the target, so the host finds the app's sheets through it.
+            if (typeof __SANITY_APP_ID__ === 'string') target.setAttribute('data-application-id', __SANITY_APP_ID__)
             // React can replace the mount node's contents; keep its stylesheet outside that node.
             rootElement.ownerDocument.head.appendChild(target)
             styleTargets.set(rootElement, target)
@@ -202,6 +206,8 @@ describe('renderRemote', () => {
           rootContexts.set(rootElement, { controller, value: { signal: controller.signal, moduleId, parentKey } })
           if (StyleSheetManager) {
             const target = rootElement.ownerDocument.createElement('sanity-styles')
+            // styled-components puts its sheets inside the target, so the host finds the app's sheets through it.
+            if (typeof __SANITY_APP_ID__ === 'string') target.setAttribute('data-application-id', __SANITY_APP_ID__)
             // React can replace the mount node's contents; keep its stylesheet outside that node.
             rootElement.ownerDocument.head.appendChild(target)
             styleTargets.set(rootElement, target)
@@ -461,4 +467,63 @@ test('re-rendering the root with new props keeps its signal', async () => {
 
   expect(rootSignal).toBe(signal)
   expect(signal.aborted).toBe(false)
+})
+
+/** Build the isolated harness with Vite, as `sanity build` does, and load it. */
+async function buildIsolatedHarness(plugins: Plugin[]): Promise<Harness> {
+  const root = fs.mkdtempSync(path.join(TMP_DIR, 'isolated-'))
+  fs.writeFileSync(
+    path.join(root, 'entry.js'),
+    renderRemote({app: '() => null', isolateStyles: true, preamble: ''}),
+  )
+  // The package doesn't depend on styled-components; the harness only passes the target to it.
+  fs.writeFileSync(
+    path.join(root, 'styled-components.js'),
+    'export const StyleSheetManager = ({children}) => children',
+  )
+  const output = (await build({
+    build: {
+      rolldownOptions: {
+        external: ['react', 'react-dom/client'],
+        input: path.join(root, 'entry.js'),
+        preserveEntrySignatures: 'strict',
+      },
+    },
+    configFile: false,
+    logLevel: 'silent',
+    plugins,
+    resolve: {alias: {'styled-components': path.join(root, 'styled-components.js')}},
+    root,
+  })) as Rolldown.RolldownOutput
+  const entry = output.output.find((chunk) => chunk.type === 'chunk' && chunk.isEntry)!
+  return (await import(
+    /* @vite-ignore */ pathToFileURL(path.join(root, 'dist', entry.fileName)).href
+  )) as Harness
+}
+
+const sheetTarget = () => document.head.querySelector<HTMLElement>('sanity-styles')
+
+describe('styled-components sheet target', () => {
+  beforeEach(() => {
+    document.head.replaceChildren()
+  })
+
+  test("carries the app id, so the host can find the app's styled-components sheets", async () => {
+    const {render} = await buildIsolatedHarness([sanityAppId('favorites')])
+
+    act(() => {
+      render(container)
+    })
+    expect(sheetTarget()?.dataset.applicationId).toBe('favorites')
+  })
+
+  test('is left untagged when the build has no app id', async () => {
+    const {render} = await buildIsolatedHarness([])
+
+    act(() => {
+      render(container)
+    })
+    expect(sheetTarget()).not.toBeNull()
+    expect(sheetTarget()?.dataset.applicationId).toBeUndefined()
+  })
 })
