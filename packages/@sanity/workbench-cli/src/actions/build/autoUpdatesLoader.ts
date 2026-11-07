@@ -21,6 +21,8 @@ interface AutoUpdatesLoaderOptions {
 }
 
 const TIMESTAMP = /(\/(?:by-app|default)\/[^/]+)\/t\d+/
+// The Studio team decides the final bucket size.
+const TIMESTAMP_BUCKET_SECONDS = 60
 
 // Loads the app's auto-updated packages from the module server as its own copy.
 export function createAutoUpdatesLoader({
@@ -31,7 +33,9 @@ export function createAutoUpdatesLoader({
   vendor,
 }: AutoUpdatesLoaderOptions) {
   // The build's timestamp would pin the versions the module CDN served on build day.
-  const timestamp = `/t${Math.floor(Date.now() / 1000)}`
+  const timestamp = `/t${
+    Math.floor(Date.now() / 1000 / TIMESTAMP_BUCKET_SECONDS) * TIMESTAMP_BUCKET_SECONDS
+  }`
   const currentImports = Object.fromEntries(
     Object.entries(imports).map(([specifier, url]) => [
       specifier,
