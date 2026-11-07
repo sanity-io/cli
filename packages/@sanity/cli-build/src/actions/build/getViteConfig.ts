@@ -307,6 +307,7 @@ export async function getViteConfig(options: ViteOptions): Promise<InlineConfig>
 
       assetsDir: 'static',
       emptyOutDir: false, // Rely on CLI to do this
+      manifest: true,
       minify: minify ? 'oxc' : false,
 
       rolldownOptions: {
