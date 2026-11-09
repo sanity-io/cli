@@ -303,7 +303,7 @@ catalogs:
       specifier: ^7.1.0
       version: 7.2.0
     tar:
-      specifier: ^7.5.18
+      specifier: ^7.5.22
       version: 7.5.22
     tinyglobby:
       specifier: ^0.2.17
