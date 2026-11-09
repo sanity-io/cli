@@ -114,7 +114,7 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
     'nextjs-add-config-files': Flags.boolean({
       allowNo: true,
       default: undefined,
-      description: 'Add config files to Next.js project',
+      description: 'Add a Sanity Studio to the Next.js project',
       helpGroup: 'Next.js',
     }),
     'nextjs-append-env': Flags.boolean({
@@ -126,7 +126,8 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
     'nextjs-embed-studio': Flags.boolean({
       allowNo: true,
       default: undefined,
-      description: 'Embed the Studio in Next.js application',
+      description:
+        'Embed the Studio at a Next.js route (legacy). By default, the Studio runs separately in this project',
       helpGroup: 'Next.js',
     }),
     // oclif doesn't support a boolean/string flag combination, but listing both a

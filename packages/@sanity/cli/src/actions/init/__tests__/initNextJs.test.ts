@@ -1,4 +1,5 @@
-import {mkdtemp, rm} from 'node:fs/promises'
+import {existsSync} from 'node:fs'
+import {mkdir, mkdtemp, readFile, rm, writeFile} from 'node:fs/promises'
 import {tmpdir} from 'node:os'
 import {join} from 'node:path'
 
@@ -21,6 +22,10 @@ vi.mock('../resolvePackageManager.js', () => ({
 vi.mock('../../../util/packageManager/installPackages.js', async (importOriginal) => ({
   ...(await importOriginal<typeof import('../../../util/packageManager/installPackages.js')>()),
   installNewPackages: mockInstallNewPackages,
+}))
+vi.mock('../../../services/cors.js', () => ({
+  createCorsOrigin: vi.fn().mockResolvedValue({id: 'cors-id'}),
+  listCorsOrigins: vi.fn().mockResolvedValue([]),
 }))
 
 const outputLog = vi.fn()
@@ -113,8 +118,116 @@ describe('initNextJs', () => {
   test('still writes the config files when the install is skipped', async () => {
     await initNextJs(nextJsArgs({install: false}))
 
-    const {existsSync} = await import('node:fs')
     expect(existsSync(join(workDir, 'sanity.cli.ts'))).toBe(true)
     expect(existsSync(join(workDir, 'sanity', 'schemaTypes', 'index.ts'))).toBe(true)
+    expect(existsSync(join(workDir, 'app', 'studio', '[[...tool]]', 'page.tsx'))).toBe(false)
+  })
+
+  test('writes a separate Studio in the Next.js project', async () => {
+    await writeFile(
+      join(workDir, 'package.json'),
+      `${JSON.stringify({name: 'next-app', scripts: {build: 'next build', dev: 'next dev'}}, null, 2)}\n`,
+    )
+    await writeFile(
+      join(workDir, 'tsconfig.json'),
+      `${JSON.stringify({compilerOptions: {strict: true}, exclude: ['node_modules']}, null, 2)}\n`,
+    )
+    await writeFile(join(workDir, '.gitignore'), 'node_modules/\n.next/\n')
+
+    await initNextJs(nextJsArgs({install: false}))
+
+    const config = await readFile(join(workDir, 'sanity.config.ts'), 'utf8')
+    expect(config).not.toContain("'use client'")
+    expect(config).not.toContain('basePath')
+    expect(config).toContain("publicDir: 'sanity/static'")
+    expect(config).toContain('projectId: "abc123"')
+    expect(config).toContain('dataset: "production"')
+    expect(config).not.toContain('NEXT_PUBLIC_')
+    expect(config).not.toContain('./sanity/env')
+    expect(existsSync(join(workDir, 'sanity', 'static', '.gitkeep'))).toBe(true)
+    expect(existsSync(join(workDir, 'app', 'studio', '[[...tool]]', 'page.tsx'))).toBe(false)
+
+    const cli = await readFile(join(workDir, 'sanity.cli.ts'), 'utf8')
+    expect(cli).toContain('projectId: "abc123"')
+    expect(cli).toContain('dataset: "production"')
+    expect(cli).not.toContain('NEXT_PUBLIC_')
+    expect(cli).toContain('autoUpdates: true')
+
+    const pkg = JSON.parse(await readFile(join(workDir, 'package.json'), 'utf8')) as {
+      scripts: Record<string, string>
+    }
+    expect(pkg.scripts).toEqual({
+      build: 'next build',
+      dev: 'next dev',
+      studio: 'sanity dev',
+      'studio:build': 'sanity build studio-static',
+      'studio:deploy': 'sanity deploy',
+    })
+
+    const tsconfig = JSON.parse(await readFile(join(workDir, 'tsconfig.json'), 'utf8')) as {
+      exclude: string[]
+    }
+    expect(tsconfig.exclude).toEqual(['node_modules', '.sanity', 'studio-static'])
+
+    const gitignore = await readFile(join(workDir, '.gitignore'), 'utf8')
+    expect(gitignore).toContain('.sanity/')
+    expect(gitignore).toContain('studio-static/')
+
+    const lines = outputLog.mock.calls.flat().join('\n')
+    expect(lines).toContain('Added a Sanity Studio to this project.')
+    expect(lines).toContain('pnpm studio')
+    expect(lines).not.toContain('/studio')
+  })
+
+  test('keeps an existing Studio script unless overwrite is requested', async () => {
+    await writeFile(
+      join(workDir, 'package.json'),
+      `${JSON.stringify({scripts: {studio: 'next dev'}}, null, 2)}\n`,
+    )
+
+    await initNextJs(nextJsArgs({install: false, overwriteFiles: false}))
+
+    const pkg = JSON.parse(await readFile(join(workDir, 'package.json'), 'utf8')) as {
+      scripts: Record<string, string>
+    }
+    expect(pkg.scripts.studio).toBe('next dev')
+    expect(pkg.scripts['studio:build']).toBe('sanity build studio-static')
+  })
+
+  test('warns and leaves tsconfig unchanged when it is not valid JSON', async () => {
+    const tsconfig = '{\n  // comment\n  "exclude": ["node_modules"]\n}\n'
+    await writeFile(join(workDir, 'tsconfig.json'), tsconfig)
+
+    await initNextJs(nextJsArgs({install: false}))
+
+    expect(await readFile(join(workDir, 'tsconfig.json'), 'utf8')).toBe(tsconfig)
+  })
+
+  test('writes the legacy Next.js route only when embed is requested', async () => {
+    await mkdir(join(workDir, 'app'))
+    await writeFile(
+      join(workDir, 'package.json'),
+      `${JSON.stringify({scripts: {build: 'next build', dev: 'next dev'}}, null, 2)}\n`,
+    )
+
+    await initNextJs(nextJsArgs({install: false, nextjsEmbedStudio: true}))
+
+    expect(existsSync(join(workDir, 'app', 'studio', '[[...tool]]', 'page.tsx'))).toBe(true)
+    const config = await readFile(join(workDir, 'sanity.config.ts'), 'utf8')
+    expect(config).toContain("'use client'")
+    expect(config).toContain("basePath: '/studio'")
+    expect(config).not.toContain('publicDir')
+
+    const cli = await readFile(join(workDir, 'sanity.cli.ts'), 'utf8')
+    expect(cli).not.toContain('autoUpdates')
+
+    const pkg = JSON.parse(await readFile(join(workDir, 'package.json'), 'utf8')) as {
+      scripts: Record<string, string>
+    }
+    expect(pkg.scripts).toEqual({build: 'next build', dev: 'next dev'})
+
+    const lines = outputLog.mock.calls.flat().join('\n')
+    expect(lines).toContain('The Studio is a route in the Next.js app at /studio.')
+    expect(lines).not.toContain('pnpm studio')
   })
 })

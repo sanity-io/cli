@@ -3580,9 +3580,10 @@ GLOBAL FLAGS
   --json  Format output as json.
 
 NEXT.JS FLAGS
-  --[no-]nextjs-add-config-files  Add config files to Next.js project
+  --[no-]nextjs-add-config-files  Add a Sanity Studio to the Next.js project
   --[no-]nextjs-append-env        Append project ID and dataset to .env file
-  --[no-]nextjs-embed-studio      Embed the Studio in Next.js application
+  --[no-]nextjs-embed-studio      Embed the Studio at a Next.js route (legacy). By default, the Studio runs separately
+                                  in this project
 
 DESCRIPTION
   Initialize a new Sanity Studio, project and/or app

@@ -1,5 +1,5 @@
 import {existsSync} from 'node:fs'
-import {mkdir, writeFile} from 'node:fs/promises'
+import {mkdir, readFile, writeFile} from 'node:fs/promises'
 import path from 'node:path'
 import {styleText} from 'node:util'
 
@@ -10,7 +10,6 @@ import {execa, type Options} from 'execa'
 
 import {
   promptForAppendEnv,
-  promptForEmbeddedStudio,
   promptForNextTemplate,
   promptForStudioPath,
 } from '../../prompts/init/nextjs.js'
@@ -39,12 +38,27 @@ import {
   sanityConfigTemplate,
   sanityFolder,
   sanityStudioTemplate,
+  standaloneSanityCliTemplate,
+  standaloneSanityConfigTemplate,
 } from './templates/nextjs/index.js'
 import {type InitOptions, type VersionedFramework} from './types.js'
 
 const debug = subdebug('init')
 
 const NEXT_SANITY_PACKAGE = 'next-sanity@13'
+
+const STUDIO_SCRIPTS = {
+  studio: 'sanity dev',
+  'studio:build': 'sanity build studio-static',
+  'studio:deploy': 'sanity deploy',
+} as const
+
+const STUDIO_TSCONFIG_EXCLUDES = ['.sanity', 'studio-static']
+
+const STUDIO_GITIGNORE_ENTRIES = [
+  {line: '.sanity/', name: '.sanity'},
+  {line: 'studio-static/', name: 'studio-static'},
+]
 
 async function writeOrOverwrite(
   filePath: string,
@@ -154,6 +168,7 @@ export async function initNextJs({
   workDir: string
 }): Promise<void> {
   const {
+    autoUpdates,
     install,
     nextjsAppendEnv,
     nextjsEmbedStudio,
@@ -172,11 +187,11 @@ export async function initNextJs({
   })
 
   const fileExtension = useTypeScript ? 'ts' : 'js'
-  let embeddedStudio = flagOrDefault(nextjsEmbedStudio, true)
-  if (shouldPrompt(unattended, nextjsEmbedStudio)) {
-    embeddedStudio = await promptForEmbeddedStudio()
-  }
+  // Omitted and `--no-nextjs-embed-studio` add a Studio that runs separately.
+  // Only the explicit flag keeps the legacy Next.js route.
+  const embeddedStudio = nextjsEmbedStudio === true
   let hasSrcFolder = false
+  let studioRoute: string | undefined
 
   if (embeddedStudio) {
     // find source path (app or src/app)
@@ -196,6 +211,7 @@ export async function initNextJs({
     }
 
     const studioPath = unattended ? '/studio' : await promptForStudioPath()
+    studioRoute = studioPath
 
     const embeddedStudioRouteFilePath = path.join(
       srcPath,
@@ -226,10 +242,26 @@ export async function initNextJs({
       workDir,
       options,
     )
+  } else {
+    const sanityConfigPath = path.join(workDir, `sanity.config.${fileExtension}`)
+    await writeOrOverwrite(
+      sanityConfigPath,
+      standaloneSanityConfigTemplate(projectId, datasetName),
+      workDir,
+      options,
+    )
+    await writeOrOverwrite(path.join(workDir, 'sanity', 'static', '.gitkeep'), '', workDir, options)
   }
 
   const sanityCliPath = path.join(workDir, `sanity.cli.${fileExtension}`)
-  await writeOrOverwrite(sanityCliPath, sanityCliTemplate, workDir, options)
+  await writeOrOverwrite(
+    sanityCliPath,
+    embeddedStudio
+      ? sanityCliTemplate
+      : standaloneSanityCliTemplate(autoUpdates, projectId, datasetName),
+    workDir,
+    options,
+  )
 
   let templateToUse = template ?? 'clean'
   if (shouldPrompt(unattended, template)) {
@@ -264,31 +296,35 @@ export async function initNextJs({
     })
   }
 
-  if (embeddedStudio) {
-    const nextjsLocalDevOrigin = 'http://localhost:3000'
-    const existingCorsOrigins = await listCorsOrigins(projectId)
-    const hasExistingCorsOrigin = existingCorsOrigins.some(
-      (item: {origin: string}) => item.origin === nextjsLocalDevOrigin,
-    )
-    if (!hasExistingCorsOrigin) {
-      try {
-        const createCorsRes = await createCorsOrigin({
-          allowCredentials: true,
-          origin: nextjsLocalDevOrigin,
-          projectId,
-        })
+  const nextjsLocalDevOrigin = 'http://localhost:3000'
+  const existingCorsOrigins = await listCorsOrigins(projectId)
+  const hasExistingCorsOrigin = existingCorsOrigins.some(
+    (item: {origin: string}) => item.origin === nextjsLocalDevOrigin,
+  )
+  if (!hasExistingCorsOrigin) {
+    try {
+      const createCorsRes = await createCorsOrigin({
+        allowCredentials: true,
+        origin: nextjsLocalDevOrigin,
+        projectId,
+      })
 
-        output.log(
-          createCorsRes.id
-            ? `Added ${nextjsLocalDevOrigin} to CORS origins`
-            : `Failed to add ${nextjsLocalDevOrigin} to CORS origins`,
-        )
-      } catch (error) {
-        const message = error instanceof Error ? error.message : String(error)
-        debug(`Error creating new CORS Origin ${nextjsLocalDevOrigin}: ${message}`)
-        throw new InitError(`Failed to add ${nextjsLocalDevOrigin} to CORS origins: ${message}`, 1)
-      }
+      output.log(
+        createCorsRes.id
+          ? `Added ${nextjsLocalDevOrigin} to CORS origins`
+          : `Failed to add ${nextjsLocalDevOrigin} to CORS origins`,
+      )
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error)
+      debug(`Error creating new CORS Origin ${nextjsLocalDevOrigin}: ${message}`)
+      throw new InitError(`Failed to add ${nextjsLocalDevOrigin} to CORS origins: ${message}`, 1)
     }
+  }
+
+  if (!embeddedStudio) {
+    await addStudioScripts({options, output, workDir})
+    await excludeStudioOutputFromTsconfig({output, workDir})
+    await appendStudioGitignore(workDir)
   }
 
   const chosen = await resolvePackageManager({
@@ -354,9 +390,16 @@ export async function initNextJs({
     )
   }
 
-  output.log(
-    `\n${styleText('green', 'Success!')} Your Sanity configuration files has been added to this project`,
-  )
+  if (embeddedStudio) {
+    output.log(`\n${styleText('green', 'Added Sanity to this project.')}`)
+    output.log(`The Studio is a route in the Next.js app at ${studioRoute}.`)
+    output.log(`Start the app with \`${scriptCommand(chosen, 'dev')}\`.`)
+  } else {
+    output.log(`\n${styleText('green', 'Added a Sanity Studio to this project.')}`)
+    output.log('The Next.js app and the Studio run on separate dev servers.')
+    output.log(`Start the app with \`${scriptCommand(chosen, 'dev')}\`.`)
+    output.log(`Start the Studio with \`${scriptCommand(chosen, 'studio')}\`.`)
+  }
   if (mcpConfigured && mcpConfigured.length > 0) {
     const message = await getPostInitMCPPrompt(mcpConfigured)
     output.log(`\n${message}`)
@@ -367,4 +410,159 @@ export async function initNextJs({
   }
 
   await writeStagingEnvIfNeeded(output, workDir)
+}
+
+function scriptCommand(packageManager: PackageManager, script: string): string {
+  if (packageManager === 'yarn' || packageManager === 'pnpm' || packageManager === 'bun') {
+    return `${packageManager} ${script}`
+  }
+
+  return `npm run ${script}`
+}
+
+function detectIndent(source: string): string {
+  return source.match(/\n([ \t]+)\S/)?.[1] ?? '  '
+}
+
+async function addStudioScripts({
+  options,
+  output,
+  workDir,
+}: {
+  options: InitOptions
+  output: Output
+  workDir: string
+}): Promise<void> {
+  const pkgPath = path.join(workDir, 'package.json')
+  if (!existsSync(pkgPath)) {
+    output.warn(
+      'No package.json found. Add a "studio" script that runs `sanity dev`, plus "studio:build" (`sanity build studio-static`) and "studio:deploy" (`sanity deploy`).',
+    )
+    return
+  }
+
+  const raw = await readFile(pkgPath, 'utf8')
+  let pkg: {scripts?: Record<string, string>}
+  try {
+    pkg = JSON.parse(raw) as {scripts?: Record<string, string>}
+  } catch {
+    output.warn(
+      'Couldn\'t update package.json. Add a "studio" script that runs `sanity dev`, plus "studio:build" (`sanity build studio-static`) and "studio:deploy" (`sanity deploy`).',
+    )
+    return
+  }
+
+  if (!pkg || typeof pkg !== 'object' || Array.isArray(pkg)) {
+    output.warn(
+      'Couldn\'t update package.json. Add a "studio" script that runs `sanity dev`, plus "studio:build" (`sanity build studio-static`) and "studio:deploy" (`sanity deploy`).',
+    )
+    return
+  }
+
+  pkg.scripts ??= {}
+  const scripts = pkg.scripts
+  let changed = false
+
+  for (const [name, command] of Object.entries(STUDIO_SCRIPTS)) {
+    const existing = scripts[name]
+    if (existing === undefined || existing === command) {
+      if (existing !== command) {
+        scripts[name] = command
+        changed = true
+      }
+      continue
+    }
+
+    let overwrite = flagOrDefault(options.overwriteFiles, false)
+    if (shouldPrompt(options.unattended, options.overwriteFiles)) {
+      overwrite = await confirm({
+        default: false,
+        message: `Script ${name} already exists. Overwrite it with \`${command}\`?`,
+      })
+    }
+
+    if (overwrite) {
+      scripts[name] = command
+      changed = true
+    } else {
+      output.warn(
+        `Script "${name}" already exists. Left \`${existing}\` in place. The Studio uses \`${command}\`.`,
+      )
+    }
+  }
+
+  if (!changed) return
+
+  await writeFile(pkgPath, `${JSON.stringify(pkg, null, detectIndent(raw))}\n`)
+}
+
+async function excludeStudioOutputFromTsconfig({
+  output,
+  workDir,
+}: {
+  output: Output
+  workDir: string
+}): Promise<void> {
+  const tsconfigPath = path.join(workDir, 'tsconfig.json')
+  if (!existsSync(tsconfigPath)) return
+
+  const raw = await readFile(tsconfigPath, 'utf8')
+  let tsconfig: {exclude?: unknown}
+  try {
+    tsconfig = JSON.parse(raw) as {exclude?: unknown}
+  } catch {
+    output.warn(
+      'Couldn\'t update tsconfig.json. Add ".sanity" and "studio-static" to exclude so TypeScript skips Studio build output.',
+    )
+    return
+  }
+
+  if (!tsconfig || typeof tsconfig !== 'object' || Array.isArray(tsconfig)) {
+    output.warn(
+      'Couldn\'t update tsconfig.json. Add ".sanity" and "studio-static" to exclude so TypeScript skips Studio build output.',
+    )
+    return
+  }
+
+  const exclude = Array.isArray(tsconfig.exclude)
+    ? tsconfig.exclude.filter((entry): entry is string => typeof entry === 'string')
+    : []
+  let changed = false
+  for (const entry of STUDIO_TSCONFIG_EXCLUDES) {
+    if (!exclude.includes(entry)) {
+      exclude.push(entry)
+      changed = true
+    }
+  }
+
+  if (!changed) return
+
+  tsconfig.exclude = exclude
+  await writeFile(tsconfigPath, `${JSON.stringify(tsconfig, null, detectIndent(raw))}\n`)
+}
+
+function gitignoreCovers(lines: string[], name: string): boolean {
+  return lines.some((line) => {
+    const trimmed = line.trim()
+    return (
+      trimmed === name ||
+      trimmed === `/${name}` ||
+      trimmed === `${name}/` ||
+      trimmed === `/${name}/`
+    )
+  })
+}
+
+async function appendStudioGitignore(workDir: string): Promise<void> {
+  const gitignorePath = path.join(workDir, '.gitignore')
+  if (!existsSync(gitignorePath)) return
+
+  const raw = await readFile(gitignorePath, 'utf8')
+  const lines = raw.split('\n')
+  const missing = STUDIO_GITIGNORE_ENTRIES.filter((entry) => !gitignoreCovers(lines, entry.name))
+  if (missing.length === 0) return
+
+  const separator = raw.endsWith('\n') || raw.length === 0 ? '' : '\n'
+  const block = `${separator}\n# Sanity Studio\n${missing.map((entry) => entry.line).join('\n')}\n`
+  await writeFile(gitignorePath, `${raw}${block}`)
 }

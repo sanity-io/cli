@@ -47,9 +47,39 @@ describe('sanity init - Next.js integration', {timeout: 120_000}, () => {
 
       expect(existsSync(`${nextjsDir}/sanity.config.ts`)).toBe(true)
       expect(existsSync(`${nextjsDir}/sanity/schemaTypes/index.ts`)).toBe(true)
+      expect(existsSync(`${nextjsDir}/sanity/static/.gitkeep`)).toBe(true)
+      expect(existsSync(`${nextjsDir}/app/studio/[[...tool]]/page.tsx`)).toBe(false)
+
+      const config = readFileSync(`${nextjsDir}/sanity.config.ts`, 'utf8')
+      expect(config).not.toContain("'use client'")
+      expect(config).not.toContain('basePath')
+      expect(config).toContain("publicDir: 'sanity/static'")
+      expect(config).toContain(`projectId: ${JSON.stringify(projectId)}`)
+      expect(config).toContain('dataset: "production"')
+      expect(config).not.toContain('NEXT_PUBLIC_')
 
       const cliConfig = readFileSync(`${nextjsDir}/sanity.cli.ts`, 'utf8')
-      expect(cliConfig).toContain('NEXT_PUBLIC_SANITY_PROJECT_ID')
+      expect(cliConfig).toContain(`projectId: ${JSON.stringify(projectId)}`)
+      expect(cliConfig).toContain('dataset: "production"')
+      expect(cliConfig).not.toContain('NEXT_PUBLIC_')
+      expect(cliConfig).toContain('autoUpdates: true')
+
+      const pkg = JSON.parse(readFileSync(`${nextjsDir}/package.json`, 'utf8')) as {
+        scripts: Record<string, string>
+      }
+      expect(pkg.scripts.dev).toBe('next dev')
+      expect(pkg.scripts.studio).toBe('sanity dev')
+      expect(pkg.scripts['studio:build']).toBe('sanity build studio-static')
+      expect(pkg.scripts['studio:deploy']).toBe('sanity deploy')
+
+      const tsconfig = JSON.parse(readFileSync(`${nextjsDir}/tsconfig.json`, 'utf8')) as {
+        exclude: string[]
+      }
+      expect(tsconfig.exclude).toEqual(expect.arrayContaining(['.sanity', 'studio-static']))
+
+      const gitignore = readFileSync(`${nextjsDir}/.gitignore`, 'utf8')
+      expect(gitignore).toContain('.sanity/')
+      expect(gitignore).toContain('studio-static/')
     })
 
     test('creates embedded studio route with --nextjs-embed-studio', async () => {
@@ -73,6 +103,15 @@ describe('sanity init - Next.js integration', {timeout: 120_000}, () => {
       if (error) throw error
       expect(exitCode).toBe(0)
       expect(existsSync(`${nextjsDir}/app/studio/[[...tool]]/page.tsx`)).toBe(true)
+
+      const config = readFileSync(`${nextjsDir}/sanity.config.ts`, 'utf8')
+      expect(config).toContain("'use client'")
+      expect(config).toContain("basePath: '/studio'")
+
+      const pkg = JSON.parse(readFileSync(`${nextjsDir}/package.json`, 'utf8')) as {
+        scripts: Record<string, string>
+      }
+      expect(pkg.scripts.studio).toBeUndefined()
     })
 
     test('writes env variables to .env.local with --nextjs-append-env', async () => {
@@ -121,16 +160,10 @@ describe('sanity init - Next.js integration', {timeout: 120_000}, () => {
         interactive: true,
       })
 
-      await session.waitForText(/Would you like to add configuration files/i)
+      await session.waitForText(/Add a Sanity Studio to this Next\.js project/i)
       session.sendKey('Enter')
 
       await session.waitForText(/Do you want to use TypeScript/i)
-      session.sendKey('Enter')
-
-      await session.waitForText(/Would you like an embedded Sanity Studio/i)
-      session.sendKey('Enter')
-
-      await session.waitForText(/What route do you want to use for the Studio/i)
       session.sendKey('Enter')
 
       await session.waitForText(/Select project template to use/i)
@@ -142,9 +175,11 @@ describe('sanity init - Next.js integration', {timeout: 120_000}, () => {
       await session.waitForExit(0, 90_000)
 
       expect(existsSync(`${nextjsDir}/sanity.config.ts`)).toBe(true)
+      expect(existsSync(`${nextjsDir}/app/studio/[[...tool]]/page.tsx`)).toBe(false)
 
       const output = session.getOutput()
-      expect(output).toMatch(/\/studio/i)
+      expect(output).toMatch(/pnpm studio/)
+      expect(output).not.toMatch(/embedded Sanity Studio/i)
       expect(output).not.toMatch(/Project output path/i)
     })
 
@@ -158,6 +193,7 @@ describe('sanity init - Next.js integration', {timeout: 120_000}, () => {
           'production',
           '--package-manager',
           'pnpm',
+          '--nextjs-embed-studio',
           '--no-mcp',
           '--no-git',
           '--no-install',
@@ -166,13 +202,10 @@ describe('sanity init - Next.js integration', {timeout: 120_000}, () => {
         interactive: true,
       })
 
-      await session.waitForText(/Would you like to add configuration files/i)
+      await session.waitForText(/Add a Sanity Studio to this Next\.js project/i)
       session.sendKey('Enter')
 
       await session.waitForText(/Do you want to use TypeScript/i)
-      session.sendKey('Enter')
-
-      await session.waitForText(/Would you like an embedded Sanity Studio/i)
       session.sendKey('Enter')
 
       await session.waitForText(/What route do you want to use for the Studio/i)

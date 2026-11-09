@@ -182,11 +182,10 @@ describe('#init:nextjs-app-initialization', () => {
     process.chdir(cwd)
     setupInitSuccessMocks()
 
-    mocks.confirm.mockResolvedValueOnce(true) // nextjs-add-config-files
+    mocks.confirm.mockResolvedValueOnce(true) // add a Studio to this project
     mocks.confirm.mockResolvedValueOnce(true) // typescript
-    mocks.input.mockResolvedValueOnce('/studio') // nextjs-embed-studio
-    mocks.confirm.mockResolvedValueOnce('/studio') // studio path
-    mocks.confirm.mockResolvedValueOnce(true) // template
+    mocks.confirm.mockResolvedValueOnce(false) // existing sanity.cli.ts
+    mocks.select.mockResolvedValueOnce('clean') // template
     mocks.confirm.mockResolvedValueOnce(true) // nextjs-append-env
 
     mockApi({
@@ -254,9 +253,8 @@ describe('#init:nextjs-app-initialization', () => {
       },
     )
 
-    expect(stdout).toContain(
-      'Success! Your Sanity configuration files has been added to this project',
-    )
+    expect(stdout).toContain('Added a Sanity Studio to this project.')
+    expect(stdout).toContain('npm run studio')
     expect(stdout).toContain('Setup your Cursor IDE')
     expect(stdout).toContain('Learn more: https://mcp.sanity.io')
     expect(stdout).toContain(
@@ -327,9 +325,8 @@ describe('#init:nextjs-app-initialization', () => {
       outputPath: cwd,
     })
 
-    expect(stdout).toContain(
-      'Success! Your Sanity configuration files has been added to this project',
-    )
+    expect(stdout).toContain('Added a Sanity Studio to this project.')
+    expect(stdout).toContain('pnpm studio')
     expect(stdout).toContain(
       'To set up your project with the MCP server, restart Cursor and type "Get started with Sanity" in the chat.',
     )

@@ -263,7 +263,9 @@ export async function initAction(options: InitOptions, context: InitContext): Pr
     spinner(label).start().succeed()
   }
 
-  let initNext = flagOrDefault(options.nextjsAddConfigFiles, false)
+  // Unattended Next.js init adds a Studio to this project. Interactive runs
+  // still ask. `--no-nextjs-add-config-files` keeps the separate Studio scaffold.
+  let initNext = flagOrDefault(options.nextjsAddConfigFiles, isNextJs)
   if (isNextJs && shouldPrompt(options.unattended, options.nextjsAddConfigFiles)) {
     initNext = await promptForConfigFiles()
   }
