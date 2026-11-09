@@ -34,6 +34,7 @@ const toApplicationsPayload = (servers: DevServerManifest[]) => ({
     .filter((server) => !isConfigOnlyServer(server))
     .map(
       ({
+        applicationId,
         host,
         id,
         interfaces,
@@ -47,6 +48,7 @@ const toApplicationsPayload = (servers: DevServerManifest[]) => ({
         type,
         visibility,
       }) => ({
+        applicationId,
         host,
         id,
         // Views cross to the remote keyed on `type`, never the internal `surface`.
@@ -81,16 +83,20 @@ const toApplicationsPayload = (servers: DevServerManifest[]) => ({
  * rebuilt remote — full-reload to drop the stale remote-entry; otherwise
  * rebroadcast for a soft reconcile. Returns a detach fn.
  */
-function attachViteDevServerBridge(server: ViteDevServer): () => void {
+function attachViteDevServerBridge(server: ViteDevServer, organizationId?: string): () => void {
+  const ownServers = (servers: DevServerManifest[]) =>
+    organizationId ? servers.filter((entry) => entry.organizationId === organizationId) : servers
+
   server.ws.on('sanity:workbench:get-local-applications', (_, client) => {
     client.send(
       'sanity:workbench:local-applications',
-      toApplicationsPayload(getRegisteredServers()),
+      toApplicationsPayload(ownServers(getRegisteredServers())),
     )
   })
 
   const setTracker = createExposesTracker()
-  const registryWatcher = watchRegistry((servers) => {
+  const registryWatcher = watchRegistry((allServers) => {
+    const servers = ownServers(allServers)
     if (setTracker.hasChanged(servers)) {
       server.ws.send({type: 'full-reload'})
       return
@@ -156,12 +162,18 @@ export async function startWorkbenchDevServer(
     return {close: noop, httpHost, workbenchAvailable: false, workbenchPort}
   }
 
-  // Acquire an exclusive lock — only one workbench per machine.
+  const organizationId = resolveOrganizationId(cliConfig)
+
+  // Acquire an exclusive lock — only one workbench per organization.
   // Uses O_EXCL which is atomic at the OS level, preventing races when
   // multiple `sanity dev` processes start simultaneously (e.g. via turbo).
-  const workbenchLock = acquireWorkbenchLock({host: httpHost || 'localhost', port: workbenchPort})
+  const workbenchLock = acquireWorkbenchLock({
+    host: httpHost || 'localhost',
+    organizationId,
+    port: workbenchPort,
+  })
   if (!workbenchLock) {
-    const existing = await waitForWorkbenchLock()
+    const existing = await waitForWorkbenchLock(organizationId)
     devDebug(
       'Workbench already running at pid %d on port %d, skipping',
       existing?.pid,
@@ -182,8 +194,8 @@ export async function startWorkbenchDevServer(
   try {
     result = await createWorkbenchViteServer({
       cacheDir,
-      cliConfig,
       httpHost,
+      organizationId,
       output,
       reactStrictMode,
       workbenchPort,
@@ -215,8 +227,8 @@ export async function startWorkbenchDevServer(
 
 interface CreateWorkbenchViteServerOptions {
   cacheDir: string
-  cliConfig: CliConfig
   httpHost: string | undefined
+  organizationId: string
   output: Output
   reactStrictMode: boolean
   workbenchPort: number
@@ -231,11 +243,10 @@ interface CreateWorkbenchViteServerResult {
 async function createWorkbenchViteServer(
   options: CreateWorkbenchViteServerOptions,
 ): Promise<CreateWorkbenchViteServerResult | undefined> {
-  const {cacheDir, cliConfig, httpHost, output, reactStrictMode, workbenchPort, workDir} = options
+  const {cacheDir, httpHost, organizationId, output, reactStrictMode, workbenchPort, workDir} =
+    options
 
   const remoteUrl = parseRemoteUrl(process.env.SANITY_INTERNAL_WORKBENCH_REMOTE_URL)
-
-  const organizationId = resolveOrganizationId(cliConfig)
 
   devDebug('Writing workbench runtime files')
   const root = await writeWorkbenchRuntime({
@@ -308,7 +319,7 @@ async function createWorkbenchViteServer(
     devDebug('Warming workbench remote at %s', remoteUrl)
   }
 
-  const detachBridge = attachViteDevServerBridge(server)
+  const detachBridge = attachViteDevServerBridge(server, organizationId)
 
   return {
     actualPort,

@@ -199,7 +199,7 @@ describe('#projects:unclaimed', () => {
     expect(mockSet).not.toHaveBeenCalled()
   })
 
-  test('--project-id prints only the requested project details and access token', async () => {
+  test('--project prints only the requested project details and access token', async () => {
     const other = {
       ...record,
       claimToken: 'other-claim-secret',
@@ -209,7 +209,7 @@ describe('#projects:unclaimed', () => {
     }
     mockGet.mockReturnValue({[other.projectId]: other, [record.projectId]: record})
 
-    await UnclaimedProjectsCommand.run(['--project-id', record.projectId])
+    await UnclaimedProjectsCommand.run(['--project', record.projectId])
 
     const output = outputText()
     expect(output.split('\n')).toEqual(
@@ -231,7 +231,7 @@ describe('#projects:unclaimed', () => {
     expect(mockSet).not.toHaveBeenCalled()
   })
 
-  test('--project-id removes and reports a claimed project', async () => {
+  test('--project removes and reports a claimed project', async () => {
     const other = {
       ...record,
       claimToken: 'other-claim-secret',
@@ -242,7 +242,7 @@ describe('#projects:unclaimed', () => {
     mockGet.mockReturnValue({[other.projectId]: other, [record.projectId]: record})
     mockGetProjectClaimStatus.mockResolvedValue('claimed')
 
-    await UnclaimedProjectsCommand.run(['--project-id', record.projectId])
+    await UnclaimedProjectsCommand.run(['--project', record.projectId])
 
     expect(mockGetProjectClaimStatus).toHaveBeenCalledOnce()
     expect(mockGetProjectClaimStatus).toHaveBeenCalledWith(record.projectId, robotToken)
@@ -256,11 +256,11 @@ describe('#projects:unclaimed', () => {
     expect(outputText()).not.toContain(robotToken)
   })
 
-  test('--project-id removes and reports an expired project without checking remotely', async () => {
+  test('--project removes and reports an expired project without checking remotely', async () => {
     const expired = {...record, expiresAt: '2026-07-31T11:59:59.999Z'}
     mockGet.mockReturnValue({[expired.projectId]: expired})
 
-    await UnclaimedProjectsCommand.run(['--project-id', expired.projectId])
+    await UnclaimedProjectsCommand.run(['--project', expired.projectId])
 
     expect(mockGetProjectClaimStatus).not.toHaveBeenCalled()
     expect(mockDelete).toHaveBeenCalledWith('unclaimedProjects')
@@ -278,7 +278,7 @@ describe('#projects:unclaimed', () => {
       throw new Error('disk full')
     })
 
-    await UnclaimedProjectsCommand.run(['--project-id', expired.projectId])
+    await UnclaimedProjectsCommand.run(['--project', expired.projectId])
 
     expect(mocks.SanityCmdOutput.warn).toHaveBeenCalledWith(
       `Project "${expired.projectId}" expired, but its local recovery details could not be removed. Run this command again to retry.`,
@@ -288,10 +288,10 @@ describe('#projects:unclaimed', () => {
     expect(outputText()).not.toContain(expired.token)
   })
 
-  test('--project-id keeps details and warns when claim status cannot be verified', async () => {
+  test('--project keeps details and warns when claim status cannot be verified', async () => {
     mockGetProjectClaimStatus.mockResolvedValue('unknown')
 
-    await UnclaimedProjectsCommand.run(['--project-id', record.projectId])
+    await UnclaimedProjectsCommand.run(['--project', record.projectId])
 
     expect(mocks.SanityCmdOutput.warn).toHaveBeenCalledWith(
       `Could not verify whether project "${record.projectId}" is claimed. Local recovery details were kept. Run this command again to retry.`,
@@ -312,7 +312,7 @@ describe('#projects:unclaimed', () => {
   })
 
   test('reports a missing requested project without exposing other records', async () => {
-    await UnclaimedProjectsCommand.run(['--project-id', 'missing'])
+    await UnclaimedProjectsCommand.run(['--project', 'missing'])
 
     expect(mocks.SanityCmdOutput.error).toHaveBeenCalledWith(
       expect.stringContaining('No local recovery record found for project "missing"'),
@@ -344,7 +344,7 @@ describe('#projects:unclaimed', () => {
   test('does not activate credentials or mutate registry state', async () => {
     const originalToken = process.env.SANITY_AUTH_TOKEN
 
-    await UnclaimedProjectsCommand.run(['--project-id', record.projectId])
+    await UnclaimedProjectsCommand.run(['--project', record.projectId])
 
     expect(process.env.SANITY_AUTH_TOKEN).toBe(originalToken)
     expect(mockSet).not.toHaveBeenCalled()

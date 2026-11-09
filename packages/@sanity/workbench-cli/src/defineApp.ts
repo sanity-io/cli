@@ -28,7 +28,7 @@ export const DefineAppInputSchema = z
      * @internal
      */
     applicationType: z.optional(ApplicationType),
-    /** Default placement inherited by panel and window views. */
+    /** Default placement inherited by window views. */
     dock: z.optional(DockSchema),
     /**
      * App entrypoint module. Defaults to `./src/App.tsx` when omitted. The build
@@ -36,8 +36,13 @@ export const DefineAppInputSchema = z
      * on a studio is rejected (studio app views are not yet implemented).
      */
     entry: z.optional(z.string("must be a path to the app's entry file")),
-    /** Optional icon override (path to an SVG). Wins over manifest/studio icon. */
-    icon: z.optional(z.string()),
+    /**
+     * Path to an `.svg` file, relative to the project root. Other file types are
+     * rejected. Wins over manifest/studio icon.
+     */
+    icon: z.optional(
+      z.string().check(z.regex(/\.svg$/i, 'App `icon` must be a path to an .svg file')),
+    ),
     /** Sanity-owned app deployed once and installed per org. @internal */
     isSingleton: z.optional(z.boolean()),
     /**

@@ -25,7 +25,9 @@ import {type BuildOptions} from './types.js'
  *
  * @internal
  */
-export async function buildStudio(options: BuildOptions): Promise<void> {
+export async function buildStudio(
+  options: BuildOptions,
+): Promise<{mfManifest: Record<string, unknown> | undefined}> {
   const {calledFromDeploy, cliConfig, flags, outDir, output, workDir} = options
 
   // `views`/`webWorkers` live on the branded `defineApplication` result — resolve
@@ -38,7 +40,7 @@ export async function buildStudio(options: BuildOptions): Promise<void> {
   let cleanOutputDirSpinner: ReturnType<typeof spinner> | undefined
   let buildSpinner: ReturnType<typeof spinner> | undefined
 
-  await internalBuildStudio({
+  return internalBuildStudio({
     appId,
     autoUpdatesEnabled: options.autoUpdatesEnabled,
     checkAppId: () => {

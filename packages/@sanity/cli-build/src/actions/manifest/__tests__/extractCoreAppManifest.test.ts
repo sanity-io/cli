@@ -165,7 +165,7 @@ describe('extractCoreAppManifest', () => {
 
   test('rejects icon path that resolves outside project directory', async () => {
     mockGetCliConfig.mockResolvedValue({
-      app: {icon: '../../../etc/passwd', organizationId: 'org-1'},
+      app: {icon: '../../../etc/icon.svg', organizationId: 'org-1'},
     } as never)
 
     await expect(extractCoreAppManifest({workDir: '/project'})).rejects.toThrow(
@@ -175,9 +175,21 @@ describe('extractCoreAppManifest', () => {
     expect(mockReadFile).not.toHaveBeenCalled()
   })
 
+  test('rejects icon path that is not an .svg file', async () => {
+    mockGetCliConfig.mockResolvedValue({
+      app: {icon: 'src/icon.tsx', organizationId: 'org-1'},
+    } as never)
+
+    await expect(extractCoreAppManifest({workDir: '/project'})).rejects.toThrow(
+      'Icon path "src/icon.tsx" must point to an .svg file.',
+    )
+
+    expect(mockReadFile).not.toHaveBeenCalled()
+  })
+
   test('throws when file content does not look like SVG', async () => {
     mockGetCliConfig.mockResolvedValue({
-      app: {icon: 'public/icon.txt', organizationId: 'org-1'},
+      app: {icon: 'public/icon.svg', organizationId: 'org-1'},
     } as never)
     mockReadFile.mockResolvedValue('hello world')
 

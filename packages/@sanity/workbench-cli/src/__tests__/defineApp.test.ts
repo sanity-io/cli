@@ -154,12 +154,12 @@ describe('view declaration helpers', () => {
     ).toMatchObject({dock: {group: 'applications', order: 10}, surface: 'window'})
     expect(
       definePanelView({
-        dock: {group: 'user', order: 20},
+        dock: {order: 20},
         name: 'feed',
         src: './src/Feed.tsx',
         title: 'Feed',
       }),
-    ).toMatchObject({dock: {group: 'user', order: 20}, surface: 'panel'})
+    ).toMatchObject({dock: {order: 20}, surface: 'panel'})
   })
 })
 
@@ -253,6 +253,26 @@ describe('DefineAppInputSchema (build-time validation)', () => {
     expect(parsed.dock).toEqual({group: 'system', order: 20})
     expect(DefineAppInputSchema.safeParse(validInput({dock: {}})).success).toBe(true)
     expect(DefineAppInputSchema.safeParse(validInput({dock: {group: 'nope'}})).success).toBe(false)
+    expect(DefineAppInputSchema.safeParse(validInput({dock: {group: 'user'}})).success).toBe(false)
+  })
+
+  test("drops a panel view's group, keeping its order", () => {
+    const parsed = DefineAppInputSchema.parse(
+      validInput({
+        views: [
+          {
+            dock: {group: 'user', order: 20},
+            name: 'feed',
+            src: './src/Feed.tsx',
+            surface: 'panel',
+            title: 'Feed',
+          },
+        ],
+      }),
+    )
+    expect(parsed.views).toStrictEqual([
+      {dock: {order: 20}, name: 'feed', src: './src/Feed.tsx', surface: 'panel', title: 'Feed'},
+    ])
   })
 
   test('accepts a valid visibility, rejecting an out-of-set value', () => {
@@ -260,6 +280,20 @@ describe('DefineAppInputSchema (build-time validation)', () => {
       'unlisted',
     )
     expect(DefineAppInputSchema.safeParse(validInput({visibility: 'hidden'})).success).toBe(false)
+  })
+
+  test('accepts an .svg icon path with any extension casing, rejecting other file types', () => {
+    expect(DefineAppInputSchema.safeParse(validInput({icon: './icon.svg'})).success).toBe(true)
+    expect(DefineAppInputSchema.safeParse(validInput({icon: './ICON.SVG'})).success).toBe(true)
+
+    const result = DefineAppInputSchema.safeParse(validInput({icon: './src/icon.tsx'}))
+
+    expect(result.error?.issues).toEqual([
+      expect.objectContaining({
+        message: 'App `icon` must be a path to an .svg file',
+        path: ['icon'],
+      }),
+    ])
   })
 
   test('accepts a panel view declaration', () => {

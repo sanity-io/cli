@@ -29,7 +29,7 @@ interface CreateOrSelectProjectStep {
 
 interface CreateOrSelectDatasetStep {
   datasetName: string
-  selectedOption: 'create' | 'none' | 'select'
+  selectedOption: 'create' | 'none' | 'select' | 'skip'
   step: 'createOrSelectDataset'
 
   visibility?: 'private' | 'public'
@@ -38,8 +38,6 @@ interface CreateOrSelectDatasetStep {
 interface UseDefaultPlanCoupon {
   selectedOption: 'no' | 'yes'
   step: 'useDefaultPlanCoupon'
-
-  coupon?: string
 }
 
 interface UseDefaultPlanId {
@@ -120,5 +118,5 @@ export type InitStepResult =
 export const CLIInitStepCompleted = defineTrace<InitStepResult>({
   description: 'User completed a step in the CLI init flow',
   name: 'CLI Init Step Completed',
-  version: 1,
+  version: 2,
 })

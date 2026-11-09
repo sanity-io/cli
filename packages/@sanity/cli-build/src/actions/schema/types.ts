@@ -23,6 +23,7 @@ export const buildStudioSchemasAndManifestsWorkerData = z.object({
   isExternal: z.boolean(),
   outPath: z.string(),
   projectId: z.string(),
+  schemaRequired: z.boolean(),
   verbose: z.boolean(),
   workDir: z.string(),
 })

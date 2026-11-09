@@ -5,6 +5,7 @@ import {isHttpError} from '@sanity/client'
 
 import {rotateToken} from '../../services/tokens.js'
 import {readTokenFromStdin} from '../../util/readTokenFromStdin.js'
+import {defineCommandTelemetry} from '../../util/telemetry/commandTelemetry.js'
 
 const tokensRotateDebug = subdebug('tokens:rotate')
 
@@ -13,6 +14,8 @@ const TOKEN_USAGE_HINT =
 
 export class RotateTokenCommand extends SanityCommand<typeof RotateTokenCommand> {
   static override description = 'Rotate an API token, replacing its secret with a new one'
+
+  static override enableJsonFlag = true
 
   static override examples = [
     {
@@ -30,10 +33,6 @@ export class RotateTokenCommand extends SanityCommand<typeof RotateTokenCommand>
   ]
 
   static override flags = {
-    json: Flags.boolean({
-      default: false,
-      description: 'Output as JSON',
-    }),
     token: Flags.string({
       char: 't',
       description: 'Token to rotate (prefer standard input to keep it out of shell history)',
@@ -42,6 +41,8 @@ export class RotateTokenCommand extends SanityCommand<typeof RotateTokenCommand>
   }
 
   static override hiddenAliases: string[] = ['token:rotate']
+
+  static telemetry = defineCommandTelemetry(this.flags, {redact: ['token']})
 
   public async run(): Promise<void> {
     const {flags} = await this.parse(RotateTokenCommand)
@@ -54,7 +55,7 @@ export class RotateTokenCommand extends SanityCommand<typeof RotateTokenCommand>
       const robot = await rotateToken(token)
 
       if (json) {
-        this.log(JSON.stringify(robot, null, 2))
+        this.logJson(robot)
         return
       }
 

@@ -98,6 +98,7 @@ export const apiRoutes: ApiRouteEntry[] = [
       'installations/{installationId}/configs',
       'installations/{installationId}/configs/{configId}',
       'installations/{installationId}/interfaces',
+      'organizations/{organizationId}/applications/{applicationId}',
       'projects/{projectId}/user-applications',
       'projects/{projectId}/user-applications/{userApplicationId}',
       'projects/{projectId}/user-applications/{userApplicationId}/config/{configKey}',
@@ -139,6 +140,7 @@ export const apiRoutes: ApiRouteEntry[] = [
       'installations/{installationId}/configs',
       'installations/{installationId}/configs/{configId}',
       'installations/{installationId}/interfaces',
+      'organizations/{organizationId}/applications/{applicationId}',
       'projects/{projectId}/user-applications',
       'projects/{projectId}/user-applications/{userApplicationId}',
       'projects/{projectId}/user-applications/{userApplicationId}/config/{configKey}',
@@ -196,6 +198,34 @@ export const apiRoutes: ApiRouteEntry[] = [
     defaultApiVersion: 'vX',
     host: 'global',
     pathPatterns: [
+      'collaboration/comments',
+      'collaboration/comments/listen',
+      'collaboration/comments/query',
+      'collaboration/comments/{id}',
+      'collaboration/comments/{id}/reactions',
+      'collaboration/comments/{id}/reactions/{shortName}'
+    ],
+    slug: 'comments-api',
+    title: 'Comments API reference'
+  },
+  {
+    defaultApiVersion: 'vX',
+    host: 'project',
+    pathPatterns: [
+      'collaboration/comments',
+      'collaboration/comments/listen',
+      'collaboration/comments/query',
+      'collaboration/comments/{id}',
+      'collaboration/comments/{id}/reactions',
+      'collaboration/comments/{id}/reactions/{shortName}'
+    ],
+    slug: 'comments-api',
+    title: 'Comments API reference'
+  },
+  {
+    defaultApiVersion: 'vX',
+    host: 'global',
+    pathPatterns: [
       'agent/prompt',
       'agent/{organizationId}/threads/{threadId}'
     ],
@@ -206,6 +236,7 @@ export const apiRoutes: ApiRouteEntry[] = [
     defaultApiVersion: 'v2025-02-19',
     host: 'global',
     pathPatterns: [
+      'projects/{projectId}/datasets/copy',
       'projects/{projectId}/datasets/{dataset}/copy'
     ],
     slug: 'copy',
@@ -232,7 +263,7 @@ export const apiRoutes: ApiRouteEntry[] = [
     title: 'Embeddings Index API reference (deprecated)'
   },
   {
-    defaultApiVersion: 'v2021-03-25',
+    defaultApiVersion: 'v2025-02-19',
     host: 'project',
     pathPatterns: [
       'data/export/{dataset}'
@@ -316,7 +347,7 @@ export const apiRoutes: ApiRouteEntry[] = [
     title: 'Media Library API reference'
   },
   {
-    defaultApiVersion: 'v2025-02-19',
+    defaultApiVersion: 'v2025-09-09',
     host: 'project',
     pathPatterns: [
       'media-libraries/{libraryId}/from-url',
@@ -355,6 +386,7 @@ export const apiRoutes: ApiRouteEntry[] = [
       'projects/{projectId}/cors',
       'projects/{projectId}/cors/{id}',
       'projects/{projectId}/datasets',
+      'projects/{projectId}/datasets/copy',
       'projects/{projectId}/datasets/{datasetName}/tags/{tagIdentifier}',
       'projects/{projectId}/datasets/{name}',
       'projects/{projectId}/datasets/{name}/copy',
@@ -384,16 +416,19 @@ export const apiRoutes: ApiRouteEntry[] = [
     defaultApiVersion: 'v2021-10-04',
     host: 'global',
     pathPatterns: [
+      'auth/organizations/{organizationId}/providers/{providerId}/projects/{projectId}/role-mappings',
       'organizations/{organizationId}/acl',
       'organizations/{organizationId}/acl/{sanityUserId}',
       'organizations/{organizationId}/grants',
-      'organizations/{organizationId}/providers/{providerId}/projects/{projectId}/role-mappings',
       'projects/{projectId}/acl',
-      'projects/{projectId}/acl/{userId}',
+      'projects/{projectId}/acl/{projectUserId}',
       'projects/{projectId}/datasets/{datasetName}/acl',
       'projects/{projectId}/datasets/{datasetName}/grants',
       'projects/{projectId}/grants',
+      'projects/{projectId}/grants/{projectUserId}',
       'projects/{projectId}/permissionResourceSchemas',
+      'projects/{projectId}/permissionResources',
+      'projects/{projectId}/permissionResources/{resourceId}',
       'projects/{projectId}/roles',
       'projects/{projectId}/roles/{roleName}'
     ],
@@ -430,9 +465,11 @@ export const apiRoutes: ApiRouteEntry[] = [
     host: 'project',
     pathPatterns: [
       'hooks/projects/{projectId}',
+      'hooks/projects/{projectId}/attempts/{attemptId}',
       'hooks/projects/{projectId}/{id}',
       'hooks/projects/{projectId}/{id}/attempts',
-      'hooks/{id}/messages'
+      'hooks/projects/{projectId}/{id}/messages',
+      'hooks/projects/{projectId}/{id}/messages/{messageId}/attempts'
     ],
     slug: 'webhooks',
     title: 'Webhooks API reference'

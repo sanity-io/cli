@@ -1,3 +1,4 @@
+import {type WorkspaceSchemaInput} from '@sanity/cli-build/_internal/manifest'
 import {StudioManifest} from 'sanity'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
@@ -11,7 +12,7 @@ const mockWorkerBuildStudioSchemasAndManifests = vi.hoisted(() => vi.fn())
 const mockExtractValidationFromSchemaError = vi.hoisted(() => vi.fn())
 const mockUpdateWorkspacesSchemas = vi.hoisted(() => vi.fn())
 
-vi.mock('@sanity/cli-build/_internal/extract', () => ({
+vi.mock(import('@sanity/cli-build/_internal/extract'), () => ({
   extractValidationFromSchemaError: mockExtractValidationFromSchemaError,
   workerBuildStudioSchemasAndManifests: mockWorkerBuildStudioSchemasAndManifests,
 }))
@@ -33,15 +34,13 @@ const studioManifest: StudioManifest = {
   workspaces: [],
 }
 
-function createWorkspaceManifest(overrides: Record<string, unknown> = {}) {
+function createSchemaInput(overrides: Partial<WorkspaceSchemaInput> = {}): WorkspaceSchemaInput {
   return {
-    basePath: '/',
     dataset: 'production',
+    manifestSchema: [{name: 'post', type: 'document'}],
     name: 'default',
     projectId,
-    schema: [{name: 'post', type: 'document'}],
     title: 'Default',
-    tools: [],
     ...overrides,
   }
 }
@@ -73,17 +72,19 @@ function createPort() {
   }
 }
 
-/** The manifests the stubbed build hands to the worker's `workspaceManifestsHandler`. */
-let handedManifests: Record<string, unknown>[] = []
+/**
+ * The schema inputs the stubbed build hands to the worker's `workspaceSchemaHandler`.
+ */
+let handedSchemaInputs: WorkspaceSchemaInput[] = []
 
 beforeEach(() => {
-  handedManifests = [createWorkspaceManifest()]
+  handedSchemaInputs = [createSchemaInput()]
   mockExtractValidationFromSchemaError.mockResolvedValue(undefined)
   mockUpdateWorkspacesSchemas.mockResolvedValue(undefined)
   // Mirrors cli-build: the build invokes the handler, and a handler failure fails the build.
   mockWorkerBuildStudioSchemasAndManifests.mockImplementation(async (options) => {
-    await options.workspaceManifestsHandler?.(handedManifests)
-    return {studioManifest, type: 'success', workspaceManifests: handedManifests}
+    await options.workspaceSchemaHandler?.(handedSchemaInputs)
+    return {schemaInputs: handedSchemaInputs, studioManifest, type: 'success'}
   })
 })
 
@@ -114,7 +115,7 @@ describe('deployStudioSchemasAndManifestsWorker', () => {
         schemaRequired: false,
         verbose: true,
         workDir: '/studio',
-        workspaceManifestsHandler: expect.any(Function),
+        workspaceSchemaHandler: expect.any(Function),
       }),
     )
   })
@@ -131,23 +132,23 @@ describe('deployStudioSchemasAndManifestsWorker', () => {
   })
 
   describe('schema deployment', () => {
-    test('maps workspace manifests onto schema inputs', async () => {
+    test('deploys the schema inputs handed back by the build', async () => {
       const {port} = createPort()
-      handedManifests = [
-        createWorkspaceManifest(),
-        createWorkspaceManifest({
+      handedSchemaInputs = [
+        createSchemaInput(),
+        createSchemaInput({
           dataset: 'staging',
+          manifestSchema: [{name: 'author', type: 'document'}],
           name: 'staging',
           projectId: 'other-project',
-          schema: [{name: 'author', type: 'document'}],
           title: undefined,
         }),
       ]
 
-      await deployStudioSchemasAndManifestsWorker(port, createWorkerData({verbose: true}))
+      await deployStudioSchemasAndManifestsWorker(port, createWorkerData())
 
       expect(mockUpdateWorkspacesSchemas).toHaveBeenCalledWith({
-        verbose: true,
+        verbose: false,
         workspaces: [
           {
             dataset: 'production',
@@ -167,53 +168,14 @@ describe('deployStudioSchemasAndManifestsWorker', () => {
       })
     })
 
-    test('deploys schemas for an internal studio', async () => {
+    test('passes the verbose flag through to the schema deployment', async () => {
       const {port} = createPort()
 
-      await deployStudioSchemasAndManifestsWorker(
-        port,
-        createWorkerData({isExternal: false, schemaRequired: false}),
+      await deployStudioSchemasAndManifestsWorker(port, createWorkerData({verbose: true}))
+
+      expect(mockUpdateWorkspacesSchemas).toHaveBeenCalledWith(
+        expect.objectContaining({verbose: true}),
       )
-
-      expect(mockUpdateWorkspacesSchemas).toHaveBeenCalledTimes(1)
-    })
-
-    test('skips deployment for an external studio that does not require the schema', async () => {
-      const {messages, port} = createPort()
-
-      await deployStudioSchemasAndManifestsWorker(
-        port,
-        createWorkerData({isExternal: true, schemaRequired: false}),
-      )
-
-      expect(mockUpdateWorkspacesSchemas).not.toHaveBeenCalled()
-      // The build still completes and reports back
-      expect(messages).toEqual([{studioManifest, type: 'success'}])
-    })
-
-    test('deploys schemas for an external studio when the schema is required', async () => {
-      const {port} = createPort()
-
-      await deployStudioSchemasAndManifestsWorker(
-        port,
-        createWorkerData({isExternal: true, schemaRequired: true}),
-      )
-
-      expect(mockUpdateWorkspacesSchemas).toHaveBeenCalledTimes(1)
-    })
-
-    test('does not run the handler when the build never calls it', async () => {
-      const {messages, port} = createPort()
-      mockWorkerBuildStudioSchemasAndManifests.mockResolvedValue({
-        studioManifest: null,
-        type: 'success',
-        workspaceManifests: [],
-      })
-
-      await deployStudioSchemasAndManifestsWorker(port, createWorkerData())
-
-      expect(mockUpdateWorkspacesSchemas).not.toHaveBeenCalled()
-      expect(messages).toEqual([{studioManifest: null, type: 'success'}])
     })
   })
 

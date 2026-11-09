@@ -4,6 +4,7 @@ import {exitCodes, SanityCommand} from '@sanity/cli-core'
 import {listSchemas} from '../../actions/schema/listSchemas.js'
 import {schemasListDebug} from '../../actions/schema/utils/debug.js'
 import {parseWorkspaceSchemaId} from '../../actions/schema/utils/schemaStoreValidation.js'
+import {defineCommandTelemetry} from '../../util/telemetry/commandTelemetry.js'
 
 const description = `
 List all schemas in the current dataset.
@@ -15,6 +16,8 @@ Regenerates a manifest file by default. To reuse an existing manifest, use --no-
 
 export class ListSchemaCommand extends SanityCommand<typeof ListSchemaCommand> {
   static override description = description
+
+  static override enableJsonFlag = true
 
   static override examples = [
     {
@@ -46,9 +49,6 @@ export class ListSchemaCommand extends SanityCommand<typeof ListSchemaCommand> {
       description: 'Fetch a single schema by id',
       helpValue: '<schema_id>',
     }),
-    json: Flags.boolean({
-      description: 'Get schema as json',
-    }),
     'manifest-dir': Flags.directory({
       default: './dist/static',
       description: 'Directory containing manifest file',
@@ -58,6 +58,8 @@ export class ListSchemaCommand extends SanityCommand<typeof ListSchemaCommand> {
   }
 
   static override hiddenAliases: string[] = ['schema:list']
+
+  static telemetry = defineCommandTelemetry(this.flags, {redact: ['manifest-dir']})
 
   public async run(): Promise<void> {
     const {flags} = await this.parse(ListSchemaCommand)

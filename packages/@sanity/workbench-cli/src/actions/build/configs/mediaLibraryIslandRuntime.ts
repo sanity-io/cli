@@ -1,5 +1,4 @@
-import {createRequire} from 'node:module'
-import path from 'node:path'
+import {resolveLocalPackagePath} from '@sanity/cli-core'
 
 /**
  * The `sanity` package entry carrying the Media Library island-mount runtime
@@ -19,7 +18,7 @@ export const MEDIA_LIBRARY_ISLAND_RUNTIME_MODULE = 'sanity/media-library-island-
  */
 export function hasMediaLibraryIslandRuntime(appRoot: string): boolean {
   try {
-    createRequire(path.join(appRoot, 'package.json')).resolve(MEDIA_LIBRARY_ISLAND_RUNTIME_MODULE)
+    resolveLocalPackagePath(MEDIA_LIBRARY_ISLAND_RUNTIME_MODULE, appRoot)
     return true
   } catch {
     return false

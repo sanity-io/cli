@@ -14,6 +14,7 @@ import {
   getApplicationUrl,
   getWorkbench,
   getWorkbenchUrl,
+  selectWorkbenchAppId,
   toWorkbenchPayload,
 } from '@sanity/workbench-cli/deploy'
 import {type StudioManifest} from 'sanity'
@@ -23,6 +24,7 @@ import {createDeployment, type UserApplication} from '../../services/userApplica
 import {getAppId} from '../../util/appId.js'
 import {NO_ORGANIZATION_ID, NO_PROJECT_ID} from '../../util/errorMessages.js'
 import {buildStudio} from '../build/buildStudio.js'
+import {checkBlueprintManaged} from './blueprintManaged.js'
 import {createStudioUserApplication} from './createUserApplication.js'
 import {
   checkAutoUpdates,
@@ -90,12 +92,15 @@ async function runStudioDeployment(
         },
   )
 
+  await checkBlueprintManaged(reporter, {kind: 'studio', projectRootDir: workDir})
+
   // Workbench studios deploy to Brett (which needs the org); plain studios
   // resolve/create on user-applications, unchanged.
   let application: UserApplication | null = null
   let studioCreated = false
   let workbenchApp: {externalUrl?: string} | undefined
   let externalUrl: string | undefined
+  let targetAppId = appId
   if (workbench) {
     reporter.report(
       organizationId
@@ -106,16 +111,17 @@ async function runStudioDeployment(
             status: 'fail',
           },
     )
+    targetAppId = await selectWorkbenchAppId({appId, flags, organizationId, type: 'studio'})
     workbenchApp = (
       await checkStudioTarget(reporter, {
-        appId,
+        appId: targetAppId,
         isWorkbenchApp: true,
         organizationId,
         slug: workbench.slug,
         title: appTitle,
       })
     )?.application
-    if (isExternal) externalUrl = checkExternalUrl(reporter, {appId, url: flags.url})
+    if (isExternal) externalUrl = checkExternalUrl(reporter, {appId: targetAppId, url: flags.url})
   } else {
     ;({application, created: studioCreated} = await resolveStudioApplication(options, {
       dryRun,
@@ -142,7 +148,7 @@ async function runStudioDeployment(
 
   // Create the studio before the build so the bundle carries its real id. A
   // redeploy already has it from `deployment.appId`; a dry run skips creation.
-  let applicationId = appId
+  let applicationId = targetAppId
   let applicationCreated = false
   let rollbackApp: (() => Promise<void>) | undefined
   if (!dryRun && workbench && organizationId && !applicationId) {
@@ -164,7 +170,7 @@ async function runStudioDeployment(
   // A record created above is stranded at its slug (and blocks retries) if any
   // step before it fully deploys fails, so undo the creation on failure.
   try {
-    await checkBuild(reporter, {
+    const built = await checkBuild(reporter, {
       build: () =>
         buildStudio({
           applicationId: workbench ? applicationId : undefined,
@@ -180,8 +186,10 @@ async function runStudioDeployment(
       successMessage: 'Studio built',
     })
 
-    if (!isLegacyExternal) {
-      await verifyOutputDir({isWorkbenchApp, reporter, sourceDir})
+    let mfManifest = built?.mfManifest
+    // A federated build has already read its manifest; anything else verifies the directory.
+    if (mfManifest === undefined && !isLegacyExternal) {
+      mfManifest = await verifyOutputDir({isWorkbenchApp, reporter, sourceDir})
     }
 
     const interfaces = workbench ? reportInterfaces(reporter, workbench) : null
@@ -210,6 +218,7 @@ async function runStudioDeployment(
     // The studio was created (or resolved from `deployment.appId`) before the
     // build, so this only ships the deployment; plain studios use user-applications.
     if (workbench && organizationId && applicationId) {
+      if (!mfManifest) throw new Error('The federated build produced no manifest.')
       await deployWorkbenchApp({
         access: toAccess(studioManifest),
         app: cliConfig.app,
@@ -219,6 +228,7 @@ async function runStudioDeployment(
         isAutoUpdating,
         isExternal: isExternallyHosted,
         label: 'Deploying studio',
+        mfManifest,
         // Once the deployment is live, a metadata-sync failure must not delete
         // the studio.
         onDeployed: () => {
@@ -231,7 +241,12 @@ async function runStudioDeployment(
         visibility: workbench.visibility,
         workspaces: toWorkspaces(studioManifest),
       })
-      const url = getApplicationUrl({id: applicationId, organizationId, type: 'studio'})
+      const url = getApplicationUrl({
+        id: applicationId,
+        organizationId,
+        slug: workbench.slug,
+        type: 'studio',
+      })
       logWorkbenchStudioDeployed({applicationId, cliConfig, output, url})
       if (isExternallyHosted)
         logExternalHost({built: flags.build, organizationId, output, sourceDir})

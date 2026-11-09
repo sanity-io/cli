@@ -1,4 +1,4 @@
-import {dirname, isAbsolute, join, relative} from 'node:path'
+import {basename, dirname, isAbsolute, relative, resolve} from 'node:path'
 
 import {
   createSchemaPatternMatcher,
@@ -11,6 +11,7 @@ import {exitCodes, type Output} from '@sanity/cli-core'
 import {spinner} from '@sanity/cli-core/ux'
 import {watch as chokidarWatch, type FSWatcher} from 'chokidar'
 import debounce from 'lodash-es/debounce.js'
+import picomatch from 'picomatch'
 
 import {schemasExtractDebug} from './utils/debug.js'
 
@@ -20,14 +21,51 @@ export const DEFAULT_WATCH_PATTERNS = [
   'schema*/**/*.{js,jsx,ts,tsx,mjs}',
 ]
 
-/** Default patterns to ignore when watching */
-const IGNORED_PATTERNS = [
-  '**/node_modules/**',
-  '**/.git/**',
-  '**/dist/**',
-  '**/lib/**',
-  '**/.sanity/**',
-]
+/**
+ * Directory names never descended into, unless a watch pattern names one directly. chokidar 4 and
+ * later reject glob `ignored` patterns, so this matches on the directory name alone.
+ */
+const IGNORED_DIRECTORIES = new Set([
+  '.astro',
+  '.cache',
+  '.git',
+  '.next',
+  '.nuxt',
+  '.output',
+  '.sanity',
+  '.svelte-kit',
+  '.turbo',
+  '.vercel',
+  'build',
+  'coverage',
+  'dist',
+  'lib',
+  'node_modules',
+  'out',
+])
+
+/**
+ * Returns `pattern` relative to `workDir` with forward slashes, so one string can feed both the
+ * base scan and the matcher. A pattern with no glob characters names a file or a directory, and a
+ * directory matches everything inside it.
+ */
+function normalizeWatchPattern(pattern: string, workDir: string): string[] {
+  const normalized = relative(workDir, resolve(workDir, pattern)).replaceAll('\\', '/')
+  if (!normalized) return ['**']
+  return picomatch.scan(normalized).isGlob ? [normalized] : [normalized, `${normalized}/**`]
+}
+
+/**
+ * Returns the directories to hand chokidar for `patterns`, deduplicated.
+ *
+ * chokidar 4 and later do not expand globs, so a pattern cannot be watched directly: it has to
+ * be reduced to its static base directory, with `isMatch` filtering the events that base emits.
+ * Both default patterns begin with a glob segment, so both reduce to `workDir` itself.
+ */
+function watchRootsFor(patterns: string[], workDir: string): string[] {
+  const bases = patterns.map((pattern) => resolve(workDir, picomatch.scan(pattern).base))
+  return [...new Set(bases)]
+}
 
 interface ExtractSchemaWatcherOptions {
   extractOptions: ExtractOptions
@@ -146,8 +184,6 @@ export async function startExtractSchemaWatcher(
   // Run initial extraction
   await runExtraction()
 
-  const absoluteWatchPatterns = watchPatterns.map((pattern) => join(workDir, pattern))
-
   // Create extraction runner with concurrency control
   const {runExtraction: runConcurrentExtraction} = createExtractionRunner(async () => {
     await runExtraction()
@@ -158,16 +194,30 @@ export async function startExtractSchemaWatcher(
     void runConcurrentExtraction()
   }, 1000)
 
-  const {isMatch} = createSchemaPatternMatcher(watchPatterns)
+  const normalizedPatterns = watchPatterns.flatMap((pattern) =>
+    normalizeWatchPattern(pattern, workDir),
+  )
+  const {isMatch} = createSchemaPatternMatcher(normalizedPatterns)
 
-  const watcher: FSWatcher = chokidarWatch(absoluteWatchPatterns, {
+  const watchRoots = watchRootsFor(normalizedPatterns, workDir)
+  // A pattern can name a directory this would otherwise skip, such as the documented
+  // `--watch-patterns "lib/**/*.ts"`. chokidar asks about each root before descending, so
+  // skipping one there would leave it unwatched and silently match nothing.
+  const watchRootSet = new Set(watchRoots)
+  // Every extraction rewrites this file. Watching it would make each run trigger the next.
+  const outputFile = resolve(workDir, outputPath).toLowerCase()
+  const isOutputFile = (path: string) => resolve(workDir, path).toLowerCase() === outputFile
+
+  const watcher: FSWatcher = chokidarWatch(watchRoots, {
     cwd: workDir,
-    ignored: IGNORED_PATTERNS,
+    ignored: (path) =>
+      isOutputFile(path) ||
+      (!watchRootSet.has(resolve(workDir, path)) && IGNORED_DIRECTORIES.has(basename(path))),
     ignoreInitial: true,
   })
 
   watcher.on('all', (event, filePath) => {
-    if (!isMatch(filePath, workDir)) {
+    if (isOutputFile(filePath) || !isMatch(filePath, workDir)) {
       return
     }
 
@@ -178,7 +228,11 @@ export async function startExtractSchemaWatcher(
   })
 
   watcher.on('error', (err) => {
-    output.error(`Watcher error: ${err instanceof Error ? err.message : String(err)}`)
+    // `output.error` throws unless told not to exit. A watch session should survive a transient
+    // fs error such as EMFILE or an inotify limit, the way the typegen watcher does.
+    output.error(`Watcher error: ${err instanceof Error ? err.message : String(err)}`, {
+      exit: false,
+    })
   })
 
   return {

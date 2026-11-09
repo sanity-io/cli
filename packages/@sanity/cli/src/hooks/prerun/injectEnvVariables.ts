@@ -3,9 +3,8 @@ import {styleText} from 'node:util'
 import {type Hook} from '@oclif/core'
 import {warn} from '@oclif/core/ux'
 import {debug, findProjectRoot, type ProjectRootResult} from '@sanity/cli-core'
+import {getSanityEnv} from '@sanity/cli-core/util'
 import {loadEnv} from 'vite'
-
-import {getSanityEnv} from '../../util/getSanityEnv.js'
 
 export const injectEnvVariables: Hook.Prerun = async function ({Command}) {
   let workDir: ProjectRootResult | undefined

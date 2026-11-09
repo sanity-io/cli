@@ -1,12 +1,12 @@
-import {typeid} from 'typeid-js'
+import {randomUUID} from 'node:crypto'
 
 type TraceId = string & {__type: 'TraceId'}
 
 /**
- * Creates a unique trace ID using typeid
+ * Creates a unique ID for correlating telemetry events within a trace.
  *
  * @internal
  */
 export function createTraceId(): TraceId {
-  return typeid('trace').toString() as TraceId
+  return `trace_${randomUUID()}` as TraceId
 }

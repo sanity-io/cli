@@ -2,11 +2,11 @@ import {afterEach, describe, expect, test} from 'vitest'
 
 import {renderRemote} from './render-remote.js'
 
-const MODULE_SLOT = Symbol.for('sanity.os.module')
+const ROOT_SLOT = Symbol.for('sanity.os.root')
 const STYLIS_PLUGIN_COUNT = Symbol.for('sanity.os.stylisPluginCount')
 
 /** A minimal stand-in for a React module: only the members the wrapper touches. */
-type Ctx = {_default: unknown; Provider: 'Provider'}
+type Ctx = {_default: unknown; Provider: object}
 type ReactStub = {
   Activity: 'Activity'
   createContext: (defaultValue: unknown) => Ctx
@@ -19,18 +19,31 @@ type Root = {render: (element: Element) => void; unmount: () => void}
 function makeReact(): ReactStub {
   return {
     Activity: 'Activity',
-    createContext: (defaultValue) => ({_default: defaultValue, Provider: 'Provider'}),
+    createContext: (defaultValue) => ({_default: defaultValue, Provider: {}}),
     createElement: (type, props, ...children) => ({children, props, type}),
     StrictMode: 'StrictMode',
   }
 }
 
-/** Walk the wrapper chain (Activity, StrictMode, ...) down to the ModuleContext.Provider. */
-function providerOf(element: Element): Element {
-  let node = element
-  while (node && node.type !== 'Provider') node = (node.children as Element[])[0]
+/** Walk the wrapper chain (Activity, StrictMode, providers) to the first element that matches. */
+function find(element: Element, matches: (node: Element) => boolean): Element | undefined {
+  let node: Element | undefined = element
+  while (node && !matches(node)) node = (node.children as Element[])[0]
   return node
 }
+
+type RootValue = {moduleId?: string; parentKey?: string; signal: AbortSignal}
+
+/** The value of the root context the wrapper stored for this React copy. */
+function rootValueOf(element: Element, React: ReactStub): RootValue | undefined {
+  const context = (
+    (globalThis as Record<symbol, unknown>)[ROOT_SLOT] as WeakMap<object, Ctx> | undefined
+  )?.get(React.createContext)
+  const provider = context && find(element, (node) => node.type === context.Provider)
+  return (provider?.props as {value: RootValue} | undefined)?.value
+}
+
+const appOf = (element: Element) => find(element, (node) => typeof node.type === 'function')
 
 /** Walk the wrapper chain down to the StyleSheetManager and read its props. */
 function styleSheetManagerPropsOf(element: Element) {
@@ -105,11 +118,11 @@ const loadIsolated = () =>
 
 afterEach(() => {
   // Each test owns the slot; drop it so a fresh WeakMap is created next run.
-  delete (globalThis as Record<symbol, unknown>)[MODULE_SLOT]
+  delete (globalThis as Record<symbol, unknown>)[ROOT_SLOT]
   delete (globalThis as Record<symbol, unknown>)[STYLIS_PLUGIN_COUNT]
 })
 
-describe('renderRemote module context', () => {
+describe('renderRemote root context', () => {
   test('keeps the stylesheet attached until React finishes unmounting', () => {
     const events: string[] = []
     const target = {remove: () => events.push('remove stylesheet')}
@@ -149,11 +162,11 @@ describe('renderRemote module context', () => {
     expect(rerendered.stylisPlugins).toBe(mounted.stylisPlugins)
   })
 
-  test('sources ModuleContext from the symbol-keyed WeakMap<createContext, Context>', () => {
+  test('sources RootContext from the symbol-keyed WeakMap<createContext, Context>', () => {
     const React = makeReact()
     loadWrapper(renderRemote({app: APP, preamble: ''}), React).render({}, {}, {})
 
-    const slot = (globalThis as Record<symbol, unknown>)[MODULE_SLOT] as WeakMap<object, Ctx>
+    const slot = (globalThis as Record<symbol, unknown>)[ROOT_SLOT] as WeakMap<object, Ctx>
     expect(slot).toBeInstanceOf(WeakMap)
     // The key is the createContext function, not the namespace object: the SDK reads the
     // slot with the same key, and namespace objects can differ under bundler interop.
@@ -168,7 +181,7 @@ describe('renderRemote module context', () => {
     loadWrapper(renderRemote({app: APP, preamble: ''}), React).render({}, {}, {})
     loadWrapper(renderRemote({app: APP, preamble: ''}), interopCopy).render({}, {}, {})
 
-    const slot = (globalThis as Record<symbol, unknown>)[MODULE_SLOT] as WeakMap<object, Ctx>
+    const slot = (globalThis as Record<symbol, unknown>)[ROOT_SLOT] as WeakMap<object, Ctx>
     expect(slot.get(React.createContext)).toBe(slot.get(interopCopy.createContext))
   })
 
@@ -182,7 +195,7 @@ describe('renderRemote module context', () => {
     const other = {}
     second.render(other, {}, {moduleId: 'favorites/views/list/panel'})
 
-    const slot = (globalThis as Record<symbol, unknown>)[MODULE_SLOT] as WeakMap<object, Ctx>
+    const slot = (globalThis as Record<symbol, unknown>)[ROOT_SLOT] as WeakMap<object, Ctx>
     // Both wrappers wrote/read the WeakMap, so a single Context object exists.
     expect(slot.get(React.createContext)).toBeDefined()
   })
@@ -193,32 +206,51 @@ describe('renderRemote module context', () => {
     loadWrapper(renderRemote({app: APP, preamble: ''}), reactA).render({}, {}, {})
     loadWrapper(renderRemote({app: APP, preamble: ''}), reactB).render({}, {}, {})
 
-    const slot = (globalThis as Record<symbol, unknown>)[MODULE_SLOT] as WeakMap<object, Ctx>
+    const slot = (globalThis as Record<symbol, unknown>)[ROOT_SLOT] as WeakMap<object, Ctx>
     expect(slot.get(reactA.createContext)).not.toBe(slot.get(reactB.createContext))
   })
 
-  test('passes renderOptions.moduleId as the provider value, wrapping App', () => {
+  test('passes renderOptions.moduleId and parentKey in the root context, and props to App', () => {
     const React = makeReact()
     const mod = loadWrapper(renderRemote({app: APP, preamble: ''}), React)
-    const moduleId = 'favorites/views/list/panel'
-    mod.render({}, {greeting: 'hi'}, {moduleId})
+    mod.render(
+      {},
+      {greeting: 'hi'},
+      {moduleId: 'favorites/views/inbox/tile', parentKey: 'home-key'},
+    )
 
-    const provider = providerOf(mod.rendered[0])
-    expect(provider.type).toBe('Provider')
-    expect((provider.props as {value: unknown}).value).toBe(moduleId)
-    const [appElement] = provider.children as Element[]
-    expect((appElement.props as {greeting: string}).greeting).toBe('hi')
+    expect(rootValueOf(mod.rendered[0], React)).toEqual({
+      moduleId: 'favorites/views/inbox/tile',
+      parentKey: 'home-key',
+      signal: expect.any(AbortSignal),
+    })
+    expect(appOf(mod.rendered[0])?.props).toEqual({greeting: 'hi'})
   })
 
-  test('a two-argument render(element, props) call renders with moduleId undefined', () => {
+  test('a two-argument render(element, props) call renders with no module id or parent key', () => {
     const React = makeReact()
     const mod = loadWrapper(renderRemote({app: APP, preamble: ''}), React)
     // No renderOptions argument at all.
     mod.render({}, {})
 
-    const provider = providerOf(mod.rendered[0])
-    expect(provider.type).toBe('Provider')
-    expect((provider.props as {value: unknown}).value).toBeUndefined()
+    expect(rootValueOf(mod.rendered[0], React)).toEqual({
+      moduleId: undefined,
+      parentKey: undefined,
+      signal: expect.any(AbortSignal),
+    })
+  })
+
+  test('keeps the module id and parent key of the render that created the root', () => {
+    const React = makeReact()
+    const mod = loadWrapper(renderRemote({app: APP, preamble: ''}), React)
+    const root = {}
+    mod.render(root, {}, {moduleId: 'favorites/App', parentKey: 'home-key'})
+    mod.render(root, {}, {moduleId: 'other/App', parentKey: 'other-key'})
+
+    expect(rootValueOf(mod.rendered[1], React)).toMatchObject({
+      moduleId: 'favorites/App',
+      parentKey: 'home-key',
+    })
   })
 
   test('forwards renderOptions.rootOptions to createRoot, only on root creation', () => {
@@ -269,6 +301,24 @@ describe('renderRemote module context', () => {
     // then restored the lifecycle it was left in.
     expect(renderCalls).toEqual([[root, {greeting: 'hi'}, {moduleId: 'favorites/App'}]])
     expect(setLifecycleCalls).toEqual(['background'])
+  })
+
+  test('a hot update aborts the replaced root on the next tick', async () => {
+    const hot: HotStub = {
+      accept(cb) {
+        this.accepted = cb
+      },
+    }
+    const React = makeReact()
+    const mod = loadWrapper(renderRemote({app: APP, hmr: true, preamble: ''}), React, {hot})
+    mod.render({})
+    const {signal} = rootValueOf(mod.rendered[0], React)!
+
+    hot.accepted!({render: () => ({setLifecycle: () => {}})})
+
+    expect(signal.aborted).toBe(false)
+    await new Promise((resolve) => setTimeout(resolve, 0))
+    expect(signal.aborted).toBe(true)
   })
 
   test('after a hot update, the controller the host holds drives the new module', () => {

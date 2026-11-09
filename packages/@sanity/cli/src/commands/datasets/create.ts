@@ -8,6 +8,7 @@ import {promptForProject} from '../../prompts/promptForProject.js'
 import {listDatasets} from '../../services/datasets.js'
 import {getProjectFeatures} from '../../services/getProjectFeatures.js'
 import {getProjectIdFlag} from '../../util/sharedFlags.js'
+import {defineCommandTelemetry} from '../../util/telemetry/commandTelemetry.js'
 
 const createDatasetDebug = subdebug('dataset:create')
 
@@ -59,6 +60,8 @@ export class CreateDatasetCommand extends SanityCommand<typeof CreateDatasetComm
   }
 
   static override hiddenAliases: string[] = ['dataset:create']
+
+  static telemetry = defineCommandTelemetry(this.flags, {redact: ['embeddings-projection']})
 
   public async run(): Promise<void> {
     const {args, flags} = await this.parse(CreateDatasetCommand)

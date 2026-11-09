@@ -13,6 +13,7 @@ import {type Level} from '../../actions/documents/types.js'
 import {validateDocuments} from '../../actions/documents/validate.js'
 import {reporters} from '../../actions/documents/validation/reporters/index.js'
 import {getDatasetFlag, getProjectIdFlag} from '../../util/sharedFlags.js'
+import {defineCommandTelemetry} from '../../util/telemetry/commandTelemetry.js'
 
 export class ValidateDocumentsCommand extends SanityCommand<typeof ValidateDocumentsCommand> {
   static description = 'Validate documents in a dataset against the studio schema'
@@ -35,7 +36,7 @@ export class ValidateDocumentsCommand extends SanityCommand<typeof ValidateDocum
       description: 'Report out info level validation markers too',
     },
     {
-      command: '<%= config.bin %> <%= command.id %> --project-id abc123 --dataset production',
+      command: '<%= config.bin %> <%= command.id %> --project abc123 --dataset production',
       description: 'Validate documents in a specific project and dataset',
     },
   ]
@@ -85,6 +86,8 @@ export class ValidateDocumentsCommand extends SanityCommand<typeof ValidateDocum
 
   static override hiddenAliases: string[] = ['document:validate']
 
+  static telemetry = defineCommandTelemetry(this.flags, {redact: ['file']})
+
   public async run(): Promise<void> {
     const {flags} = await this.parse(ValidateDocumentsCommand)
     const {
@@ -94,7 +97,7 @@ export class ValidateDocumentsCommand extends SanityCommand<typeof ValidateDocum
       level,
       'max-custom-validation-concurrency': maxCustomValidationConcurrency,
       'max-fetch-concurrency': maxFetchConcurrency,
-      'project-id': projectId,
+      project: projectId,
       workspace,
     } = flags
     const unattendedMode = this.isUnattended()

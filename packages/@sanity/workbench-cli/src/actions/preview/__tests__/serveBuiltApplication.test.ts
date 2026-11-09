@@ -2,10 +2,10 @@ import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
 import {serveBuiltApplication} from '../serveBuiltApplication.js'
 
-const mockCheckBuiltOutput = vi.hoisted(() => vi.fn())
+const mockReadBuiltManifest = vi.hoisted(() => vi.fn())
 const mockPreview = vi.hoisted(() => vi.fn())
 
-vi.mock('../../deploy/checkBuiltOutput.js', () => ({checkBuiltOutput: mockCheckBuiltOutput}))
+vi.mock('../../build/readBuiltManifest.js', () => ({readBuiltManifest: mockReadBuiltManifest}))
 vi.mock('vite', () => ({preview: mockPreview}))
 
 function fakeViteServer({port = 3334}: {port?: number} = {}) {
@@ -30,7 +30,7 @@ function serve(overrides: Record<string, unknown> = {}) {
 
 describe('serveBuiltApplication', () => {
   beforeEach(() => {
-    mockCheckBuiltOutput.mockResolvedValue(undefined)
+    mockReadBuiltManifest.mockResolvedValue(undefined)
     mockPreview.mockResolvedValue(fakeViteServer())
   })
 
@@ -39,12 +39,12 @@ describe('serveBuiltApplication', () => {
   })
 
   test('propagates a failed build check and never starts the server', async () => {
-    // checkBuiltOutput owns the BUILD_NOT_FOUND tagging; this just verifies the
+    // readBuiltManifest owns the BUILD_NOT_FOUND tagging; this just verifies the
     // error passes through untouched and no server is started.
     const error = Object.assign(new Error('mf-manifest.json does not exist'), {
       name: 'BUILD_NOT_FOUND',
     })
-    mockCheckBuiltOutput.mockRejectedValue(error)
+    mockReadBuiltManifest.mockRejectedValue(error)
 
     const thrown = await serve().catch((err) => err)
 

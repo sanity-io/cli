@@ -4,6 +4,7 @@
 // deploy-time guards, so it takes the bare `resolveWorkbenchApp` — the guarded
 // view (`getWorkbench`) is the deploy entry's export.
 
+export {readBuiltManifest} from '../actions/build/readBuiltManifest.js'
 export {
   RESOURCE_BINDINGS_CHUNK_NAME,
   RESOURCE_BINDINGS_ENTRY_IMPORT,

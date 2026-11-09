@@ -15,7 +15,7 @@ export class CreateHookCommand extends SanityCommand<typeof CreateHookCommand> {
       description: 'Create a new webhook for the project',
     },
     {
-      command: '<%= config.bin %> <%= command.id %> --project-id abc123',
+      command: '<%= config.bin %> <%= command.id %> --project abc123',
       description: 'Create a webhook for a specific project',
     },
   ]

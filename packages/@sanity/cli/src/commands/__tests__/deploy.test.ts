@@ -112,6 +112,30 @@ describe('#deploy', () => {
     },
   )
 
+  test.each([
+    ['studio', false],
+    ['app', true],
+  ])('warns that --media-library-id is ignored for a %s deploy', async (_kind, isApp) => {
+    mockDetermineIsApp.mockReturnValue(isApp)
+
+    await DeployCommand.run(['--media-library-id', 'mlXYZ'])
+
+    expect(mocks.SanityCmdOutputWarn).toHaveBeenCalledWith(
+      '--media-library-id is ignored — it only applies when deploying a Media Library config',
+    )
+    expect(isApp ? mockDeployApp : mockDeployStudio).toHaveBeenCalledTimes(1)
+  })
+
+  test('does not warn about --media-library-id for a media library config deploy', async () => {
+    mockDetermineIsApp.mockReturnValue(true)
+    mockResolveWorkbenchConfig.mockReturnValue({})
+
+    await DeployCommand.run(['--media-library-id', 'mlXYZ'])
+
+    expect(mocks.SanityCmdOutputWarn).not.toHaveBeenCalled()
+    expect(mockDeployApp).toHaveBeenCalledTimes(1)
+  })
+
   test.each(['workbench', 'media library'])(
     'rejects --create for a %s configuration',
     async (kind) => {

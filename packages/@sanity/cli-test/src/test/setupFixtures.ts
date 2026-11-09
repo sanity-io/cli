@@ -8,10 +8,29 @@ import {type TestProject} from 'vitest/node'
 
 import {fileExists} from '../utils/fileExists.js'
 import {getFixturesPath, getTempPath} from '../utils/paths.js'
-import {DEFAULT_FIXTURES} from './constants.js'
+import {DEFAULT_FIXTURES, FIXTURE_WORKSPACE_FILE} from './constants.js'
 import {testCopyDirectory} from './testFixture.js'
 
 const exec = promisify(execNode)
+
+/**
+ * Reads the bundled `pnpm-workspace.yaml` template that fixture installs run under.
+ *
+ * It is generated from the repository's own workspace config by the package build, so a
+ * missing file means the package was not built rather than a misconfigured consumer.
+ */
+async function readFixtureWorkspace(): Promise<string> {
+  const workspacePath = join(getFixturesPath(), FIXTURE_WORKSPACE_FILE)
+
+  try {
+    return await readFile(workspacePath, 'utf8')
+  } catch (error) {
+    throw new Error(
+      `Could not read the fixture workspace config at ${workspacePath}. Build @sanity/cli-test before running fixture setup.`,
+      {cause: error},
+    )
+  }
+}
 
 /**
  * Options for setupTestFixtures
@@ -147,19 +166,14 @@ export async function setup(_: TestProject, options: SetupTestFixturesOptions = 
 
       if (ignoreWorkspace) {
         // pnpm 11 reads build-script policy from pnpm-workspace.yaml.
-        // A fixture-local workspace both isolates the install and applies the repository's policy.
-        await writeFile(
-          join(toPath, 'pnpm-workspace.yaml'),
-          "allowBuilds:\n  '@swc/core': true\n  esbuild: true\n  node-pty: true\n  sharp: false\n  unrs-resolver: false\n",
-        )
+        // A fixture-local workspace both isolates the install and applies the repository's policy,
+        // which the build generated from the repository's own pnpm-workspace.yaml.
+        await writeFile(join(toPath, 'pnpm-workspace.yaml'), await readFixtureWorkspace())
       }
 
       // Run pnpm install --no-lockfile in the temp directory
       try {
-        // Disable pnpm's minimumReleaseAge for fixture installs. With
-        // an isolated workspace, the repository's `minimumReleaseAgeExclude`
-        // list is not applied, which can reject freshly-published Sanity versions.
-        await exec(`pnpm install --prefer-offline --no-lockfile --config.minimum-release-age=0`, {
+        await exec(`pnpm install --prefer-offline --no-lockfile`, {
           cwd: toPath,
         })
       } catch (error) {

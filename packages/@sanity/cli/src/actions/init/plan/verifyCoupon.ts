@@ -36,7 +36,6 @@ export async function verifyCoupon(
     }
 
     trace.log({
-      coupon: intendedCoupon,
       selectedOption: useDefaultPlan ? 'yes' : 'no',
       step: 'useDefaultPlanCoupon',
     })

@@ -24,6 +24,7 @@ interface SharedFlagOptions {
    */
   semantics: FlagSemantics
 
+  atLeastOne?: string[]
   dependsOn?: string[]
   description?: string
   env?: string
@@ -36,9 +37,9 @@ interface SharedFlagOptions {
 const OVERRIDE_SUFFIX = ' (overrides CLI configuration)'
 
 /**
- * Returns a `--project-id` / `-p` flag definition.
+ * Returns a `--project` / `-p` flag definition with a deprecated `--project-id` alias.
  *
- * Locked: flag name (`project-id`), char (`p`), `helpValue` (`<id>`), and parse (trims + validates non-empty).
+ * Locked: flag name (`project`), char (`p`), `helpValue` (`<id>`), and parse (trims + validates non-empty).
  */
 export function getProjectIdFlag(options: SharedFlagOptions) {
   const {description: baseDescription, helpGroup, semantics, ...rest} = options
@@ -46,7 +47,9 @@ export function getProjectIdFlag(options: SharedFlagOptions) {
   const description = (baseDescription ?? 'Project ID to use') + (isOverride ? OVERRIDE_SUFFIX : '')
 
   return {
-    'project-id': Flags.string({
+    project: Flags.string({
+      aliases: ['project-id'],
+      deprecateAliases: true,
       description,
       helpGroup: helpGroup ?? (isOverride ? 'OVERRIDE' : undefined),
       helpValue: '<id>',
@@ -55,7 +58,7 @@ export function getProjectIdFlag(options: SharedFlagOptions) {
       parse: async (input: string) => {
         const trimmed = input.trim()
         if (trimmed === '') {
-          throw new Error('`--project-id` cannot be empty if provided')
+          throw new Error('`--project` cannot be empty if provided')
         }
         return trimmed
       },

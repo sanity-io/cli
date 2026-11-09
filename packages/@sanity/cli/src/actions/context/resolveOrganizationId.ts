@@ -1,7 +1,14 @@
+import {CLIError} from '@oclif/core/errors'
+import {exitCodes} from '@sanity/cli-core'
+
 import {promptForOrganization} from '../../prompts/promptForOrganization.js'
 
 /** The organization could not be determined and prompting is not possible. */
-export class MissingOrganizationError extends Error {}
+export class MissingOrganizationError extends CLIError {
+  constructor(message: string) {
+    super(message, {exit: exitCodes.USAGE_ERROR})
+  }
+}
 
 /**
  * Resolve the organization to operate on: the `--organization` flag wins,

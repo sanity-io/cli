@@ -1,5 +1,4 @@
-import {readFile} from 'node:fs/promises'
-import {basename, dirname, join} from 'node:path'
+import {basename, dirname} from 'node:path'
 import {createGzip} from 'node:zlib'
 
 import {type AppVisibility, type CliConfig} from '@sanity/cli-core'
@@ -110,9 +109,8 @@ export async function createStudio(options: {
  * sync — so a caller can disarm a create-time rollback that must not delete an
  * application once it has an active deployment.
  *
- * The build's `mf-manifest.json` ships with every deployment. `isExternal`
- * skips the tarball: the customer serves the build from the application's
- * registered origin.
+ * `isExternal` skips the tarball: the customer serves the build from the
+ * application's registered origin.
  * @internal
  */
 export async function deployWorkbenchApp(options: {
@@ -124,6 +122,7 @@ export async function deployWorkbenchApp(options: {
   isAutoUpdating: boolean
   isExternal?: boolean
   label?: string
+  mfManifest: Record<string, unknown>
   onDeployed?: () => void
   /**
    * The address from config. Only `createApplication` used to send it, so an
@@ -145,6 +144,7 @@ export async function deployWorkbenchApp(options: {
     isAutoUpdating,
     isExternal = false,
     label = 'Deploying...',
+    mfManifest,
     onDeployed,
     slug,
     sourceDir,
@@ -153,7 +153,6 @@ export async function deployWorkbenchApp(options: {
     visibility,
     workspaces,
   } = options
-  const mfManifest = JSON.parse(await readFile(join(sourceDir, 'mf-manifest.json'), 'utf8'))
   const tarball = isExternal
     ? undefined
     : createTar({cwd: dirname(sourceDir)}, [basename(sourceDir)]).pipe(createGzip())

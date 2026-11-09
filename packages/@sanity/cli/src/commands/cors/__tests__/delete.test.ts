@@ -207,7 +207,11 @@ describe('#cors:delete', () => {
   })
 
   test('handles network errors when fetching origins', async () => {
-    // Don't set up any mock to simulate network failure
+    mockApi({
+      apiVersion: CORS_API_VERSION,
+      uri: '/projects/test-project/cors',
+    }).replyWithError(new Error('Network Error'))
+
     const {error} = await testCommand(Delete, ['https://example.com'], {mocks: defaultMocks})
     expect(error).toBeInstanceOf(Error)
     expect(error?.message).toContain('Failed to fetch CORS origins')

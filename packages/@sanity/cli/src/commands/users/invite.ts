@@ -38,7 +38,7 @@ export class UsersInviteCommand extends SanityCommand<typeof UsersInviteCommand>
       description: 'Send a new user invite to the email "pippi@sanity.io", as administrator',
     },
     {
-      command: '<%= config.bin %> <%= command.id %> pippi@sanity.io --project-id abc123',
+      command: '<%= config.bin %> <%= command.id %> pippi@sanity.io --project abc123',
       description: 'Invite a user to a specific project',
     },
   ]

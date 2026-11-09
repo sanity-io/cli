@@ -2,6 +2,7 @@ import * as inquirer from '@inquirer/prompts'
 
 import {NonInteractiveError} from '../errors/NonInteractiveError.js'
 import {isInteractive} from '../util/isInteractive.js'
+import {roleChecklist as roleChecklistPrompt} from './roleChecklist.js'
 
 export {Separator} from '@inquirer/prompts'
 
@@ -49,6 +50,11 @@ export const password: typeof inquirer.password = (...args) => {
 export const rawlist: typeof inquirer.rawlist = (...args) => {
   assertInteractive('rawlist')
   return inquirer.rawlist(...args)
+}
+
+export const roleChecklist: typeof roleChecklistPrompt = (...args) => {
+  assertInteractive('roleChecklist')
+  return roleChecklistPrompt(...args)
 }
 
 export const search: typeof inquirer.search = (...args) => {

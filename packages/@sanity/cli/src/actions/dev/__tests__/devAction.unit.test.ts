@@ -6,15 +6,17 @@ import {devAction} from '../devAction.js'
 import {createBaseDevOptions, workbenchCliConfig} from './testHelpers.js'
 
 const mockStartWorkbenchDev = vi.hoisted(() => vi.fn())
+const mockWatchForWorkbenchOptIn = vi.hoisted(() => vi.fn())
 const mockStartAppDevServer = vi.hoisted(() => vi.fn())
 const mockStartStudioDevServer = vi.hoisted(() => vi.fn())
 const mockGetSharedServerConfig = vi.hoisted(() => vi.fn())
 const mockGetAppId = vi.hoisted(() => vi.fn())
 const mockCheckForDeprecatedAppId = vi.hoisted(() => vi.fn())
 
-// The workbench orchestration lives in workbench-cli and is imported lazily —
-// mock the single entry the dispatcher delegates to.
-vi.mock('@sanity/workbench-cli/dev', () => ({startWorkbenchDev: mockStartWorkbenchDev}))
+vi.mock('@sanity/workbench-cli/dev', () => ({
+  startWorkbenchDev: mockStartWorkbenchDev,
+  watchForWorkbenchOptIn: mockWatchForWorkbenchOptIn,
+}))
 vi.mock('../servers/startAppDevServer.js', () => ({startAppDevServer: mockStartAppDevServer}))
 vi.mock('../servers/startStudioDevServer.js', () => ({
   startStudioDevServer: mockStartStudioDevServer,
@@ -41,6 +43,7 @@ describe('devAction', () => {
     mockGetSharedServerConfig.mockReturnValue({httpHost: 'localhost', httpPort: 3333})
     mockGetAppId.mockReturnValue(undefined)
     mockStartWorkbenchDev.mockResolvedValue({close: vi.fn().mockResolvedValue(undefined)})
+    mockWatchForWorkbenchOptIn.mockReturnValue({close: vi.fn().mockResolvedValue(undefined)})
     mockStartStudioDevServer.mockResolvedValue(mockServer({port: 3333}))
     mockStartAppDevServer.mockResolvedValue(mockServer({port: 3333}))
   })
@@ -51,14 +54,33 @@ describe('devAction', () => {
   })
 
   describe('plain (non-workbench) projects', () => {
-    test('starts the studio dev server directly and never delegates to the workbench', async () => {
-      const result = await devAction(createBaseDevOptions())
+    test('starts the studio dev server and watches for the workbench opt-in', async () => {
+      const plain = mockServer({port: 3333})
+      mockStartStudioDevServer.mockResolvedValue(plain)
+      const watcherHandle = {close: vi.fn().mockResolvedValue(undefined)}
+      mockWatchForWorkbenchOptIn.mockReturnValue(watcherHandle)
 
-      expect(mockStartStudioDevServer).toHaveBeenCalledWith(
-        expect.objectContaining({announceUrl: true}),
-      )
+      const options = createBaseDevOptions()
+      const result = await devAction(options)
+
+      expect(mockStartStudioDevServer).toHaveBeenCalledWith(options)
       expect(mockStartWorkbenchDev).not.toHaveBeenCalled()
-      expect(result.close).toBeTypeOf('function')
+      expect(mockWatchForWorkbenchOptIn).toHaveBeenCalledWith(
+        expect.objectContaining({closePlainServer: plain.close, workDir: '/tmp/sanity-project'}),
+      )
+      expect(result).toBe(watcherHandle)
+    })
+
+    test('starts the workbench with the opted-in config, re-deriving app mode from it', async () => {
+      await devAction(createBaseDevOptions({isApp: false}))
+
+      const {startWorkbench} = mockWatchForWorkbenchOptIn.mock.calls[0][0]
+      const optedIn = workbenchCliConfig()
+      await startWorkbench(optedIn)
+
+      expect(mockStartWorkbenchDev).toHaveBeenCalledWith(
+        expect.objectContaining({cliConfig: optedIn, isApp: true}),
+      )
     })
 
     test('returns a no-op close when the app server reports an expected early exit', async () => {
@@ -68,6 +90,7 @@ describe('devAction', () => {
 
       await expect(result.close()).resolves.toBeUndefined()
       expect(mockStartWorkbenchDev).not.toHaveBeenCalled()
+      expect(mockWatchForWorkbenchOptIn).not.toHaveBeenCalled()
     })
   })
 
@@ -79,6 +102,7 @@ describe('devAction', () => {
       const result = await devAction(createBaseDevOptions({cliConfig: workbenchCliConfig()}))
 
       expect(mockStartStudioDevServer).not.toHaveBeenCalled()
+      expect(mockWatchForWorkbenchOptIn).not.toHaveBeenCalled()
       expect(mockStartWorkbenchDev).toHaveBeenCalledWith(
         expect.objectContaining({
           cacheDir: expect.stringMatching(/\/vite$/),

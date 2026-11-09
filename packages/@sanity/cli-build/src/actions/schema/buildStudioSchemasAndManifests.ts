@@ -3,14 +3,14 @@ import {type SchemaValidationProblemGroup} from '@sanity/types'
 import {type StudioManifest} from 'sanity'
 
 import {SchemaBuild} from '../../telemetry/extractSchema.telemetry.js'
-import {CreateWorkspaceManifest} from '../manifest/types.js'
+import {WorkspaceSchemaInput} from '../manifest/types.js'
 import {type BuildStudioSchemasAndManifestsWorkerData} from './types.js'
 import {SchemaExtractionError} from './utils/SchemaExtractionError.js'
 
 export type BuildStudioSchemasAndManifestsWorkerSuccess = {
+  schemaInputs: WorkspaceSchemaInput[] | null
   studioManifest: StudioManifest | null
   type: 'success'
-  workspaceManifests: CreateWorkspaceManifest[]
 }
 type BuildStudioSchemasAndManifestsWorkerError = {
   error: string
@@ -32,7 +32,7 @@ export async function buildStudioSchemasAndManifests(
   applicationId: string,
   options: BuildStudioSchemasAndManifestsWorkerData,
 ): Promise<BuildStudioSchemasAndManifestsWorkerSuccess> {
-  const {configPath, isExternal, outPath, projectId, verbose, workDir} = options
+  const {configPath, isExternal, outPath, projectId, schemaRequired, verbose, workDir} = options
 
   const trace = getCliTelemetry().trace(SchemaBuild, {
     // If the studio is externally hosted, we don't need to extract the manifest
@@ -58,6 +58,7 @@ export async function buildStudioSchemasAndManifests(
           isExternal,
           outPath,
           projectId,
+          schemaRequired,
           verbose,
           workDir,
         } satisfies BuildStudioSchemasAndManifestsWorkerData,

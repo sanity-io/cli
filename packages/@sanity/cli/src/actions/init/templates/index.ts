@@ -4,6 +4,7 @@ import appSanityUiTemplate from './appSanityUi.js'
 import blog from './blog.js'
 import clean from './clean.js'
 import getStartedTemplate from './getStarted.js'
+import mediaLibraryConfig from './mediaLibraryConfig.js'
 import moviedb from './moviedb.js'
 import pageBuilder from './pageBuilder.js'
 import quickstart from './quickstart.js'
@@ -16,6 +17,8 @@ const templates: Record<string, ProjectTemplate | undefined> = {
   blog,
   clean,
   'get-started': getStartedTemplate,
+  // Unlisted (not in `templateChoices`): `--template media-library-config` only.
+  'media-library-config': mediaLibraryConfig,
   moviedb,
   'page-builder': pageBuilder,
   quickstart, // empty project that dynamically imports its own schema

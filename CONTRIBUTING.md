@@ -191,7 +191,7 @@ Commands use a small set of exit codes aligned with oclif defaults and Unix conv
 
 - User passed `--dataset` with a name that doesn't match the allowed pattern? **Exit 2** - they gave bad input.
 - The dataset name is valid but the API says it doesn't exist? **Exit 1** - runtime failure.
-- `this.output.error('No project ID found')` when `--project-id` was required but missing? **Exit 2** - usage error.
+- `this.output.error('No project ID found')` when `--project` was required but missing? **Exit 2** - usage error.
 - API returned 500 while creating a dataset? **Exit 1** - runtime failure.
 - User says "no" to "Deploy anyway despite version mismatch?" **Exit 3** - user chose not to proceed.
 - User hits Ctrl+C during a prompt? **Exit 130** - handled by base class, no action needed.

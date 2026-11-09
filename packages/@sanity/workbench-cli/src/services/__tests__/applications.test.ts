@@ -297,21 +297,29 @@ describe('createDeployment', () => {
 describe('getWorkbenchUrl / getApplicationUrl', () => {
   afterEach(() => vi.unstubAllEnvs())
 
+  const app = {id: 'app-1', organizationId: 'org-1', slug: 'my-app'}
+
   test('builds production URLs on sanity.run', () => {
     expect(getWorkbenchUrl('org-1')).toBe('https://org-1.sanity.run')
-    expect(getApplicationUrl({id: 'app-1', organizationId: 'org-1', type: 'coreApp'})).toBe(
-      'https://org-1.sanity.run/applications/app-1',
+    expect(getApplicationUrl({...app, type: 'coreApp'})).toBe(
+      'https://org-1.sanity.run/applications/my-app',
     )
-    expect(getApplicationUrl({id: 'app-1', organizationId: 'org-1', type: 'studio'})).toBe(
-      'https://org-1.sanity.run/studios/app-1',
+    expect(getApplicationUrl({...app, type: 'studio'})).toBe(
+      'https://org-1.sanity.run/studios/my-app',
     )
   })
 
   test('builds staging URLs on run.sanity.work', () => {
     vi.stubEnv('SANITY_INTERNAL_ENV', 'staging')
     expect(getWorkbenchUrl('org-1')).toBe('https://org-1.run.sanity.work')
-    expect(getApplicationUrl({id: 'app-1', organizationId: 'org-1', type: 'coreApp'})).toBe(
-      'https://org-1.run.sanity.work/applications/app-1',
+    expect(getApplicationUrl({...app, type: 'coreApp'})).toBe(
+      'https://org-1.run.sanity.work/applications/my-app',
+    )
+  })
+
+  test('falls back to the id for an application without a slug', () => {
+    expect(getApplicationUrl({...app, slug: null, type: 'coreApp'})).toBe(
+      'https://org-1.sanity.run/applications/app-1',
     )
   })
 })

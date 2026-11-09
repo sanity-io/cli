@@ -63,7 +63,7 @@ export async function selectTemplate({
   const {template, typescript, unattended} = options
   const templateName = await promptForTemplate({template, unattended})
   trace.log({
-    selectedOption: templateName,
+    selectedOption: Object.hasOwn(templates, templateName) ? templateName : 'custom',
     step: 'selectProjectTemplate',
   })
 

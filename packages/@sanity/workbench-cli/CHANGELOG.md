@@ -1,5 +1,127 @@
 # @sanity/workbench-cli
 
+## 2.15.1
+
+[Compare changes](https://github.com/sanity-io/cli/compare/workbench-cli-v2.15.0...workbench-cli-v2.15.1)
+
+_2026-11-06_
+
+### Bug Fixes
+
+- **deps:** update dependency @module-federation/vite to v1.23.7 ([#2104](https://github.com/sanity-io/cli/pull/2104)) ([bf42cd5](https://github.com/sanity-io/cli/commit/bf42cd5965fc306af4b27ef3315dca5613dbd252))
+- **workbench-cli:** reject non-svg app icons ([#2109](https://github.com/sanity-io/cli/pull/2109)) ([6bdfe02](https://github.com/sanity-io/cli/commit/6bdfe0235b87c30ec89cb21dfdcedc1b59f97680))
+- **deps:** update sanity-tooling ([#2112](https://github.com/sanity-io/cli/pull/2112)) ([662cbb9](https://github.com/sanity-io/cli/commit/662cbb9ed64f9d5bea739c60d911e1522d1c8afb))
+- adapt to sanity 6.22 and workflow-cli 0.37 ([#2113](https://github.com/sanity-io/cli/pull/2113)) ([662cbb9](https://github.com/sanity-io/cli/commit/662cbb9ed64f9d5bea739c60d911e1522d1c8afb))
+- **workbench-cli:** link to local apps at their deployed URLs ([#2119](https://github.com/sanity-io/cli/pull/2119)) ([7594b0d](https://github.com/sanity-io/cli/commit/7594b0d247bcaef1204f45cc38075e7b52a21e49))
+- **deps:** update dependency @module-federation/runtime to v2.9.3 ([#2124](https://github.com/sanity-io/cli/pull/2124)) ([3638f02](https://github.com/sanity-io/cli/commit/3638f02c29607e5013be7f04ede5802fb8acb820))
+- **deps:** update dependency @module-federation/vite to v1.23.8 ([#2125](https://github.com/sanity-io/cli/pull/2125)) ([a9faf64](https://github.com/sanity-io/cli/commit/a9faf6407e3d68d4024639e7dbf68e8963e47c89))
+- **workbench-cli:** tag app stylesheets with their app id ([#2132](https://github.com/sanity-io/cli/pull/2132)) ([865b8ef](https://github.com/sanity-io/cli/commit/865b8efc63b1d18465d42bd314ed31648068bf7b))
+
+## 2.15.0
+
+[Compare changes](https://github.com/sanity-io/cli/compare/workbench-cli-v2.14.1...workbench-cli-v2.15.0)
+
+_2026-10-30_
+
+### Features
+
+- **workbench-cli:** identify the deployed app each local app replaces ([#2036](https://github.com/sanity-io/cli/pull/2036)) ([4554779](https://github.com/sanity-io/cli/commit/455477936cd47a58d904a8d9c63eeac16b271f0a))
+- **cli:** auto-update apps inside Workbench ([#2041](https://github.com/sanity-io/cli/pull/2041)) ([8b0d1e7](https://github.com/sanity-io/cli/commit/8b0d1e7aced1a4edcf5e003f76e69bb2e7c912d1))
+- **workbench-cli:** give each root an abort signal that fires when it is disposed ([#2089](https://github.com/sanity-io/cli/pull/2089)) ([221d7e3](https://github.com/sanity-io/cli/commit/221d7e3601896cd9205e399056263c75d8dce53d))
+- **workbench-cli:** pass the module id and parent key to the rendered app in one context ([#2101](https://github.com/sanity-io/cli/pull/2101)) ([de27a5e](https://github.com/sanity-io/cli/commit/de27a5e3c1a48cc1bbb29e55048991ea848304bd))
+- **workbench:** pass a bus refusal's fix and docs link to workers ([#2084](https://github.com/sanity-io/cli/pull/2084)) ([47b8f08](https://github.com/sanity-io/cli/commit/47b8f08ff04585a6fe22b13568b6ac1da703dc33))
+
+### Bug Fixes
+
+- **deploy:** offer existing apps on workbench deploys ([#2079](https://github.com/sanity-io/cli/pull/2079)) ([aa471fd](https://github.com/sanity-io/cli/commit/aa471fddcd87d1a6129395743708f852960852cf))
+- **cli:** stop bundling auto-updated packages ([#2087](https://github.com/sanity-io/cli/pull/2087)) ([814e76f](https://github.com/sanity-io/cli/commit/814e76f910a01059367ac18f4d6f3b2ebf01645f))
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/cli-core bumped to 3.14.1
+
+## 2.14.1
+
+[Compare changes](https://github.com/sanity-io/cli/compare/workbench-cli-v2.14.0...workbench-cli-v2.14.1)
+
+_2026-10-27_
+
+### Bug Fixes
+
+- **cli:** pick up defineApplication without a dev restart ([#2070](https://github.com/sanity-io/cli/pull/2070)) ([bbd878c](https://github.com/sanity-io/cli/commit/bbd878c512bdd9157d4b5ab483f494104fc4dc88))
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/cli-core bumped to 3.14.0
+
+## 2.14.0
+
+[Compare changes](https://github.com/sanity-io/cli/compare/workbench-cli-v2.13.0...workbench-cli-v2.14.0)
+
+_2026-10-23_
+
+### Features
+
+- **init:** add unlisted media-library-config template ([#2015](https://github.com/sanity-io/cli/pull/2015)) ([532a7d1](https://github.com/sanity-io/cli/commit/532a7d1ba986f58811d57a2a7e6c0c9e2a378af5))
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/cli-core bumped to 3.12.0
+
+## 2.13.0
+
+[Compare changes](https://github.com/sanity-io/cli/compare/workbench-cli-v2.12.0...workbench-cli-v2.13.0)
+
+_2026-10-22_
+
+### Features
+
+- **workbench-cli:** drop the user dock group and panel groups ([#2027](https://github.com/sanity-io/cli/pull/2027)) ([8e5f79c](https://github.com/sanity-io/cli/commit/8e5f79c7c5bb716527494985ec3af22feeb7b27f))
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/cli-core bumped to 3.11.1
+
+## 2.12.0
+
+[Compare changes](https://github.com/sanity-io/cli/compare/workbench-cli-v2.11.0...workbench-cli-v2.12.0)
+
+_2026-10-21_
+
+### Features
+
+- **build:** return the module federation manifest from buildStudio and buildApp ([#2026](https://github.com/sanity-io/cli/pull/2026)) ([ee487dd](https://github.com/sanity-io/cli/commit/ee487ddb261dbd0d8936d1918a58263fa0a5f712))
+
+### Bug Fixes
+
+- **deps:** update dependency @module-federation/vite to v1.23.5 ([#2002](https://github.com/sanity-io/cli/pull/2002)) ([353c5fa](https://github.com/sanity-io/cli/commit/353c5fa0423c7e4047f599b743978698d58f5b62))
+- **deploy:** link workbench apps and studios by slug ([#2020](https://github.com/sanity-io/cli/pull/2020)) ([1ff8e2b](https://github.com/sanity-io/cli/commit/1ff8e2b2623d786af83f79c61deb327609181fc5))
+- **dev:** run one workbench per organization ([#2024](https://github.com/sanity-io/cli/pull/2024)) ([b588035](https://github.com/sanity-io/cli/commit/b588035332d518222d98fa06107f4bea6355c6c1))
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/cli-core bumped to 3.11.0
+
+## 2.11.0
+
+[Compare changes](https://github.com/sanity-io/cli/compare/workbench-cli-v2.10.0...workbench-cli-v2.11.0)
+
+_2026-10-16_
+
+### Features
+
+- **workbench-cli:** let worker services respond to event topics ([#1986](https://github.com/sanity-io/cli/pull/1986)) ([0940360](https://github.com/sanity-io/cli/commit/0940360e17dcafe2137c24d99e4ecb6c883ad3c2))
+
 ## 2.10.0
 
 [Compare changes](https://github.com/sanity-io/cli/compare/workbench-cli-v2.9.0...workbench-cli-v2.10.0)

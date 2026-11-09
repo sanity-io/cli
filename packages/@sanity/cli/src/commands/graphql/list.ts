@@ -20,7 +20,7 @@ export class List extends SanityCommand<typeof List> {
       description: 'List GraphQL endpoints for the project',
     },
     {
-      command: '<%= config.bin %> <%= command.id %> --project-id abc123',
+      command: '<%= config.bin %> <%= command.id %> --project abc123',
       description: 'List GraphQL endpoints for a specific project',
     },
   ]

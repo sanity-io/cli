@@ -1,6 +1,7 @@
+import {type WorkspaceSchemaInput} from '@sanity/cli-build/_internal/manifest'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
-import {updateWorkspacesSchemas, type WorkspaceSchemaInput} from '../updateWorkspaceSchema.js'
+import {updateWorkspacesSchemas} from '../updateWorkspaceSchema.js'
 
 const mockRequest = vi.fn()
 

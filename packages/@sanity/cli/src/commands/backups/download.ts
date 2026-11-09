@@ -29,6 +29,7 @@ import {listDatasets} from '../../services/datasets.js'
 import {humanFileSize} from '../../util/humanFileSize.js'
 import {isPathDirName} from '../../util/isPathDirName.js'
 import {getProjectIdFlag} from '../../util/sharedFlags.js'
+import {defineCommandTelemetry} from '../../util/telemetry/commandTelemetry.js'
 
 const DEFAULT_DOWNLOAD_CONCURRENCY = 10
 const MAX_DOWNLOAD_CONCURRENCY = 24
@@ -98,6 +99,8 @@ export class DownloadBackupCommand extends SanityCommand<typeof DownloadBackupCo
   }
 
   static override hiddenAliases: string[] = ['backup:download']
+
+  static telemetry = defineCommandTelemetry(this.flags, {redact: ['out']})
 
   public async run(): Promise<void> {
     const {args} = await this.parse(DownloadBackupCommand)

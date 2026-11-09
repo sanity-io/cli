@@ -5,6 +5,7 @@ import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 import {
   deleteAspect,
   getMediaLibraries,
+  getMediaLibrariesForOrganization,
   ingestMediaLibraryAssetFromUrl,
   MEDIA_LIBRARY_API_VERSION,
 } from '../mediaLibraries.js'
@@ -84,6 +85,28 @@ describe('#getMediaLibraries', () => {
       url: '/media-libraries',
     })
     expect(result).toStrictEqual(mockResponse.data)
+  })
+})
+
+describe('#getMediaLibrariesForOrganization', () => {
+  test('queries by organizationId and filters out non-active libraries', async () => {
+    mockClient.request.mockResolvedValue({
+      data: [
+        {id: 'library-active', organizationId: 'test-org-id', status: 'active'},
+        {id: 'library-inactive', organizationId: 'test-org-id', status: 'inactive'},
+      ],
+    })
+
+    const result = await getMediaLibrariesForOrganization('test-org-id')
+
+    expect(mockClient.request).toHaveBeenCalledWith({
+      method: 'GET',
+      query: {organizationId: 'test-org-id'},
+      url: '/media-libraries',
+    })
+    expect(result).toStrictEqual([
+      {id: 'library-active', organizationId: 'test-org-id', status: 'active'},
+    ])
   })
 })
 

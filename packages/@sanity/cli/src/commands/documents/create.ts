@@ -52,7 +52,7 @@ export class CreateDocumentCommand extends SanityCommand<typeof CreateDocumentCo
         'Open configured $EDITOR and replace the document with the given content on each save. Use JSON5 file extension and parser for simplified syntax.',
     },
     {
-      command: '<%= config.bin %> <%= command.id %> myDocument.json --project-id abc123',
+      command: '<%= config.bin %> <%= command.id %> myDocument.json --project abc123',
       description: 'Create documents in a specific project',
     },
   ]

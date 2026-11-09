@@ -14,4 +14,5 @@ delete process.env.SANITY_STUDIO_BASEPATH
 delete process.env.SANITY_STUDIO_REACT_STRICT_MODE
 delete process.env.SANITY_TELEMETRY_PROJECT_ID
 
+process.env.NODE_DISABLE_COMPILE_CACHE = '1'
 process.env.SANITY_INTERNAL_ENV = 'production'

@@ -51,7 +51,7 @@ export type TileSize = z.infer<typeof TileSizeSchema>
 /** @public */
 export type ServiceType = 'worker'
 
-const DockGroupSchema = z.enum(['system', 'applications', 'user'])
+const DockGroupSchema = z.enum(['system', 'applications'])
 
 /** @public */
 export type DockGroup = z.output<typeof DockGroupSchema>
@@ -64,6 +64,8 @@ export const DockSchema = z.object({
 
 /** @internal */
 export type Dock = z.infer<typeof DockSchema>
+
+const PanelDockSchema = z.object({order: z.optional(z.number())})
 
 /** @internal */
 export const ViewPlacementMetadataSchema = z.object({dock: DockSchema})
@@ -152,7 +154,7 @@ function interfaceDeclarationFields(kind: 'View' | 'Web worker') {
 const PanelViewSchema = z.object({
   surface: z.literal('panel'),
   ...interfaceDeclarationFields('View'),
-  dock: z.optional(DockSchema),
+  dock: z.optional(PanelDockSchema),
 })
 
 /** @public */

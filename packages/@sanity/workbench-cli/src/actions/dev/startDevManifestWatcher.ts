@@ -1,19 +1,11 @@
-import {watch} from 'node:fs'
 import {basename, dirname} from 'node:path'
 
 import {findProjectRoot, type Output, subdebug} from '@sanity/cli-core'
 
-import {canonicalizeWatchDir} from './canonicalizeWatchDir.js'
 import {type DevServerConfig, type DevServerInterface} from './deriveConfigs.js'
+import {watchCliConfig} from './watchCliConfig.js'
 
 const devDebug = subdebug('dev')
-
-/**
- * Debounce window between config file events and the next manifest
- * regeneration. Coalesces rapid saves (e.g. editor auto-save) and
- * atomic-rename bursts emitted by tools like VS Code.
- */
-const DEBOUNCE_MS = 250
 
 interface DevManifestWatcher {
   close: () => Promise<void>
@@ -89,83 +81,44 @@ export async function startDevManifestWatcher<T>({
   const projectRoot = await findProjectRoot(workDir)
   const configPath = projectRoot.path
 
-  let running = false
-  let pending = false
   let closed = false
 
-  const regenerate = async () => {
-    if (closed) return
-    if (running) {
-      pending = true
-      return
-    }
-    running = true
-    try {
-      const {configs, interfaces, manifest} = await extract({configPath, workDir})
-      if (closed) return
-      await update({
-        configs,
-        interfaces,
-        manifest,
-        manifestUpdatedAt: new Date().toISOString(),
-      })
-    } catch (err) {
-      // Extractors print their own spinner failure; log the reason here so
-      // the user sees what went wrong alongside the spinner indicator.
-      devDebug('Manifest regeneration failed: %O', err)
-      output.warn(
-        `Could not extract manifest for the Dashboard: ${err instanceof Error ? err.message : String(err)}`,
-      )
-    } finally {
-      running = false
-      if (pending && !closed) {
-        pending = false
-        void regenerate()
+  const watcher = watchCliConfig({
+    dir: dirname(configPath),
+    filenames: [basename(configPath), ...(extraWatchFilenames ?? [])],
+    onChange: async () => {
+      try {
+        const {configs, interfaces, manifest} = await extract({configPath, workDir})
+        if (closed) return
+        await update({
+          configs,
+          interfaces,
+          manifest,
+          manifestUpdatedAt: new Date().toISOString(),
+        })
+      } catch (err) {
+        // Extractors print their own spinner failure; log the reason here so
+        // the user sees what went wrong alongside the spinner indicator.
+        devDebug('Manifest regeneration failed: %O', err)
+        output.warn(
+          `Could not extract manifest for the Dashboard: ${err instanceof Error ? err.message : String(err)}`,
+        )
       }
-    }
-  }
-
-  // Route the initial extraction through `regenerate` too, so file-system
-  // events arriving before it finishes get coalesced rather than racing it
-  // for the shared output directory.
-  void regenerate()
-
-  // Watch the config file's parent directory and filter by filename.
-  // Watching the file itself is unreliable across editors that perform
-  // atomic-save (delete + rename) — the watcher loses its target once the
-  // inode changes. Directory watches survive those transitions.
-  // Canonicalize to the real long path so `fs.watch` doesn't abort on Windows
-  // short-path dirs. See `canonicalizeWatchDir`.
-  const configDir = canonicalizeWatchDir(dirname(configPath))
-  const watchFilenames = new Set([basename(configPath), ...(extraWatchFilenames ?? [])])
-
-  let debounceTimer: ReturnType<typeof setTimeout> | undefined
-
-  const onEvent = (_event: string, filename: Buffer | string | null) => {
-    if (!filename) return
-    const name = typeof filename === 'string' ? filename : filename.toString('utf8')
-    if (!watchFilenames.has(name)) return
-    clearTimeout(debounceTimer)
-    debounceTimer = setTimeout(() => {
-      void regenerate()
-    }, DEBOUNCE_MS)
-  }
-
-  const watcher = watch(configDir, onEvent)
-
-  watcher.on('error', (err) => {
-    devDebug('Config watcher error: %O', err)
-    output.warn(`Manifest watcher error: ${err instanceof Error ? err.message : String(err)}`)
+    },
+    onError: (err) => {
+      devDebug('Config watcher error: %O', err)
+      output.warn(`Manifest watcher error: ${err instanceof Error ? err.message : String(err)}`)
+    },
   })
 
+  // Route the initial extraction through the watcher too, so file-system events
+  // arriving before it finishes get coalesced rather than racing it for the
+  // shared output directory.
+  watcher.run()
+
   return {
-    // Idempotent — a repeat close (e.g. a signal handler racing an explicit
-    // close) is a no-op, so we never clear an already-cleared timer or
-    // double-close the underlying watcher.
     close: async () => {
-      if (closed) return
       closed = true
-      clearTimeout(debounceTimer)
       watcher.close()
     },
   }

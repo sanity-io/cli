@@ -17,7 +17,9 @@ import {
 } from '@sanity/cli-core'
 import {z} from 'zod/mini'
 
+import {applicationReference} from '../../applicationReference.js'
 import {TileInterfaceMetadataSchema, ViewPlacementMetadataSchema} from '../../contract.js'
+import {type WorkbenchApp} from '../../defineApp.js'
 import {canonicalizeWatchDir} from './canonicalizeWatchDir.js'
 import {getProcessStartTime, isOurProcess} from './processLiveness.js'
 
@@ -31,9 +33,9 @@ import {getProcessStartTime, isOurProcess} from './processLiveness.js'
  *     plus its inlined manifest and interfaces. The workbench reads these to
  *     discover and render local apps. Written by `registerDevServer`, watched by
  *     `watchRegistry`.
- *   - `workbench.lock` — a single machine-wide lock, so only one workbench shell
- *     runs at a time and later `dev`s register into it instead of starting their
- *     own. Managed by `acquireWorkbenchLock` / `readWorkbenchLock`.
+ *   - `workbench-<organizationId>.lock` — one lock per organization, so only one
+ *     workbench shell per org runs at a time and later `dev`s register into it
+ *     instead of starting their own. Managed by `acquireWorkbenchLock` / `readWorkbenchLock`.
  *
  * Both files belong to the process that created them and must not outlive it.
  * Three things keep that true: an explicit `release()` on clean shutdown, an
@@ -96,6 +98,7 @@ const devServerInterfaceSchema = z.union([
 // Exported so test fixtures can validate against the same schema the registry
 // parses with — see `aDevServerManifest`. Used internally by `getRegisteredServers`.
 export const devServerManifestSchema = z.object({
+  applicationId: z.optional(z.string()),
   /**
    * Field schema *values* load from the federation module; each field's `src`
    * rides along so a repoint bumps the exposes-set id and forces a rebuild.
@@ -127,6 +130,10 @@ export const devServerManifestSchema = z.object({
     ),
   ),
   host: z.string(),
+  /**
+   * The id the app runs under on the bus. It stays apart from `applicationId`,
+   * because Dashboards that predate `applicationId` key local apps on it.
+   */
   id: z.optional(z.string()),
   interfaces: z.optional(z.array(devServerInterfaceSchema)),
   /**
@@ -178,19 +185,46 @@ export function isConfigOnlyServer(
   return Boolean(server.configs?.length) && !server.interfaces?.length
 }
 
+export function localAppIdentity(
+  app: Pick<WorkbenchApp, 'isSingleton' | 'name' | 'organizationId' | 'slug' | 'visibility'>,
+): Pick<DevServerManifest, 'name' | 'organizationId' | 'reference' | 'slug' | 'visibility'> {
+  const name = app.name ?? app.slug
+
+  return {
+    name,
+    organizationId: app.organizationId,
+    reference: applicationReference({
+      isSingleton: app.isSingleton ?? false,
+      name,
+      organizationId: app.organizationId,
+    }),
+    slug: app.slug,
+    visibility: app.visibility ?? 'default',
+  }
+}
+
 /**
- * Where the Dashboard shell opens a registered server: `/local/<id>`, only when
- * it has an id and a `surface: 'window'` interface. That interface is the app
- * view the shell's `/local/:applicationId` route renders (see toWireInterface);
- * studios always get one, configs and panel-only apps don't, so they'd 404.
+ * Where the Dashboard shell opens a registered server, matching the Workbench's
+ * `StudioApplication.href` and `CoreApplication.href`. Only servers with a
+ * `surface: 'window'` interface get one (see toWireInterface): studios always do,
+ * configs and panel-only apps don't, so they'd 404.
  */
 export function dashboardPath(
-  server: Pick<DevServerManifest, 'id' | 'interfaces'>,
+  server: Pick<DevServerManifest, 'id' | 'interfaces' | 'slug' | 'type'>,
 ): string | undefined {
   const hasAppView = (server.interfaces ?? []).some(
     (iface) => 'surface' in iface && iface.surface === 'window',
   )
-  return server.id && hasAppView ? `/local/${encodeURIComponent(server.id)}` : undefined
+
+  const segment = server.slug ?? server.id
+
+  if (!segment || !hasAppView) {
+    return undefined
+  }
+
+  const root = server.type === 'studio' ? 'studios' : 'applications'
+
+  return `/${root}/${encodeURIComponent(segment)}`
 }
 
 /**
@@ -379,7 +413,7 @@ export function watchRegistry(callback: (servers: DevServerManifest[]) => void):
   }
 }
 
-// The workbench singleton lock — "one workbench per machine". Lives in the same
+// The workbench singleton lock — "one workbench per organization". Lives in the same
 // registry dir and shares the liveness/prune model: a stale lock left by a
 // crashed process is pruned on read so the next acquire isn't blocked forever.
 
@@ -396,8 +430,10 @@ const workbenchLockSchema = z.object({
  * Read the workbench lock file and return its contents if the holding
  * process is still alive. Prunes stale locks from crashed processes.
  */
-export function readWorkbenchLock(): z.infer<typeof workbenchLockSchema> | undefined {
-  const file = readLockFile()
+export function readWorkbenchLock(
+  organizationId: string,
+): z.infer<typeof workbenchLockSchema> | undefined {
+  const file = readLockFile(organizationId)
   // File doesn't exist — nothing to prune, nothing to return
   if (!file) return undefined
 
@@ -412,7 +448,7 @@ export function readWorkbenchLock(): z.infer<typeof workbenchLockSchema> | undef
     return data
   }
 
-  pruneWorkbenchLock(getLockPath())
+  pruneWorkbenchLock(getLockPath(organizationId))
   return undefined
 }
 
@@ -423,16 +459,16 @@ const LOCK_READY_POLL_MS = 50
  * Read the workbench lock once its holder's shell is listening, so the port is
  * the bound one. Returns the lock as-is after {@link LOCK_READY_TIMEOUT_MS}.
  */
-export async function waitForWorkbenchLock(): Promise<
-  z.infer<typeof workbenchLockSchema> | undefined
-> {
+export async function waitForWorkbenchLock(
+  organizationId: string,
+): Promise<z.infer<typeof workbenchLockSchema> | undefined> {
   const deadline = Date.now() + LOCK_READY_TIMEOUT_MS
-  let lock = readWorkbenchLock()
+  let lock = readWorkbenchLock(organizationId)
   // Read the raw file here: `readWorkbenchLock` spawns `ps`/PowerShell per call
   // and deletes a lock it catches half-written by `updatePort`.
   while (lock?.ready === false && Date.now() < deadline) {
     await new Promise((resolve) => setTimeout(resolve, LOCK_READY_POLL_MS))
-    const file = readLockFile()
+    const file = readLockFile(organizationId)
     if (!file) break
     lock = file.data ?? lock
   }
@@ -443,19 +479,22 @@ export async function waitForWorkbenchLock(): Promise<
       lock.port,
     )
   }
-  return readWorkbenchLock()
+  return readWorkbenchLock(organizationId)
 }
 
-const getLockPath = () => join(getRegistryDir(), 'workbench.lock')
+const getLockPath = (organizationId: string) =>
+  join(getRegistryDir(), `workbench-${organizationId}.lock`)
 
 /**
  * Read the lock file with no liveness check and no pruning. `undefined` when
  * there is no file; `data` is `undefined` when its contents don't parse.
  */
-function readLockFile(): {data: z.infer<typeof workbenchLockSchema> | undefined} | undefined {
+function readLockFile(
+  organizationId: string,
+): {data: z.infer<typeof workbenchLockSchema> | undefined} | undefined {
   let contents: string
   try {
-    contents = readFileSync(getLockPath(), 'utf8')
+    contents = readFileSync(getLockPath(organizationId), 'utf8')
   } catch {
     return undefined
   }
@@ -499,13 +538,13 @@ interface WorkbenchLock {
  *          live process already holds it.
  */
 export function acquireWorkbenchLock(
-  info: {host: string; port: number},
+  info: {host: string; organizationId: string; port: number},
   retries = 1,
 ): WorkbenchLock | undefined {
   const registryDir = getRegistryDir()
   mkdirSync(registryDir, {recursive: true})
 
-  const lockPath = getLockPath()
+  const lockPath = getLockPath(info.organizationId)
   const startedAt = ownStartedAt()
   const lockData = {
     host: info.host,
@@ -527,7 +566,7 @@ export function acquireWorkbenchLock(
     // it after our own release must not be clobbered.
     const detachExitCleanup = unlinkOnProcessExit(lockPath, () => {
       if (released) return false
-      const disk = readLockFile()?.data
+      const disk = readLockFile(info.organizationId)?.data
       return disk?.pid === process.pid && disk.startedAt === startedAt
     })
 
@@ -553,7 +592,7 @@ export function acquireWorkbenchLock(
     if (!isNodeError(err) || err.code !== 'EEXIST') return undefined
 
     // Lock exists — check if the holder is still alive
-    const existing = readWorkbenchLock()
+    const existing = readWorkbenchLock(info.organizationId)
     if (existing) return undefined
 
     // Stale lock was pruned by readWorkbenchLock — retry (with guard against infinite recursion)

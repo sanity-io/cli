@@ -62,7 +62,7 @@ describe('#assets:upload integration', () => {
         'image',
         '--content-type',
         'image/png',
-        '--project-id',
+        '--project',
         projectId,
         '--dataset',
         dataset,

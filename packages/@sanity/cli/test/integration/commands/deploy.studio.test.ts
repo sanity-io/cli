@@ -13,7 +13,7 @@ import {DeployCommand} from '../../../src/commands/deploy.js'
 import {USER_APPLICATIONS_API_VERSION} from '../../../src/services/userApplications.js'
 
 const mockGetLocalPackageVersion = vi.hoisted(() => vi.fn())
-const mockCheckBuiltOutput = vi.hoisted(() => vi.fn())
+const mockReadBuiltManifest = vi.hoisted(() => vi.fn())
 
 vi.mock('../../../src/actions/build/buildStudio.js', () => ({
   buildStudio: vi.fn(),
@@ -23,10 +23,9 @@ vi.mock('../../../src/actions/deploy/checkDir.js', () => ({
   checkDir: vi.fn(),
 }))
 
-// Only the fs-touching `checkBuiltOutput` is stubbed; `getWorkbench` stays real.
-vi.mock('@sanity/workbench-cli/deploy', async (importOriginal) => ({
-  ...(await importOriginal<typeof import('@sanity/workbench-cli/deploy')>()),
-  checkBuiltOutput: mockCheckBuiltOutput,
+vi.mock(import('@sanity/workbench-cli/build'), async (importOriginal) => ({
+  ...(await importOriginal()),
+  readBuiltManifest: mockReadBuiltManifest,
 }))
 
 vi.mock('@sanity/cli-core', async (importOriginal) => {
@@ -81,7 +80,7 @@ describe('#deploy studio', () => {
       return null
     })
     mockCheckDir.mockResolvedValue()
-    mockCheckBuiltOutput.mockResolvedValue(undefined)
+    mockReadBuiltManifest.mockResolvedValue({id: 'prebuilt'})
     mockStudioWorkerTask.mockResolvedValue({
       studioManifest: {
         buildId: '"test-build-id"',

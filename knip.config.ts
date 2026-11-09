@@ -31,8 +31,6 @@ const baseConfig = {
       // Config `src` files are referenced by string path in `sanity.cli.ts`, not
       // imported — list them so knip sees them as used.
       entry: ['src/**/*.{js,jsx,ts,tsx}'],
-      // Resolved at deploy/build time (SDK version check), not statically imported.
-      ignoreDependencies: ['@sanity/sdk-react'],
       project,
     },
     'fixtures/nextjs-app': {

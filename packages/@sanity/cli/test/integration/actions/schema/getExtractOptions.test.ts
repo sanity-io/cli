@@ -142,6 +142,42 @@ describe('getExtractOptions', () => {
     expect(result.outputPath).toEqual(resolve(join('/test/project', 'output', 'my-schema.yaml')))
   })
 
+  test('should honor an absolute file path instead of nesting it under the project root', () => {
+    const absolutePath = join(tmpdir(), 'absolute-output', 'example-schema.json')
+
+    const result = getExtractOptions({
+      flags: {
+        format: 'groq-type-nodes',
+        path: absolutePath,
+        watch: false,
+        'watch-patterns': undefined,
+        workspace: undefined,
+      } as ExtractSchemaCommand['flags'],
+      projectRoot: mockProjectRoot,
+      schemaExtraction: undefined,
+    })
+
+    expect(result.outputPath).toEqual(absolutePath)
+  })
+
+  test('should honor an absolute directory path from the CLI config', () => {
+    const absoluteDirectory = join(tmpdir(), 'absolute-output-dir')
+
+    const result = getExtractOptions({
+      flags: {
+        format: 'groq-type-nodes',
+        path: undefined,
+        watch: false,
+        'watch-patterns': undefined,
+        workspace: undefined,
+      } as ExtractSchemaCommand['flags'],
+      projectRoot: mockProjectRoot,
+      schemaExtraction: {path: absoluteDirectory},
+    })
+
+    expect(result.outputPath).toEqual(join(absoluteDirectory, 'schema.json'))
+  })
+
   test('should respect .json file path when file exists on disk', () => {
     const tempDir = mkdtempSync(join(tmpdir(), 'schema-test-'))
     writeFileSync(join(tempDir, 'schema.json'), '{}')

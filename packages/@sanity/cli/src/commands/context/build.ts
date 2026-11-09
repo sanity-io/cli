@@ -1,26 +1,17 @@
-import {Args, Flags} from '@oclif/core'
+import {Flags} from '@oclif/core'
 import {type FlagInput} from '@oclif/core/interfaces'
-import {exitCodes, SanityCommand, subdebug} from '@sanity/cli-core'
-import {getErrorMessage} from '@sanity/cli-core/errors'
-import {spinner} from '@sanity/cli-core/ux'
-import {isHttpError} from '@sanity/client'
 
-import {watchJob} from '../../actions/context/watchJob.js'
-import {formatKeyValue} from '../../actions/debug/output.js'
-import {buildKnowledgeBase, cancelKnowledgeBaseBuild} from '../../services/context.js'
+import {contextCommand} from '../../actions/context/contextCommand.js'
+import {type OperationRequest} from '../../actions/context/operationInput.js'
+import {requestContext} from '../../services/context.js'
 
-const buildContextDebug = subdebug('context:build')
+const BaseCommand = contextCommand('context build')
 
-export class BuildKnowledgeBaseCommand extends SanityCommand<typeof BuildKnowledgeBaseCommand> {
-  static override args = {
-    knowledgeBaseId: Args.string({
-      description: 'Knowledge base ID',
-      required: true,
-    }),
-  }
-
-  static override description = 'Build a knowledge base from its imported content'
-
+/**
+ * `context build` keeps `--cancel`, which calls the cancel operation instead
+ * of starting a build
+ */
+export class BuildKnowledgeBaseCommand extends BaseCommand {
   static override examples = [
     {
       command: '<%= config.bin %> <%= command.id %> kb-abc123',
@@ -37,86 +28,30 @@ export class BuildKnowledgeBaseCommand extends SanityCommand<typeof BuildKnowled
   ]
 
   static override flags = {
+    ...BaseCommand.flags,
     cancel: Flags.boolean({
       default: false,
       description: 'Cancel the running build instead of starting one',
       exclusive: ['watch'],
     }),
-    watch: Flags.boolean({
-      default: false,
-      description: 'Wait for the build to finish, exiting non-zero if it fails',
-    }),
   } satisfies FlagInput
 
-  public async run(): Promise<void> {
-    const {knowledgeBaseId} = this.args
-    const {cancel, watch} = this.flags
-
-    if (cancel) {
-      await this.cancelBuild(knowledgeBaseId)
+  public override render(result: unknown): void {
+    if (!this.flags.cancel || this.flags.json) {
+      super.render(result)
       return
     }
-
-    let jobId: string
-    const spin = spinner('Starting build').start()
-    try {
-      const accepted = await buildKnowledgeBase(knowledgeBaseId)
-      jobId = accepted.jobId
-      spin.succeed('Build started')
-    } catch (error) {
-      spin.fail()
-      buildContextDebug('Error starting build', error)
-      if (isHttpError(error) && error.statusCode === 404) {
-        this.error(`Knowledge base "${knowledgeBaseId}" not found`, {
-          exit: exitCodes.RUNTIME_ERROR,
-        })
-      }
-      this.error(`Failed to start build: ${getErrorMessage(error)}`, {
-        exit: exitCodes.RUNTIME_ERROR,
-      })
-    }
-
-    this.log(formatKeyValue('Job ID', jobId))
-    this.log(`Track it with: sanity context jobs get ${knowledgeBaseId} ${jobId}`)
-
-    if (!watch) {
-      return
-    }
-
-    let job
-    try {
-      job = await watchJob(knowledgeBaseId, jobId, {
-        label: 'Building knowledge base',
-        successText: 'Build succeeded',
-      })
-    } catch (error) {
-      buildContextDebug('Error watching build job', error)
-      this.error(`Failed to watch build job: ${getErrorMessage(error)}`, {
-        exit: exitCodes.RUNTIME_ERROR,
-      })
-    }
-
-    if (job.status !== 'succeeded') {
-      this.error(`Build ${job.status}${job.error ? `: ${job.error}` : ''}`, {
-        exit: exitCodes.RUNTIME_ERROR,
-      })
-    }
+    const cancelled = typeof result === 'object' && result !== null && 'cancelled' in result
+    this.log(cancelled && result.cancelled ? 'Build cancelled' : 'No running build to cancel')
   }
 
-  private async cancelBuild(knowledgeBaseId: string): Promise<void> {
-    try {
-      const {cancelled} = await cancelKnowledgeBaseBuild(knowledgeBaseId)
-      this.log(cancelled ? 'Build cancelled' : 'No running build to cancel')
-    } catch (error) {
-      buildContextDebug('Error cancelling build', error)
-      if (isHttpError(error) && error.statusCode === 404) {
-        this.error(`Knowledge base "${knowledgeBaseId}" not found`, {
-          exit: exitCodes.RUNTIME_ERROR,
-        })
-      }
-      this.error(`Failed to cancel build: ${getErrorMessage(error)}`, {
-        exit: exitCodes.RUNTIME_ERROR,
-      })
-    }
+  public override async send(
+    request: OperationRequest,
+    flags: Record<string, unknown>,
+  ): Promise<unknown> {
+    if (!flags.cancel) return super.send(request, flags)
+    return requestContext('POST /knowledge-bases/{knowledgeBaseId}/build/cancel', {
+      params: request.params,
+    })
   }
 }

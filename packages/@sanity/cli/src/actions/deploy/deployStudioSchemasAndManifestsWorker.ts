@@ -2,13 +2,9 @@ import {
   extractValidationFromSchemaError,
   workerBuildStudioSchemasAndManifests,
 } from '@sanity/cli-build/_internal/extract'
-import {type CreateWorkspaceManifest} from '@sanity/cli-build/_internal/manifest'
 import {subdebug} from '@sanity/cli-core'
 
-import {
-  updateWorkspacesSchemas,
-  type WorkspaceSchemaInput,
-} from '../schema/updateWorkspaceSchema.js'
+import {updateWorkspacesSchemas} from '../schema/updateWorkspaceSchema.js'
 import {
   deployStudioSchemasAndManifestsWorkerData,
   type DeployStudioSchemasAndManifestsWorkerMessage,
@@ -43,19 +39,9 @@ export async function deployStudioSchemasAndManifestsWorker(
 
   const options: Parameters<typeof workerBuildStudioSchemasAndManifests>[0] = parsedWorkerData
 
-  options.workspaceManifestsHandler = async (workspaceManifests: CreateWorkspaceManifest[]) => {
-    if (!options.isExternal || parsedWorkerData.schemaRequired) {
-      const schemaInputs: WorkspaceSchemaInput[] = workspaceManifests.map((manifest) => ({
-        dataset: manifest.dataset,
-        manifestSchema: manifest.schema,
-        name: manifest.name,
-        projectId: manifest.projectId,
-        title: manifest.title,
-      }))
-
-      // Updates the workspaces schemas to /schemas endpoint
-      await updateWorkspacesSchemas({verbose: options.verbose, workspaces: schemaInputs})
-    }
+  options.workspaceSchemaHandler = async (schemaInputs) => {
+    // Updates the workspaces schemas to /schemas endpoint
+    await updateWorkspacesSchemas({verbose: options.verbose, workspaces: schemaInputs})
   }
 
   try {

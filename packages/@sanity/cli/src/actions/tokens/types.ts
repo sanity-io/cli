@@ -38,3 +38,8 @@ export interface Robot {
 export interface RobotWithToken extends Robot {
   token: string
 }
+
+export interface TokenScope {
+  resourceId: string
+  resourceType: 'organization' | 'project'
+}

@@ -1,6 +1,6 @@
 {
   "name": "@sanity/cli-test",
-  "version": "19.0.2",
+  "version": "24.0.2",
   "description": "Sanity CLI test helpers and utilities",
   "keywords": [
     "cli",
@@ -157,7 +157,7 @@
     "@oclif/core": "^4.0.0",
     "@sanity/cli-core": "workspace:*",
     "@sanity/client": "catalog:",
-    "vitest": ">=3.0.0 <5.0.0"
+    "vitest": ">=3.0.0 <6.0.0"
   },
   "engines": {
     "node": ">=22.12"

@@ -93,10 +93,10 @@ describe('getProjectId fallback', () => {
     expect(mockPromptForProject).not.toHaveBeenCalled()
   })
 
-  test('does not call fallback when --project-id flag is provided', async () => {
+  test('does not call fallback when --project flag is provided', async () => {
     mockListDatasets.mockResolvedValue([{name: 'production'} as never])
 
-    const {error} = await testCommand(ListDatasetCommand, ['--project-id', 'flag-project'], {
+    const {error} = await testCommand(ListDatasetCommand, ['--project', 'flag-project'], {
       mocks: noProjectMocks,
     })
 

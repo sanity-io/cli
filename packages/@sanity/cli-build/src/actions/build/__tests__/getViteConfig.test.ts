@@ -12,6 +12,7 @@ import {
   finalizeViteConfig,
   getViteConfig,
 } from '../getViteConfig.js'
+import {sanityVendorChunks} from '../vite/plugin-sanity-vendor-chunks.js'
 
 const mockExtractSchemaPlugin = vi.hoisted(() => vi.fn())
 const mockWorkbenchVitePlugins = vi.hoisted(() => vi.fn())
@@ -48,12 +49,7 @@ vi.mock('@vitejs/plugin-react', () => ({
 }))
 
 vi.mock('vite', () => ({
-  esmExternalRequirePlugin: vi.fn(() => ({name: 'esm-external-require'})),
   mergeConfig: vi.fn((base: InlineConfig, override: InlineConfig) => ({...base, ...override})),
-}))
-
-vi.mock('../createExternalFromImportMap.js', () => ({
-  createExternalFromImportMap: vi.fn(() => ['external1', 'external2']),
 }))
 
 vi.mock('../normalizeBasePath.js', () => ({
@@ -76,8 +72,8 @@ vi.mock('../vite/plugin-sanity-runtime-rewrite.js', () => ({
   sanityRuntimeRewritePlugin: vi.fn(() => ({name: 'sanity-runtime-rewrite'})),
 }))
 
-vi.mock('../vite/plugin-sanity-vendor-named-exports.js', () => ({
-  createVendorNamedExportsPlugin: vi.fn(() => ({name: 'sanity-vendor-named-exporters'})),
+vi.mock('../vite/plugin-sanity-vendor-chunks.js', () => ({
+  sanityVendorChunks: vi.fn(() => ({name: 'sanity-vendor-chunks'})),
 }))
 
 vi.mock('../../schema/vite/plugin-schema-extraction.js', () => ({
@@ -488,60 +484,7 @@ describe('#getViteConfig', () => {
     expect(config.define?.__SANITY_STAGING__).toBe(true)
   })
 
-  test('should configure auto-updates builds with vendor chunks and import map', async () => {
-    const autoUpdates = {
-      imports: {sanity: 'https://sanity-cdn.example/sanity'},
-      vendor: {
-        entries: {'react/index': convertToSystemPath('/pkg/react/index.js')},
-        namesByChunkName: {'react/index': ['useState']},
-        specifiersByChunkName: {'react/index': 'react'},
-      },
-    }
-
-    const options = {
-      autoUpdates,
-      cwd: mockTestCwd,
-      entries: mockEntries,
-      getEnvironmentVariables,
-      mode: 'production' as const,
-      reactCompiler: undefined,
-    }
-
-    const {sanityBuildEntries} = await import('../vite/plugin-sanity-build-entries.js')
-    const {createExternalFromImportMap} = await import('../createExternalFromImportMap.js')
-    const {esmExternalRequirePlugin} = await import('vite')
-
-    const config = await getViteConfig(options)
-
-    expect(sanityBuildEntries).toHaveBeenCalledWith({
-      autoUpdates,
-      basePath: '/',
-      cwd: mockTestCwd,
-      isApp: undefined,
-    })
-
-    // Vendor entries become additional Rolldown inputs of the single build.
-    expect(config.build?.rolldownOptions?.input).toMatchObject({
-      'react/index': convertToSystemPath('/pkg/react/index.js'),
-      sanity: join(mockTestCwd, '.sanity/runtime/app.js'),
-    })
-    // Vendor entry exports must survive the app-style build.
-    expect(config.build?.rolldownOptions?.preserveEntrySignatures).toBe('exports-only')
-
-    // Both the CDN import map specifiers and the vendor specifiers are handed to
-    // esmExternalRequirePlugin (so external require() is rewritten to ESM imports),
-    // not to rolldownOptions.external.
-    expect(createExternalFromImportMap).toHaveBeenCalledWith({
-      imports: {react: '', sanity: 'https://sanity-cdn.example/sanity'},
-    })
-    expect(esmExternalRequirePlugin).toHaveBeenCalledWith({external: ['external1', 'external2']})
-    expect(config.plugins).toContainEqual({name: 'esm-external-require'})
-    expect(config.build?.rolldownOptions).not.toHaveProperty('external')
-  })
-
-  test('should not install esmExternalRequirePlugin when auto-updates are disabled', async () => {
-    const {esmExternalRequirePlugin} = await import('vite')
-
+  test('should not add vendor chunks when auto-updates are disabled', async () => {
     const config = await getViteConfig({
       cwd: mockTestCwd,
       entries: mockEntries,
@@ -550,7 +493,7 @@ describe('#getViteConfig', () => {
       reactCompiler: undefined,
     })
 
-    expect(esmExternalRequirePlugin).not.toHaveBeenCalled()
+    expect(sanityVendorChunks).not.toHaveBeenCalled()
     expect(config.build?.rolldownOptions?.input).toEqual({
       sanity: join(mockTestCwd, '.sanity/runtime/app.js'),
     })

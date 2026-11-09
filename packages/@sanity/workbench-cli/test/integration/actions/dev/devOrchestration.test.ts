@@ -252,8 +252,31 @@ describe('dev orchestration chain', () => {
     await remote.close()
   })
 
+  test('given a shell for another organization, `sanity dev` starts its own shell', async () => {
+    const otherOrgShell = acquireWorkbenchLock({
+      host: 'localhost',
+      organizationId: 'org-other',
+      port: 3333,
+    })!
+    mockCreateServer.mockResolvedValue(createMockViteServer({port: 3335}))
+
+    const shell = await startWorkbenchDevServer(
+      createDevOptions({cliConfig: workbenchCliConfig(), httpPort: 3333}),
+    )
+
+    expect(mockCreateServer).toHaveBeenCalledOnce()
+    expect(shell).toMatchObject({workbenchAvailable: true, workbenchPort: 3335})
+
+    await shell.close()
+    otherOrgShell.release()
+  })
+
   test('given a shell that is still starting, the next `sanity dev` reports the port the shell ends up binding', async () => {
-    const starting = acquireWorkbenchLock({host: 'localhost', port: 3333})!
+    const starting = acquireWorkbenchLock({
+      host: 'localhost',
+      organizationId: 'org-123',
+      port: 3333,
+    })!
 
     const next = startWorkbenchDevServer(
       createDevOptions({cliConfig: workbenchCliConfig(), httpPort: 3333}),

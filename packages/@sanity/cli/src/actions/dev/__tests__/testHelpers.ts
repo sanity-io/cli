@@ -35,6 +35,8 @@ export function createMockOutput(): Output {
   return {
     error: vi.fn(),
     log: vi.fn(),
+    logDiagnostic: vi.fn(),
+    logJson: vi.fn(),
     warn: vi.fn(),
   } as unknown as Output
 }

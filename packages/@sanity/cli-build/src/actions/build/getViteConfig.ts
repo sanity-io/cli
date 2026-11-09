@@ -16,7 +16,6 @@ import viteReact, {reactCompilerPreset} from '@vitejs/plugin-react'
 import {Features} from 'lightningcss'
 import {
   type ConfigEnv,
-  esmExternalRequirePlugin,
   type InlineConfig,
   mergeConfig,
   type Plugin,
@@ -28,13 +27,11 @@ import {SANITY_CACHE_DIR} from '../../constants.js'
 import {sanitySchemaExtractionPlugin} from '../schema/vite/plugin-schema-extraction.js'
 import {type AutoUpdatesBuildConfig} from './autoUpdates.js'
 import {buildDebug} from './buildDebug.js'
-import {VENDOR_DIR} from './constants.js'
-import {createExternalFromImportMap} from './createExternalFromImportMap.js'
 import {normalizeBasePath} from './normalizeBasePath.js'
 import {sanityBuildEntries} from './vite/plugin-sanity-build-entries.js'
 import {sanityFaviconsPlugin} from './vite/plugin-sanity-favicons.js'
 import {sanityRuntimeRewritePlugin} from './vite/plugin-sanity-runtime-rewrite.js'
-import {createVendorNamedExportsPlugin} from './vite/plugin-sanity-vendor-named-exports.js'
+import {sanityVendorChunks} from './vite/plugin-sanity-vendor-chunks.js'
 import {getDefaultFaviconsPath} from './writeFavicons.js'
 
 interface ViteOptions {
@@ -231,6 +228,7 @@ export async function getViteConfig(options: ViteOptions): Promise<InlineConfig>
             ...sharedPlugins,
             await workbenchVitePlugins({
               appId: workbenchAppId,
+              autoUpdates,
               cwd,
               entries,
               exposes,
@@ -238,9 +236,10 @@ export async function getViteConfig(options: ViteOptions): Promise<InlineConfig>
               isBlueprints,
             }),
             {
-              ...sanityBuildEntries({basePath, bridge: false, cwd, isApp}),
+              ...sanityBuildEntries({autoUpdates, basePath, bridge: false, cwd, isApp}),
               applyToEnvironment: (env) => env.name === 'client',
             } satisfies Plugin,
+            ...(autoUpdates ? [sanityVendorChunks(autoUpdates)] : []),
           ]
         : [
             ...sharedPlugins,
@@ -300,37 +299,8 @@ export async function getViteConfig(options: ViteOptions): Promise<InlineConfig>
   // plugin configures its own environment and build entry point.
   if (mode === 'production' && !isWorkbenchApp) {
     if (autoUpdates) {
-      viteConfig.plugins!.push(
-        // Re-expose CommonJS named exports (react, react-dom) as real ESM exports
-        // on the emitted vendor chunks; Rolldown only emits `export default` for a
-        // CommonJS entry.
-        createVendorNamedExportsPlugin(autoUpdates.vendor.namesByChunkName),
-        // The import map and vendor specifiers are externals of the studio/app
-        // bundle, resolved by the browser at runtime. They are handed to
-        // `esmExternalRequirePlugin` rather than `rolldownOptions.external`: the
-        // plugin both marks them external AND rewrites bundled CommonJS
-        // `require()` calls of an external (e.g. react-dom requiring react) into
-        // ESM imports, while `rolldownOptions.external` would short-circuit that
-        // rewrite and leave a runtime `require` shim that throws in the browser.
-        esmExternalRequirePlugin({
-          external: createExternalFromImportMap({
-            imports: {
-              ...autoUpdates.imports,
-              ...Object.fromEntries(
-                Object.values(autoUpdates.vendor.specifiersByChunkName).map((specifier) => [
-                  specifier,
-                  '',
-                ]),
-              ),
-            },
-          }),
-        }),
-      )
+      viteConfig.plugins!.push(sanityVendorChunks(autoUpdates))
     }
-
-    const vendorChunkNames = autoUpdates
-      ? new Set(Object.keys(autoUpdates.vendor.specifiersByChunkName))
-      : null
 
     viteConfig.build = {
       ...viteConfig.build,
@@ -342,51 +312,22 @@ export async function getViteConfig(options: ViteOptions): Promise<InlineConfig>
       rolldownOptions: {
         input: {
           sanity: path.join(cwd, '.sanity', 'runtime', 'app.js'),
-          ...autoUpdates?.vendor.entries,
         },
         onwarn: onRolldownWarn,
-        ...(isBlueprints || autoUpdates
+        ...(isBlueprints
           ? {
               output: {
-                ...(isBlueprints
-                  ? {
-                      // Blueprints only: keep the resource-bindings module in its
-                      // own unhashed chunk at the bundle root so Brett can rewrite
-                      // it at deploy. The chunk sizing lives on the group itself
-                      // (see `resourceBindingsCodeSplittingGroup`), so it only
-                      // affects the bindings module and not automatic chunking.
-                      chunkFileNames: (chunk) =>
-                        resourceBindingsChunkFileName(chunk.name) ?? 'static/[name]-[hash].js',
-                      codeSplitting: {
-                        groups: [resourceBindingsCodeSplittingGroup],
-                      },
-                    }
-                  : {}),
-                ...(autoUpdates
-                  ? {
-                      entryFileNames: (chunk) =>
-                        vendorChunkNames!.has(chunk.name)
-                          ? `${VENDOR_DIR}/[name]-[hash].mjs`
-                          : 'static/[name]-[hash].js',
-                      exports: 'named',
-                    }
-                  : {}),
+                // Blueprints only: keep the resource-bindings module in its
+                // own unhashed chunk at the bundle root so Brett can rewrite
+                // it at deploy. The chunk sizing lives on the group itself
+                // (see `resourceBindingsCodeSplittingGroup`), so it only
+                // affects the bindings module and not automatic chunking.
+                chunkFileNames: (chunk) =>
+                  resourceBindingsChunkFileName(chunk.name) ?? 'static/[name]-[hash].js',
+                codeSplitting: {
+                  groups: [resourceBindingsCodeSplittingGroup],
+                },
               },
-            }
-          : {}),
-        ...(autoUpdates
-          ? {
-              // Expose Rolldown's native MagicString on `renderChunk`'s `meta` so
-              // the vendor named-exports plugin can edit chunks without a JS
-              // dependency.
-              experimental: {nativeMagicString: true},
-              // App-style builds default to `preserveEntrySignatures: false`, which
-              // treeshakes the exports off entry chunks. Vendor chunks are loaded by
-              // the browser via the import map, so their exports must survive (e.g.
-              // styled-components' native ESM exports). `exports-only` keeps exports
-              // for entries that have them, while the export-less `sanity` app entry
-              // still bundles as before.
-              preserveEntrySignatures: 'exports-only',
             }
           : {}),
       },

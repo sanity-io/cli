@@ -24,7 +24,7 @@ export async function readNDJSON<T>(filePath: string): Promise<T[]> {
     try {
       results.push(JSON.parse(line) as T)
     } catch {
-      telemetryStoreDebug('Skipping malformed JSON line in %s: %s', filePath, line.slice(0, 100))
+      telemetryStoreDebug('Skipping malformed JSON line in telemetry file')
     }
   }
   return results

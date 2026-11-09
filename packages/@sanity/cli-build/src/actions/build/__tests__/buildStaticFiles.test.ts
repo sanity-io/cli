@@ -125,6 +125,18 @@ describe('buildStaticFiles', () => {
       })
     })
 
+    test('builds an auto-updating workbench app without reusing its standalone build', async () => {
+      const autoUpdates = {
+        imports: {sanity: 'https://sanity-cdn.example/sanity'},
+        vendor: {entries: {}, namesByChunkName: {}, specifiersByChunkName: {}},
+      }
+
+      await buildStaticFiles({autoUpdates, basePath: '/', cwd, isWorkbenchApp: true, outputDir})
+
+      expect(mockGetViteConfig).toHaveBeenCalledWith(expect.objectContaining({autoUpdates}))
+      expect(mockBuildApp).toHaveBeenCalledWith(defaultViteConfig, {reuseStandaloneBuild: false})
+    })
+
     test('threads schemaExtraction through so a federated studio still extracts its schema', async () => {
       const schemaExtraction = {enabled: true}
 

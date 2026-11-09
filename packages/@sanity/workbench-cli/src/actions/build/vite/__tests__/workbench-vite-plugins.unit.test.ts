@@ -20,7 +20,7 @@ afterEach(() => {
 })
 
 describe('workbenchVitePlugins', () => {
-  test('appends the app-id define plugin when an appId is given', async () => {
+  test('appends the app-id define and stylesheet-tagging plugins when an appId is given', async () => {
     const result = await workbenchVitePlugins({
       appId: 'drop-desk',
       cwd,
@@ -29,6 +29,7 @@ describe('workbenchVitePlugins', () => {
     expect(result).toEqual([
       {name: 'sanity/federation'},
       expect.objectContaining({name: 'sanity/workbench/app-id'}),
+      expect.objectContaining({name: 'sanity/workbench/app-styles'}),
     ])
   })
 
@@ -60,6 +61,16 @@ describe('workbenchVitePlugins', () => {
       workbenchVitePlugins({cwd, entries: {relativeConfigLocation: null, relativeEntry: null}}),
     ).rejects.toThrow('Dashboard studios need a sanity.config')
     expect(mockFederation).not.toHaveBeenCalled()
+  })
+
+  test('throws when an auto-updating app has no appId', async () => {
+    await expect(
+      workbenchVitePlugins({
+        autoUpdates: {imports: {}, vendor: {specifiersByChunkName: {}}},
+        cwd,
+        entries: {relativeConfigLocation: '../../sanity.config.ts', relativeEntry: null},
+      }),
+    ).rejects.toThrow('An auto-updating workbench app needs an app ID')
   })
 
   test('builds an app remote with its entry', async () => {

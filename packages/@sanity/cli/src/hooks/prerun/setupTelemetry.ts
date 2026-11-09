@@ -17,7 +17,6 @@ import {telemetryDisclosure} from '../../actions/telemetry/telemetryDisclosure.j
 import {CliCommandTelemetry, type CLITraceData} from '../../telemetry/cli.telemetry.js'
 import {detectRuntime} from '../../util/detectRuntime.js'
 import {parseArguments} from '../../util/parseArguments.js'
-import {type CommandTelemetry} from '../../util/telemetry/commandTelemetry.js'
 import {createTelemetryStore} from '../../util/telemetry/createTelemetryStore.js'
 
 export const setupTelemetry: Hook.Prerun = async function ({Command, config}) {
@@ -48,10 +47,7 @@ export const setupTelemetry: Hook.Prerun = async function ({Command, config}) {
     runtimeVersion: process.version,
   })
 
-  const commandTelemetry = (
-    Command as (typeof Command & {telemetry?: CommandTelemetry}) | undefined
-  )?.telemetry
-  const args = parseArguments(process.argv, commandTelemetry)
+  const args = parseArguments(process.argv, Command)
 
   const traceOptions: CLITraceData = {
     commandArguments: args.argsWithoutOptions,
@@ -64,7 +60,7 @@ export const setupTelemetry: Hook.Prerun = async function ({Command, config}) {
     groupOrCommand: args.groupOrCommand,
   }
 
-  telemetryDebug('Starting command trace', traceOptions)
+  telemetryDebug('Starting command trace')
 
   const cliCommandTrace = telemetry.trace(CliCommandTelemetry, traceOptions)
   cliCommandTrace.start()

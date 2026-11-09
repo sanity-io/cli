@@ -175,7 +175,7 @@ describe('#documents:get', () => {
       token: 'test-token',
     }
 
-    test('works with --project-id and --dataset flags when there is no project root', async () => {
+    test('works with --project and --dataset flags when there is no project root', async () => {
       const mockDoc = {
         _id: 'test-doc',
         _type: 'post',
@@ -186,7 +186,7 @@ describe('#documents:get', () => {
 
       const {error, stdout} = await testCommand(
         GetDocumentCommand,
-        ['test-doc', '--project-id', 'flag-project', '--dataset', 'flag-dataset'],
+        ['test-doc', '--project', 'flag-project', '--dataset', 'flag-dataset'],
         {mocks: noProjectRootMocks},
       )
 
@@ -196,7 +196,7 @@ describe('#documents:get', () => {
       expect(mockGetDocument).toHaveBeenCalledWith('test-doc')
     })
 
-    test('errors when outside project context and no --project-id provided', async () => {
+    test('errors when outside project context and no --project provided', async () => {
       const {error} = await testCommand(GetDocumentCommand, ['test-doc'], {
         mocks: noProjectRootMocks,
       })
@@ -206,10 +206,10 @@ describe('#documents:get', () => {
       expect(error?.oclif?.exit).toBe(1)
     })
 
-    test('errors when outside project context with --project-id but no --dataset', async () => {
+    test('errors when outside project context with --project but no --dataset', async () => {
       const {error} = await testCommand(
         GetDocumentCommand,
-        ['test-doc', '--project-id', 'flag-project'],
+        ['test-doc', '--project', 'flag-project'],
         {mocks: noProjectRootMocks},
       )
 
@@ -218,7 +218,7 @@ describe('#documents:get', () => {
       expect(error?.oclif?.exit).toBe(exitCodes.USAGE_ERROR)
     })
 
-    test('--project-id flag overrides CLI config projectId', async () => {
+    test('--project flag overrides CLI config projectId', async () => {
       const mockDoc = {
         _id: 'test-doc',
         _type: 'post',
@@ -229,7 +229,7 @@ describe('#documents:get', () => {
 
       const {error, stdout} = await testCommand(
         GetDocumentCommand,
-        ['test-doc', '--project-id', 'override-project'],
+        ['test-doc', '--project', 'override-project'],
         {mocks: defaultMocks},
       )
 

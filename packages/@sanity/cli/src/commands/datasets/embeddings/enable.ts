@@ -9,6 +9,7 @@ import {resolveDataset} from '../../../actions/dataset/resolveDataset.js'
 import {promptForProject} from '../../../prompts/promptForProject.js'
 import {getEmbeddingsSettings, setEmbeddingsSettings} from '../../../services/embeddings.js'
 import {getProjectIdFlag} from '../../../util/sharedFlags.js'
+import {defineCommandTelemetry} from '../../../util/telemetry/commandTelemetry.js'
 import {validateProjection} from '../../../util/validateProjection.js'
 
 const debug = subdebug('dataset:embeddings:enable')
@@ -60,6 +61,8 @@ export class DatasetEmbeddingsEnableCommand extends SanityCommand<
   }
 
   static override hiddenAliases: string[] = ['dataset:embeddings:enable']
+
+  static telemetry = defineCommandTelemetry(this.flags, {redact: ['projection']})
 
   public async run(): Promise<void> {
     const {args, flags} = await this.parse(DatasetEmbeddingsEnableCommand)

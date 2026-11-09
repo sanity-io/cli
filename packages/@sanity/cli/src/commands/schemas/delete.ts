@@ -8,6 +8,7 @@ import {deleteSchemaAction} from '../../actions/schema/deleteSchemaAction.js'
 import {parseIds} from '../../actions/schema/utils/schemaStoreValidation.js'
 import {promptForProject} from '../../prompts/promptForProject.js'
 import {getDatasetFlag, getProjectIdFlag} from '../../util/sharedFlags.js'
+import {defineCommandTelemetry} from '../../util/telemetry/commandTelemetry.js'
 
 const deleteSchemaDebug = subdebug('schema:delete')
 
@@ -63,6 +64,8 @@ export class DeleteSchemaCommand extends SanityCommand<typeof DeleteSchemaComman
   }
 
   static override hiddenAliases: string[] = ['schema:delete']
+
+  static telemetry = defineCommandTelemetry(this.flags, {redact: ['manifest-dir']})
 
   public async run(): Promise<void> {
     const {flags} = await this.parse(DeleteSchemaCommand)

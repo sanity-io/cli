@@ -11,6 +11,7 @@ import {type TelemetryEvent} from '@sanity/telemetry'
 
 import {generateTelemetryFilePath} from './generateTelemetryFilePath.js'
 import {createLogger} from './logger.js'
+import {sanitizeTelemetryEvent, telemetryError} from './sanitizeTelemetryEvent.js'
 import {telemetryStoreDebug} from './telemetryStoreDebug.js'
 
 /**
@@ -69,7 +70,10 @@ export function createTelemetryStore(
       cachedConsent = await options.resolveConsent()
       telemetryStoreDebug('Cached consent status: %s', cachedConsent.status)
     } catch (error) {
-      telemetryStoreDebug('Failed to initialize consent, treating as undetermined: %o', error)
+      telemetryStoreDebug(
+        'Failed to initialize consent, treating as undetermined: %o',
+        telemetryError(error),
+      )
       cachedConsent = {reason: 'fetchError', status: 'undetermined'}
     }
   }
@@ -84,7 +88,7 @@ export function createTelemetryStore(
       await mkdir(dirname(filePath), {recursive: true})
       telemetryStoreDebug('Created directory structure for: %s', filePath)
     } catch (error) {
-      telemetryStoreDebug('Failed to initialize file path: %o', error)
+      telemetryStoreDebug('Failed to initialize file path: %o', telemetryError(error))
       filePath = null
     }
   }
@@ -106,12 +110,19 @@ export function createTelemetryStore(
       appendFileSync(filePath, JSON.stringify(event) + '\n', 'utf8')
       telemetryStoreDebug('Successfully wrote event to file: %s', filePath)
     } catch (error) {
-      telemetryStoreDebug('Failed to write telemetry event: %o', error)
+      telemetryStoreDebug('Failed to write telemetry event: %o', telemetryError(error))
       // Silent failure - don't break CLI functionality
     }
   }
 
-  const emit = (event: TelemetryEvent) => {
+  const emit = (input: TelemetryEvent) => {
+    let event: TelemetryEvent
+    try {
+      event = sanitizeTelemetryEvent(input)
+    } catch {
+      telemetryStoreDebug('Skipping an unserializable telemetry event')
+      return
+    }
     if (!initComplete) {
       telemetryStoreDebug('Init pending, buffering event: %s', event.type)
       eventBuffer.push(event)
@@ -137,7 +148,7 @@ export function createTelemetryStore(
     for (const [index, result] of results.entries()) {
       if (result.status === 'rejected') {
         const type = index === 0 ? 'consent' : 'file path'
-        telemetryStoreDebug('Error initializing %s: %o', type, result.reason)
+        telemetryStoreDebug('Error initializing %s: %o', type, telemetryError(result.reason))
       }
     }
 

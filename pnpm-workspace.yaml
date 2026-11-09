@@ -22,16 +22,16 @@ catalog:
   publint: ^0.3.21
 
   # GROQ
-  groq-js: ^2.0.0
+  groq-js: ^2.0.1
 
   # Sanity
-  sanity: ^6.17.0
-  '@sanity/vision': ^6.17.0
-  '@sanity/types': ^6.17.0
-  '@sanity/schema': ^6.17.0
-  '@sanity/client': ^8.9.0
-  '@sanity/codegen': ^8.2.0
-  '@sanity/sdk': ^3.8.0
+  sanity: ^6.22.0
+  '@sanity/vision': ^6.22.0
+  '@sanity/types': ^6.22.0
+  '@sanity/schema': ^6.22.0
+  '@sanity/client': ^8.15.0
+  '@sanity/codegen': ^8.3.0
+  '@sanity/sdk': ^3.12.0
   '@sanity/telemetry': ^1.1.0
 
   # React
@@ -42,15 +42,15 @@ catalog:
 
   # Build & Development Tools
   babel-plugin-react-compiler: ^1.0.0
-  oxc-transform-react: ^0.153.0
+  oxc-transform-react: ^0.156.0
   typescript: ^6.0.3
-  vite: ^8.3.3
-  '@vitejs/plugin-react': ^6.1.2
+  vite: ^8.3.6
+  '@vitejs/plugin-react': ^6.2.1
   tsx: ^4.23.12
 
   # Testing
-  vitest: ^4.1.11
-  '@vitest/coverage-istanbul': ^4.1.11
+  vitest: ^5.1.0
+  '@vitest/coverage-istanbul': ^5.1.0
   nock: ^14.0.15
   node-pty: ^1.1.0
   strip-ansi: ^7.1.0
@@ -85,10 +85,10 @@ catalog:
   '@swc/cli': ^0.8.1
   rimraf: ^6.0.1
   '@sanity/pkg-utils': ^12.3.4
-  oxfmt: ^0.66.0
+  oxfmt: ^0.76.0
 
   # Type Definitions
-  '@types/node': ^22.20.0
+  '@types/node': ^22.20.5
   '@types/jsdom': ^28.0.3
 
 minimumReleaseAge: 4320
@@ -138,6 +138,12 @@ minimumReleaseAgeExclude:
   - '@sentry/replay@10.73.0'
   - i18next@26.4.1
   - react-i18next@17.0.13
+  # Renovate security update: smol-toml@1.9.0
+  - smol-toml@1.9.0
+  # Renovate security update: dompurify@3.4.17
+  - dompurify@3.4.17
+  # Renovate security update: zod@4.6.6
+  - zod@4.6.6
 allowBuilds:
   '@swc/core': true
   esbuild: true

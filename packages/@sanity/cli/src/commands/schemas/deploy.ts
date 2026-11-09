@@ -8,6 +8,7 @@ import {exitCodes, SanityCommand} from '@sanity/cli-core'
 import {deploySchemas} from '../../actions/schema/deploySchemas.js'
 import {schemasDeployDebug} from '../../actions/schema/utils/debug.js'
 import {parseTag} from '../../actions/schema/utils/schemaStoreValidation.js'
+import {defineCommandTelemetry} from '../../util/telemetry/commandTelemetry.js'
 
 const description = `
 Deploy schema documents into workspace datasets.
@@ -67,6 +68,8 @@ export class DeploySchemaCommand extends SanityCommand<typeof DeploySchemaComman
   }
 
   static override hiddenAliases: string[] = ['schema:deploy']
+
+  static telemetry = defineCommandTelemetry(this.flags, {redact: ['manifest-dir']})
 
   public async run(): Promise<void> {
     const {flags} = await this.parse(DeploySchemaCommand)

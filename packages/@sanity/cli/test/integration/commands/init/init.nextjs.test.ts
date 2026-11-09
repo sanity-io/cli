@@ -28,8 +28,8 @@ const mocks = vi.hoisted(() => ({
   writeFile: vi.fn(),
 }))
 
-vi.mock('@sanity/cli-core', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@sanity/cli-core')>()
+vi.mock(import('@sanity/cli-core'), async (importOriginal) => {
+  const actual = await importOriginal()
 
   return {
     ...actual,
@@ -75,12 +75,17 @@ vi.mock('@sanity/cli-core', async (importOriginal) => {
   }
 })
 
-vi.mock('execa', () => ({
-  execa: mocks.execa,
-}))
+vi.mock(import('@sanity/cli-core/util'), async (importOriginal) => {
+  const actual = await importOriginal()
 
-vi.mock('@sanity/cli-core/ux', async () => {
-  const actual = await vi.importActual('@sanity/cli-core/ux')
+  return {
+    ...actual,
+    getSanityEnv: mocks.getSanityEnv,
+  }
+})
+
+vi.mock(import('@sanity/cli-core/ux'), async (importActual) => {
+  const actual = await importActual()
   return {
     ...actual,
     confirm: mocks.confirm,
@@ -89,14 +94,18 @@ vi.mock('@sanity/cli-core/ux', async () => {
   }
 })
 
-vi.mock('../../../../src/util/detectFramework.js', () => ({
+vi.mock(import('execa'), () => ({
+  execa: mocks.execa,
+}))
+
+vi.mock(import('../../../../src/util/detectFramework.js'), () => ({
   detectFrameworkRecord: vi.fn().mockResolvedValue({
     name: 'Next.js',
     slug: 'nextjs',
   }),
 }))
 
-vi.mock('../../../../src/util/getProjectDefaults.js', () => ({
+vi.mock(import('../../../../src/util/getProjectDefaults.js'), () => ({
   getProjectDefaults: vi.fn().mockResolvedValue({
     author: undefined,
     description: '',
@@ -106,7 +115,7 @@ vi.mock('../../../../src/util/getProjectDefaults.js', () => ({
   }),
 }))
 
-vi.mock('../../../../src/actions/mcp/setupMCP.js', () => ({
+vi.mock(import('../../../../src/actions/mcp/setupMCP.js'), () => ({
   setupMCP: vi.fn().mockResolvedValue({
     alreadyConfiguredEditors: [],
     configuredEditors: ['Cursor'],
@@ -117,31 +126,27 @@ vi.mock('../../../../src/actions/mcp/setupMCP.js', () => ({
   }),
 }))
 
-vi.mock('../../../../src/actions/mcp/detectAvailableEditors.js', () => ({
+vi.mock(import('../../../../src/actions/mcp/detectAvailableEditors.js'), () => ({
   detectAvailableEditors: vi.fn().mockResolvedValue([]),
 }))
 
-vi.mock('../../../../src/actions/skills/setupSkills.js', () => ({
+vi.mock(import('../../../../src/actions/skills/setupSkills.js'), () => ({
   setupSkills: vi.fn().mockResolvedValue({
     installedAgents: [],
     skipped: true,
   }),
 }))
 
-vi.mock('../../../../src/actions/init/checkNextJsReactCompatibility.js', () => ({
+vi.mock(import('../../../../src/actions/init/checkNextJsReactCompatibility.js'), () => ({
   checkNextJsReactCompatibility: mocks.checkNextJsReactCompatibility.mockResolvedValue(undefined),
 }))
 
-vi.mock('../../../../src/util/packageManager/installPackages.js', () => ({
+vi.mock(import('../../../../src/util/packageManager/installPackages.js'), () => ({
   installNewPackages: mocks.installNewPackages.mockResolvedValue(undefined),
 }))
 
-vi.mock('../../../../src/actions/init/env/createOrAppendEnvVars.js', () => ({
+vi.mock(import('../../../../src/actions/init/env/createOrAppendEnvVars.js'), () => ({
   createOrAppendEnvVars: mocks.createOrAppendEnvVars,
-}))
-
-vi.mock('../../../../src/util/getSanityEnv.js', () => ({
-  getSanityEnv: mocks.getSanityEnv,
 }))
 
 const setupInitSuccessMocks = () => {
@@ -264,6 +269,7 @@ describe('#init:nextjs-app-initialization', () => {
   test('initializes nextjs app in unattended mode', async () => {
     const cwd = await testFixture('basic-app')
     process.cwd = () => cwd
+    setupInitSuccessMocks()
 
     // Mocks for nextjs initialization
     mockApi({
@@ -340,6 +346,7 @@ describe('#init:nextjs-app-initialization', () => {
 
     const cwd = await testFixture('basic-app')
     process.cwd = () => cwd
+    setupInitSuccessMocks()
 
     mockApi({
       apiVersion: CORS_API_VERSION,

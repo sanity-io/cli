@@ -16,7 +16,7 @@ describe('unstable_defineService', () => {
   })
 
   // Type-level only: the callback body never runs.
-  test('types the bus for reading state and rejects event-topic subscriptions', () => {
+  test('types the bus for reading state and responding to events', () => {
     unstable_defineService('worker', ({bus}) => {
       const controller = new AbortController()
       expectTypeOf(
@@ -27,8 +27,13 @@ describe('unstable_defineService', () => {
         (value) => expectTypeOf(value).toEqualTypeOf<NavigationLocation | null>(),
         {signal: controller.signal},
       )
-      // @ts-expect-error a service cannot respond to event topics
-      bus.subscribe('navigation.location.update', () => {})
+      bus.subscribe('auth.token.refresh', (message) => {
+        expectTypeOf(message.type).toEqualTypeOf<'auth.token.refresh'>()
+        expectTypeOf(message.reply).parameter(0).toEqualTypeOf<string>()
+        message.reply('token')
+      })
+      // @ts-expect-error an event subscription needs a handler
+      bus.subscribe('auth.token.refresh')
       // @ts-expect-error a state subscription needs a handler
       bus.subscribe('navigation.location')
       return () => controller.abort()

@@ -9,6 +9,7 @@ import {validateOrganizationName} from '../../actions/organizations/validateOrga
 import {promptForOrganizationName} from '../../prompts/promptForOrganizationName.js'
 import {createOrganization} from '../../services/organizations.js'
 import {organizationAliases} from '../../util/organizationAliases.js'
+import {defineCommandTelemetry} from '../../util/telemetry/commandTelemetry.js'
 
 const createOrgDebug = subdebug('organizations:create')
 
@@ -43,6 +44,8 @@ export class CreateOrganizationCommand extends SanityCommand<typeof CreateOrgani
   } satisfies FlagInput
 
   static override hiddenAliases = organizationAliases('create')
+
+  static telemetry = defineCommandTelemetry(this.flags, {redact: ['name']})
 
   public async run(): Promise<void> {
     const {'default-role': defaultRoleFlag, name: nameFlag} = this.flags

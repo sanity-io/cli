@@ -6,6 +6,7 @@ import {type TelemetryEvent} from '@sanity/telemetry'
 
 import {telemetryDebug} from '../actions/telemetry/telemetryDebug.js'
 import {createExpiringConfig} from '../util/createExpiringConfig.js'
+import {sanitizeTelemetryEvent} from '../util/telemetry/sanitizeTelemetryEvent.js'
 
 export const TELEMETRY_API_VERSION = 'v2026-01-22'
 
@@ -18,10 +19,14 @@ export async function sendEvents(batch: TelemetryEvent[]) {
     requireUser: true,
   })
 
-  const projectId = process.env.SANITY_TELEMETRY_PROJECT_ID
+  const configuredProjectId = process.env.SANITY_TELEMETRY_PROJECT_ID
+  const projectId =
+    configuredProjectId && /^[a-z0-9]{8}$/.test(configuredProjectId)
+      ? configuredProjectId
+      : undefined
 
   return client.request({
-    body: {batch, projectId},
+    body: {batch: batch.map((event) => sanitizeTelemetryEvent(event)), projectId},
     json: true,
     method: 'POST',
     url: '/intake/batch',

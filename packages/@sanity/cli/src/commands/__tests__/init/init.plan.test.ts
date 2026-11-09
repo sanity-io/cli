@@ -235,6 +235,11 @@ describe('#init: retrieving plan', () => {
 
   test('uses default plan when coupon does not exist and cli in unattended mode', async () => {
     mockApi({
+      apiVersion: PROJECT_FEATURES_API_VERSION,
+      uri: '/features',
+    }).reply(200, ['privateDataset'])
+
+    mockApi({
       apiVersion: INIT_API_VERSION,
       method: 'get',
       uri: '/plans/coupon/INVALID123',
@@ -379,6 +384,11 @@ describe('#init: retrieving plan', () => {
   })
 
   test('uses default plan when plan id does not exist and cli in unattended mode', async () => {
+    mockApi({
+      apiVersion: PROJECT_FEATURES_API_VERSION,
+      uri: '/features',
+    }).reply(200, ['privateDataset'])
+
     mockApi({
       apiVersion: INIT_API_VERSION,
       method: 'get',

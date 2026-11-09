@@ -10,7 +10,7 @@ import {createNodeFetch} from 'get-it/node'
 import {getCliToken} from './config/cli/cliUserConfig.js'
 import {enrichAuthError} from './errors/enrichAuthError.js'
 import {type CliExecutionContext, getCliExecutionContext} from './executionContext.js'
-import {isStaging} from './util/isStaging.js'
+import {getSanityEnv} from './util/getSanityEnv.js'
 
 const STAGING_API_HOST = 'https://api.sanity.work'
 
@@ -115,7 +115,7 @@ export async function getGlobalCliClient({
 }: GlobalCliClientOptions): Promise<SanityClient> {
   const context = getCliExecutionContext()
 
-  const apiHost = isStaging() ? STAGING_API_HOST : undefined
+  const apiHost = getApiHost()
 
   // Use the provided token if set, otherwise fall back to the stored CLI token (unless unauthenticated)
   const token = providedToken || (unauthenticated ? undefined : await getCliToken())
@@ -182,7 +182,7 @@ export async function getProjectCliClient({
 }: ProjectCliClientOptions): Promise<SanityClient> {
   const context = getCliExecutionContext()
 
-  const apiHost = isStaging() ? STAGING_API_HOST : undefined
+  const apiHost = getApiHost()
 
   // Use the provided token if it is set, otherwise get the token from the config file
   const token = providedToken || (await getCliToken())
@@ -204,4 +204,13 @@ export async function getProjectCliClient({
     ...config,
     requestHandler: withAuthErrorHints(requestHandler),
   })
+}
+
+function getApiHost(): string | undefined {
+  const sanityEnv = getSanityEnv()
+  return sanityEnv === 'staging'
+    ? STAGING_API_HOST
+    : sanityEnv === 'production'
+      ? undefined
+      : sanityEnv
 }

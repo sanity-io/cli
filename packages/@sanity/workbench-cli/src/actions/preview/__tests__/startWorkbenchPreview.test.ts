@@ -150,6 +150,34 @@ describe('startWorkbenchPreview', () => {
       })
     })
 
+    test('registers the identity declared in defineApplication, as dev does', async () => {
+      await run({
+        cliConfig: workbenchCliConfig({
+          app: workbenchApp({isSingleton: true, name: 'drop-desk', visibility: 'unlisted'}),
+        }),
+      })
+
+      expect(readManifest()).toMatchObject({
+        name: 'drop-desk',
+        reference: 'sanity/drop-desk',
+        slug: 'test-app',
+        visibility: 'unlisted',
+      })
+    })
+
+    test('registers the deployed application the build stands in for, beside the id the build inlined', async () => {
+      mockReadFile.mockResolvedValue('app_deployed_id\n')
+
+      await run({
+        cliConfig: workbenchCliConfig({deployment: {appId: 'v27rvqtlp3lmdvcln6ey3lro'}}),
+      })
+
+      expect(readManifest()).toMatchObject({
+        applicationId: 'v27rvqtlp3lmdvcln6ey3lro',
+        id: 'app_deployed_id',
+      })
+    })
+
     test('registers a studio build as a studio', async () => {
       await run({isApp: false})
 
@@ -233,21 +261,24 @@ describe('startWorkbenchPreview', () => {
       await run({isApp: false, output})
 
       expect(output.log).toHaveBeenCalledWith(
-        `Dashboard preview server started at ${styleText(['blue', 'underline'], `http://localhost:3333/local/${readManifest().id}`)}`,
+        `Dashboard preview server started at ${styleText(['blue', 'underline'], 'http://localhost:3333/studios/test-app')}`,
       )
     })
 
-    test('links to an app build with an app view under the id the build inlined', async () => {
-      mockReadFile.mockResolvedValue('app_deployed_id\n')
+    test('links to an app build at its slug, not the id the build inlined', async () => {
+      mockReadFile.mockResolvedValue('app_build_hash\n')
       const output = createMockOutput()
 
       await run({
-        cliConfig: workbenchCliConfig({app: workbenchApp({entry: './src/App.tsx'})}),
+        cliConfig: workbenchCliConfig({
+          app: workbenchApp({entry: './src/App.tsx'}),
+          deployment: {appId: 'app_deployed_id'},
+        }),
         output,
       })
 
       expect(output.log).toHaveBeenCalledWith(
-        `Dashboard preview server started at ${styleText(['blue', 'underline'], 'http://localhost:3333/local/app_deployed_id')}`,
+        `Dashboard preview server started at ${styleText(['blue', 'underline'], 'http://localhost:3333/applications/test-app')}`,
       )
     })
 

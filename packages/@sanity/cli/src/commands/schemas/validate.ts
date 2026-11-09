@@ -4,6 +4,7 @@ import {exitCodes} from '@sanity/cli-core/ExitCodes'
 import {SanityCommand} from '@sanity/cli-core/SanityCommand'
 
 import {validateAction} from '../../actions/schema/validateAction.js'
+import {defineCommandTelemetry} from '../../util/telemetry/commandTelemetry.js'
 
 const debug = subdebug('schema:validate')
 export class SchemaValidate extends SanityCommand<typeof SchemaValidate> {
@@ -51,6 +52,8 @@ export class SchemaValidate extends SanityCommand<typeof SchemaValidate> {
   }
 
   static override hiddenAliases: string[] = ['schema:validate']
+
+  static telemetry = defineCommandTelemetry(this.flags, {redact: ['debug-metafile-path']})
 
   public async run(): Promise<void> {
     const {flags} = await this.parse(SchemaValidate)

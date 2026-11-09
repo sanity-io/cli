@@ -3,8 +3,8 @@ import {styleText} from 'node:util'
 import {ux} from '@oclif/core/ux'
 import {
   CURRENT_WORKSPACE_SCHEMA_VERSION,
-  type ManifestSchemaType,
   type StoredWorkspaceSchema,
+  type WorkspaceSchemaInput,
 } from '@sanity/cli-build/_internal/manifest'
 import {spinner} from '@sanity/cli-core/ux'
 import partition from 'lodash-es/partition.js'
@@ -12,20 +12,6 @@ import partition from 'lodash-es/partition.js'
 import {updateSchemas} from '../../services/schemas.js'
 import {SCHEMA_PERMISSION_HELP_TEXT} from './utils/schemaStoreValidation.js'
 import {getWorkspaceSchemaId} from './utils/workspaceSchemaId.js'
-
-/**
- * Workspace metadata + pre-extracted manifest schema for deployment.
- * The schema must already be in ManifestSchemaType[] format (extracted from
- * the live Schema object before any structured clone boundary).
- */
-export interface WorkspaceSchemaInput {
-  dataset: string
-  manifestSchema: ManifestSchemaType[]
-  name: string
-  projectId: string
-
-  title?: string
-}
 
 /**
  * Updates the schemas for a list of workspaces.

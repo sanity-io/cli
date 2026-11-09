@@ -30,7 +30,7 @@ export class CreateAliasCommand extends SanityCommand<typeof CreateAliasCommand>
 
   static override examples = [
     {
-      command: '<%= config.bin %> <%= command.id %> --project-id abc123 conference conf-2025',
+      command: '<%= config.bin %> <%= command.id %> --project abc123 conference conf-2025',
       description: 'Create alias in a specific project',
     },
     {

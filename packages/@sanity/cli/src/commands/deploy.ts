@@ -11,6 +11,7 @@ import {deployStudio} from '../actions/deploy/deployStudio.js'
 import {getAppId} from '../util/appId.js'
 import {determineIsApp} from '../util/determineIsApp.js'
 import {dirIsEmptyOrNonExistent} from '../util/dirIsEmptyOrNonExistent.js'
+import {defineCommandTelemetry} from '../util/telemetry/commandTelemetry.js'
 
 export class DeployCommand extends SanityCommand<typeof DeployCommand> {
   static override args = {
@@ -20,6 +21,8 @@ export class DeployCommand extends SanityCommand<typeof DeployCommand> {
   }
 
   static override description = 'Builds and deploys Sanity Studio or application to Sanity hosting'
+
+  static override enableJsonFlag = true
 
   static override examples = [
     {
@@ -88,6 +91,13 @@ export class DeployCommand extends SanityCommand<typeof DeployCommand> {
       default: false,
       description: 'Output the result as JSON',
     }),
+    'media-library-id': Flags.string({
+      description:
+        'For a Media Library config deploy: the media library to sync the aspect definitions to. Defaults to the single active library of the configured organization; required when the organization has several',
+      // Part of the beta config-app flow, like the hidden media commands it
+      // pairs with. A help-listed flag is hard to take back — unhide at GA.
+      hidden: true,
+    }),
     minify: Flags.boolean({
       allowNo: true,
       default: true,
@@ -121,6 +131,8 @@ export class DeployCommand extends SanityCommand<typeof DeployCommand> {
     }),
   }
 
+  static telemetry = defineCommandTelemetry(this.flags, {redact: ['title', 'url']})
+
   public async run(): Promise<void> {
     const {flags} = await this.parse(DeployCommand)
 
@@ -128,6 +140,16 @@ export class DeployCommand extends SanityCommand<typeof DeployCommand> {
     const projectRoot = await this.getProjectRoot()
 
     const isApp = determineIsApp(cliConfig)
+
+    // `--media-library-id` only steers the aspect-document sync of a Media
+    // Library config deploy (see deployApp); studio and app deploys never read
+    // it. Warned rather than silently dropped (same courtesy init gives
+    // --dashboard on the media template).
+    if (flags['media-library-id'] && !resolveWorkbenchConfig(cliConfig)) {
+      this.output.warn(
+        '--media-library-id is ignored — it only applies when deploying a Media Library config',
+      )
+    }
 
     if (flags.create) {
       if (!isApp) {

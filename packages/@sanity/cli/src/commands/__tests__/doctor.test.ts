@@ -60,8 +60,6 @@ describe('doctor command', () => {
 
     await DoctorCommand.run(['--json'])
 
-    expect(mocks.SanityCmdOutputLog).toHaveBeenCalledWith(
-      expect.stringContaining(JSON.stringify(checkResults, null, 2)),
-    )
+    expect(mocks.SanityCmdOutputLogJson).toHaveBeenCalledWith(checkResults)
   })
 })

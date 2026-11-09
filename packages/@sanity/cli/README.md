@@ -36,15 +36,46 @@ Code for sanity cli
 - [`sanity context build KNOWLEDGEBASEID`](#sanity-context-build-knowledgebaseid)
 - [`sanity context create`](#sanity-context-create)
 - [`sanity context delete KNOWLEDGEBASEID`](#sanity-context-delete-knowledgebaseid)
+- [`sanity context documents content KNOWLEDGEBASEID DOCUMENTID`](#sanity-context-documents-content-knowledgebaseid-documentid)
+- [`sanity context documents delete KNOWLEDGEBASEID DOCUMENTID`](#sanity-context-documents-delete-knowledgebaseid-documentid)
+- [`sanity context documents edit KNOWLEDGEBASEID DOCUMENTID`](#sanity-context-documents-edit-knowledgebaseid-documentid)
+- [`sanity context documents get KNOWLEDGEBASEID DOCUMENTID`](#sanity-context-documents-get-knowledgebaseid-documentid)
+- [`sanity context documents list KNOWLEDGEBASEID`](#sanity-context-documents-list-knowledgebaseid)
+- [`sanity context entries get KNOWLEDGEBASEID PATH`](#sanity-context-entries-get-knowledgebaseid-path)
+- [`sanity context entries list KNOWLEDGEBASEID`](#sanity-context-entries-list-knowledgebaseid)
+- [`sanity context entries rebuild KNOWLEDGEBASEID ENTRYPATH`](#sanity-context-entries-rebuild-knowledgebaseid-entrypath)
 - [`sanity context get KNOWLEDGEBASEID`](#sanity-context-get-knowledgebaseid)
-- [`sanity context imports create KNOWLEDGEBASEID`](#sanity-context-imports-create-knowledgebaseid)
-- [`sanity context imports delete KNOWLEDGEBASEID IMPORTID`](#sanity-context-imports-delete-knowledgebaseid-importid)
-- [`sanity context imports download KNOWLEDGEBASEID IMPORTID`](#sanity-context-imports-download-knowledgebaseid-importid)
-- [`sanity context imports get KNOWLEDGEBASEID IMPORTID`](#sanity-context-imports-get-knowledgebaseid-importid)
-- [`sanity context imports list KNOWLEDGEBASEID`](#sanity-context-imports-list-knowledgebaseid)
+- [`sanity context instructions create KNOWLEDGEBASEID`](#sanity-context-instructions-create-knowledgebaseid)
+- [`sanity context instructions delete KNOWLEDGEBASEID INSTRUCTIONID`](#sanity-context-instructions-delete-knowledgebaseid-instructionid)
+- [`sanity context instructions edit KNOWLEDGEBASEID INSTRUCTIONID`](#sanity-context-instructions-edit-knowledgebaseid-instructionid)
+- [`sanity context issues apply KNOWLEDGEBASEID ISSUEIDS`](#sanity-context-issues-apply-knowledgebaseid-issueids)
+- [`sanity context issues dismiss KNOWLEDGEBASEID ISSUEID`](#sanity-context-issues-dismiss-knowledgebaseid-issueid)
+- [`sanity context issues get KNOWLEDGEBASEID ISSUEID`](#sanity-context-issues-get-knowledgebaseid-issueid)
+- [`sanity context issues list KNOWLEDGEBASEID`](#sanity-context-issues-list-knowledgebaseid)
+- [`sanity context issues reopen KNOWLEDGEBASEID ISSUEID`](#sanity-context-issues-reopen-knowledgebaseid-issueid)
+- [`sanity context issues resolve KNOWLEDGEBASEID ISSUEID`](#sanity-context-issues-resolve-knowledgebaseid-issueid)
 - [`sanity context jobs get KNOWLEDGEBASEID JOBID`](#sanity-context-jobs-get-knowledgebaseid-jobid)
 - [`sanity context list`](#sanity-context-list)
-- [`sanity context refresh KNOWLEDGEBASEID`](#sanity-context-refresh-knowledgebaseid)
+- [`sanity context mcp create NAME`](#sanity-context-mcp-create-name)
+- [`sanity context mcp delete NAME`](#sanity-context-mcp-delete-name)
+- [`sanity context mcp get NAME`](#sanity-context-mcp-get-name)
+- [`sanity context mcp initial-context MCPENDPOINT`](#sanity-context-mcp-initial-context-mcpendpoint)
+- [`sanity context mcp list`](#sanity-context-mcp-list)
+- [`sanity context mcp status NAME`](#sanity-context-mcp-status-name)
+- [`sanity context mcp update NAME`](#sanity-context-mcp-update-name)
+- [`sanity context query QUERY`](#sanity-context-query-query)
+- [`sanity context sources create KNOWLEDGEBASEID`](#sanity-context-sources-create-knowledgebaseid)
+- [`sanity context sources delete KNOWLEDGEBASEID SOURCEID`](#sanity-context-sources-delete-knowledgebaseid-sourceid)
+- [`sanity context sources edit KNOWLEDGEBASEID SOURCEID`](#sanity-context-sources-edit-knowledgebaseid-sourceid)
+- [`sanity context sources get KNOWLEDGEBASEID SOURCEID`](#sanity-context-sources-get-knowledgebaseid-sourceid)
+- [`sanity context sources list KNOWLEDGEBASEID`](#sanity-context-sources-list-knowledgebaseid)
+- [`sanity context sources sync KNOWLEDGEBASEID SOURCEID`](#sanity-context-sources-sync-knowledgebaseid-sourceid)
+- [`sanity context sources syncs confirm KNOWLEDGEBASEID SOURCEID SYNCID`](#sanity-context-sources-syncs-confirm-knowledgebaseid-sourceid-syncid)
+- [`sanity context sources syncs discard KNOWLEDGEBASEID SOURCEID SYNCID`](#sanity-context-sources-syncs-discard-knowledgebaseid-sourceid-syncid)
+- [`sanity context sources syncs get KNOWLEDGEBASEID SOURCEID SYNCID`](#sanity-context-sources-syncs-get-knowledgebaseid-sourceid-syncid)
+- [`sanity context sources syncs list KNOWLEDGEBASEID SOURCEID`](#sanity-context-sources-syncs-list-knowledgebaseid-sourceid)
+- [`sanity context sources upload KNOWLEDGEBASEID SOURCEID`](#sanity-context-sources-upload-knowledgebaseid-sourceid)
+- [`sanity context sync KNOWLEDGEBASEID`](#sanity-context-sync-knowledgebaseid)
 - [`sanity context update KNOWLEDGEBASEID`](#sanity-context-update-knowledgebaseid)
 - [`sanity cors add ORIGIN`](#sanity-cors-add-origin)
 - [`sanity cors delete [ORIGIN]`](#sanity-cors-delete-origin)
@@ -139,12 +170,14 @@ Code for sanity cli
 - [`sanity users invite [EMAIL]`](#sanity-users-invite-email)
 - [`sanity users list`](#sanity-users-list)
 - [`sanity versions`](#sanity-versions)
+- [`sanity whoami`](#sanity-whoami)
 - [`sanity workflows abort INSTANCEID`](#sanity-workflows-abort-instanceid)
-- [`sanity workflows blueprint generate`](#sanity-workflows-blueprint-generate)
-- [`sanity workflows definition delete NAME`](#sanity-workflows-definition-delete-name)
-- [`sanity workflows definition diff NAME`](#sanity-workflows-definition-diff-name)
-- [`sanity workflows definition list`](#sanity-workflows-definition-list)
-- [`sanity workflows definition show NAME`](#sanity-workflows-definition-show-name)
+- [`sanity workflows blueprints generate`](#sanity-workflows-blueprints-generate)
+- [`sanity workflows definitions delete NAME`](#sanity-workflows-definitions-delete-name)
+- [`sanity workflows definitions diff NAME`](#sanity-workflows-definitions-diff-name)
+- [`sanity workflows definitions list`](#sanity-workflows-definitions-list)
+- [`sanity workflows definitions show NAME`](#sanity-workflows-definitions-show-name)
+- [`sanity workflows definitions validate FILE`](#sanity-workflows-definitions-validate-file)
 - [`sanity workflows deploy`](#sanity-workflows-deploy)
 - [`sanity workflows diagnose INSTANCEID`](#sanity-workflows-diagnose-instanceid)
 - [`sanity workflows fire-action INSTANCEID`](#sanity-workflows-fire-action-instanceid)
@@ -188,8 +221,8 @@ FLAGS
       --project-hosted            Force the request to the project API host (<projectId>.api.sanity.io)
 
 OVERRIDE FLAGS
-  -d, --dataset=<name>   Dataset for {dataset} placeholders (overrides CLI configuration)
-  -p, --project-id=<id>  Project ID for {projectId} placeholders and project-hosted APIs (overrides CLI configuration)
+  -d, --dataset=<name>  Dataset for {dataset} placeholders (overrides CLI configuration)
+  -p, --project=<id>    Project ID for {projectId} placeholders and project-hosted APIs (overrides CLI configuration)
 
 DESCRIPTION
   Make an authenticated HTTP request to a Sanity API
@@ -263,8 +296,8 @@ FLAGS
                               <options: image|file>
 
 OVERRIDE FLAGS
-  -d, --dataset=<name>   Dataset to upload the asset to (overrides CLI configuration)
-  -p, --project-id=<id>  Project ID to upload the asset to (overrides CLI configuration)
+  -d, --dataset=<name>  Dataset to upload the asset to (overrides CLI configuration)
+  -p, --project=<id>    Project ID to upload the asset to (overrides CLI configuration)
 
 DESCRIPTION
   Upload one image or file to a Sanity dataset, from a local path or a URL, and print the asset document as JSON
@@ -276,8 +309,8 @@ EXAMPLES
 
   Upload a file with explicit project, dataset, and MIME type
 
-    $ sanity assets upload --file ./brief.pdf --type file --content-type application/pdf --project-id abc123 \
-      --dataset production
+    $ sanity assets upload --file ./brief.pdf --type file --content-type application/pdf --project abc123 --dataset \
+      production
 
   Have Sanity fetch an image from a public URL
 
@@ -296,7 +329,7 @@ ARGUMENTS
   [DATASET]  Dataset name to disable backup for
 
 OVERRIDE FLAGS
-  -p, --project-id=<id>  Project ID to disable backups for (overrides CLI configuration)
+  -p, --project=<id>  Project ID to disable backups for (overrides CLI configuration)
 
 DESCRIPTION
   Disable backup for a dataset
@@ -330,7 +363,7 @@ FLAGS
   --overwrite            Allows overwriting of existing backup file
 
 OVERRIDE FLAGS
-  -p, --project-id=<id>  Project ID to download backup from (overrides CLI configuration)
+  -p, --project=<id>  Project ID to download backup from (overrides CLI configuration)
 
 DESCRIPTION
   Download a dataset backup to a local file
@@ -365,7 +398,7 @@ ARGUMENTS
   [DATASET]  Dataset name to enable backup for
 
 OVERRIDE FLAGS
-  -p, --project-id=<id>  Project ID to enable backups for (overrides CLI configuration)
+  -p, --project=<id>  Project ID to enable backups for (overrides CLI configuration)
 
 DESCRIPTION
   Enable backup for a dataset
@@ -397,7 +430,7 @@ FLAGS
       --before=<value>  Only return backups before this date (exclusive, YYYY-MM-DD format)
 
 OVERRIDE FLAGS
-  -p, --project-id=<id>  Project ID to list backups for (overrides CLI configuration)
+  -p, --project=<id>  Project ID to list backups for (overrides CLI configuration)
 
 DESCRIPTION
   List available backups for a dataset
@@ -428,8 +461,8 @@ EXAMPLES
 USAGE
   $ sanity blueprints add TYPE [--json] [--example <value> | -n <value> | --fn-type
     document-publish|document-create|document-delete|document-update|media-library-asset-create|media-library-asset-dele
-    te|media-library-asset-update|pub-sub|scheduled-function|sync-tag-invalidate... | --language ts|js | --javascript |
-    --fn-helpers | --fn-installer skip|npm|pnpm|yarn] [-i | ]
+    te|media-library-asset-update|pub-sub|scheduled-function|sync-tag-invalidate|durable-function... | --language ts|js
+    | --javascript | --fn-helpers | --fn-installer skip|npm|pnpm|yarn] [-i | ]
 
 ARGUMENTS
   TYPE  (function) Type of resource to add (only "function" is supported)
@@ -446,7 +479,7 @@ FLAGS
                                events by specifying this flag multiple times
                                <options: document-publish|document-create|document-delete|document-update|media-library-
                                asset-create|media-library-asset-delete|media-library-asset-update|pub-sub|scheduled-func
-                               tion|sync-tag-invalidate>
+                               tion|sync-tag-invalidate|durable-function>
       --javascript             Use JavaScript instead of TypeScript
       --json                   Format output as json
       --language=<option>      [default: ts] Language of the new function
@@ -973,21 +1006,28 @@ EXAMPLES
 
 ## `sanity context build KNOWLEDGEBASEID`
 
-Build a knowledge base from its imported content
+Start a knowledge base build
 
 ```
 USAGE
-  $ sanity context build KNOWLEDGEBASEID [--cancel | --watch]
+  $ sanity context build KNOWLEDGEBASEID [--json] [--cancel | --watch]
 
 ARGUMENTS
-  KNOWLEDGEBASEID  Knowledge base ID
+  KNOWLEDGEBASEID  The knowledge base's ID (`kb...`), its `publicId`. Its UUID `id` is also accepted.
 
 FLAGS
   --cancel  Cancel the running build instead of starting one
-  --watch   Wait for the build to finish, exiting non-zero if it fails
+  --watch   Wait for the job to finish, exiting non-zero if it fails
+
+GLOBAL FLAGS
+  --json  Format output as json.
 
 DESCRIPTION
-  Build a knowledge base from its imported content
+  Start a knowledge base build
+
+  Queues a build over the knowledge base's current sources and returns a job ID immediately. If a build is already
+  running, the response returns that build's job ID instead of starting a second build. A draft can't be built: the
+  request returns `409` with code `knowledgeBaseIsDraft`.
 
 EXAMPLES
   Start a build and return the job ID
@@ -1009,313 +1049,1579 @@ Create a knowledge base
 
 ```
 USAGE
-  $ sanity context create [--organization <id>] [--description <value>] [--title <value>]
+  $ sanity context create [--json] [--title <value>] [--description <value>] [--draft] [--organization <id>]
 
 FLAGS
-  --description=<value>  Knowledge base description
-  --title=<value>        Knowledge base title
+  --description=<value>  A short description of what the knowledge base covers. Required unless `draft` is `true`.
+  --[no-]draft           Whether to create the knowledge base as a draft. You can add sources to a draft, and they sync
+                         right away, but you can't build it, and the list leaves it out unless you set `includeDrafts`
+                         to `true`. A draft counts toward your plan's knowledge base limit. To finish it, update it with
+                         `draft` set to `false`.
+  --title=<value>        The knowledge base's title. Required unless `draft` is `true`.
+
+GLOBAL FLAGS
+  --json  Format output as json.
 
 OVERRIDE FLAGS
-  --organization=<id>  Organization to create the knowledge base in (overrides CLI configuration)
+  --organization=<id>  Organization ID (overrides CLI configuration)
 
 DESCRIPTION
   Create a knowledge base
 
+  Creates a knowledge base in your organization. To add content to it, add a source. Set `draft` to `true` to create a
+  draft, which needs no title or description until you finish it. If your organization's Context document store can't be
+  used, the request returns `503` with code `contextStoreUnavailable` and you can retry.
+
 EXAMPLES
-  Interactively create a knowledge base
+  Create a knowledge base
 
     $ sanity context create
 
-  Create a knowledge base in a specific organization
+  Create a knowledge base, as JSON
 
-    $ sanity context create --organization org-abc123 --title "Support docs" --description "Product docs and \
-      troubleshooting guides"
+    $ sanity context create --json
 ```
 
 ## `sanity context delete KNOWLEDGEBASEID`
 
-Delete a knowledge base and its generated content
+Delete a knowledge base
 
 ```
 USAGE
-  $ sanity context delete KNOWLEDGEBASEID [-y]
+  $ sanity context delete KNOWLEDGEBASEID [--json] [-y]
 
 ARGUMENTS
-  KNOWLEDGEBASEID  Knowledge base ID
+  KNOWLEDGEBASEID  The knowledge base's ID (`kb...`), its `publicId`. Its UUID `id` is also accepted.
 
 FLAGS
   -y, --yes  Skip confirmation prompt (unattended mode)
 
+GLOBAL FLAGS
+  --json  Format output as json.
+
 DESCRIPTION
-  Delete a knowledge base and its generated content
+  Delete a knowledge base
+
+  Deletes the knowledge base and everything it owns: its sources, revisions, stored source files, and its documents in
+  your organization's document store. While a build, refresh, apply, or sync is running, the request returns `409` with
+  code `buildInFlight`. Retry after that work finishes.
 
 EXAMPLES
-  Delete a knowledge base after confirmation
+  Delete a knowledge base
 
-    $ sanity context delete kb-abc123
+    $ sanity context delete <knowledgeBaseId>
 
-  Delete a knowledge base without confirmation prompt
+  Delete a knowledge base, as JSON
 
-    $ sanity context delete kb-abc123 --yes
+    $ sanity context delete <knowledgeBaseId> --json
+```
+
+## `sanity context documents content KNOWLEDGEBASEID DOCUMENTID`
+
+Get a document's markdown
+
+```
+USAGE
+  $ sanity context documents content KNOWLEDGEBASEID DOCUMENTID [--json] [--format json|markdown|plain|raw] [--chunk <value>]
+    [--lines <value>] [--line-numbers] [-o <file>]
+
+ARGUMENTS
+  KNOWLEDGEBASEID  The knowledge base's ID (`kb...`), its `publicId`. Its UUID `id` is also accepted.
+  DOCUMENTID       The document's ID.
+
+FLAGS
+  -o, --output=<file>    Write the content to this file instead of stdout
+      --chunk=<value>    Return only this chunk's lines. Citations name the chunk they quote.
+      --format=<option>  Response format. `json` (default) returns the markdown with its line numbers. `markdown` and
+                         `plain` return the markdown alone, ready to pass to a model. `raw` returns the bytes the source
+                         gave, before conversion: the uploaded file, the crawled page, the dataset document as JSON.
+                         <options: json|markdown|plain|raw>
+      --line-numbers     Number each line as citations number them
+      --lines=<value>    Return only these lines, from 1 and inclusive: `10-20`, or `10` for line 10 to the end. A range
+                         past the end returns up to the last line.
+
+GLOBAL FLAGS
+  --json  Format output as json.
+
+DESCRIPTION
+  Get a document's markdown
+
+  Returns the markdown a document converted to: the text builds read, and the line numbers citations use. Set `chunk` or
+  `lines` to get part of it, and `format` to `markdown` or `plain` to get the text alone instead of JSON. Until the
+  document is converted, the request returns `409` with code `documentNotConverted`. With `format=raw` it returns the
+  document as its source gave it, as an attachment, or `409` with code `documentNotStored` when the document was too
+  large to keep.
+
+EXAMPLES
+  Print a document's markdown
+
+    $ sanity context documents content kb-abc123 document-def456
+
+  Print lines 10 to 20, each with its line number
+
+    $ sanity context documents content kb-abc123 document-def456 --lines 10-20 --line-numbers
+
+  Download the original file
+
+    $ sanity context documents content kb-abc123 document-def456 --format raw --output handbook.pdf
+```
+
+## `sanity context documents delete KNOWLEDGEBASEID DOCUMENTID`
+
+Delete a document
+
+```
+USAGE
+  $ sanity context documents delete KNOWLEDGEBASEID DOCUMENTID [--json] [-y]
+
+ARGUMENTS
+  KNOWLEDGEBASEID  The knowledge base's ID (`kb...`), its `publicId`. Its UUID `id` is also accepted.
+  DOCUMENTID       The document's ID.
+
+FLAGS
+  -y, --yes  Skip confirmation prompt (unattended mode)
+
+GLOBAL FLAGS
+  --json  Format output as json.
+
+DESCRIPTION
+  Delete a document
+
+  Deletes a document from its source. A page that is still on the website comes back on the next sync of its source
+  unless the crawl options exclude it. Entries that cite the document stay the same until the next build or refresh,
+  which removes the citations.
+
+EXAMPLES
+  Delete a document
+
+    $ sanity context documents delete <knowledgeBaseId> <documentId>
+
+  Delete a document, as JSON
+
+    $ sanity context documents delete <knowledgeBaseId> <documentId> --json
+```
+
+## `sanity context documents edit KNOWLEDGEBASEID DOCUMENTID`
+
+Keep a missing document
+
+```
+USAGE
+  $ sanity context documents edit KNOWLEDGEBASEID DOCUMENTID --state active [--json]
+
+ARGUMENTS
+  KNOWLEDGEBASEID  The knowledge base's ID (`kb...`), its `publicId`. Its UUID `id` is also accepted.
+  DOCUMENTID       The document's ID.
+
+FLAGS
+  --state=<option>  (required) Set to `active` to keep a `missing` page in the knowledge base. The count of crawls that
+                    missed it starts again.
+                    <options: active>
+
+GLOBAL FLAGS
+  --json  Format output as json.
+
+DESCRIPTION
+  Keep a missing document
+
+  Keeps a `missing` web page in the knowledge base by setting its `state` back to `active`. A document that isn't
+  `missing` returns `409` with code `documentInvalidState`.
+
+EXAMPLES
+  Keep a missing document
+
+    $ sanity context documents edit <knowledgeBaseId> <documentId>
+
+  Keep a missing document, as JSON
+
+    $ sanity context documents edit <knowledgeBaseId> <documentId> --json
+```
+
+## `sanity context documents get KNOWLEDGEBASEID DOCUMENTID`
+
+Get a document
+
+```
+USAGE
+  $ sanity context documents get KNOWLEDGEBASEID DOCUMENTID [--json]
+
+ARGUMENTS
+  KNOWLEDGEBASEID  The knowledge base's ID (`kb...`), its `publicId`. Its UUID `id` is also accepted.
+  DOCUMENTID       The document's ID.
+
+GLOBAL FLAGS
+  --json  Format output as json.
+
+DESCRIPTION
+  Get a document
+
+  Returns a document with its conversion status and the chunks of its markdown. Entry citations point at a document's
+  chunks.
+
+EXAMPLES
+  Get a document
+
+    $ sanity context documents get <knowledgeBaseId> <documentId>
+
+  Get a document, as JSON
+
+    $ sanity context documents get <knowledgeBaseId> <documentId> --json
+```
+
+## `sanity context documents list KNOWLEDGEBASEID`
+
+List documents
+
+```
+USAGE
+  $ sanity context documents list KNOWLEDGEBASEID [--json] [--limit <value>] [--source <value>] [--state
+    active|missing|deleted] [--ids <value>]
+
+ARGUMENTS
+  KNOWLEDGEBASEID  The knowledge base's ID (`kb...`), its `publicId`. Its UUID `id` is also accepted.
+
+FLAGS
+  --ids=<value>     Comma-separated IDs of the documents to return, up to 200, in any state. Use it to look up the
+                    documents entry citations point at.
+  --limit=<value>   The maximum number of items to return.
+  --source=<value>  Return only the documents of this source.
+  --state=<option>  Return only documents in this state. Without it, `deleted` documents are left out.
+                    <options: active|missing|deleted>
+
+GLOBAL FLAGS
+  --json  Format output as json.
+
+DESCRIPTION
+  List documents
+
+  Lists the documents in a knowledge base: the pages, dataset documents and files its sources yield, which builds read
+  and cite. Results are cursor-paginated, and you can filter them by `source` and `state`.
+
+EXAMPLES
+  List documents
+
+    $ sanity context documents list <knowledgeBaseId>
+
+  List documents, as JSON
+
+    $ sanity context documents list <knowledgeBaseId> --json
+```
+
+## `sanity context entries get KNOWLEDGEBASEID PATH`
+
+Get an entry and its content
+
+```
+USAGE
+  $ sanity context entries get KNOWLEDGEBASEID PATH [--json]
+
+ARGUMENTS
+  KNOWLEDGEBASEID  Knowledge base ID
+  PATH             Entry path, as listed by `sanity context entries list`
+
+GLOBAL FLAGS
+  --json  Format output as json.
+
+DESCRIPTION
+  Get an entry and its content
+
+EXAMPLES
+  Print an entry and its content
+
+    $ sanity context entries get kb-abc123 billing/refunds
+
+  Output the entry, including citations, as JSON
+
+    $ sanity context entries get kb-abc123 billing/refunds --json
+```
+
+## `sanity context entries list KNOWLEDGEBASEID`
+
+List the entries a knowledge base build produced
+
+```
+USAGE
+  $ sanity context entries list KNOWLEDGEBASEID [--json]
+
+ARGUMENTS
+  KNOWLEDGEBASEID  Knowledge base ID
+
+GLOBAL FLAGS
+  --json  Format output as json.
+
+DESCRIPTION
+  List the entries a knowledge base build produced
+
+EXAMPLES
+  List all entries for a knowledge base
+
+    $ sanity context entries list kb-abc123
+
+  Output entries as JSON
+
+    $ sanity context entries list kb-abc123 --json
+```
+
+## `sanity context entries rebuild KNOWLEDGEBASEID ENTRYPATH`
+
+Rebuild an entry from its sources
+
+```
+USAGE
+  $ sanity context entries rebuild KNOWLEDGEBASEID ENTRYPATH [--json] [--watch]
+
+ARGUMENTS
+  KNOWLEDGEBASEID  The knowledge base's ID (`kb...`), its `publicId`. Its UUID `id` is also accepted.
+  ENTRYPATH        The entry's slash-delimited path, such as `pricing/plans/free`, URL-encoded.
+
+FLAGS
+  --watch  Wait for the job to finish, exiting non-zero if it fails
+
+GLOBAL FLAGS
+  --json  Format output as json.
+
+DESCRIPTION
+  Rebuild an entry from its sources
+
+  Queues a rewrite of the entry at `entryPath` from its cited sources and the active instructions, and returns a job ID
+  immediately. The response also lists the other entries built from any of the same sources. An instruction applies to
+  every entry built from its sources, so those entries can change too. Returns `422` with code `entryDocumentInvalid` if
+  the entry document was edited into a shape the API cannot read.
+
+EXAMPLES
+  Rebuild an entry from its sources
+
+    $ sanity context entries rebuild <knowledgeBaseId> <entryPath>
+
+  Rebuild an entry from its sources, as JSON
+
+    $ sanity context entries rebuild <knowledgeBaseId> <entryPath> --json
 ```
 
 ## `sanity context get KNOWLEDGEBASEID`
 
-Get details of a knowledge base
+Get a knowledge base
 
 ```
 USAGE
   $ sanity context get KNOWLEDGEBASEID [--json]
 
 ARGUMENTS
-  KNOWLEDGEBASEID  Knowledge base ID
+  KNOWLEDGEBASEID  The knowledge base's ID (`kb...`), its `publicId`. Its UUID `id` is also accepted.
 
-FLAGS
-  --json  Output the knowledge base in JSON format
+GLOBAL FLAGS
+  --json  Format output as json.
 
 DESCRIPTION
-  Get details of a knowledge base
+  Get a knowledge base
+
+  Returns a knowledge base's metadata and state. `knowledgeBaseId` accepts the public ID (`kb...`) or the UUID, and you
+  don't need to pass an organization. If you can't read the knowledge base, the request returns `404`. To read the built
+  entries, query `sanity.context.entry` documents with GROQ from your organization's document store.
 
 EXAMPLES
-  Get details of a specific knowledge base
+  Get a knowledge base
 
-    $ sanity context get kb-abc123
+    $ sanity context get <knowledgeBaseId>
 
-  Output the knowledge base as JSON
+  Get a knowledge base, as JSON
 
-    $ sanity context get kb-abc123 --json
+    $ sanity context get <knowledgeBaseId> --json
 ```
 
-## `sanity context imports create KNOWLEDGEBASEID`
+## `sanity context instructions create KNOWLEDGEBASEID`
 
-Import content into a knowledge base
+Create an instruction
 
 ```
 USAGE
-  $ sanity context imports create KNOWLEDGEBASEID [--content-type <mime>] [--file <path> | --text <value> | --url <url> |
-    --query <value>] [--sanity-dataset <name> ] [--sanity-project <id> ] [--title <value> ]
+  $ sanity context instructions create KNOWLEDGEBASEID --statement <value> --scope-document-ids <value>... [--json]
+    [--rebuild-paths <value>...] [--verified]
+
+ARGUMENTS
+  KNOWLEDGEBASEID  The knowledge base's ID (`kb...`), its `publicId`. Its UUID `id` is also accepted.
+
+FLAGS
+  --rebuild-paths=<value>...       Paths of entries to rebuild under the new instruction right away. The response
+                                   returns the rebuild job ID in `rebuildJobId`.
+  --scope-document-ids=<value>...  (required) IDs of the documents the instruction applies to. Builds apply it when they
+                                   write entries built from these documents. IDs of documents that no longer exist are
+                                   dropped. If none exist, the request returns `422` with code
+                                   `instructionScopeVanished`.
+  --statement=<value>              (required) The instruction in plain language. Builds follow it over what the sources
+                                   say.
+  --[no-]verified                  Whether you already checked the instruction for entries that contradict it. When
+                                   `true`, the background check that files issues for those entries is skipped. It still
+                                   runs if the rebuild you requested in `rebuildPaths` does not start.
+
+GLOBAL FLAGS
+  --json  Format output as json.
+
+DESCRIPTION
+  Create an instruction
+
+  Creates a standing instruction for how entries built from its documents are written. Every instruction applies to
+  specific documents, set in `scopeDocumentIds`. To rebuild entries under the new instruction right away, pass their
+  paths in `rebuildPaths`. The response includes the rebuild job ID, or `null` if the rebuild could not start. The
+  instruction is saved either way. After the instruction is saved, a background check files issues for entries that
+  contradict it. If you already checked the instruction for contradictions, set `verified` to skip the background check.
+  If the requested rebuild does not start, the background check runs even when `verified` is set.
+
+EXAMPLES
+  Create an instruction
+
+    $ sanity context instructions create <knowledgeBaseId>
+
+  Create an instruction, as JSON
+
+    $ sanity context instructions create <knowledgeBaseId> --json
+```
+
+## `sanity context instructions delete KNOWLEDGEBASEID INSTRUCTIONID`
+
+Delete an instruction
+
+```
+USAGE
+  $ sanity context instructions delete KNOWLEDGEBASEID INSTRUCTIONID [--json] [--rebuild] [-y]
+
+ARGUMENTS
+  KNOWLEDGEBASEID  The knowledge base's ID (`kb...`), its `publicId`. Its UUID `id` is also accepted.
+  INSTRUCTIONID    The instruction's ID.
+
+FLAGS
+  -y, --yes           Skip confirmation prompt (unattended mode)
+      --[no-]rebuild  Set to `true` to rebuild every entry built from the instruction's documents once it is deleted, so
+                      pages written under the instruction reflect their documents again. The response returns the
+                      rebuild job ID in `rebuildJobId`.
+
+GLOBAL FLAGS
+  --json  Format output as json.
+
+DESCRIPTION
+  Delete an instruction
+
+  Deletes the instruction. Builds stop applying it from the next run. Entries already written under it keep their text
+  until they are rebuilt; pass `rebuild=true` to rebuild every entry built from its documents right away.
+
+EXAMPLES
+  Delete an instruction
+
+    $ sanity context instructions delete <knowledgeBaseId> <instructionId>
+
+  Delete an instruction, as JSON
+
+    $ sanity context instructions delete <knowledgeBaseId> <instructionId> --json
+```
+
+## `sanity context instructions edit KNOWLEDGEBASEID INSTRUCTIONID`
+
+Update an instruction
+
+```
+USAGE
+  $ sanity context instructions edit KNOWLEDGEBASEID INSTRUCTIONID [--json] [--statement <value>] [--scope-document-ids
+    <value>...]
+
+ARGUMENTS
+  KNOWLEDGEBASEID  The knowledge base's ID (`kb...`), its `publicId`. Its UUID `id` is also accepted.
+  INSTRUCTIONID    The instruction's ID.
+
+FLAGS
+  --scope-document-ids=<value>...  IDs of the documents the instruction applies to. Replaces the current list. Omit it
+                                   to keep the current documents. IDs of documents that no longer exist are dropped. If
+                                   none exist, the request returns `422` with code `instructionScopeVanished`.
+  --statement=<value>              The new instruction text. Omit it to keep the current text.
+
+GLOBAL FLAGS
+  --json  Format output as json.
+
+DESCRIPTION
+  Update an instruction
+
+  Updates the instruction's statement or documents. The change applies from the next build. Any update also reactivates
+  an archived instruction and ties it to the current content of its documents.
+
+EXAMPLES
+  Update an instruction
+
+    $ sanity context instructions edit <knowledgeBaseId> <instructionId>
+
+  Update an instruction, as JSON
+
+    $ sanity context instructions edit <knowledgeBaseId> <instructionId> --json
+```
+
+## `sanity context issues apply KNOWLEDGEBASEID ISSUEIDS`
+
+Accept and apply issues
+
+```
+USAGE
+  $ sanity context issues apply KNOWLEDGEBASEID ISSUEIDS... [--json] [--watch]
+
+ARGUMENTS
+  KNOWLEDGEBASEID  The knowledge base's ID (`kb...`), its `publicId`. Its UUID `id` is also accepted.
+  ISSUEIDS...      The IDs of the issues to accept and apply.
+
+FLAGS
+  --watch  Wait for the job to finish, exiting non-zero if it fails
+
+GLOBAL FLAGS
+  --json  Format output as json.
+
+DESCRIPTION
+  Accept and apply issues
+
+  Accepts the issues in `issueIds`, then queues a job that applies them, rewrites the affected entries, and saves a new
+  revision. Returns a job ID. IDs of issues that no longer exist are skipped. Returns `409` with code
+  `issueNotAutoApplicable`, and accepts none of the issues, if any of them cannot be applied: a `conflict` (resolve it
+  with `POST .../issues/{issueId}/resolve`), or an `update_required` issue whose `scopePath` is `*` or names an entry
+  that no longer exists. Dismiss those instead.
+
+EXAMPLES
+  Accept and apply issues
+
+    $ sanity context issues apply <knowledgeBaseId>
+
+  Accept and apply issues, as JSON
+
+    $ sanity context issues apply <knowledgeBaseId> --json
+```
+
+## `sanity context issues dismiss KNOWLEDGEBASEID ISSUEID`
+
+Dismiss an issue
+
+```
+USAGE
+  $ sanity context issues dismiss KNOWLEDGEBASEID ISSUEID [--json]
+
+ARGUMENTS
+  KNOWLEDGEBASEID  The knowledge base's ID (`kb...`), its `publicId`. Its UUID `id` is also accepted.
+  ISSUEID          The issue's document ID.
+
+GLOBAL FLAGS
+  --json  Format output as json.
+
+DESCRIPTION
+  Dismiss an issue
+
+  Marks the issue as rejected. If the issue already left triage, the request returns it unchanged. Returns `422` with
+  code `issueDocumentInvalid` if the issue document was edited into a shape the API cannot verify. Returns `409` with
+  code `issueTransitionConflict` if another change to the issue happened at the same time. You can safely retry a `409`.
+
+EXAMPLES
+  Dismiss an issue
+
+    $ sanity context issues dismiss <knowledgeBaseId> <issueId>
+
+  Dismiss an issue, as JSON
+
+    $ sanity context issues dismiss <knowledgeBaseId> <issueId> --json
+```
+
+## `sanity context issues get KNOWLEDGEBASEID ISSUEID`
+
+Get details of an issue
+
+```
+USAGE
+  $ sanity context issues get KNOWLEDGEBASEID ISSUEID [--json]
+
+ARGUMENTS
+  KNOWLEDGEBASEID  Knowledge base ID
+  ISSUEID          Issue ID
+
+GLOBAL FLAGS
+  --json  Format output as json.
+
+DESCRIPTION
+  Get details of an issue
+
+EXAMPLES
+  Get details of a specific issue
+
+    $ sanity context issues get kb-abc123 issue.def456
+
+  Output the issue as JSON
+
+    $ sanity context issues get kb-abc123 issue.def456 --json
+```
+
+## `sanity context issues list KNOWLEDGEBASEID`
+
+List issues found by knowledge base builds
+
+```
+USAGE
+  $ sanity context issues list KNOWLEDGEBASEID [--json] [--kind conflict|update_required] [--scope <path>] [--severity
+    critical|suggestion] [--status open|accepted|rejected]
 
 ARGUMENTS
   KNOWLEDGEBASEID  Knowledge base ID
 
 FLAGS
-  --content-type=<mime>    Content type of the import (--text: text/markdown or text/plain; --file: any MIME type,
-                           inferred from the file extension when omitted)
-  --file=<path>            Path to a local file to import
-  --query=<value>          GROQ query binding a Sanity dataset as a source
-  --sanity-dataset=<name>  Sanity dataset for a dataset import
-  --sanity-project=<id>    Sanity project ID for a dataset import
-  --text=<value>           Inline text content to import (requires --title)
-  --title=<value>          Title for an inline text import
-  --url=<url>              Website URL to crawl
+  --kind=<option>      Only list issues of this kind
+                       <options: conflict|update_required>
+  --scope=<path>       Only list issues about this entry path or anything under it (`*` for knowledge-base-wide issues)
+  --severity=<option>  Only list issues of this severity
+                       <options: critical|suggestion>
+  --status=<option>    Only list issues with this status (rejected = dismissed, accepted = resolved or applied)
+                       <options: open|accepted|rejected>
+
+GLOBAL FLAGS
+  --json  Format output as json.
 
 DESCRIPTION
-  Import content into a knowledge base
+  List issues found by knowledge base builds
 
 EXAMPLES
-  Import inline text
+  List all issues for a knowledge base
 
-    $ sanity context imports create kb-abc123 --text "Refunds are processed within 5 days" --title "Refund policy"
+    $ sanity context issues list kb-abc123
 
-  Upload and import a local file
+  List issues awaiting triage
 
-    $ sanity context imports create kb-abc123 --file ./handbook.pdf
+    $ sanity context issues list kb-abc123 --status open
 
-  Crawl a website
+  List critical conflicts
 
-    $ sanity context imports create kb-abc123 --url https://example.com/docs
+    $ sanity context issues list kb-abc123 --kind conflict --severity critical
 
-  Bind a Sanity dataset as a source
+  List issues about entries under billing/
 
-    $ sanity context imports create kb-abc123 --query '*[_type == "article"]' --sanity-project abc123 \
-      --sanity-dataset production
+    $ sanity context issues list kb-abc123 --scope billing
+
+  Output issues as JSON
+
+    $ sanity context issues list kb-abc123 --json
 ```
 
-## `sanity context imports delete KNOWLEDGEBASEID IMPORTID`
+## `sanity context issues reopen KNOWLEDGEBASEID ISSUEID`
 
-Delete an import from a knowledge base
+Reopen an accepted conflict
 
 ```
 USAGE
-  $ sanity context imports delete KNOWLEDGEBASEID IMPORTID [-y]
+  $ sanity context issues reopen KNOWLEDGEBASEID ISSUEID [--json]
 
 ARGUMENTS
-  KNOWLEDGEBASEID  Knowledge base ID
-  IMPORTID         Import ID
+  KNOWLEDGEBASEID  The knowledge base's ID (`kb...`), its `publicId`. Its UUID `id` is also accepted.
+  ISSUEID          The issue's document ID.
 
-FLAGS
-  -y, --yes  Skip confirmation prompt (unattended mode)
+GLOBAL FLAGS
+  --json  Format output as json.
 
 DESCRIPTION
-  Delete an import from a knowledge base
+  Reopen an accepted conflict
+
+  Returns an accepted conflict issue to triage, clears its resolution, and deletes the instruction the resolution
+  created. Reopening an open or dismissed conflict returns it unchanged. Other issue types return `422` with code
+  `issueNotResolvable`.
 
 EXAMPLES
-  Delete an import after confirmation
+  Reopen an accepted conflict
 
-    $ sanity context imports delete kb-abc123 import-def456
+    $ sanity context issues reopen <knowledgeBaseId> <issueId>
 
-  Delete an import without confirmation prompt
+  Reopen an accepted conflict, as JSON
 
-    $ sanity context imports delete kb-abc123 import-def456 --yes
+    $ sanity context issues reopen <knowledgeBaseId> <issueId> --json
 ```
 
-## `sanity context imports download KNOWLEDGEBASEID IMPORTID`
+## `sanity context issues resolve KNOWLEDGEBASEID ISSUEID`
 
-Get a short-lived signed URL for the original uploaded bytes of a file import
+Resolve a conflict issue
 
 ```
 USAGE
-  $ sanity context imports download KNOWLEDGEBASEID IMPORTID [--json]
+  $ sanity context issues resolve KNOWLEDGEBASEID ISSUEID [--json] [--watch] [--side <value>]
 
 ARGUMENTS
-  KNOWLEDGEBASEID  Knowledge base ID
-  IMPORTID         Import ID
+  KNOWLEDGEBASEID  The knowledge base's ID (`kb...`), its `publicId`. Its UUID `id` is also accepted.
+  ISSUEID          The issue's document ID.
 
 FLAGS
-  --json  Output the download URL in JSON format
+  --side=<value>  Index of the correct side, as listed by `sanity context issues get`
+  --watch         Wait for the job to finish, exiting non-zero if it fails
+
+GLOBAL FLAGS
+  --json  Format output as json.
 
 DESCRIPTION
-  Get a short-lived signed URL for the original uploaded bytes of a file import
+  Resolve a conflict issue
+
+  Resolves a conflict issue by choosing one of its sides. Set `resolution` to the index of a side in `content.sides`.
+  For a conflict on a single entry, index `0` is the entry's current content, so choosing it keeps the entry as it is.
+  Choosing any other side rewrites the entry, and the returned `jobId` tracks the rewrite. The decision becomes a
+  standing instruction for every future build, and `resolvedBy` records who made it. To change a decision, resolve the
+  accepted conflict again. Other issue types, dismissed conflicts, and out-of-range indexes return `422` with code
+  `issueNotResolvable`.
 
 EXAMPLES
-  Get a download URL for an uploaded file
+  Choose the correct side interactively
 
-    $ sanity context imports download kb-abc123 import-def456
-```
+    $ sanity context issues resolve kb-abc123 issue-def456
 
-## `sanity context imports get KNOWLEDGEBASEID IMPORTID`
+  Choose side 1 and wait for the entry rewrite
 
-Get details of an import
-
-```
-USAGE
-  $ sanity context imports get KNOWLEDGEBASEID IMPORTID [--json]
-
-ARGUMENTS
-  KNOWLEDGEBASEID  Knowledge base ID
-  IMPORTID         Import ID
-
-FLAGS
-  --json  Output the import in JSON format
-
-DESCRIPTION
-  Get details of an import
-
-EXAMPLES
-  Get details of a specific import
-
-    $ sanity context imports get kb-abc123 import-def456
-
-  Output the import as JSON
-
-    $ sanity context imports get kb-abc123 import-def456 --json
-```
-
-## `sanity context imports list KNOWLEDGEBASEID`
-
-List imports for a knowledge base
-
-```
-USAGE
-  $ sanity context imports list KNOWLEDGEBASEID [--json]
-
-ARGUMENTS
-  KNOWLEDGEBASEID  Knowledge base ID
-
-FLAGS
-  --json  Output imports in JSON format
-
-DESCRIPTION
-  List imports for a knowledge base
-
-EXAMPLES
-  List all imports for a knowledge base
-
-    $ sanity context imports list kb-abc123
-
-  Output imports as JSON
-
-    $ sanity context imports list kb-abc123 --json
+    $ sanity context issues resolve kb-abc123 issue-def456 --side 1 --watch
 ```
 
 ## `sanity context jobs get KNOWLEDGEBASEID JOBID`
 
-Get the status of a knowledge base job
+Get a job
 
 ```
 USAGE
   $ sanity context jobs get KNOWLEDGEBASEID JOBID [--json] [--watch]
 
 ARGUMENTS
-  KNOWLEDGEBASEID  Knowledge base ID
-  JOBID            Job ID
+  KNOWLEDGEBASEID  The knowledge base's ID (`kb...`), its `publicId`. Its UUID `id` is also accepted.
+  JOBID            The job ID returned by the endpoint that started the work.
 
 FLAGS
-  --json   Output the job in JSON format
-  --watch  Poll until the job reaches a terminal state
+  --watch  Wait for the job to finish, exiting non-zero if it fails
+
+GLOBAL FLAGS
+  --json  Format output as json.
 
 DESCRIPTION
-  Get the status of a knowledge base job
+  Get a job
+
+  Returns the status of a background job, such as a build, sync, or refresh. The endpoint that starts the work returns
+  the job ID.
 
 EXAMPLES
-  Get the current status of a job
+  Get a job
 
-    $ sanity context jobs get kb-abc123 job-def456
+    $ sanity context jobs get <knowledgeBaseId> <jobId>
 
-  Wait for the job to finish (non-zero exit if it does not succeed)
+  Get a job, as JSON
 
-    $ sanity context jobs get kb-abc123 job-def456 --watch
+    $ sanity context jobs get <knowledgeBaseId> <jobId> --json
 ```
 
 ## `sanity context list`
 
-List knowledge bases in an organization
+List knowledge bases
 
 ```
 USAGE
-  $ sanity context list [--organization <id>] [--json]
+  $ sanity context list [--json] [--limit <value>] [--include-drafts] [--organization <id>]
 
 FLAGS
-  --json  Output knowledge bases in JSON format
+  --[no-]include-drafts  Set to `true` to also list the organization's drafts, which have `state` set to `draft`. Drafts
+                         count toward the plan's knowledge base limit, and `createdBy` says who started each one.
+  --limit=<value>        The maximum number of items to return.
+
+GLOBAL FLAGS
+  --json  Format output as json.
 
 OVERRIDE FLAGS
-  --organization=<id>  Organization to list knowledge bases for (overrides CLI configuration)
+  --organization=<id>  Organization ID (overrides CLI configuration)
 
 DESCRIPTION
-  List knowledge bases in an organization
+  List knowledge bases
+
+  Returns the knowledge bases you can access in the organization set by `organizationId`. Drafts are left out unless you
+  set `includeDrafts` to `true`. Results are cursor-paginated, newest first.
 
 EXAMPLES
-  List knowledge bases, selecting the organization interactively
+  List knowledge bases
 
     $ sanity context list
 
-  List knowledge bases in a specific organization
+  List knowledge bases, as JSON
 
-    $ sanity context list --organization org-abc123
-
-  Output knowledge bases as JSON
-
-    $ sanity context list --organization org-abc123 --json
+    $ sanity context list --json
 ```
 
-## `sanity context refresh KNOWLEDGEBASEID`
+## `sanity context mcp create NAME`
 
-Refresh a knowledge base: re-check sources and apply what changed
+Create a Context MCP endpoint that serves knowledge bases and a dataset to agents
 
 ```
 USAGE
-  $ sanity context refresh KNOWLEDGEBASEID
+  $ sanity context mcp create NAME [--organization <id>] [-p <id> -d <name>] [--groq-filter <value> ] [--instructions
+    <value>] [--knowledge-base <id>...] [--perspective published|drafts|raw ] [--semantic-search ] [--title <value>]
+    [--workspace <value> ]
 
 ARGUMENTS
-  KNOWLEDGEBASEID  Knowledge base ID
+  NAME  Permanent MCP endpoint name used in its URL, made of lowercase letters, digits and hyphens
+
+FLAGS
+  -d, --dataset=<name>          Dataset the endpoint serves
+      --groq-filter=<value>     GROQ filter that limits which dataset documents the endpoint serves
+      --instructions=<value>    Instructions the endpoint serves to connecting agents
+      --knowledge-base=<id>...  Knowledge base the endpoint serves; repeat the flag to serve several
+      --perspective=<option>    Perspective agents query the dataset with
+                                <options: published|drafts|raw>
+      --[no-]semantic-search    Let agents use semantic search on the dataset (--no-semantic-search to turn it off)
+      --title=<value>           MCP endpoint title
+      --workspace=<value>       Studio workspace whose schema agents use, instead of the first workspace
+
+OVERRIDE FLAGS
+  -p, --project=<id>       Project the dataset belongs to (overrides CLI configuration)
+      --organization=<id>  Organization to create the MCP endpoint in (overrides CLI configuration)
 
 DESCRIPTION
-  Refresh a knowledge base: re-check sources and apply what changed
+  Create a Context MCP endpoint that serves knowledge bases and a dataset to agents
 
 EXAMPLES
-  Start an incremental refresh
+  Create an MCP endpoint that serves two knowledge bases
 
-    $ sanity context refresh kb-abc123
+    $ sanity context mcp create support --title "Support" --knowledge-base kb-abc123 --knowledge-base kb-def456
+
+  Create an MCP endpoint that serves the products in a dataset
+
+    $ sanity context mcp create catalog --title "Catalog" --project abc123 --dataset production --perspective drafts \
+      --groq-filter '_type in ["product"]'
+```
+
+## `sanity context mcp delete NAME`
+
+Delete a Context MCP endpoint, which disconnects any agents using it
+
+```
+USAGE
+  $ sanity context mcp delete NAME [--organization <id>] [-y]
+
+ARGUMENTS
+  NAME  MCP endpoint name, as in its URL
+
+FLAGS
+  -y, --yes  Skip confirmation prompt (unattended mode)
+
+OVERRIDE FLAGS
+  --organization=<id>  Organization the MCP endpoint belongs to (overrides CLI configuration)
+
+DESCRIPTION
+  Delete a Context MCP endpoint, which disconnects any agents using it
+
+EXAMPLES
+  Delete an MCP endpoint after confirmation
+
+    $ sanity context mcp delete support
+
+  Delete an MCP endpoint without confirmation prompt
+
+    $ sanity context mcp delete support --yes
+```
+
+## `sanity context mcp get NAME`
+
+Get details of a Context MCP endpoint, including its URL
+
+```
+USAGE
+  $ sanity context mcp get NAME [--json] [--organization <id>]
+
+ARGUMENTS
+  NAME  MCP endpoint name, as in its URL
+
+GLOBAL FLAGS
+  --json  Format output as json.
+
+OVERRIDE FLAGS
+  --organization=<id>  Organization the MCP endpoint belongs to (overrides CLI configuration)
+
+DESCRIPTION
+  Get details of a Context MCP endpoint, including its URL
+
+EXAMPLES
+  Get details of the "support" MCP endpoint
+
+    $ sanity context mcp get support
+
+  Output an MCP endpoint in a specific organization as JSON
+
+    $ sanity context mcp get support --organization org-abc123 --json
+```
+
+## `sanity context mcp initial-context MCPENDPOINT`
+
+Get an MCP endpoint's initial context
+
+```
+USAGE
+  $ sanity context mcp initial-context MCPENDPOINT [--json] [--link-resolver <value>] [--heading_offset <value>] [--organization
+    <id>]
+
+ARGUMENTS
+  MCPENDPOINT  The MCP endpoint's name, set when the endpoint was created.
+
+FLAGS
+  --heading_offset=<value>  How many levels to shift markdown headings down, from `0` to `6`. Defaults to `1`, so `#`
+                            becomes `##`.
+  --link-resolver=<value>   A JSON array that adds `_url` fields to query results. Each item has `types` (document
+                            types), `baseUrl`, and an optional `slugExpression`, a GROQ expression that defaults to
+                            `slug.current`. Invalid JSON is ignored.
+
+GLOBAL FLAGS
+  --json  Format output as json.
+
+OVERRIDE FLAGS
+  --organization=<id>  Organization ID (overrides CLI configuration)
+
+DESCRIPTION
+  Get an MCP endpoint's initial context
+
+  Returns the same text as the `initial_context` MCP tool, as plain text you can add to a system prompt.
+  `heading_offset` shifts markdown headings down by that many levels. The default is `1`, so `#` becomes `##`.
+
+EXAMPLES
+  Get an MCP endpoint's initial context
+
+    $ sanity context mcp initial-context <mcpEndpoint>
+
+  Get an MCP endpoint's initial context, as JSON
+
+    $ sanity context mcp initial-context <mcpEndpoint> --json
+```
+
+## `sanity context mcp list`
+
+List Context MCP endpoints in an organization
+
+```
+USAGE
+  $ sanity context mcp list [--json] [--organization <id>]
+
+GLOBAL FLAGS
+  --json  Format output as json.
+
+OVERRIDE FLAGS
+  --organization=<id>  Organization to list MCP endpoints for (overrides CLI configuration)
+
+DESCRIPTION
+  List Context MCP endpoints in an organization
+
+EXAMPLES
+  List MCP endpoints, selecting the organization interactively
+
+    $ sanity context mcp list
+
+  Output the MCP endpoints of a specific organization as JSON
+
+    $ sanity context mcp list --organization org-abc123 --json
+```
+
+## `sanity context mcp status NAME`
+
+Check whether an agent connecting with your credentials can use a Context MCP endpoint
+
+```
+USAGE
+  $ sanity context mcp status NAME [--json] [--organization <id>]
+
+ARGUMENTS
+  NAME  MCP endpoint name, as in its URL
+
+GLOBAL FLAGS
+  --json  Format output as json.
+
+OVERRIDE FLAGS
+  --organization=<id>  Organization the MCP endpoint belongs to (overrides CLI configuration)
+
+DESCRIPTION
+  Check whether an agent connecting with your credentials can use a Context MCP endpoint
+
+EXAMPLES
+  Check the "support" MCP endpoint
+
+    $ sanity context mcp status support
+```
+
+## `sanity context mcp update NAME`
+
+Update a Context MCP endpoint
+
+```
+USAGE
+  $ sanity context mcp update NAME [--organization <id>] [--add-knowledge-base <id>...] [-p <id> -d <name>]
+    [--groq-filter <value>] [--instructions <value>] [--no-dataset | ] [--perspective published|drafts|raw]
+    [--remove-knowledge-base <id>...] [--semantic-search] [--title <value>] [--workspace <value>]
+
+ARGUMENTS
+  NAME  MCP endpoint name, as in its URL
+
+FLAGS
+  -d, --dataset=<name>                 Dataset the endpoint serves, replacing its current dataset
+      --add-knowledge-base=<id>...     Knowledge base to add to the endpoint; repeat the flag to add several
+      --groq-filter=<value>            GROQ filter that limits which dataset documents the endpoint serves ("" removes
+                                       it)
+      --instructions=<value>           Instructions the endpoint serves to connecting agents ("" removes them)
+      --no-dataset                     Stop serving the dataset, which also removes the GROQ filter
+      --perspective=<option>           Perspective agents query the dataset with
+                                       <options: published|drafts|raw>
+      --remove-knowledge-base=<id>...  Knowledge base to remove from the endpoint; repeat the flag to remove several
+      --[no-]semantic-search           Let agents use semantic search on the dataset (--no-semantic-search to turn it
+                                       off)
+      --title=<value>                  New MCP endpoint title
+      --workspace=<value>              Studio workspace whose schema agents use ("" goes back to the first workspace)
+
+OVERRIDE FLAGS
+  -p, --project=<id>       Project the dataset belongs to (overrides CLI configuration)
+      --organization=<id>  Organization the MCP endpoint belongs to (overrides CLI configuration)
+
+DESCRIPTION
+  Update a Context MCP endpoint
+
+  Only the settings you pass change. Dataset settings (--workspace, --perspective, --semantic-search) apply to the
+  endpoint's dataset and start from the defaults when --dataset switches to another dataset.
+
+EXAMPLES
+  Rename an MCP endpoint
+
+    $ sanity context mcp update support --title "Customer support"
+
+  Serve a different knowledge base
+
+    $ sanity context mcp update support --add-knowledge-base kb-def456 --remove-knowledge-base kb-abc123
+
+  Switch to another dataset and query its drafts
+
+    $ sanity context mcp update catalog --project abc123 --dataset staging --perspective drafts
+
+  Stop serving the dataset
+
+    $ sanity context mcp update support --no-dataset
+
+  Remove the instructions
+
+    $ sanity context mcp update support --instructions ""
+```
+
+## `sanity context query QUERY`
+
+Query an organization's Context documents with GROQ
+
+```
+USAGE
+  $ sanity context query QUERY [--json] [--organization <id>] [--params <json>]
+
+ARGUMENTS
+  QUERY  GROQ query to run against the organization's Context documents
+
+FLAGS
+  --params=<json>  Query parameters as a JSON object
+
+GLOBAL FLAGS
+  --json  Format output as json.
+
+OVERRIDE FLAGS
+  --organization=<id>  Organization to query (overrides CLI configuration)
+
+DESCRIPTION
+  Query an organization's Context documents with GROQ
+
+EXAMPLES
+  List open issues across all knowledge bases
+
+    $ sanity context query '*[_type == "sanity.context.issue" && status == "open"]{_id, knowledgeBaseId}'
+
+  List the entry paths of one knowledge base as plain JSON
+
+    $ sanity context query '*[_type == "sanity.context.entry" && knowledgeBaseId == $kb].path' --params '{"kb": \
+      "kb-abc123"}' --json
+```
+
+## `sanity context sources create KNOWLEDGEBASEID`
+
+Add a source
+
+```
+USAGE
+  $ sanity context sources create KNOWLEDGEBASEID [--json] [--type web|sanity-dataset|files] [--url <value> | --query
+    <value> | --file <path> | --text <path|->] [--include-paths <value>...] [--exclude-paths <value>...] [--max-depth
+    <value>] [--sitemap-only] [--ignore-query-parameters] [--page-limit <value>] [--dry-run] [--sanity-project-id
+    <value>] [--sanity-dataset-id <value>] [--title <value>] [--content-type text/markdown|text/plain] [--watch]
+
+ARGUMENTS
+  KNOWLEDGEBASEID  The knowledge base's ID (`kb...`), its `publicId`. Its UUID `id` is also accepted.
+
+FLAGS
+  --content-type=<option>         The format of `content`: `text/markdown` (the default) or `text/plain`. Only with
+                                  `content`. Only for type files.
+                                  <options: text/markdown|text/plain>
+  --[no-]dry-run                  Set to `true` to estimate what a crawl would fetch without adding the source. The
+                                  response is then `200` with a preview of the pages the site has, grouped by path. Only
+                                  for type web.
+  --exclude-paths=<value>...      Regular expressions for URL paths to skip. Pages whose path matches one of them aren't
+                                  crawled. Only for type web.
+  --file=<path>                   Local file to upload as a files source: a document, or a zip, tar or gzip archive of
+                                  them
+  --[no-]ignore-query-parameters  Whether to treat URLs that differ only by query string as one page. New crawls set it
+                                  to `true` unless you set it. Set it to `false` when the query string selects different
+                                  content, such as pagination. Only for type web.
+  --include-paths=<value>...      Regular expressions for URL paths to crawl. When set, the crawl only includes pages
+                                  whose path matches one of them. Only for type web.
+  --max-depth=<value>             How many levels deep the crawl goes from the root URL. Only for type web.
+  --page-limit=<value>            The maximum number of pages to crawl. The crawl can stop sooner when the knowledge
+                                  base reaches its source limit. Only for type web.
+  --query=<value>                 A GROQ query that selects the documents, with an optional projection. Each sync runs
+                                  it again. Only for type sanity-dataset.
+  --sanity-dataset-id=<value>     The dataset to read documents from. Only for type sanity-dataset.
+  --sanity-project-id=<value>     The ID of the Sanity project to read documents from. You need full read access to the
+                                  dataset and, on its project, the Administrator or Developer role or a custom role that
+                                  can create datasets. Only for type sanity-dataset.
+  --[no-]sitemap-only             Whether to crawl only the pages listed in the site's sitemap. Only for type web.
+  --text=<path|->                 Text or markdown to hold as a files source, read from a local file or `-` for stdin
+  --title=<value>                 The source's title. Only for type files.
+  --type=<option>                 The source type. `web` crawls a website. Inferred from the other flags when left out.
+                                  <options: web|sanity-dataset|files>
+  --url=<value>                   The URL to start crawling from. It must be a public `http` or `https` URL. Only for
+                                  type web.
+  --watch                         Wait for the sync to settle, exiting non-zero unless it completes: when it fails, is
+                                  cancelled or is held for confirmation
+
+GLOBAL FLAGS
+  --json  Format output as json.
+
+DESCRIPTION
+  Add a source
+
+  Adds a source to a knowledge base. Set `type` to choose what it reads:
+
+  - `web`: a website, crawled from `url`
+  - `sanity-dataset`: the documents a GROQ query selects in a Sanity dataset
+  - `files`: files you upload with `POST .../sources/{sourceId}/uploads`, or text you send in `content`
+
+  A website or dataset starts its first sync right away. A `files` source syncs when you upload a file, or right away
+  when you send `content`: one request stores the text, adds the source and starts its sync. For a website, set `dryRun`
+  to `true` to preview the crawl without adding the source.
+
+  Adding a website that is already a source returns `409` with code `webSourceRootConflict`, and adding more websites
+  than your limit allows returns `409` with code `webSourceRootLimitExceeded`. When the organization's knowledge bases
+  already hold as many source chunks as its plan allows, returns `403` with code `planLimitReached` and adds nothing.
+  Supports the `Idempotency-Key` header.
+
+EXAMPLES
+  Crawl a website
+
+    $ sanity context sources create kb-abc123 --url https://example.com/docs
+
+  Estimate how many pages a crawl of /docs would find, without adding it
+
+    $ sanity context sources create kb-abc123 --url https://example.com/docs --dry-run
+
+  Read the documents a GROQ query selects from a Sanity dataset
+
+    $ sanity context sources create kb-abc123 --query '*[_type == "article"]' --sanity-project-id abc123 \
+      --sanity-dataset-id production
+
+  Upload a local file and wait for its sync
+
+    $ sanity context sources create kb-abc123 --file ./handbook.pdf --watch
+
+  Add markdown from stdin
+
+    cat refunds.md | sanity context sources create kb-abc123 --text - --title "Refund policy"
+```
+
+## `sanity context sources delete KNOWLEDGEBASEID SOURCEID`
+
+Delete a source
+
+```
+USAGE
+  $ sanity context sources delete KNOWLEDGEBASEID SOURCEID [--json] [-y]
+
+ARGUMENTS
+  KNOWLEDGEBASEID  The knowledge base's ID (`kb...`), its `publicId`. Its UUID `id` is also accepted.
+  SOURCEID         The source's ID.
+
+FLAGS
+  -y, --yes  Skip confirmation prompt (unattended mode)
+
+GLOBAL FLAGS
+  --json  Format output as json.
+
+DESCRIPTION
+  Delete a source
+
+  Removes a source and its documents from the knowledge base, and starts a refresh that removes their citations from
+  entries and deletes the entries left with none. A source no other knowledge base uses stops syncing and is deleted
+  once that refresh has run.
+
+EXAMPLES
+  Delete a source
+
+    $ sanity context sources delete <knowledgeBaseId> <sourceId>
+
+  Delete a source, as JSON
+
+    $ sanity context sources delete <knowledgeBaseId> <sourceId> --json
+```
+
+## `sanity context sources edit KNOWLEDGEBASEID SOURCEID`
+
+Update a source
+
+```
+USAGE
+  $ sanity context sources edit KNOWLEDGEBASEID SOURCEID [--json] [--title <value>] [--include-paths <value>...]
+    [--exclude-paths <value>...] [--max-depth <value>] [--sitemap-only] [--ignore-query-parameters] [--page-limit
+    <value>] [--query <value>] [--sync-frequency weekly|monthly|null] [--confirm-deletions]
+
+ARGUMENTS
+  KNOWLEDGEBASEID  The knowledge base's ID (`kb...`), its `publicId`. Its UUID `id` is also accepted.
+  SOURCEID         The source's ID.
+
+FLAGS
+  --[no-]confirm-deletions        Set to `true` to apply new crawl options that delete many documents. Without it, a
+                                  change that would delete all of the documents, or five or more that are over a fifth
+                                  of them, returns `409` with code `sourceDeletionsUnconfirmed`.
+  --exclude-paths=<value>...      Regular expressions for URL paths to skip. Pages whose path matches one of them aren't
+                                  crawled.
+  --[no-]ignore-query-parameters  Whether to treat URLs that differ only by query string as one page. New crawls set it
+                                  to `true` unless you set it. Set it to `false` when the query string selects different
+                                  content, such as pagination.
+  --include-paths=<value>...      Regular expressions for URL paths to crawl. When set, the crawl only includes pages
+                                  whose path matches one of them.
+  --max-depth=<value>             How many levels deep the crawl goes from the root URL.
+  --page-limit=<value>            The maximum number of pages to crawl. The crawl can stop sooner when the knowledge
+                                  base reaches its source limit.
+  --query=<value>                 For a `sanity-dataset` source, the GROQ query, replacing the stored one. A sync is
+                                  queued, and removes the documents the query no longer returns.
+  --[no-]sitemap-only             Whether to crawl only the pages listed in the site's sitemap.
+  --sync-frequency=<option>       For a `web` or `sanity-dataset` source, how often it syncs on its own: `weekly` or
+                                  `monthly`. `null` stops scheduled syncs, and you can still start a sync yourself.
+                                  Setting a frequency requires a plan that includes scheduled syncs; without one, the
+                                  request returns `403` with code `featureNotInPlan`. Pass `null` to clear it.
+                                  <options: weekly|monthly|null>
+  --title=<value>                 The source's title.
+
+GLOBAL FLAGS
+  --json  Format output as json.
+
+DESCRIPTION
+  Update a source
+
+  Changes a source's title, a website's crawl options, a dataset's query, or how often a website or dataset syncs on its
+  own. New crawl options delete the documents whose path they leave out. When that would delete all of the source's
+  documents, or five or more that are over a fifth of them, the request returns `409` with code
+  `sourceDeletionsUnconfirmed` until you send it again with `confirmDeletions` set to `true`. New crawl options sent
+  while the source syncs return `409` with code `syncInProgress`; send them again once the sync finishes. A new query
+  queues a sync, which removes the documents the query no longer selects.
+
+  Crawl options on a source that isn't a website, a query on one that isn't a dataset, or a sync frequency on a `files`
+  source, return `422` with code `sourceTypeMismatch`. Setting a sync frequency on a plan without scheduled syncs
+  returns `403` with code `featureNotInPlan`; setting it to `null` always works.
+
+EXAMPLES
+  Update a source
+
+    $ sanity context sources edit <knowledgeBaseId> <sourceId>
+
+  Update a source, as JSON
+
+    $ sanity context sources edit <knowledgeBaseId> <sourceId> --json
+```
+
+## `sanity context sources get KNOWLEDGEBASEID SOURCEID`
+
+Get a source
+
+```
+USAGE
+  $ sanity context sources get KNOWLEDGEBASEID SOURCEID [--json]
+
+ARGUMENTS
+  KNOWLEDGEBASEID  The knowledge base's ID (`kb...`), its `publicId`. Its UUID `id` is also accepted.
+  SOURCEID         The source's ID.
+
+GLOBAL FLAGS
+  --json  Format output as json.
+
+DESCRIPTION
+  Get a source
+
+  Returns a source with its settings, document counts and latest sync.
+
+EXAMPLES
+  Get a source
+
+    $ sanity context sources get <knowledgeBaseId> <sourceId>
+
+  Get a source, as JSON
+
+    $ sanity context sources get <knowledgeBaseId> <sourceId> --json
+```
+
+## `sanity context sources list KNOWLEDGEBASEID`
+
+List sources
+
+```
+USAGE
+  $ sanity context sources list KNOWLEDGEBASEID [--json] [--limit <value>]
+
+ARGUMENTS
+  KNOWLEDGEBASEID  The knowledge base's ID (`kb...`), its `publicId`. Its UUID `id` is also accepted.
+
+FLAGS
+  --limit=<value>  The maximum number of items to return.
+
+GLOBAL FLAGS
+  --json  Format output as json.
+
+DESCRIPTION
+  List sources
+
+  Lists the sources of a knowledge base: the websites, Sanity datasets and files its documents come from, each with its
+  document counts and its latest sync. Results are cursor-paginated.
+
+EXAMPLES
+  List sources
+
+    $ sanity context sources list <knowledgeBaseId>
+
+  List sources, as JSON
+
+    $ sanity context sources list <knowledgeBaseId> --json
+```
+
+## `sanity context sources sync KNOWLEDGEBASEID SOURCEID`
+
+Sync a source
+
+```
+USAGE
+  $ sanity context sources sync KNOWLEDGEBASEID SOURCEID [--json] [--watch]
+
+ARGUMENTS
+  KNOWLEDGEBASEID  The knowledge base's ID (`kb...`), its `publicId`. Its UUID `id` is also accepted.
+  SOURCEID         The source's ID.
+
+FLAGS
+  --watch  Wait for the sync to settle, exiting non-zero unless it completes: when it fails, is cancelled or is held for
+           confirmation
+
+GLOBAL FLAGS
+  --json  Format output as json.
+
+DESCRIPTION
+  Sync a source
+
+  Starts a sync of the source. A website or dataset is read again: its sync is queued, and starts once any sync of the
+  source that is running ends, including the first one that started when it was added. Asking again while one waits
+  queues nothing more. Follow it with the source's `latestSync`.
+
+  For a `files` source, set `uploadId` to the upload whose file the source should hold from now on; without it, the
+  source reads its current file again. Its sync starts at once and returns a job ID to poll; the finished job's `result`
+  names the sync and whether it is `held`. While a sync of a `files` source is running, including the first one, the
+  request returns `409` with code `syncInProgress` and leaves the upload for a later request. An `uploadId` whose file
+  never arrived returns `404` with code `uploadNotFound`, and an `uploadId` on a source that isn't `files` returns `422`
+  with code `sourceTypeMismatch`.
+
+  Supports the `Idempotency-Key` header.
+
+EXAMPLES
+  Sync a source
+
+    $ sanity context sources sync <knowledgeBaseId> <sourceId>
+
+  Sync a source, as JSON
+
+    $ sanity context sources sync <knowledgeBaseId> <sourceId> --json
+```
+
+## `sanity context sources syncs confirm KNOWLEDGEBASEID SOURCEID SYNCID`
+
+Confirm a held sync's deletions
+
+```
+USAGE
+  $ sanity context sources syncs confirm KNOWLEDGEBASEID SOURCEID SYNCID [--json]
+
+ARGUMENTS
+  KNOWLEDGEBASEID  The knowledge base's ID (`kb...`), its `publicId`. Its UUID `id` is also accepted.
+  SOURCEID         The source's ID.
+  SYNCID           The sync's ID.
+
+GLOBAL FLAGS
+  --json  Format output as json.
+
+DESCRIPTION
+  Confirm a held sync's deletions
+
+  Deletes the documents a `held` sync didn't find, unless a sync has found them since, completes the sync, and starts a
+  refresh of each knowledge base that uses the source, which removes their citations from entries. A sync that isn't
+  `held` returns `409` with code `syncNotHeld`.
+
+EXAMPLES
+  Confirm a held sync's deletions
+
+    $ sanity context sources syncs confirm <knowledgeBaseId> <sourceId> <syncId>
+
+  Confirm a held sync's deletions, as JSON
+
+    $ sanity context sources syncs confirm <knowledgeBaseId> <sourceId> <syncId> --json
+```
+
+## `sanity context sources syncs discard KNOWLEDGEBASEID SOURCEID SYNCID`
+
+Discard a held sync's deletions
+
+```
+USAGE
+  $ sanity context sources syncs discard KNOWLEDGEBASEID SOURCEID SYNCID [--json]
+
+ARGUMENTS
+  KNOWLEDGEBASEID  The knowledge base's ID (`kb...`), its `publicId`. Its UUID `id` is also accepted.
+  SOURCEID         The source's ID.
+  SYNCID           The sync's ID.
+
+GLOBAL FLAGS
+  --json  Format output as json.
+
+DESCRIPTION
+  Discard a held sync's deletions
+
+  Completes a `held` sync without deleting anything: every document stays as it is. A sync that isn't `held` returns
+  `409` with code `syncNotHeld`.
+
+EXAMPLES
+  Discard a held sync's deletions
+
+    $ sanity context sources syncs discard <knowledgeBaseId> <sourceId> <syncId>
+
+  Discard a held sync's deletions, as JSON
+
+    $ sanity context sources syncs discard <knowledgeBaseId> <sourceId> <syncId> --json
+```
+
+## `sanity context sources syncs get KNOWLEDGEBASEID SOURCEID SYNCID`
+
+Get a sync
+
+```
+USAGE
+  $ sanity context sources syncs get KNOWLEDGEBASEID SOURCEID SYNCID [--json]
+
+ARGUMENTS
+  KNOWLEDGEBASEID  The knowledge base's ID (`kb...`), its `publicId`. Its UUID `id` is also accepted.
+  SOURCEID         The source's ID.
+  SYNCID           The sync's ID.
+
+GLOBAL FLAGS
+  --json  Format output as json.
+
+DESCRIPTION
+  Get a sync
+
+  Returns one sync of a source with its status and counts.
+
+EXAMPLES
+  Get a sync
+
+    $ sanity context sources syncs get <knowledgeBaseId> <sourceId> <syncId>
+
+  Get a sync, as JSON
+
+    $ sanity context sources syncs get <knowledgeBaseId> <sourceId> <syncId> --json
+```
+
+## `sanity context sources syncs list KNOWLEDGEBASEID SOURCEID`
+
+List a source's syncs
+
+```
+USAGE
+  $ sanity context sources syncs list KNOWLEDGEBASEID SOURCEID [--json] [--limit <value>]
+
+ARGUMENTS
+  KNOWLEDGEBASEID  The knowledge base's ID (`kb...`), its `publicId`. Its UUID `id` is also accepted.
+  SOURCEID         The source's ID.
+
+FLAGS
+  --limit=<value>  The maximum number of items to return.
+
+GLOBAL FLAGS
+  --json  Format output as json.
+
+DESCRIPTION
+  List a source's syncs
+
+  Lists the syncs of a source, newest first. Results are cursor-paginated.
+
+EXAMPLES
+  List a source's syncs
+
+    $ sanity context sources syncs list <knowledgeBaseId> <sourceId>
+
+  List a source's syncs, as JSON
+
+    $ sanity context sources syncs list <knowledgeBaseId> <sourceId> --json
+```
+
+## `sanity context sources upload KNOWLEDGEBASEID SOURCEID`
+
+Upload a file to a source
+
+```
+USAGE
+  $ sanity context sources upload KNOWLEDGEBASEID SOURCEID --file <path> [--json] [--watch] [--content-type <type>]
+
+ARGUMENTS
+  KNOWLEDGEBASEID  The knowledge base's ID (`kb...`), its `publicId`. Its UUID `id` is also accepted.
+  SOURCEID         The source's ID.
+
+FLAGS
+  --content-type=<type>  MIME type of the file, inferred from the file extension when omitted
+  --file=<path>          (required) Local file to upload: a document, or a zip, tar or gzip archive of them
+  --watch                Wait for the sync to settle, exiting non-zero unless it completes: when it fails, is cancelled
+                         or is held for confirmation
+
+GLOBAL FLAGS
+  --json  Format output as json.
+
+DESCRIPTION
+  Upload a file to a source
+
+  Upload a new file to a files source, replacing the one it holds, and sync it
+
+EXAMPLES
+  Replace the file a source holds
+
+    $ sanity context sources upload kb-abc123 source-def456 --file ./handbook.pdf
+
+  Replace the file and wait for its sync to finish
+
+    $ sanity context sources upload kb-abc123 source-def456 --file ./handbook.pdf --watch
+```
+
+## `sanity context sync KNOWLEDGEBASEID`
+
+Sync every source
+
+```
+USAGE
+  $ sanity context sync KNOWLEDGEBASEID [--json]
+
+ARGUMENTS
+  KNOWLEDGEBASEID  The knowledge base's ID (`kb...`), its `publicId`. Its UUID `id` is also accepted.
+
+GLOBAL FLAGS
+  --json  Format output as json.
+
+DESCRIPTION
+  Sync every source
+
+  Queues a sync of every website and dataset source, which starts once any sync of the source that is running ends.
+  `files` sources sync when you upload a file.
+
+EXAMPLES
+  Sync every source
+
+    $ sanity context sync <knowledgeBaseId>
+
+  Sync every source, as JSON
+
+    $ sanity context sync <knowledgeBaseId> --json
 ```
 
 ## `sanity context update KNOWLEDGEBASEID`
@@ -1324,34 +2630,36 @@ Update a knowledge base
 
 ```
 USAGE
-  $ sanity context update KNOWLEDGEBASEID [--description <value>] [--refresh-enabled] [--refresh-frequency
-    weekly|monthly] [--title <value>]
+  $ sanity context update KNOWLEDGEBASEID [--json] [--title <value>] [--description <value>] [--draft]
 
 ARGUMENTS
-  KNOWLEDGEBASEID  Knowledge base ID
+  KNOWLEDGEBASEID  The knowledge base's ID (`kb...`), its `publicId`. Its UUID `id` is also accepted.
 
 FLAGS
-  --description=<value>         New knowledge base description
-  --[no-]refresh-enabled        Enable scheduled refresh (--no-refresh-enabled to disable)
-  --refresh-frequency=<option>  How often scheduled refresh runs
-                                <options: weekly|monthly>
-  --title=<value>               New knowledge base title
+  --description=<value>  The knowledge base's new description.
+  --[no-]draft           Set to `false` to finish a draft, so it can be built and is listed with your other knowledge
+                         bases. The knowledge base needs a title, sent here or set before. Ignored when the knowledge
+                         base isn't a draft. A finished knowledge base can't become a draft again.
+  --title=<value>        The knowledge base's new title.
+
+GLOBAL FLAGS
+  --json  Format output as json.
 
 DESCRIPTION
   Update a knowledge base
 
+  Updates the title or the description, or finishes a draft (`draft: false`). Fields equal to their current value are
+  ignored, so sending the current values changes nothing. Finishing a draft with no title returns `422` with code
+  `draftTitleRequired`. How often a website or dataset syncs is set on the source, with `PATCH .../sources/{sourceId}`.
+
 EXAMPLES
-  Rename a knowledge base
+  Update a knowledge base
 
-    $ sanity context update kb-abc123 --title "New title"
+    $ sanity context update <knowledgeBaseId>
 
-  Enable weekly scheduled refresh
+  Update a knowledge base, as JSON
 
-    $ sanity context update kb-abc123 --refresh-enabled --refresh-frequency weekly
-
-  Disable scheduled refresh
-
-    $ sanity context update kb-abc123 --no-refresh-enabled
+    $ sanity context update <knowledgeBaseId> --json
 ```
 
 ## `sanity cors add ORIGIN`
@@ -1370,7 +2678,7 @@ FLAGS
       --[no-]credentials  Allow credentials (token/cookie) to be sent from this origin
 
 OVERRIDE FLAGS
-  -p, --project-id=<id>  Project ID to add CORS origin to (overrides CLI configuration)
+  -p, --project=<id>  Project ID to add CORS origin to (overrides CLI configuration)
 
 DESCRIPTION
   Add a CORS origin to the project
@@ -1390,7 +2698,7 @@ EXAMPLES
 
   Add a CORS origin for a specific project
 
-    $ sanity cors add https://myapp.com --project-id abc123
+    $ sanity cors add https://myapp.com --project abc123
 ```
 
 ## `sanity cors delete [ORIGIN]`
@@ -1405,7 +2713,7 @@ ARGUMENTS
   [ORIGIN]  Origin to delete (will prompt if not provided)
 
 OVERRIDE FLAGS
-  -p, --project-id=<id>  Project ID to delete CORS origin from (overrides CLI configuration)
+  -p, --project=<id>  Project ID to delete CORS origin from (overrides CLI configuration)
 
 DESCRIPTION
   Delete a CORS origin from the project
@@ -1421,7 +2729,7 @@ EXAMPLES
 
   Delete a CORS origin from a specific project
 
-    $ sanity cors delete --project-id abc123
+    $ sanity cors delete --project abc123
 ```
 
 ## `sanity cors list`
@@ -1433,7 +2741,7 @@ USAGE
   $ sanity cors list [-p <id>]
 
 OVERRIDE FLAGS
-  -p, --project-id=<id>  Project ID to list CORS origins for (overrides CLI configuration)
+  -p, --project=<id>  Project ID to list CORS origins for (overrides CLI configuration)
 
 DESCRIPTION
   List CORS origins for the project
@@ -1445,7 +2753,7 @@ EXAMPLES
 
   List CORS origins for a specific project
 
-    $ sanity cors list --project-id abc123
+    $ sanity cors list --project abc123
 ```
 
 ## `sanity datasets alias create [ALIASNAME] [TARGETDATASET]`
@@ -1461,7 +2769,7 @@ ARGUMENTS
   [TARGETDATASET]  Target dataset name to link the alias to
 
 OVERRIDE FLAGS
-  -p, --project-id=<id>  Project ID to create dataset alias in (overrides CLI configuration)
+  -p, --project=<id>  Project ID to create dataset alias in (overrides CLI configuration)
 
 DESCRIPTION
   Create a dataset alias for the project
@@ -1469,7 +2777,7 @@ DESCRIPTION
 EXAMPLES
   Create alias in a specific project
 
-    $ sanity datasets alias create --project-id abc123 conference conf-2025
+    $ sanity datasets alias create --project abc123 conference conf-2025
 
   Create an alias with interactive prompts
 
@@ -1499,7 +2807,7 @@ FLAGS
   --force  Skip confirmation prompt and delete immediately
 
 OVERRIDE FLAGS
-  -p, --project-id=<id>  Project ID to delete dataset alias from (overrides CLI configuration)
+  -p, --project=<id>  Project ID to delete dataset alias from (overrides CLI configuration)
 
 DESCRIPTION
   Delete a dataset alias from the project
@@ -1530,7 +2838,7 @@ FLAGS
   --force  Skip confirmation prompt when relinking existing alias
 
 OVERRIDE FLAGS
-  -p, --project-id=<id>  Project ID to link dataset alias in (overrides CLI configuration)
+  -p, --project=<id>  Project ID to link dataset alias in (overrides CLI configuration)
 
 DESCRIPTION
   Link a dataset alias to a dataset in the project
@@ -1568,7 +2876,7 @@ FLAGS
   --force  Skip confirmation prompt and unlink immediately
 
 OVERRIDE FLAGS
-  -p, --project-id=<id>  Project ID to unlink dataset alias in (overrides CLI configuration)
+  -p, --project=<id>  Project ID to unlink dataset alias in (overrides CLI configuration)
 
 DESCRIPTION
   Unlink a dataset alias from its dataset in the project
@@ -1610,7 +2918,7 @@ FLAGS
   --skip-history           Don't preserve document history on copy
 
 OVERRIDE FLAGS
-  -p, --project-id=<id>  Project ID to copy dataset in (overrides CLI configuration)
+  -p, --project=<id>  Project ID to copy dataset in (overrides CLI configuration)
 
 DESCRIPTION
   Copy a dataset or manage copy jobs
@@ -1672,7 +2980,7 @@ FLAGS
                                    <options: custom|private|public>
 
 OVERRIDE FLAGS
-  -p, --project-id=<id>  Project ID to create dataset in (overrides CLI configuration)
+  -p, --project=<id>  Project ID to create dataset in (overrides CLI configuration)
 
 DESCRIPTION
   Create a new dataset for the project
@@ -1706,7 +3014,7 @@ FLAGS
   --force  Do not prompt for delete confirmation - forcefully delete
 
 OVERRIDE FLAGS
-  -p, --project-id=<id>  Project ID to delete dataset from (overrides CLI configuration)
+  -p, --project=<id>  Project ID to delete dataset from (overrides CLI configuration)
 
 DESCRIPTION
   Delete a dataset from the project
@@ -1733,7 +3041,7 @@ ARGUMENTS
   [DATASET]  Dataset name to disable embeddings for
 
 OVERRIDE FLAGS
-  -p, --project-id=<id>  Project ID to disable embeddings for (overrides CLI configuration)
+  -p, --project=<id>  Project ID to disable embeddings for (overrides CLI configuration)
 
 DESCRIPTION
   Disable embeddings for a dataset
@@ -1760,7 +3068,7 @@ FLAGS
   --wait                Wait for embeddings processing to complete before returning
 
 OVERRIDE FLAGS
-  -p, --project-id=<id>  Project ID to enable embeddings for (overrides CLI configuration)
+  -p, --project=<id>  Project ID to enable embeddings for (overrides CLI configuration)
 
 DESCRIPTION
   Enable embeddings for a dataset
@@ -1791,7 +3099,7 @@ ARGUMENTS
   [DATASET]  The name of the dataset to check embeddings status for
 
 OVERRIDE FLAGS
-  -p, --project-id=<id>  Project ID to check embeddings status for (overrides CLI configuration)
+  -p, --project=<id>  Project ID to check embeddings status for (overrides CLI configuration)
 
 DESCRIPTION
   Show embeddings settings and status for a dataset
@@ -1829,7 +3137,7 @@ FLAGS
   --types=<value>                 Defines which document types to export (comma-separated)
 
 OVERRIDE FLAGS
-  -p, --project-id=<id>  Project ID to export dataset from (overrides CLI configuration)
+  -p, --project=<id>  Project ID to export dataset from (overrides CLI configuration)
 
 DESCRIPTION
   Export a dataset to a local gzipped tarball. Assets returning 401, 403, or 404 are excluded from the export.
@@ -1884,7 +3192,7 @@ FLAGS
       --skip-cross-dataset-references      Skips references to other datasets
 
 OVERRIDE FLAGS
-  -p, --project-id=<id>  Project ID to import to (overrides CLI configuration)
+  -p, --project=<id>  Project ID to import to (overrides CLI configuration)
 
 DESCRIPTION
   Import documents to a Sanity dataset
@@ -1916,7 +3224,7 @@ USAGE
   $ sanity datasets list [-p <id>]
 
 OVERRIDE FLAGS
-  -p, --project-id=<id>  Project ID to list datasets for (overrides CLI configuration)
+  -p, --project=<id>  Project ID to list datasets for (overrides CLI configuration)
 
 DESCRIPTION
   List datasets for the project
@@ -1928,7 +3236,7 @@ EXAMPLES
 
   List datasets for a specific project
 
-    $ sanity datasets list --project-id abc123
+    $ sanity datasets list --project abc123
 ```
 
 ## `sanity datasets visibility get DATASET`
@@ -1943,7 +3251,7 @@ ARGUMENTS
   DATASET  The name of the dataset to get visibility for
 
 OVERRIDE FLAGS
-  -p, --project-id=<id>  Project ID to get dataset visibility for (overrides CLI configuration)
+  -p, --project=<id>  Project ID to get dataset visibility for (overrides CLI configuration)
 
 DESCRIPTION
   Get the visibility of a dataset
@@ -1967,7 +3275,7 @@ ARGUMENTS
   MODE     (public|private) The visibility mode to set
 
 OVERRIDE FLAGS
-  -p, --project-id=<id>  Project ID to set dataset visibility for (overrides CLI configuration)
+  -p, --project=<id>  Project ID to set dataset visibility for (overrides CLI configuration)
 
 DESCRIPTION
   Set the visibility of a dataset
@@ -2009,8 +3317,8 @@ Builds and deploys Sanity Studio or application to Sanity hosting
 
 ```
 USAGE
-  $ sanity deploy [SOURCEDIR] [--auto-updates] [--build] [--create | --external | --url <value>] [--dry-run]
-    [-j] [--minify] [--schema-required] [--source-maps] [--title <value>] [--verbose] [-y]
+  $ sanity deploy [SOURCEDIR] [-j] [--auto-updates] [--build] [--create | --external | --url <value>]
+    [--dry-run] [--minify] [--schema-required] [--source-maps] [--title <value>] [--verbose] [-y]
 
 ARGUMENTS
   [SOURCEDIR]  Source directory
@@ -2221,8 +3529,8 @@ FLAGS
   --watch       Write the documents whenever the target file or buffer changes
 
 OVERRIDE FLAGS
-  -d, --dataset=<name>   Dataset to create document(s) in (overrides CLI configuration)
-  -p, --project-id=<id>  Project ID to create document(s) in (overrides CLI configuration)
+  -d, --dataset=<name>  Dataset to create document(s) in (overrides CLI configuration)
+  -p, --project=<id>    Project ID to create document(s) in (overrides CLI configuration)
 
 DESCRIPTION
   Create one or more documents
@@ -2248,7 +3556,7 @@ EXAMPLES
 
   Create documents in a specific project
 
-    $ sanity documents create myDocument.json --project-id abc123
+    $ sanity documents create myDocument.json --project abc123
 ```
 
 ## `sanity documents delete ID [IDS]`
@@ -2264,8 +3572,8 @@ ARGUMENTS
   [IDS...]  Additional document IDs to delete
 
 OVERRIDE FLAGS
-  -d, --dataset=<name>   Dataset to delete from (overrides CLI configuration)
-  -p, --project-id=<id>  Project ID to delete from (overrides CLI configuration)
+  -d, --dataset=<name>  Dataset to delete from (overrides CLI configuration)
+  -p, --project=<id>    Project ID to delete from (overrides CLI configuration)
 
 DESCRIPTION
   Delete one or more documents from the project's configured dataset
@@ -2289,7 +3597,7 @@ EXAMPLES
 
   Delete a document from a specific project
 
-    $ sanity documents delete myDocId --project-id abc123
+    $ sanity documents delete myDocId --project abc123
 ```
 
 ## `sanity documents get DOCUMENTID`
@@ -2307,8 +3615,8 @@ FLAGS
   --pretty  Colorize JSON output
 
 OVERRIDE FLAGS
-  -d, --dataset=<name>   Dataset to get document from (overrides CLI configuration)
-  -p, --project-id=<id>  Project ID to get document from (overrides CLI configuration)
+  -d, --dataset=<name>  Dataset to get document from (overrides CLI configuration)
+  -p, --project=<id>    Project ID to get document from (overrides CLI configuration)
 
 DESCRIPTION
   Get and print a document by ID
@@ -2328,7 +3636,7 @@ EXAMPLES
 
   Get a document from a specific project
 
-    $ sanity documents get myDocId --project-id abc123
+    $ sanity documents get myDocId --project abc123
 ```
 
 ## `sanity documents query QUERY`
@@ -2348,8 +3656,8 @@ FLAGS
   --pretty               Colorize JSON output
 
 OVERRIDE FLAGS
-  -d, --dataset=<name>   Dataset to query (overrides CLI configuration)
-  -p, --project-id=<id>  Project ID to query (overrides CLI configuration)
+  -d, --dataset=<name>  Dataset to query (overrides CLI configuration)
+  -p, --project=<id>    Project ID to query (overrides CLI configuration)
 
 DESCRIPTION
   Query for documents
@@ -2369,7 +3677,7 @@ EXAMPLES
 
   Query documents in a specific project and dataset
 
-    $ sanity documents query '*[_type == "post"]' --project-id abc123 --dataset production
+    $ sanity documents query '*[_type == "post"]' --project abc123 --dataset production
 ```
 
 ## `sanity documents validate`
@@ -2385,7 +3693,7 @@ USAGE
 FLAGS
   -d, --dataset=<name>                             Override the dataset used. By default, this is derived from the given
                                                    workspace
-  -p, --project-id=<id>                            Override the project ID used. By default, this is derived from the
+  -p, --project=<id>                               Override the project ID used. By default, this is derived from the
                                                    given workspace
   -y, --yes                                        Skips the first confirmation prompt
       --file=<value>                               Path to an NDJSON file or tar archive containing an NDJSON file
@@ -2423,7 +3731,7 @@ EXAMPLES
 
   Validate documents in a specific project and dataset
 
-    $ sanity documents validate --project-id abc123 --dataset production
+    $ sanity documents validate --project abc123 --dataset production
 ```
 
 ## `sanity exec SCRIPT`
@@ -2473,8 +3781,8 @@ Add a Function to your Blueprint
 USAGE
   $ sanity functions add [--json] [--example <value> | -n <value> | --type
     document-publish|document-create|document-delete|document-update|media-library-asset-create|media-library-asset-dele
-    te|media-library-asset-update|pub-sub|scheduled-function|sync-tag-invalidate... | --language ts|js | --javascript |
-    --helpers | --installer skip|npm|pnpm|yarn | -i]
+    te|media-library-asset-update|pub-sub|scheduled-function|sync-tag-invalidate|durable-function... | --language ts|js
+    | --javascript | --helpers | --installer skip|npm|pnpm|yarn | -i]
 
 FLAGS
   -i, --install             Shortcut for --installer npm
@@ -2491,7 +3799,7 @@ FLAGS
                             by specifying this flag multiple times
                             <options: document-publish|document-create|document-delete|document-update|media-library-ass
                             et-create|media-library-asset-delete|media-library-asset-update|pub-sub|scheduled-function|s
-                            ync-tag-invalidate>
+                            ync-tag-invalidate|durable-function>
 
 DESCRIPTION
   Add a Function to your Blueprint
@@ -2781,7 +4089,7 @@ USAGE
   $ sanity graphql list [-p <id>]
 
 OVERRIDE FLAGS
-  -p, --project-id=<id>  Project ID to list GraphQL endpoints for (overrides CLI configuration)
+  -p, --project=<id>  Project ID to list GraphQL endpoints for (overrides CLI configuration)
 
 DESCRIPTION
   List deployed GraphQL endpoints for the project
@@ -2793,7 +4101,7 @@ EXAMPLES
 
   List GraphQL endpoints for a specific project
 
-    $ sanity graphql list --project-id abc123
+    $ sanity graphql list --project abc123
 ```
 
 ## `sanity graphql undeploy`
@@ -2802,7 +4110,7 @@ Remove a deployed GraphQL API
 
 ```
 USAGE
-  $ sanity graphql undeploy [--api <value> | -p <id> | ] [-d <name>] [--force] [--tag <value>]
+  $ sanity graphql undeploy [--api <value> | -p <id>] [-d <name>] [--force] [--tag <value>]
 
 FLAGS
   --api=<value>  Undeploy API with this ID
@@ -2810,8 +4118,8 @@ FLAGS
   --tag=<value>  [default: default] Tag to undeploy GraphQL API from
 
 OVERRIDE FLAGS
-  -d, --dataset=<name>   Dataset to undeploy GraphQL API from (overrides CLI configuration)
-  -p, --project-id=<id>  Project ID to undeploy GraphQL API from (overrides CLI configuration)
+  -d, --dataset=<name>  Dataset to undeploy GraphQL API from (overrides CLI configuration)
+  -p, --project=<id>    Project ID to undeploy GraphQL API from (overrides CLI configuration)
 
 DESCRIPTION
   Remove a deployed GraphQL API
@@ -2839,7 +4147,7 @@ EXAMPLES
 
   Undeploy GraphQL API for a specific project and dataset
 
-    $ sanity graphql undeploy --project-id abc123 --dataset production
+    $ sanity graphql undeploy --project abc123 --dataset production
 ```
 
 ## `sanity help [COMMAND]`
@@ -2872,7 +4180,7 @@ ARGUMENTS
   ATTEMPTID  The delivery attempt ID to get details for
 
 OVERRIDE FLAGS
-  -p, --project-id=<id>  Project ID to view webhook attempt for (overrides CLI configuration)
+  -p, --project=<id>  Project ID to view webhook attempt for (overrides CLI configuration)
 
 DESCRIPTION
   Print details of a given webhook delivery attempt
@@ -2884,7 +4192,7 @@ EXAMPLES
 
   Get attempt details for a specific project
 
-    $ sanity hooks attempt abc123 --project-id projectId
+    $ sanity hooks attempt abc123 --project projectId
 ```
 
 ## `sanity hooks create`
@@ -2896,7 +4204,7 @@ USAGE
   $ sanity hooks create [-p <id>]
 
 OVERRIDE FLAGS
-  -p, --project-id=<id>  Project ID to create webhook for (overrides CLI configuration)
+  -p, --project=<id>  Project ID to create webhook for (overrides CLI configuration)
 
 DESCRIPTION
   Create a new webhook for the project
@@ -2908,7 +4216,7 @@ EXAMPLES
 
   Create a webhook for a specific project
 
-    $ sanity hooks create --project-id abc123
+    $ sanity hooks create --project abc123
 ```
 
 ## `sanity hooks delete [NAME]`
@@ -2923,7 +4231,7 @@ ARGUMENTS
   [NAME]  Name of webhook to delete (will prompt if not provided)
 
 OVERRIDE FLAGS
-  -p, --project-id=<id>  Project ID to delete webhook from (overrides CLI configuration)
+  -p, --project=<id>  Project ID to delete webhook from (overrides CLI configuration)
 
 DESCRIPTION
   Delete a webhook from the project
@@ -2939,7 +4247,7 @@ EXAMPLES
 
   Delete a webhook from a specific project
 
-    $ sanity hooks delete --project-id abc123
+    $ sanity hooks delete --project abc123
 ```
 
 ## `sanity hooks list`
@@ -2951,7 +4259,7 @@ USAGE
   $ sanity hooks list [-p <id>]
 
 OVERRIDE FLAGS
-  -p, --project-id=<id>  Project ID to list webhooks for (overrides CLI configuration)
+  -p, --project=<id>  Project ID to list webhooks for (overrides CLI configuration)
 
 DESCRIPTION
   List webhooks for the project
@@ -2963,7 +4271,7 @@ EXAMPLES
 
   List webhooks for a specific project
 
-    $ sanity hooks list --project-id abc123
+    $ sanity hooks list --project abc123
 ```
 
 ## `sanity hooks logs [NAME]`
@@ -2981,7 +4289,7 @@ FLAGS
   --detailed  Include detailed payload and attempts
 
 OVERRIDE FLAGS
-  -p, --project-id=<id>  Project ID to view webhook logs for (overrides CLI configuration)
+  -p, --project=<id>  Project ID to view webhook logs for (overrides CLI configuration)
 
 DESCRIPTION
   Show log entries for project webhooks
@@ -2997,7 +4305,7 @@ EXAMPLES
 
   Show log entries for a specific project
 
-    $ sanity hooks logs --project-id abc123
+    $ sanity hooks logs --project abc123
 ```
 
 ## `sanity init`
@@ -3009,10 +4317,11 @@ USAGE
   $ sanity init [--json] [--auto-updates | --bare] [--coupon <code> | --project-plan <name>] [--dashboard
     |  | --env <filename>] [--dataset <name> | --dataset-default] [--git <message> | ] [--import-dataset] [--install | ]
     [--mcp] [--nextjs-add-config-files] [--nextjs-append-env] [--nextjs-embed-studio] [--organization <id>]
-    [--output-path <path> | ] [--overwrite-files] [--package-manager <manager> | ] [--project <id> |  | --project-name
-    <name>] [--provider <provider>] [--skills] [--template <template> | ] [--typescript | ] [--visibility <mode>] [-y]
+    [--output-path <path> | ] [--overwrite-files] [--package-manager <manager> | ] [-p <id> |  | --project-name <name>]
+    [--provider <provider>] [--skills] [--template <template> | ] [--typescript | ] [--visibility <mode>] [-y]
 
 FLAGS
+  -p, --project=<id>               Project ID to use for the studio
   -y, --yes                        Unattended mode, answers "yes" to any "yes/no" prompt and otherwise uses defaults
       --[no-]auto-updates          Enable auto updates of studio versions
       --bare                       Skip the Studio initialization and only print the selected project ID and dataset
@@ -3030,7 +4339,6 @@ FLAGS
       --output-path=<path>         Path to write studio project to
       --[no-]overwrite-files       Overwrite existing files
       --package-manager=<manager>  Specify which package manager to use [allowed: npm, yarn, pnpm]
-      --project=<id>               Project ID to use for the studio
       --project-name=<name>        Create a new project with the given name
       --project-plan=<name>        Optionally select a plan for a new project
       --provider=<provider>        Login provider to use
@@ -3250,7 +4558,7 @@ FLAGS
       --media-library-id=<value>  The id of the target media library
 
 OVERRIDE FLAGS
-  -p, --project-id=<id>  Project ID to delete media aspect from (overrides CLI configuration)
+  -p, --project=<id>  Project ID to delete media aspect from (overrides CLI configuration)
 
 DESCRIPTION
   Delete an aspect definition
@@ -3277,7 +4585,7 @@ FLAGS
   --media-library-id=<value>  The id of the target media library
 
 OVERRIDE FLAGS
-  -p, --project-id=<id>  Project ID to deploy media aspect to (overrides CLI configuration)
+  -p, --project=<id>  Project ID to deploy media aspect to (overrides CLI configuration)
 
 DESCRIPTION
   Deploy an aspect
@@ -3311,7 +4619,7 @@ FLAGS
   --overwrite                  Overwrite any file with the same name
 
 OVERRIDE FLAGS
-  -p, --project-id=<id>  Project ID to export media from (overrides CLI configuration)
+  -p, --project=<id>  Project ID to export media from (overrides CLI configuration)
 
 DESCRIPTION
   Export file and image assets from a media library (excludes video)
@@ -3352,7 +4660,7 @@ FLAGS
                               aspect data). Only applies to directory and archive imports
 
 OVERRIDE FLAGS
-  -p, --project-id=<id>  Project ID to import media to (overrides CLI configuration)
+  -p, --project=<id>  Project ID to import media to (overrides CLI configuration)
 
 DESCRIPTION
   Import a set of assets to the target media library.
@@ -3427,7 +4735,7 @@ Run a migration against a dataset
 ```
 USAGE
   $ sanity migrations run [ID] [--api-version <value>] [--concurrency <value>] [--confirm] [--dataset <value>]
-    [--dry-run] [--from-export <value>] [--progress] [--project <value>]
+    [--dry-run] [--from-export <value>] [--progress] [-p <id>]
 
 ARGUMENTS
   [ID]  ID
@@ -3442,8 +4750,9 @@ FLAGS
   --from-export=<value>  Use a local dataset export as source for migration instead of calling the Sanity API. Note:
                          this is only supported for dry runs.
   --[no-]progress        Display progress during migration (default: true). Use --no-progress to hide output.
-  --project=<value>      Project ID of the dataset to migrate. Defaults to the projectId configured in your Sanity CLI
-                         config.
+
+OVERRIDE FLAGS
+  -p, --project=<id>  Project ID of the dataset to migrate (overrides CLI configuration)
 
 DESCRIPTION
   Run a migration against a dataset
@@ -3574,8 +4883,10 @@ USAGE
   $ sanity openapi list [--json] [-w]
 
 FLAGS
-  -w, --web   Open HTTP Reference in web browser
-      --json  Output JSON
+  -w, --web  Open HTTP Reference in web browser
+
+GLOBAL FLAGS
+  --json  Format output as json.
 
 DESCRIPTION
   List all available OpenAPI specifications
@@ -3752,7 +5063,7 @@ Create a new Sanity project
 
 ```
 USAGE
-  $ sanity projects create [PROJECTNAME] [--dataset <value>] [--dataset-visibility private|public] [--json]
+  $ sanity projects create [PROJECTNAME] [--json] [--dataset <value>] [--dataset-visibility private|public]
     [--organization <slug|id>] [-y]
 
 ARGUMENTS
@@ -3764,8 +5075,10 @@ FLAGS
       --dataset=<value>              Create a dataset. Prompts for visibility unless specified or --yes used
       --dataset-visibility=<option>  Dataset visibility: public or private
                                      <options: private|public>
-      --json                         Output in JSON format
       --organization=<slug|id>       Organization to create the project in
+
+GLOBAL FLAGS
+  --json  Format output as json.
 
 DESCRIPTION
   Create a new Sanity project
@@ -3825,10 +5138,10 @@ Recover details for unclaimed projects created on this machine
 
 ```
 USAGE
-  $ sanity projects unclaimed [--project-id <value>]
+  $ sanity projects unclaimed [-p <id>]
 
 FLAGS
-  --project-id=<value>  Project ID to recover
+  -p, --project=<id>  Project ID to recover
 
 DESCRIPTION
   Recover details for unclaimed projects created on this machine
@@ -3840,7 +5153,7 @@ EXAMPLES
 
   Show recovery details for one project
 
-    $ sanity projects unclaimed --project-id abc123
+    $ sanity projects unclaimed --project abc123
 ```
 
 ## `sanity schemas delete`
@@ -3858,7 +5171,7 @@ FLAGS
       --verbose         Enable verbose logging
 
 OVERRIDE FLAGS
-  -p, --project-id=<id>  Project ID to delete schema from (overrides CLI configuration)
+  -p, --project=<id>  Project ID to delete schema from (overrides CLI configuration)
 
 DESCRIPTION
   Delete schema documents by id
@@ -3913,10 +5226,11 @@ Extract a JSON representation of a Sanity schema within a Studio context.
 
 ```
 USAGE
-  $ sanity schemas extract [--enforce-required-fields] [--force] [--format <format>] [--path <value>] [--watch]
-    [--watch-patterns <glob>...] [--workspace <name>]
+  $ sanity schemas extract [--config-path <path>] [--enforce-required-fields] [--force] [--format <format>] [--path
+    <value>] [--watch] [--watch-patterns <glob>...] [--workspace <name>]
 
 FLAGS
+  --config-path=<path>        Path to the Sanity Studio config file
   --enforce-required-fields   Makes the schema generated treat fields marked as required as non-optional
   --force                     Overwrite an existing schema file
   --format=<format>           [default: groq-type-nodes] Output format (currently only groq-type-nodes)
@@ -3950,11 +5264,13 @@ List all schemas in the current dataset.
 
 ```
 USAGE
-  $ sanity schemas list [--id <schema_id>] [--json]
+  $ sanity schemas list [--json] [--id <schema_id>]
 
 FLAGS
   --id=<schema_id>  Fetch a single schema by id
-  --json            Get schema as json
+
+GLOBAL FLAGS
+  --json  Format output as json.
 
 DESCRIPTION
   List all schemas in the current dataset.
@@ -4093,37 +5409,48 @@ EXAMPLES
 
 ## `sanity tokens create [LABEL]`
 
-Create a new API token for the project
+Create a new API token with access to an organization and its projects
 
 ```
 USAGE
-  $ sanity tokens create [LABEL] [-p <id>] [--expires-at 2027-01-01] [--json] [--role viewer] [-y]
+  $ sanity tokens create [LABEL] [--json] [-p <id>] [--organization <id>] [--expires-at 2027-01-01] [--grant
+    context=editor...] [--role viewer] [-y]
 
 ARGUMENTS
   [LABEL]  Label for the new token
 
 FLAGS
-  -y, --yes                    Skip prompts and use defaults (unattended mode)
-      --expires-at=2027-01-01  Date or timestamp the token expires (ISO 8601; tokens never expire by default)
-      --json                   Output as JSON
-      --role=viewer            Role to assign to the token (defaults to viewer in unattended mode)
+  -y, --yes                      Skip prompts and use defaults (unattended mode)
+      --expires-at=2027-01-01    Date or timestamp the token expires (ISO 8601; tokens never expire by default)
+      --grant=context=editor...  Access to grant, as <permission>[=<role>] or project:<projectId>=<role>[,<role>].
+                                 Permissions: context, blueprints, media-library, canvas, sdk-apps, access,
+                                 deploy-studios. Repeatable
+      --role=viewer              Role to assign on the project (defaults to viewer in unattended mode)
 
 OVERRIDE FLAGS
-  -p, --project-id=<id>  Project ID to create token in (overrides CLI configuration)
+  -p, --project=<id>       Project ID to create token in (overrides CLI configuration)
+      --organization=<id>  Organization to create an organization token in (overrides CLI configuration)
+
+GLOBAL FLAGS
+  --json  Format output as json.
 
 DESCRIPTION
-  Create a new API token for the project
+  Create a new API token with access to an organization and its projects
 
 EXAMPLES
-  Create a token with a label
+  Create a token, choosing its access interactively
 
     $ sanity tokens create "My API Token"
 
-  Create a token with editor role
+  Create an organization token with Context, Blueprints and project access
 
-    $ sanity tokens create "My API Token" --role=editor
+    $ sanity tokens create "CI Token" --grant context=developer --grant blueprints --grant project:abc123=editor
 
-  Create a token in unattended mode
+  Create a project token with editor role
+
+    $ sanity tokens create "My Token" --project abc123 --role=editor
+
+  Create a project token in unattended mode
 
     $ sanity tokens create "CI Token" --role=editor --yes
 
@@ -4134,33 +5461,38 @@ EXAMPLES
   Output token information as JSON
 
     $ sanity tokens create "API Token" --json
-
-  Create a token for a specific project
-
-    $ sanity tokens create "My Token" --project-id abc123 --role=editor
 ```
 
 ## `sanity tokens delete [TOKENID]`
 
-Delete an API token from the project
+Delete an API token from a project or organization
 
 ```
 USAGE
-  $ sanity tokens delete [TOKENID] [-p <id>] [-y]
+  $ sanity tokens delete [TOKENID] [--organization <id> | -p <id>] [-y]
 
 ARGUMENTS
   [TOKENID]  Token ID to delete (will prompt if not provided)
 
 FLAGS
-  -y, --yes  Skip confirmation prompt (unattended mode)
+  -y, --yes                Skip confirmation prompt (unattended mode)
+      --organization=<id>  Delete a token managed by this organization
 
 OVERRIDE FLAGS
-  -p, --project-id=<id>  Project ID to delete token from (overrides CLI configuration)
+  -p, --project=<id>  Project ID to delete token from (overrides CLI configuration)
 
 DESCRIPTION
-  Delete an API token from the project
+  Delete an API token from a project or organization
 
 EXAMPLES
+  Interactively select and delete an organization token
+
+    $ sanity tokens delete --organization org123
+
+  Delete an organization token without confirmation
+
+    $ sanity tokens delete silJ2lFmK6dONB --organization org123 --yes
+
   Interactively select and delete a token
 
     $ sanity tokens delete
@@ -4175,27 +5507,34 @@ EXAMPLES
 
   Delete a token from a specific project
 
-    $ sanity tokens delete --project-id abc123
+    $ sanity tokens delete --project abc123
 ```
 
 ## `sanity tokens list`
 
-List API tokens for the project
+List API tokens for a project or organization
 
 ```
 USAGE
-  $ sanity tokens list [-p <id>] [--json]
+  $ sanity tokens list [--json] [--organization <id> | -p <id>]
 
 FLAGS
-  --json  Output tokens in JSON format
+  --organization=<id>  List tokens managed by this organization
 
 OVERRIDE FLAGS
-  -p, --project-id=<id>  Project ID to list tokens for (overrides CLI configuration)
+  -p, --project=<id>  Project ID to list tokens for (overrides CLI configuration)
+
+GLOBAL FLAGS
+  --json  Format output as json.
 
 DESCRIPTION
-  List API tokens for the project
+  List API tokens for a project or organization
 
 EXAMPLES
+  List tokens managed by an organization
+
+    $ sanity tokens list --organization org123
+
   List tokens for the project
 
     $ sanity tokens list
@@ -4206,7 +5545,7 @@ EXAMPLES
 
   List tokens for a specific project
 
-    $ sanity tokens list --project-id abc123
+    $ sanity tokens list --project abc123
 ```
 
 ## `sanity tokens rotate`
@@ -4219,7 +5558,9 @@ USAGE
 
 FLAGS
   -t, --token=<token>  Token to rotate (prefer standard input to keep it out of shell history)
-      --json           Output as JSON
+
+GLOBAL FLAGS
+  --json  Format output as json.
 
 DESCRIPTION
   Rotate an API token, replacing its secret with a new one
@@ -4275,7 +5616,8 @@ DESCRIPTION
   - The `sanity schema extract` command is a prerequisite for extracting your Sanity Studio schema into a `schema.json`
   file, which is then used by the `sanity typegen generate` command to generate type definitions.
   - To generate types for several datasets, list them in `typegen.resources` in `sanity.cli.ts` (beta). Each resource
-  uses its own `schema` file, or the schema bound to its dataset when `schema` is omitted.
+  uses its own `schema` file, or the schema bound to its dataset when `schema` is omitted. With `--watch`, a schema
+  bound to a dataset is fetched once, when the watcher starts. Restart it after deploying a schema.
 
 EXAMPLES
   Generate TypeScript type definitions from a Sanity Studio schema extracted using the `sanity schema extract`
@@ -4290,7 +5632,7 @@ Removes the deployed Sanity Studio/App from Sanity hosting
 
 ```
 USAGE
-  $ sanity undeploy [APPID] [--dry-run] [-j] [-y]
+  $ sanity undeploy [APPID] [-j] [--dry-run] [-y]
 
 ARGUMENTS
   [APPID]  ID of the application to undeploy. Overrides `deployment.appId` in sanity.cli.ts
@@ -4336,7 +5678,7 @@ FLAGS
   --role=<value>  Role to invite the user as
 
 OVERRIDE FLAGS
-  -p, --project-id=<id>  Project ID to invite user to (overrides CLI configuration)
+  -p, --project=<id>  Project ID to invite user to (overrides CLI configuration)
 
 DESCRIPTION
   Invite a new user to the project
@@ -4356,7 +5698,7 @@ EXAMPLES
 
   Invite a user to a specific project
 
-    $ sanity users invite pippi@sanity.io --project-id abc123
+    $ sanity users invite pippi@sanity.io --project abc123
 ```
 
 ## `sanity users list`
@@ -4376,7 +5718,7 @@ FLAGS
                       <options: id|name|role|date>
 
 OVERRIDE FLAGS
-  -p, --project-id=<id>  Project ID to list users for (overrides CLI configuration)
+  -p, --project=<id>  Project ID to list users for (overrides CLI configuration)
 
 DESCRIPTION
   List project members
@@ -4396,7 +5738,7 @@ EXAMPLES
 
   List users for a specific project
 
-    $ sanity users list --project-id abc123
+    $ sanity users list --project abc123
 ```
 
 ## `sanity versions`
@@ -4414,23 +5756,50 @@ EXAMPLES
   $ sanity versions
 ```
 
+## `sanity whoami`
+
+Show the user or API token the CLI is authenticated as
+
+```
+USAGE
+  $ sanity whoami [--json]
+
+GLOBAL FLAGS
+  --json  Format output as json.
+
+DESCRIPTION
+  Show the user or API token the CLI is authenticated as
+
+EXAMPLES
+  Show the currently authenticated user
+
+    $ sanity whoami
+
+  Output the current user as JSON, for scripts and agents
+
+    $ sanity whoami --json
+```
+
 ## `sanity workflows abort INSTANCEID`
 
 Abort an in-flight workflow instance — a hard stop: pending effects are cancelled, stage guards removed, and the instance is marked terminal where it stands.
 
 ```
 USAGE
-  $ sanity workflows abort INSTANCEID [--deployment <value> | --tag <value>] [--reason <value>]
+  $ sanity workflows abort INSTANCEID [--path <file|dir>] [--deployment <value> | --partition <value>] [--reason
+    <value>]
 
 ARGUMENTS
   INSTANCEID  Workflow instance id.
 
 FLAGS
-  --deployment=<value>  Deployment name — narrow the instance search to the resource that deployment targets; the tag
+  --deployment=<value>  Deployment name — narrow the instance search to the resource that deployment targets; the
                         partition still comes from the loaded instance.
+  --partition=<value>   Workflow environment partition (e.g. prod, test) — narrows which resources are searched for the
+                        instance; the instance's stored partition is what the command uses.
+  --path=<file|dir>     Path to a sanity.workflow file, or a directory to search from upward through its parents.
+                        Defaults to the current directory.
   --reason=<value>      Reason for aborting (recorded in history).
-  --tag=<value>         Workflow environment tag (e.g. prod, test) — an optional query filter that also narrows which
-                        resources are searched; omit to span them all.
 
 DESCRIPTION
   Abort an in-flight workflow instance — a hard stop: pending effects are cancelled, stage guards removed, and the
@@ -4442,17 +5811,19 @@ EXAMPLES
   $ sanity workflows abort wf-instance.abc123 --reason 'superseded by relaunch'
 ```
 
-## `sanity workflows blueprint generate`
+## `sanity workflows blueprints generate`
 
 Experimental: generate the Sanity Blueprints runtime the definitions require, next to sanity.workflow.ts. Writes the workflow resources, one function per derived need, the effect-handler registry, and a handler stub per declared effect. Covers every deployment in the config, because the emitted resources module declares them all. These flags and this output may change before the Blueprints backend accepts the sanity.workflow resource.
 
 ```
 USAGE
-  $ sanity workflows blueprint generate [--check]
+  $ sanity workflows blueprints generate [--path <file|dir>] [--check]
 
 FLAGS
-  --check  Experimental: verify the tree on disk still matches the definitions; write nothing and exit non-zero on any
-           difference. The CI drift gate.
+  --check            Experimental: verify the tree on disk still matches the definitions; write nothing and exit
+                     non-zero on any difference. The CI drift gate.
+  --path=<file|dir>  Path to a sanity.workflow file, or a directory to search from upward through its parents. Defaults
+                     to the current directory.
 
 DESCRIPTION
   Experimental: generate the Sanity Blueprints runtime the definitions require, next to sanity.workflow.ts. Writes the
@@ -4461,19 +5832,19 @@ DESCRIPTION
   this output may change before the Blueprints backend accepts the sanity.workflow resource.
 
 EXAMPLES
-  $ sanity workflows blueprint generate
+  $ sanity workflows blueprints generate
 
-  $ sanity workflows blueprint generate --check
+  $ sanity workflows blueprints generate --check
 ```
 
-## `sanity workflows definition delete NAME`
+## `sanity workflows definitions delete NAME`
 
 Delete a deployed workflow definition (every version, or one via --version). Refuses while non-terminal instances exist unless --cascade aborts them first — instances are aborted in place, never deleted.
 
 ```
 USAGE
-  $ sanity workflows definition delete NAME [--deployment <value> | --tag <value>] [--version <value>] [--cascade] [--reason
-    <value>]
+  $ sanity workflows definitions delete NAME [--path <file|dir>] [--deployment <value> | --partition <value>] [--version <value>]
+    [--cascade] [--reason <value>]
 
 ARGUMENTS
   NAME  Workflow definition name.
@@ -4481,9 +5852,11 @@ ARGUMENTS
 FLAGS
   --cascade             Abort every non-terminal instance pinned to the targeted versions, then delete.
   --deployment=<value>  Deployment name — the unique identity of one deployment in the config.
+  --partition=<value>   Workflow environment partition (e.g. prod, test) — selects the deployment to act on while the
+                        partition names exactly one; pass --deployment when it spans several.
+  --path=<file|dir>     Path to a sanity.workflow file, or a directory to search from upward through its parents.
+                        Defaults to the current directory.
   --reason=<value>      Free-text reason — recorded on each cascade-abort history entry.
-  --tag=<value>         Workflow environment tag (e.g. prod, test) — selects the deployment to act on while the tag
-                        names exactly one; pass --deployment when it spans several.
   --version=<value>     Delete only this deployed version (default: every version).
 
 DESCRIPTION
@@ -4491,97 +5864,148 @@ DESCRIPTION
   exist unless --cascade aborts them first — instances are aborted in place, never deleted.
 
 EXAMPLES
-  $ sanity workflows definition delete my-workflow
+  $ sanity workflows definitions delete my-workflow
 
-  $ sanity workflows definition delete my-workflow --version 2
+  $ sanity workflows definitions delete my-workflow --version 2
 
-  $ sanity workflows definition delete my-workflow --cascade --reason 'workflow retired'
+  $ sanity workflows definitions delete my-workflow --cascade --reason 'workflow retired'
 ```
 
-## `sanity workflows definition diff NAME`
+## `sanity workflows definitions diff NAME`
 
 Diff an in-code definition against the deployed version (latest by default).
 
 ```
 USAGE
-  $ sanity workflows definition diff NAME [--deployment <value> | --tag <value>] [--version <value>]
+  $ sanity workflows definitions diff NAME [--path <file|dir>] [--deployment <value> | --partition <value>] [--version
+  <value>]
 
 ARGUMENTS
   NAME  Workflow definition name.
 
 FLAGS
   --deployment=<value>  Deployment name — the unique identity of one deployment in the config.
-  --tag=<value>         Workflow environment tag (e.g. prod, test) — selects the deployment to act on while the tag
-                        names exactly one; pass --deployment when it spans several.
+  --partition=<value>   Workflow environment partition (e.g. prod, test) — selects the deployment to act on while the
+                        partition names exactly one; pass --deployment when it spans several.
+  --path=<file|dir>     Path to a sanity.workflow file, or a directory to search from upward through its parents.
+                        Defaults to the current directory.
   --version=<value>     Deployed version to diff against (default: latest).
 
 DESCRIPTION
   Diff an in-code definition against the deployed version (latest by default).
 
 EXAMPLES
-  $ sanity workflows definition diff productLaunch
+  $ sanity workflows definitions diff productLaunch
 
-  $ sanity workflows definition diff productLaunch --version 2
+  $ sanity workflows definitions diff productLaunch --version 2
 ```
 
-## `sanity workflows definition list`
+## `sanity workflows definitions list`
 
 List deployed workflow definitions.
 
 ```
 USAGE
-  $ sanity workflows definition list [--tag <value>] [--limit <value>] [--name <value>] [--json]
+  $ sanity workflows definitions list [--media-library-id <id> | [-p <id> -d <name>] |  | --path <file|dir> | [--deployment
+    <value> | --partition <value>]] [--limit <value>] [--name <value>] [--json]
 
 FLAGS
-  --json           Emit structured JSON instead of rendered output.
-  --limit=<value>  [default: 100] The maximum number of definitions to return.
-  --name=<value>   Filter to a single workflow definition name (e.g. product-launch).
-  --tag=<value>    Workflow environment tag (e.g. prod, test) — an optional query filter that also narrows which
-                   resources are searched; omit to span them all.
+  --deployment=<value>  Deployment name — read only the resource and partition that deployment targets.
+  --json                Emit structured JSON instead of rendered output.
+  --limit=<value>       [default: 100] The maximum number of definitions to return.
+  --name=<value>        Filter to a single workflow definition name (e.g. product-launch).
+  --partition=<value>   Workflow environment partition (e.g. prod, test) — an optional query filter that also narrows
+                        which resources are searched; omit to span them all.
+  --path=<file|dir>     Path to a sanity.workflow file, or a directory to search from upward through its parents.
+                        Defaults to the current directory.
+
+OVERRIDE FLAGS
+  -d, --dataset=<name>         Dataset to read (overrides sanity.workflow.ts)
+  -p, --project-id=<id>        Project ID of the dataset to read (overrides sanity.workflow.ts)
+      --media-library-id=<id>  Media library to read (overrides sanity.workflow.ts)
 
 DESCRIPTION
   List deployed workflow definitions.
 
 EXAMPLES
-  $ sanity workflows definition list
+  $ sanity workflows definitions list
 
-  $ sanity workflows definition list --tag prod
+  $ sanity workflows definitions list --partition prod
 
-  $ sanity workflows definition list --json
+  $ sanity workflows definitions list --json
 ```
 
-## `sanity workflows definition show NAME`
+## `sanity workflows definitions show NAME`
 
 Show a deployed workflow definition.
 
 ```
 USAGE
-  $ sanity workflows definition show NAME [--tag <value>] [--version <value>] [--json]
+  $ sanity workflows definitions show NAME [--media-library-id <id> | [-p <id> -d <name>] |  | --path <file|dir> | [--deployment
+    <value> | --partition <value>]] [--version <value>] [--json]
 
 ARGUMENTS
   NAME  Workflow definition name.
 
 FLAGS
-  --json             Emit structured JSON instead of rendered output.
-  --tag=<value>      Workflow environment tag (e.g. prod, test) — an optional query filter that also narrows which
-                     resources are searched; omit to span them all.
-  --version=<value>  Specific version (default: latest).
+  --deployment=<value>  Deployment name — read only the resource and partition that deployment targets.
+  --json                Emit structured JSON instead of rendered output.
+  --partition=<value>   Workflow environment partition (e.g. prod, test) — an optional query filter that also narrows
+                        which resources are searched; omit to span them all.
+  --path=<file|dir>     Path to a sanity.workflow file, or a directory to search from upward through its parents.
+                        Defaults to the current directory.
+  --version=<value>     Specific version (default: latest).
+
+OVERRIDE FLAGS
+  -d, --dataset=<name>         Dataset to read (overrides sanity.workflow.ts)
+  -p, --project-id=<id>        Project ID of the dataset to read (overrides sanity.workflow.ts)
+      --media-library-id=<id>  Media library to read (overrides sanity.workflow.ts)
 
 DESCRIPTION
   Show a deployed workflow definition.
 ```
 
-## `sanity workflows deploy`
+## `sanity workflows definitions validate FILE`
 
-Validate workflow definitions, check any generated runtime beside the config against them, then diff and deploy to the resource bound by the selected deployment. A generated runtime that no longer matches the definitions fails the deploy before anything is written; regenerate it with `sanity-workflows blueprint generate`.
+Validate workflow definitions in JSON files without a config, login, or network access. Checks shape, cross-field rules, and GROQ syntax; deploy additionally checks duplicate names, spawn dependencies, resource bindings, project roles, and the reader-model acknowledgement. Exits non-zero when any definition is invalid. A file that cannot be read, is not valid JSON, or does not hold definition objects stops the command with an error message instead of a report, including with --json.
 
 ```
 USAGE
-  $ sanity workflows deploy [--all-tags |  | [--deployment <value> | --tag <value>]] [--dry-run] [--check] [--only
-    <value>] [--share-defs]
+  $ sanity workflows definitions validate FILE... [--json]
+
+ARGUMENTS
+  FILE...  JSON file holding one definition or an array of them. Pass several files to validate a parent and its child
+           workflows together.
 
 FLAGS
-  --all-tags            Deploy every deployment in the config, not just a selection.
+  --json  Emit structured JSON instead of rendered output.
+
+DESCRIPTION
+  Validate workflow definitions in JSON files without a config, login, or network access. Checks shape, cross-field
+  rules, and GROQ syntax; deploy additionally checks duplicate names, spawn dependencies, resource bindings, project
+  roles, and the reader-model acknowledgement. Exits non-zero when any definition is invalid. A file that cannot be
+  read, is not valid JSON, or does not hold definition objects stops the command with an error message instead of a
+  report, including with --json.
+
+EXAMPLES
+  $ sanity workflows definitions validate review.json
+
+  $ sanity workflows definitions validate parent.json child.json
+
+  $ sanity workflows definitions validate review.json --json
+```
+
+## `sanity workflows deploy`
+
+Validate workflow definitions, check any generated runtime beside the config against them, then diff and deploy to the resource bound by the selected deployment. A generated runtime that no longer matches the definitions fails the deploy before anything is written; regenerate it with `sanity-workflows blueprints generate`.
+
+```
+USAGE
+  $ sanity workflows deploy [--path <file|dir>] [--all-partitions |  | [--deployment <value> | --partition <value>]]
+    [--dry-run] [--check] [--verbose] [--only <value>] [--share-defs]
+
+FLAGS
+  --all-partitions      Deploy every deployment in the config, not just a selection.
   --check               Validate definitions and check any generated runtime against them; do not contact the dataset.
   --deployment=<value>  Deployment name — the unique identity of one deployment in the config.
   --dry-run             Validate definitions, check any generated runtime against them, and diff against the deployed
@@ -4589,29 +6013,35 @@ FLAGS
   --only=<value>        Limit deploy/check/diff to a single workflow definition by name (deployments are selected with
                         --deployment). Every targeted deployment must contain it. The generated-runtime check still
                         covers the whole config, because the generated tree declares every deployment in it.
+  --partition=<value>   Workflow partition (e.g. prod, test) — deploys every deployment using that partition across
+                        configured resources.
+  --path=<file|dir>     Path to a sanity.workflow file, or a directory to search from upward through its parents.
+                        Defaults to the current directory.
   --[no-]share-defs     Share the definition documents newly created by this deploy with Sanity — the full document,
                         verbatim (structure, names, filters, effect configuration, seeded values), plus its deployment
                         coordinates (project and dataset, or resource id); never content documents, instances, or your
                         Sanity auth token. Sharing is the default in every environment, including CI / non-TTY /
                         DO_NOT_TRACK. Use --no-share-defs to opt out.
-  --tag=<value>         Workflow environment tag (e.g. prod, test) — deploys every deployment carrying the tag (a tag is
-                        an environment group).
+  --verbose             When no generated runtime is here, print the full report of the Sanity Functions the selected
+                        deployments need, in place of the summary.
 
 DESCRIPTION
   Validate workflow definitions, check any generated runtime beside the config against them, then diff and deploy to the
   resource bound by the selected deployment. A generated runtime that no longer matches the definitions fails the deploy
-  before anything is written; regenerate it with `sanity-workflows blueprint generate`.
+  before anything is written; regenerate it with `sanity-workflows blueprints generate`.
 
 EXAMPLES
   $ sanity workflows deploy --deployment review-prod
 
-  $ sanity workflows deploy --tag prod
+  $ sanity workflows deploy --partition prod
 
-  $ sanity workflows deploy --all-tags
+  $ sanity workflows deploy --all-partitions
 
   $ sanity workflows deploy --check
 
   $ sanity workflows deploy --dry-run
+
+  $ sanity workflows deploy --check --verbose
 
   $ sanity workflows deploy --only productLaunch
 ```
@@ -4622,17 +6052,25 @@ Explain why a workflow instance is or isn't progressing, and what would unstick 
 
 ```
 USAGE
-  $ sanity workflows diagnose INSTANCEID [--deployment <value> | --tag <value>] [--json]
+  $ sanity workflows diagnose INSTANCEID [--media-library-id <id> | [-p <id> -d <name>] |  | --path <file|dir> |
+    [--deployment <value> | --partition <value>]] [--json]
 
 ARGUMENTS
   INSTANCEID  Workflow instance id.
 
 FLAGS
-  --deployment=<value>  Deployment name — narrow the instance search to the resource that deployment targets; the tag
+  --deployment=<value>  Deployment name — narrow the instance search to the resource that deployment targets; the
                         partition still comes from the loaded instance.
   --json                Emit structured JSON instead of rendered output.
-  --tag=<value>         Workflow environment tag (e.g. prod, test) — an optional query filter that also narrows which
-                        resources are searched; omit to span them all.
+  --partition=<value>   Workflow environment partition (e.g. prod, test) — narrows which resources are searched for the
+                        instance; the instance's stored partition is what the command uses.
+  --path=<file|dir>     Path to a sanity.workflow file, or a directory to search from upward through its parents.
+                        Defaults to the current directory.
+
+OVERRIDE FLAGS
+  -d, --dataset=<name>         Dataset to read (overrides sanity.workflow.ts)
+  -p, --project-id=<id>        Project ID of the dataset to read (overrides sanity.workflow.ts)
+      --media-library-id=<id>  Media library to read (overrides sanity.workflow.ts)
 
 DESCRIPTION
   Explain why a workflow instance is or isn't progressing, and what would unstick it.
@@ -4640,7 +6078,7 @@ DESCRIPTION
 EXAMPLES
   $ sanity workflows diagnose wf-instance.abc123
 
-  $ sanity workflows diagnose wf-instance.abc123 --tag prod
+  $ sanity workflows diagnose wf-instance.abc123 --partition prod
 
   $ sanity workflows diagnose wf-instance.abc123 --json
 ```
@@ -4651,8 +6089,8 @@ Fire an action on an instance to unstick a waiting activity — the write acts a
 
 ```
 USAGE
-  $ sanity workflows fire-action INSTANCEID [--deployment <value> | --tag <value>] [--activity <value>] [--action <value>]
-    [--param <value>...] [--json]
+  $ sanity workflows fire-action INSTANCEID [--path <file|dir>] [--deployment <value> | --partition <value>] [--activity
+    <value>] [--action <value>] [--param <value>...] [--json]
 
 ARGUMENTS
   INSTANCEID  Workflow instance id.
@@ -4660,13 +6098,15 @@ ARGUMENTS
 FLAGS
   --action=<value>      Action to fire. Omit to list the actions available on the instance.
   --activity=<value>    Activity the action belongs to. Required to fire; omit --action to list.
-  --deployment=<value>  Deployment name — narrow the instance search to the resource that deployment targets; the tag
+  --deployment=<value>  Deployment name — narrow the instance search to the resource that deployment targets; the
                         partition still comes from the loaded instance.
   --json                Emit structured JSON instead of rendered output.
   --param=<value>...    [default: ] Action param as key=value (repeatable). Values are JSON-parsed, falling back to a
                         string.
-  --tag=<value>         Workflow environment tag (e.g. prod, test) — an optional query filter that also narrows which
-                        resources are searched; omit to span them all.
+  --partition=<value>   Workflow environment partition (e.g. prod, test) — narrows which resources are searched for the
+                        instance; the instance's stored partition is what the command uses.
+  --path=<file|dir>     Path to a sanity.workflow file, or a directory to search from upward through its parents.
+                        Defaults to the current directory.
 
 DESCRIPTION
   Fire an action on an instance to unstick a waiting activity — the write acts as the configured token. Omit --action to
@@ -4682,13 +6122,14 @@ EXAMPLES
 
 ## `sanity workflows list`
 
-List workflow instances in the configured dataset (in-flight by default).
+List workflow instances (in-flight by default) across the resources sanity.workflow.ts declares, or in the one resource --project-id/--dataset or --media-library-id names.
 
 ```
 USAGE
-  $ sanity workflows list [--tag <value>] [--include-completed] [--failed] [--definition <value>] [--document
-    <value>] [--assignment-user <value>] [--assignment-role <value>...] [--assignment-state unrouted|routed|held...]
-    [--limit <value>] [--json]
+  $ sanity workflows list [--media-library-id <id> | [-p <id> -d <name>] |  | --path <file|dir> | [--deployment
+    <value> | --partition <value>]] [--include-completed] [--failed] [--definition <value>] [--document <value>]
+    [--assignment-user <value>] [--assignment-role <value>...] [--assignment-state unrouted|routed|held...] [--limit
+    <value>] [--json]
 
 FLAGS
   --assignment-role=<value>...    A literal project role held by --assignment-user. Repeat for multiple roles.
@@ -4698,17 +6139,26 @@ FLAGS
   --assignment-user=<value>       Account-global user id used for viewer-scoped assignment filtering and counts.
   --definition=<value>            Only instances of this workflow definition (its `name`; the instance's `definition`
                                   field).
+  --deployment=<value>            Deployment name — read only the resource and partition that deployment targets.
   --document=<value>              Only instances that reference this document (resource-qualified GDR URI, e.g.
                                   "dataset:proj:ds:article-1").
   --failed                        Only instances with at least one failed activity.
   --include-completed             Include completed/aborted instances (default: in-flight only).
   --json                          Emit structured JSON instead of rendered output.
   --limit=<value>                 [default: 50] Maximum rows to return.
-  --tag=<value>                   Workflow environment tag (e.g. prod, test) — an optional query filter that also
+  --partition=<value>             Workflow environment partition (e.g. prod, test) — an optional query filter that also
                                   narrows which resources are searched; omit to span them all.
+  --path=<file|dir>               Path to a sanity.workflow file, or a directory to search from upward through its
+                                  parents. Defaults to the current directory.
+
+OVERRIDE FLAGS
+  -d, --dataset=<name>         Dataset to read (overrides sanity.workflow.ts)
+  -p, --project-id=<id>        Project ID of the dataset to read (overrides sanity.workflow.ts)
+      --media-library-id=<id>  Media library to read (overrides sanity.workflow.ts)
 
 DESCRIPTION
-  List workflow instances in the configured dataset (in-flight by default).
+  List workflow instances (in-flight by default) across the resources sanity.workflow.ts declares, or in the one
+  resource --project-id/--dataset or --media-library-id names.
 
 EXAMPLES
   $ sanity workflows list
@@ -4721,39 +6171,42 @@ EXAMPLES
 
   $ sanity workflows list --assignment-user gAda --assignment-role legal --assignment-state routed
 
-  $ sanity workflows list --tag prod
+  $ sanity workflows list --partition prod
 
   $ sanity workflows list --json
 ```
 
 ## `sanity workflows nuke`
 
-Delete engine-owned documents — a whole deployment tag, or a single instance.
+Delete engine-owned documents — a whole deployment partition, or a single instance.
 
 ```
 USAGE
-  $ sanity workflows nuke [--deployment <value>] [--tag <value>] [--instance <value>] [--force]
+  $ sanity workflows nuke [--path <file|dir>] [--deployment <value>] [--partition <value>] [--instance <value>]
+    [--force]
 
 FLAGS
   --deployment=<value>  The deployment name to reset. With --instance, narrows which deployment the instance is looked
-                        up in when its tag spans several.
+                        up in when its partition spans several.
   --force               Skip the confirmation prompt (for scripts/CI). The plan still prints.
-  --instance=<value>    Delete a single terminal instance by id, plus its guard docs, instead of a tag.
-  --tag=<value>         The deployment tag to reset (while it names exactly one deployment). Not valid with --instance,
-                        which reads its tag from the instance id.
+  --instance=<value>    Delete a single terminal instance by id, plus its guard docs, instead of a partition.
+  --partition=<value>   The deployment partition to reset (while it names exactly one deployment). Not valid with
+                        --instance, which reads its partition from the stored instance.
+  --path=<file|dir>     Path to a sanity.workflow file, or a directory to search from upward through its parents.
+                        Defaults to the current directory.
 
 DESCRIPTION
-  Delete engine-owned documents — a whole deployment tag, or a single instance.
+  Delete engine-owned documents — a whole deployment partition, or a single instance.
 
-  The reset for a dataset holding engine documents the versioned upgrade framework cannot yet migrate: deletes the tag's
-  instances, definitions, and guards (across every alias-bound resource). --instance <id> instead deletes one terminal
-  instance plus its guards. Content documents are never touched. Prints a dry-run plan, then confirms (--force skips the
-  prompt; the plan still prints).
+  The reset for a dataset holding engine documents the versioned upgrade framework cannot yet migrate: deletes the
+  partition's instances, definitions, and guards (across every alias-bound resource). --instance <id> instead deletes
+  one terminal instance plus its guards. Content documents are never touched. Prints a dry-run plan, then confirms
+  (--force skips the prompt; the plan still prints).
 
 EXAMPLES
   $ sanity workflows nuke --deployment plugin-dev
 
-  $ sanity workflows nuke --tag plugin-dev --force
+  $ sanity workflows nuke --partition plugin-dev --force
 
   $ sanity workflows nuke --instance plugin-dev.wf-instance.abc123
 ```
@@ -4764,18 +6217,21 @@ Reset a failed activity on an in-flight instance — back to active to re-run it
 
 ```
 USAGE
-  $ sanity workflows reset-activity INSTANCEID ACTIVITY [--deployment <value> | --tag <value>] [--skip]
+  $ sanity workflows reset-activity INSTANCEID ACTIVITY [--path <file|dir>] [--deployment <value> | --partition <value>]
+    [--skip]
 
 ARGUMENTS
   INSTANCEID  Workflow instance id.
   ACTIVITY    Activity name within the current stage.
 
 FLAGS
-  --deployment=<value>  Deployment name — narrow the instance search to the resource that deployment targets; the tag
+  --deployment=<value>  Deployment name — narrow the instance search to the resource that deployment targets; the
                         partition still comes from the loaded instance.
+  --partition=<value>   Workflow environment partition (e.g. prod, test) — narrows which resources are searched for the
+                        instance; the instance's stored partition is what the command uses.
+  --path=<file|dir>     Path to a sanity.workflow file, or a directory to search from upward through its parents.
+                        Defaults to the current directory.
   --skip                Bypass the activity (mark it skipped) instead of re-running it (back to active).
-  --tag=<value>         Workflow environment tag (e.g. prod, test) — an optional query filter that also narrows which
-                        resources are searched; omit to span them all.
 
 DESCRIPTION
   Reset a failed activity on an in-flight instance — back to active to re-run it, or --skip to bypass it (mark it
@@ -4793,17 +6249,20 @@ Force an instance into a stage, regardless of its declared transitions and filte
 
 ```
 USAGE
-  $ sanity workflows set-stage INSTANCEID [--deployment <value> | --tag <value>] [--to <value>] [--reason <value>]
+  $ sanity workflows set-stage INSTANCEID [--path <file|dir>] [--deployment <value> | --partition <value>] [--to <value>]
+    [--reason <value>]
 
 ARGUMENTS
   INSTANCEID  Workflow instance id to move.
 
 FLAGS
-  --deployment=<value>  Deployment name — narrow the instance search to the resource that deployment targets; the tag
+  --deployment=<value>  Deployment name — narrow the instance search to the resource that deployment targets; the
                         partition still comes from the loaded instance.
+  --partition=<value>   Workflow environment partition (e.g. prod, test) — narrows which resources are searched for the
+                        instance; the instance's stored partition is what the command uses.
+  --path=<file|dir>     Path to a sanity.workflow file, or a directory to search from upward through its parents.
+                        Defaults to the current directory.
   --reason=<value>      Free-text reason — recorded on the history entry for audit.
-  --tag=<value>         Workflow environment tag (e.g. prod, test) — an optional query filter that also narrows which
-                        resources are searched; omit to span them all.
   --to=<value>          Target stage name. Omit on an interactive terminal to pick from the workflow’s stages.
 
 DESCRIPTION
@@ -4825,18 +6284,28 @@ Show the state, activities, and effects of a workflow instance.
 
 ```
 USAGE
-  $ sanity workflows show INSTANCEID [--tag <value>] [--include history...] [--json]
+  $ sanity workflows show INSTANCEID [--media-library-id <id> | [-p <id> -d <name>] |  | --path <file|dir> |
+    [--deployment <value> | --partition <value>]] [--include history...] [--json]
 
 ARGUMENTS
   INSTANCEID  Workflow instance document id.
 
 FLAGS
+  --deployment=<value>   Deployment name — narrow the instance search to the resource that deployment targets; the
+                         partition still comes from the loaded instance.
   --include=<option>...  [default: ] Optional sections to include in rendered output (--json always carries the full
                          document).
                          <options: history>
   --json                 Emit structured JSON instead of rendered output.
-  --tag=<value>          Workflow environment tag (e.g. prod, test) — an optional query filter that also narrows which
-                         resources are searched; omit to span them all.
+  --partition=<value>    Workflow environment partition (e.g. prod, test) — narrows which resources are searched for the
+                         instance; the instance's stored partition is what the command uses.
+  --path=<file|dir>      Path to a sanity.workflow file, or a directory to search from upward through its parents.
+                         Defaults to the current directory.
+
+OVERRIDE FLAGS
+  -d, --dataset=<name>         Dataset to read (overrides sanity.workflow.ts)
+  -p, --project-id=<id>        Project ID of the dataset to read (overrides sanity.workflow.ts)
+      --media-library-id=<id>  Media library to read (overrides sanity.workflow.ts)
 
 DESCRIPTION
   Show the state, activities, and effects of a workflow instance.
@@ -4855,8 +6324,8 @@ Start a workflow instance from a deployed definition. Supply values for the work
 
 ```
 USAGE
-  $ sanity workflows start NAME [--deployment <value> | --tag <value>] [--version <value>] [--field <value>...]
-    [--instance-id <value>] [--json]
+  $ sanity workflows start NAME [--path <file|dir>] [--deployment <value> | --partition <value>] [--version <value>]
+    [--field <value>...] [--instance-id <value>] [--json]
 
 ARGUMENTS
   NAME  Workflow definition name.
@@ -4870,8 +6339,10 @@ FLAGS
                          of a start that failed partway and the engine resumes it instead of creating a duplicate (an
                          already-settled start replays as a no-op). Omit to mint a fresh id.
   --json                 Emit structured JSON instead of rendered output.
-  --tag=<value>          Workflow environment tag (e.g. prod, test) — selects the deployment to act on while the tag
-                         names exactly one; pass --deployment when it spans several.
+  --partition=<value>    Workflow environment partition (e.g. prod, test) — selects the deployment to act on while the
+                         partition names exactly one; pass --deployment when it spans several.
+  --path=<file|dir>      Path to a sanity.workflow file, or a directory to search from upward through its parents.
+                         Defaults to the current directory.
   --version=<value>      Definition version to start from (default: highest deployed).
 
 DESCRIPTION
@@ -4883,7 +6354,7 @@ EXAMPLES
 
   $ sanity workflows start article-review --field subject='{"id":"dataset:proj:ds:article-1","type":"article"}'
 
-  $ sanity workflows start productLaunch --version 2 --tag prod
+  $ sanity workflows start productLaunch --version 2 --partition prod
 
   $ sanity workflows start productLaunch --instance-id prod.wf-instance.a1b2c3d4e5f6
 ```
@@ -4894,14 +6365,24 @@ Stream new history entries on a workflow instance as they land in the dataset.
 
 ```
 USAGE
-  $ sanity workflows tail INSTANCEID [--tag <value>]
+  $ sanity workflows tail INSTANCEID [--media-library-id <id> | [-p <id> -d <name>] |  | --path <file|dir> |
+    [--deployment <value> | --partition <value>]]
 
 ARGUMENTS
   INSTANCEID  Workflow instance id to tail.
 
 FLAGS
-  --tag=<value>  Workflow environment tag (e.g. prod, test) — an optional query filter that also narrows which resources
-                 are searched; omit to span them all.
+  --deployment=<value>  Deployment name — narrow the instance search to the resource that deployment targets; the
+                        partition still comes from the loaded instance.
+  --partition=<value>   Workflow environment partition (e.g. prod, test) — narrows which resources are searched for the
+                        instance; the instance's stored partition is what the command uses.
+  --path=<file|dir>     Path to a sanity.workflow file, or a directory to search from upward through its parents.
+                        Defaults to the current directory.
+
+OVERRIDE FLAGS
+  -d, --dataset=<name>         Dataset to read (overrides sanity.workflow.ts)
+  -p, --project-id=<id>        Project ID of the dataset to read (overrides sanity.workflow.ts)
+      --media-library-id=<id>  Media library to read (overrides sanity.workflow.ts)
 
 DESCRIPTION
   Stream new history entries on a workflow instance as they land in the dataset.

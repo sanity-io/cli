@@ -10,6 +10,7 @@ import {
   runTypegenGenerate,
   runTypegenWatcher,
   type TypeGenConfig,
+  type TypegenProgressEvent,
   TypegenWatchModeTrace,
   TypesGeneratedTrace,
 } from '@sanity/codegen'
@@ -19,14 +20,22 @@ import once from 'lodash-es/once.js'
 import {formatPath} from '../../actions/typegen/formatPath.js'
 import {
   generateResourceTypes,
+  type ResolvedResource,
   resolveResourceSchemas,
 } from '../../actions/typegen/generateResourceTypes.js'
 import {parseTypegenConfig} from '../../actions/typegen/parseTypegenConfig.js'
 import {
+  getResourceKey,
   parseTypegenResources,
   type TypegenResourcesConfig,
 } from '../../actions/typegen/parseTypegenResources.js'
 import {createTypegenProgressRenderer} from '../../actions/typegen/renderTypegenProgress.js'
+import {
+  type ResourceTypesWatcher,
+  watchResourceTypes,
+} from '../../actions/typegen/watchResourceTypes.js'
+import {TypegenResourcesTrace} from '../../telemetry/typegen.telemetry.js'
+import {defineCommandTelemetry} from '../../util/telemetry/commandTelemetry.js'
 
 const description = `Sanity TypeGen
 
@@ -46,7 +55,7 @@ The default configuration values listed above are used if not overridden in your
 
 ${styleText('bold', 'Note:')}
 - The \`sanity schema extract\` command is a prerequisite for extracting your Sanity Studio schema into a \`schema.json\` file, which is then used by the \`sanity typegen generate\` command to generate type definitions.
-- To generate types for several datasets, list them in \`typegen.resources\` in \`sanity.cli.ts\` (beta). Each resource uses its own \`schema\` file, or the schema bound to its dataset when \`schema\` is omitted.`.trim()
+- To generate types for several datasets, list them in \`typegen.resources\` in \`sanity.cli.ts\` (beta). Each resource uses its own \`schema\` file, or the schema bound to its dataset when \`schema\` is omitted. With \`--watch\`, a schema bound to a dataset is fetched once, when the watcher starts. Restart it after deploying a schema.`.trim()
 
 export class TypegenGenerateCommand extends SanityCommand<typeof TypegenGenerateCommand> {
   static override description = description
@@ -70,6 +79,8 @@ export class TypegenGenerateCommand extends SanityCommand<typeof TypegenGenerate
   }
 
   static override hiddenAliases: string[] = ['typegen:generate']
+
+  static telemetry = defineCommandTelemetry(this.flags, {redact: ['config-path']})
 
   public async run(): Promise<void> {
     const {flags} = await this.parse(TypegenGenerateCommand)
@@ -181,6 +192,57 @@ export class TypegenGenerateCommand extends SanityCommand<typeof TypegenGenerate
     }
   }
 
+  /**
+   * Records that this run uses `typegen.resources`, which the codegen traces do not distinguish.
+   */
+  private logResourcesUsage(resources: TypegenResourcesConfig, mode: 'generate' | 'watch'): void {
+    const trace = this.telemetry.trace(TypegenResourcesTrace)
+    trace.start()
+    trace.log({
+      boundSchemaCount: resources.resources.filter((resource) => resource.schema === undefined)
+        .length,
+      mode,
+      resourceCount: resources.resources.length,
+      resourceKeys: resources.resources.map((resource) => getResourceKey(resource)),
+    })
+    trace.complete()
+  }
+
+  /**
+   * Prints the resources' configuration warnings, then locates every resource's schema, reporting
+   * each one on the spinner.
+   */
+  private async resolveResources(
+    resources: TypegenResourcesConfig,
+    spin: SpinnerInstance,
+    workDir: string,
+    {checkSchemaFiles}: {checkSchemaFiles: boolean},
+  ): Promise<ResolvedResource[]> {
+    for (const warning of resources.warnings) {
+      this.output.warn(warning)
+    }
+
+    return resolveResourceSchemas({
+      checkSchemaFiles,
+      onResolved: (entry) => {
+        spin.succeed(
+          'schemaPath' in entry
+            ? `Using ${formatPath(entry.schemaPath)} for ${entry.key}`
+            : `Fetched the schema bound to ${entry.key} (${entry.schemaVersion})`,
+        )
+      },
+      onResolving: (resource, key) => {
+        spin.start(
+          resource.schema === undefined
+            ? `Fetching the schema bound to ${key}…`
+            : `Checking the schema file for ${key}…`,
+        )
+      },
+      resources: resources.resources,
+      workDir,
+    })
+  }
+
   private async runSingle(): Promise<void> {
     const trace = this.telemetry.trace(TypesGeneratedTrace)
     let spin: SpinnerInstance | undefined
@@ -195,41 +257,16 @@ export class TypegenGenerateCommand extends SanityCommand<typeof TypegenGenerate
       trace.start()
 
       if (resources) {
-        for (const warning of resources.warnings) {
-          this.output.warn(warning)
-        }
-
+        this.logResourcesUsage(resources, 'generate')
         const resourceSpin = spinner({})
         spin = resourceSpin
-        const resolved = await resolveResourceSchemas({
-          onResolved: (entry) => {
-            resourceSpin.succeed(
-              'schemaPath' in entry
-                ? `Using ${formatPath(entry.schemaPath)} for ${entry.key}`
-                : `Fetched the schema bound to ${entry.key} (${entry.schemaVersion})`,
-            )
-          },
-          onResolving: (resource, key) => {
-            resourceSpin.start(
-              resource.schema === undefined
-                ? `Fetching the schema bound to ${key}…`
-                : `Checking the schema file for ${key}…`,
-            )
-          },
-          resources: resources.resources,
-          workDir,
+        const resolved = await this.resolveResources(resources, resourceSpin, workDir, {
+          checkSchemaFiles: true,
         })
 
         const results = await generateResourceTypes({
           config: typegenConfig,
-          onProgress: (entry) => {
-            resourceSpin.start(`Generating types for ${entry.key}…`)
-            return createTypegenProgressRenderer(resourceSpin, {
-              formatGeneratedCode: typegenConfig.formatGeneratedCode,
-              generates: entry.resource.generates,
-              schema: 'schemaPath' in entry ? entry.schemaPath : entry.key,
-            })
-          },
+          onProgress: createResourceProgressHandler(resourceSpin, typegenConfig),
           resolved,
           workDir,
         })
@@ -281,40 +318,21 @@ export class TypegenGenerateCommand extends SanityCommand<typeof TypegenGenerate
 
     try {
       const {config: typegenConfig, resources, workDir} = await this.getConfig()
-      if (resources) {
-        this.error(
-          'Watch mode does not support typegen.resources yet. Run "sanity typegen generate" without --watch.',
-          {exit: exitCodes.USAGE_ERROR},
-        )
-      }
       trace.start()
+      if (resources) {
+        this.logResourcesUsage(resources, 'watch')
+      }
 
       let resolve: () => void = () => {}
       const promise = new Promise<void>((res) => {
         resolve = res
       })
 
-      const watchSpin = spinner({}).start('Loading schema…')
+      const watchSpin = spinner({})
       spin = watchSpin
-      const rendererContext = {
-        formatGeneratedCode: typegenConfig.formatGeneratedCode,
-        generates: typegenConfig.generates,
-        schema: typegenConfig.schema,
-      }
-      let renderProgress = createTypegenProgressRenderer(watchSpin, rendererContext)
-
-      const typegenWatcher = runTypegenWatcher({
-        config: typegenConfig,
-        onProgress: (event) => {
-          // 'schemaLoaded' is the first event of every generation cycle; the
-          // renderer accumulates per-run state, so start each cycle fresh.
-          if (event.type === 'schemaLoaded') {
-            renderProgress = createTypegenProgressRenderer(watchSpin, rendererContext)
-          }
-          renderProgress(event)
-        },
-        workDir,
-      })
+      const typegenWatcher = resources
+        ? await this.startResourceWatcher(typegenConfig, resources, watchSpin, workDir)
+        : this.startSchemaWatcher(typegenConfig, watchSpin, workDir)
 
       const stop = once(async () => {
         process.off('SIGINT', stop)
@@ -354,5 +372,81 @@ export class TypegenGenerateCommand extends SanityCommand<typeof TypegenGenerate
         exit: exitCodes.RUNTIME_ERROR,
       })
     }
+  }
+
+  /**
+   * Locates every resource's schema once, then generates on each query or local schema change.
+   * A schema bound to a dataset is fetched only here, so a schema deployed while the watcher runs
+   * is used after a restart.
+   */
+  private async startResourceWatcher(
+    config: TypeGenConfig,
+    resources: TypegenResourcesConfig,
+    spin: SpinnerInstance,
+    workDir: string,
+  ): Promise<ResourceTypesWatcher> {
+    // A missing local schema file fails that resource's generation until the file appears,
+    // instead of ending the watcher.
+    const resolved = await this.resolveResources(resources, spin, workDir, {
+      checkSchemaFiles: false,
+    })
+
+    return watchResourceTypes({
+      config,
+      onChange: (event, relativePath) => {
+        this.output.log(`[${new Date().toLocaleTimeString()}] ${event}: ${relativePath}`)
+      },
+      onError: (error) => {
+        spin.fail(error instanceof Error ? error.message : String(error))
+      },
+      onProgress: createResourceProgressHandler(spin, config),
+      resolved,
+      workDir,
+    })
+  }
+
+  private startSchemaWatcher(
+    config: TypeGenConfig,
+    spin: SpinnerInstance,
+    workDir: string,
+  ): ReturnType<typeof runTypegenWatcher> {
+    spin.start('Loading schema…')
+    const rendererContext = {
+      formatGeneratedCode: config.formatGeneratedCode,
+      generates: config.generates,
+      schema: config.schema,
+    }
+    let renderProgress = createTypegenProgressRenderer(spin, rendererContext)
+
+    return runTypegenWatcher({
+      config,
+      onProgress: (event) => {
+        // 'schemaLoaded' is the first event of every generation cycle; the
+        // renderer accumulates per-run state, so start each cycle fresh.
+        if (event.type === 'schemaLoaded') {
+          renderProgress = createTypegenProgressRenderer(spin, rendererContext)
+        }
+        renderProgress(event)
+      },
+      workDir,
+    })
+  }
+}
+
+/**
+ * Returns the progress handler for one resource's generation, which starts with a line naming
+ * the resource. The renderer keeps per-run state, so each generation gets a new one.
+ */
+function createResourceProgressHandler(
+  spin: SpinnerInstance,
+  config: TypeGenConfig,
+): (entry: ResolvedResource) => (event: TypegenProgressEvent) => void {
+  return (entry) => {
+    spin.start(`Generating types for ${entry.key}…`)
+    return createTypegenProgressRenderer(spin, {
+      formatGeneratedCode: config.formatGeneratedCode,
+      generates: entry.resource.generates,
+      schema: 'schemaPath' in entry ? entry.schemaPath : entry.key,
+    })
   }
 }

@@ -3,6 +3,9 @@ import {type Command} from '@oclif/core'
 export interface Output {
   error: Command['error']
   log: Command['log']
+  /** Write a diagnostic to stderr that stays visible in JSON mode. */
+  logDiagnostic: (message: string) => void
+  logJson: Command['logJson']
   warn: Command['warn']
 }
 

@@ -1,6 +1,6 @@
 {
   "name": "@sanity/cli-build",
-  "version": "6.4.5",
+  "version": "7.1.1",
   "description": "Internal Sanity package for building studios and apps",
   "keywords": [
     "cli",
@@ -94,7 +94,7 @@
     "@sanity/cli-test": "workspace:*",
     "@sanity/eslint-config-cli": "workspace:^",
     "@sanity/pkg-utils": "catalog:",
-    "@sanity/ui": "^4.3.1",
+    "@sanity/ui": "^4.4.10",
     "@swc/cli": "catalog:",
     "@swc/core": "catalog:",
     "@types/jsdom": "catalog:",

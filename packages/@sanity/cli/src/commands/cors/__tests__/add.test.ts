@@ -65,6 +65,47 @@ describe('#cors:add', () => {
     expect(pending, 'pending mocks').toEqual([])
   })
 
+  test.each([
+    ['--project', 'test-project'],
+    ['--project=test-project'],
+    ['-p', 'test-project'],
+    ['--project-id', 'test-project'],
+    ['--project-id=test-project'],
+  ])('uses the project from %j and warns only for the deprecated name', async (...projectFlags) => {
+    setupSuccessfulApiMock()
+
+    const {error, stderr} = await testCommand(
+      Add,
+      ['https://example.com', '--credentials', ...projectFlags],
+      {mocks: {...defaultMocks, cliConfig: {api: {projectId: 'config-project'}}}},
+    )
+
+    if (error) throw error
+    if (projectFlags[0].startsWith('--project-id=') || projectFlags[0] === '--project-id') {
+      expect(stderr).toContain('deprecated')
+      expect(stderr).toMatch(/Use "?--project(?:["\s]|$)/)
+    } else {
+      expect(stderr).not.toContain('deprecated')
+    }
+  })
+
+  test.each([
+    ['--project-id', 'one', '--project', 'two'],
+    ['--project', 'one', '--project-id', 'one'],
+    ['--project-id=one', '--project=two'],
+    ['--project=one', '--project-id=one'],
+    ['-p', 'one', '--project-id', 'two'],
+    ['--project-id=one', '-pone'],
+  ])('rejects conflicting project flags %j before making a request', async (...projectFlags) => {
+    const {error} = await testCommand(
+      Add,
+      ['https://example.com', '--credentials', ...projectFlags],
+      {mocks: defaultMocks},
+    )
+
+    expect(error?.message).toContain('Flag --project can only be specified once')
+  })
+
   test('adds CORS origin with credentials flag', async () => {
     const origin = 'https://example.com'
     const expectedAllowCredentials = true

@@ -1,4 +1,10 @@
-import {getApplication, getApplicationUrl, listApplications} from '@sanity/workbench-cli/deploy'
+import {
+  type Application,
+  getApplication,
+  getApplicationUrl,
+  getWorkbenchUrl,
+  listApplications,
+} from '@sanity/workbench-cli/deploy'
 
 import {
   getUserApplication,
@@ -177,21 +183,26 @@ export async function resolveAppDeployTarget(options: {
  */
 export async function resolveWorkbenchApp({
   appId,
+  hasAppView = true,
   organizationId,
   slug,
 }: {
   appId: string | undefined
+  hasAppView?: boolean
   organizationId?: string
   slug?: string
 }): Promise<AppDeployTargetResolution> {
-  if (appId) return resolveAppById(appId)
+  const getUrl = (application: Application) =>
+    hasAppView ? getApplicationUrl(application) : getWorkbenchUrl(application.organizationId)
+
+  if (appId) return resolveAppById(appId, getUrl)
 
   if (organizationId && slug) {
     const existing = (await listApplications(organizationId)).find((app) => app.slug === slug)
     if (existing) {
       return {
         appHost: slug,
-        existing: {...existing, url: getApplicationUrl(existing)},
+        existing: {...existing, url: getUrl(existing)},
         type: 'slug-taken',
       }
     }
@@ -218,11 +229,12 @@ export async function resolveWorkbenchStudio(options: {
 
 async function resolveAppById(
   appId: string,
+  getUrl: (application: Application) => string,
 ): Promise<CommonDeployTargetResolution<DeployTargetCoreApp>> {
   const application = await getApplication(appId)
   return application
     ? {
-        application: {...application, url: getApplicationUrl(application)},
+        application: {...application, url: getUrl(application)},
         type: 'found',
       }
     : {message: APP_ID_NOT_FOUND_IN_ORGANIZATION, reason: 'app-not-found', type: 'invalid'}

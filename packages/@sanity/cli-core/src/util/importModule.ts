@@ -12,6 +12,13 @@ interface ImportModuleOptions {
   default?: boolean
 
   /**
+   * Whether to transform JSX in the imported module (and anything it imports).
+   * Required for `.tsx`/`.jsx` modules — without it they fail to parse.
+   * Default: false
+   */
+  jsx?: boolean
+
+  /**
    * Path to the tsconfig file to use for the import. If not provided, the tsconfig
    * will be inferred from the nearest `tsconfig.json` file.
    */
@@ -33,10 +40,11 @@ export async function importModule<T = unknown>(
   filePath: string | URL,
   options: ImportModuleOptions = {},
 ): Promise<T> {
-  const {default: returnDefault = true, tsconfigPath} = options
+  const {default: returnDefault = true, jsx = false, tsconfigPath} = options
 
   const jiti = createJiti(import.meta.url, {
     debug: debug.enabled,
+    jsx,
     tsconfigPaths: typeof tsconfigPath === 'string' ? tsconfigPath : true,
   })
 

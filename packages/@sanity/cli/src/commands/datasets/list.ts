@@ -15,7 +15,7 @@ export class ListDatasetCommand extends SanityCommand<typeof ListDatasetCommand>
       description: 'List datasets for the project',
     },
     {
-      command: '<%= config.bin %> <%= command.id %> --project-id abc123',
+      command: '<%= config.bin %> <%= command.id %> --project abc123',
       description: 'List datasets for a specific project',
     },
   ]

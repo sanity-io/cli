@@ -80,7 +80,7 @@ export async function bootstrapRemoteTemplate(opts: BootstrapRemoteOptions): Pro
         await createToken({
           label: READ_TOKEN_LABEL,
           projectId: variables.projectId,
-          roleName: API_READ_TOKEN_ROLE,
+          roleNames: [API_READ_TOKEN_ROLE],
         })
       ).token
     : undefined
@@ -89,7 +89,7 @@ export async function bootstrapRemoteTemplate(opts: BootstrapRemoteOptions): Pro
         await createToken({
           label: WRITE_TOKEN_LABEL,
           projectId: variables.projectId,
-          roleName: API_WRITE_TOKEN_ROLE,
+          roleNames: [API_WRITE_TOKEN_ROLE],
         })
       ).token
     : undefined

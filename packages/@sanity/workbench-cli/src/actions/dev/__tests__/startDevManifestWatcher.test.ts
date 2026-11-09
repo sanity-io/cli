@@ -246,13 +246,35 @@ describe('startDevManifestWatcher', () => {
     await vi.advanceTimersByTimeAsync(0)
     expect(mockExtract).toHaveBeenCalledTimes(1)
 
+    // A change still inside the debounce window when close() lands.
+    fakeWatcher.emitChange('sanity.config.ts')
     await watcher.close()
     expect(fakeWatcher.closed).toBe(true)
 
-    fakeWatcher.emitChange('sanity.config.ts')
     await vi.advanceTimersByTimeAsync(300)
 
     expect(mockExtract).toHaveBeenCalledTimes(1)
+  })
+
+  test('warns on a watcher error and keeps regenerating', async () => {
+    const output = createMockOutput()
+    const update = vi.fn()
+    const watcher = await startDevManifestWatcher({
+      extract: mockExtract,
+      output,
+      update,
+      workDir: WORK_DIR,
+    })
+    await vi.advanceTimersByTimeAsync(0)
+
+    fakeWatcher.emit('error', new Error('EMFILE'))
+    fakeWatcher.emitChange('sanity.config.ts')
+    await vi.advanceTimersByTimeAsync(300)
+
+    expect(output.warn).toHaveBeenCalledWith(expect.stringContaining('EMFILE'))
+    expect(mockExtract).toHaveBeenCalledTimes(2)
+
+    await watcher.close()
   })
 
   test('watches sanity.cli.ts for app projects', async () => {

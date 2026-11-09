@@ -24,6 +24,7 @@ import {
   registerDevServer,
 } from '../../../../src/actions/dev/registry.js'
 
+const ORG = 'org-test'
 let testDataDir: string
 
 vi.mock('@sanity/cli-core', async (importOriginal) => {
@@ -92,10 +93,10 @@ describe.skipIf(process.platform !== 'win32')('Windows integration', () => {
   })
 
   test('acquireWorkbenchLock + readWorkbenchLock round-trip on Windows', () => {
-    const lock = acquireWorkbenchLock({host: 'localhost', port: 3336})
+    const lock = acquireWorkbenchLock({host: 'localhost', organizationId: ORG, port: 3336})
     expect(lock).toBeDefined()
 
-    const read = readWorkbenchLock()
+    const read = readWorkbenchLock(ORG)
     expect(read).toBeDefined()
     expect(read!.pid).toBe(process.pid)
     expect(read!.port).toBe(3336)
@@ -110,7 +111,7 @@ describe.skipIf(process.platform !== 'win32')('Windows integration', () => {
     // Write a workbench lock claiming our PID started in the distant past.
     // PowerShell will report the real (recent) start time of this test
     // process, so isOurProcess sees the mismatch and prunes.
-    const lockPath = join(dir, 'workbench.lock')
+    const lockPath = join(dir, `workbench-${ORG}.lock`)
     writeFileSync(
       lockPath,
       JSON.stringify({
@@ -122,7 +123,7 @@ describe.skipIf(process.platform !== 'win32')('Windows integration', () => {
       }),
     )
 
-    expect(readWorkbenchLock()).toBeUndefined()
+    expect(readWorkbenchLock(ORG)).toBeUndefined()
     expect(existsSync(lockPath)).toBe(false)
   })
 })

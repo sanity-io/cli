@@ -1,6 +1,6 @@
 import {CLIError} from '@oclif/core/errors'
 import {exitCodes, type Output} from '@sanity/cli-core'
-import {getErrorMessage} from '@sanity/cli-core/errors'
+import {getErrorMessage, JsonOutputError} from '@sanity/cli-core/errors'
 import {type WorkbenchDeployPayload} from '@sanity/workbench-cli/deploy'
 
 import {createCollectingReporter, createFailFastReporter} from '../../util/checks.js'
@@ -34,6 +34,17 @@ export interface DeployPayload extends Partial<WorkbenchDeployPayload> {
   type: 'coreApp' | 'studio'
   version: string | null
 
+  /**
+   * The aspect-document sync a media-library config deploy will run: every
+   * config field is upserted, stored definitions without a matching config
+   * field are deleted (the config mirrors into the library). Collected during
+   * planning, so a `--dry-run --json` consumer sees the deletions too.
+   */
+  aspectSync?: {
+    deleteIds: string[]
+    mediaLibraryId: string
+    upsertIds: string[]
+  }
   organizationId?: string
   projectId?: string
 }
@@ -59,7 +70,8 @@ export interface DeploySpec {
 export async function runDeploy(options: DeployAppOptions, spec: DeploySpec): Promise<void> {
   const {output} = options
   const json = !!options.flags.json
-  const emitJson = (payload: unknown) => output.log(JSON.stringify(payload, null, 2))
+  const emitJson = (payload: unknown) => output.logJson(payload)
+  let failurePayload: unknown
 
   // The JSON payload owns stdout, so the run's progress logs go to stderr; only
   // the final JSON.stringify writes to stdout.
@@ -68,8 +80,11 @@ export async function runDeploy(options: DeployAppOptions, spec: DeploySpec): Pr
   try {
     if (options.flags['dry-run']) {
       const plan = await collectPlan(runOptions, spec)
-      if (json) emitJson(deploymentPlanToJson(plan))
-      else renderDeploymentPlan(plan, output)
+      if (json) {
+        const payload = deploymentPlanToJson(plan)
+        if (isDeployable(plan)) emitJson(payload)
+        else failurePayload = payload
+      } else renderDeploymentPlan(plan, output)
       exitIfBlocked(plan, output)
       return
     }
@@ -78,16 +93,18 @@ export async function runDeploy(options: DeployAppOptions, spec: DeploySpec): Pr
     if (json && result) emitJson({deployed: true, reason: null, ...result})
   } catch (error) {
     const failure = normalizeFailure(error, spec.type)
-    // A blocked dry run reaches this catch too (its exit throws) and already
-    // printed its plan, so only a real deploy adds the {deployed: false} envelope.
+    // Preserve the blocked plan or the existing deployment failure envelope.
     if (json && !options.flags['dry-run']) {
-      emitJson({
+      failurePayload = {
         application: null,
         deployed: false,
         error: {message: failure.message},
         payload: null,
         reason: failure.message,
-      })
+      }
+    }
+    if (json && failurePayload !== undefined) {
+      throw new JsonOutputError(failure.message, failurePayload, failure.exit)
     }
     output.error(failure.message, {exit: failure.exit})
   }

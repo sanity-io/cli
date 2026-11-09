@@ -1,5 +1,99 @@
 # Changelog
 
+## 24.0.2
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-test-v24.0.1...cli-test-v24.0.2)
+
+_2026-11-06_
+
+### Bug Fixes
+
+- **deps:** update vitest-tooling to v5 ([#2117](https://github.com/sanity-io/cli/pull/2117)) ([caa7415](https://github.com/sanity-io/cli/commit/caa74155d51278ffc98f9d9cb41c71d697fbd984))
+
+## 24.0.1
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-test-v24.0.0...cli-test-v24.0.1)
+
+_2026-10-30_
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/cli-core bumped to 3.14.1
+
+## 24.0.0
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-test-v23.0.0...cli-test-v24.0.0)
+
+_2026-10-27_
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/cli-core bumped to 3.14.0
+
+## 23.0.0
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-test-v22.0.0...cli-test-v23.0.0)
+
+_2026-10-26_
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/cli-core bumped to 3.13.0
+
+## 22.0.0
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-test-v21.0.1...cli-test-v22.0.0)
+
+_2026-10-23_
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/cli-core bumped to 3.12.0
+
+## 21.0.1
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-test-v21.0.0...cli-test-v21.0.1)
+
+_2026-10-22_
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/cli-core bumped to 3.11.1
+
+## 21.0.0
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-test-v20.0.0...cli-test-v21.0.0)
+
+_2026-10-21_
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/cli-core bumped to 3.11.0
+
+## 20.0.0
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-test-v19.0.2...cli-test-v20.0.0)
+
+_2026-10-17_
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/cli-core bumped to 3.10.0
+
 ## 19.0.2
 
 [Compare changes](https://github.com/sanity-io/cli/compare/cli-test-v19.0.1...cli-test-v19.0.2)

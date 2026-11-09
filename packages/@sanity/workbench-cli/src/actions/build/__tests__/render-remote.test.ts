@@ -3,10 +3,20 @@ import fs from 'node:fs'
 import path from 'node:path'
 import {pathToFileURL} from 'node:url'
 
-import {act, createElement, useEffect, useState} from 'react'
+import {
+  act,
+  type Context,
+  createContext,
+  createElement,
+  useContext,
+  useEffect,
+  useState,
+} from 'react'
+import {build, type Plugin, type Rolldown} from 'vite'
 import {afterAll, beforeAll, beforeEach, describe, expect, test} from 'vitest'
 
 import {renderRemote} from '../render-remote.js'
+import {sanityAppId} from '../vite/plugins/plugin-sanity-app-id.js'
 
 describe('renderRemote', () => {
   test('exports a render entry that mounts the bound App into the host node', () => {
@@ -41,13 +51,14 @@ describe('renderRemote', () => {
 
       export const version = view.version
 
-      // The SDK reads this slot via getDashboardModuleContext(), so its symbol, key and
-      // value are a contract. Keyed by createContext, not the React namespace: Vite dev
-      // pre-bundling can give two importers of one React copy different namespaces.
-      const moduleSlot = (globalThis[Symbol.for('sanity.os.module')] ??= new WeakMap())
-      if (!moduleSlot.has(React.createContext)) moduleSlot.set(React.createContext, React.createContext(undefined))
-      const ModuleContext = moduleSlot.get(React.createContext)
+      // The SDK reads this slot via getDashboardRootContext(), so its symbol, key and value are a
+      // contract. Keyed by createContext, not the React namespace: Vite dev pre-bundling can give two
+      // importers of one React copy different namespaces.
+      const rootSlot = (globalThis[Symbol.for('sanity.os.root')] ??= new WeakMap())
+      if (!rootSlot.has(React.createContext)) rootSlot.set(React.createContext, React.createContext(undefined))
+      const RootContext = rootSlot.get(React.createContext)
       const rootMap = new Map()
+      const rootContexts = new Map()
       // A shared default sheet can overwrite another app's global rules; each root needs its own sheet.
       const styleTargets = new Map()
       const stylisPlugins = new Map()
@@ -62,20 +73,33 @@ describe('renderRemote', () => {
         return Object.defineProperty(() => {}, 'name', { value: 'sanity-root-' + globalThis[stylisPluginCount] })
       }
 
+      // The SDK disposes the root's instance, closing its bus connection, when the signal aborts. Next tick:
+      // a host disposing a child root from its own cleanup code leaves the child still unmounting.
+      function closeRoot(rootElement) {
+        const closing = rootContexts.get(rootElement)
+        rootContexts.delete(rootElement)
+        if (closing) setTimeout(() => closing.controller.abort(), 0)
+      }
+
       function mount(rootElement, args) {
         let root = rootMap.get(rootElement)
         if (!root) {
           root = createRoot(rootElement, args?.renderOptions?.rootOptions)
           rootMap.set(rootElement, root)
+          const controller = new AbortController()
+          // Read once: the SDK pins the root's bus identity when it first connects.
+          const { moduleId, parentKey } = args?.renderOptions ?? {}
+          rootContexts.set(rootElement, { controller, value: { signal: controller.signal, moduleId, parentKey } })
           if (StyleSheetManager) {
             const target = rootElement.ownerDocument.createElement('sanity-styles')
+            if (typeof __SANITY_APP_ID__ === 'string') target.setAttribute('data-application-id', __SANITY_APP_ID__)
             // React can replace the mount node's contents; keep its stylesheet outside that node.
             rootElement.ownerDocument.head.appendChild(target)
             styleTargets.set(rootElement, target)
             stylisPlugins.set(rootElement, [uniqueStylisPlugin()])
           }
         }
-        let element = React.createElement(ModuleContext.Provider, { value: args?.renderOptions?.moduleId }, React.createElement(App, args.props))
+        let element = React.createElement(RootContext.Provider, { value: rootContexts.get(rootElement).value }, React.createElement(App, args.props))
         if (StyleSheetManager) element = React.createElement(StyleSheetManager, { target: styleTargets.get(rootElement), stylisPlugins: stylisPlugins.get(rootElement) }, element)
         // The host's React can't pause this root, so the host pauses the app through this Activity.
         // Keep it inside StrictMode: outside, it stops StrictMode double-invoking effects.
@@ -100,6 +124,7 @@ describe('renderRemote', () => {
             styleTargets.get(rootElement)?.remove()
             styleTargets.delete(rootElement)
             stylisPlugins.delete(rootElement)
+            closeRoot(rootElement)
           },
           setLifecycle(state) {
             const current = renderArgs.get(rootElement)
@@ -117,6 +142,7 @@ describe('renderRemote', () => {
           for (const [rootElement, args] of renderArgs) {
             rootMap.get(rootElement)?.unmount()
             rootMap.delete(rootElement)
+            closeRoot(rootElement)
             args.next = next.render(rootElement, args.props, args.renderOptions)
             args.next.setLifecycle(args.lifecycle)
           }
@@ -138,13 +164,14 @@ describe('renderRemote', () => {
       const StyleSheetManager = undefined
       import App from "./app.js"
 
-      // The SDK reads this slot via getDashboardModuleContext(), so its symbol, key and
-      // value are a contract. Keyed by createContext, not the React namespace: Vite dev
-      // pre-bundling can give two importers of one React copy different namespaces.
-      const moduleSlot = (globalThis[Symbol.for('sanity.os.module')] ??= new WeakMap())
-      if (!moduleSlot.has(React.createContext)) moduleSlot.set(React.createContext, React.createContext(undefined))
-      const ModuleContext = moduleSlot.get(React.createContext)
+      // The SDK reads this slot via getDashboardRootContext(), so its symbol, key and value are a
+      // contract. Keyed by createContext, not the React namespace: Vite dev pre-bundling can give two
+      // importers of one React copy different namespaces.
+      const rootSlot = (globalThis[Symbol.for('sanity.os.root')] ??= new WeakMap())
+      if (!rootSlot.has(React.createContext)) rootSlot.set(React.createContext, React.createContext(undefined))
+      const RootContext = rootSlot.get(React.createContext)
       const rootMap = new Map()
+      const rootContexts = new Map()
       // A shared default sheet can overwrite another app's global rules; each root needs its own sheet.
       const styleTargets = new Map()
       const stylisPlugins = new Map()
@@ -159,20 +186,33 @@ describe('renderRemote', () => {
         return Object.defineProperty(() => {}, 'name', { value: 'sanity-root-' + globalThis[stylisPluginCount] })
       }
 
+      // The SDK disposes the root's instance, closing its bus connection, when the signal aborts. Next tick:
+      // a host disposing a child root from its own cleanup code leaves the child still unmounting.
+      function closeRoot(rootElement) {
+        const closing = rootContexts.get(rootElement)
+        rootContexts.delete(rootElement)
+        if (closing) setTimeout(() => closing.controller.abort(), 0)
+      }
+
       function mount(rootElement, args) {
         let root = rootMap.get(rootElement)
         if (!root) {
           root = createRoot(rootElement, args?.renderOptions?.rootOptions)
           rootMap.set(rootElement, root)
+          const controller = new AbortController()
+          // Read once: the SDK pins the root's bus identity when it first connects.
+          const { moduleId, parentKey } = args?.renderOptions ?? {}
+          rootContexts.set(rootElement, { controller, value: { signal: controller.signal, moduleId, parentKey } })
           if (StyleSheetManager) {
             const target = rootElement.ownerDocument.createElement('sanity-styles')
+            if (typeof __SANITY_APP_ID__ === 'string') target.setAttribute('data-application-id', __SANITY_APP_ID__)
             // React can replace the mount node's contents; keep its stylesheet outside that node.
             rootElement.ownerDocument.head.appendChild(target)
             styleTargets.set(rootElement, target)
             stylisPlugins.set(rootElement, [uniqueStylisPlugin()])
           }
         }
-        let element = React.createElement(ModuleContext.Provider, { value: args?.renderOptions?.moduleId }, React.createElement(App, args.props))
+        let element = React.createElement(RootContext.Provider, { value: rootContexts.get(rootElement).value }, React.createElement(App, args.props))
         if (StyleSheetManager) element = React.createElement(StyleSheetManager, { target: styleTargets.get(rootElement), stylisPlugins: stylisPlugins.get(rootElement) }, element)
         // The host's React can't pause this root, so the host pauses the app through this Activity.
         // Keep it inside StrictMode: outside, it stops StrictMode double-invoking effects.
@@ -197,6 +237,7 @@ describe('renderRemote', () => {
             styleTargets.get(rootElement)?.remove()
             styleTargets.delete(rootElement)
             stylisPlugins.delete(rootElement)
+            closeRoot(rootElement)
           },
           setLifecycle(state) {
             const current = renderArgs.get(rootElement)
@@ -234,12 +275,10 @@ interface Harness {
 }
 
 let moduleCount = 0
+const ROOT_PROBE = 'globalThis.__RENDER_REMOTE_ROOT_PROBE__'
 
-async function loadHarness(): Promise<Harness> {
-  const source = renderRemote({
-    app: 'globalThis.__RENDER_REMOTE_PROBE__',
-    preamble: '',
-  })
+async function loadHarness(app = 'globalThis.__RENDER_REMOTE_PROBE__'): Promise<Harness> {
+  const source = renderRemote({app, preamble: ''})
 
   const file = path.join(TMP_DIR, `harness-${moduleCount++}.js`)
   fs.writeFileSync(file, source)
@@ -249,6 +288,7 @@ async function loadHarness(): Promise<Harness> {
 let effectMounts = 0
 let effectCleanups = 0
 let setCount: (count: number) => void
+let rootSignal: AbortSignal | undefined
 
 function Probe() {
   const [count, setCountState] = useState(0)
@@ -262,11 +302,24 @@ function Probe() {
   return createElement('span', null, `probe:${count}`)
 }
 
+type RootValue = {signal: AbortSignal} | undefined
+const NoRoot = createContext<RootValue>(undefined)
+
+// Reads the root context the way the SDK does, from the slot the harness fills when it loads.
+function RootProbe() {
+  const slot = (globalThis as Record<symbol, WeakMap<object, Context<RootValue>> | undefined>)[
+    Symbol.for('sanity.os.root')
+  ]
+  rootSignal = useContext(slot?.get(createContext) ?? NoRoot)?.signal
+  return createElement('span', null, 'root probe')
+}
+
 let container: HTMLDivElement
 
 beforeAll(() => {
   ;(globalThis as {IS_REACT_ACT_ENVIRONMENT?: boolean}).IS_REACT_ACT_ENVIRONMENT = true
   ;(globalThis as {__RENDER_REMOTE_PROBE__?: unknown}).__RENDER_REMOTE_PROBE__ = Probe
+  ;(globalThis as {__RENDER_REMOTE_ROOT_PROBE__?: unknown}).__RENDER_REMOTE_ROOT_PROBE__ = RootProbe
   fs.mkdirSync(TMP_DIR, {recursive: true})
 })
 
@@ -277,6 +330,7 @@ afterAll(() => {
 beforeEach(() => {
   effectMounts = 0
   effectCleanups = 0
+  rootSignal = undefined
   container = document.createElement('div')
   document.body.append(container)
 })
@@ -359,4 +413,103 @@ test('StrictMode stays outermost: effects double-invoke on mount and still pause
   act(() => controller.setLifecycle('foreground'))
   expect(effectMounts).toBe(4)
   expect(container.textContent).toBe('probe:7')
+})
+
+test('disposing aborts the root signal on the next tick, not before', async () => {
+  const {render} = await loadHarness(ROOT_PROBE)
+
+  let controller!: RenderController
+  act(() => {
+    controller = render(container)
+  })
+  expect(rootSignal).toBeInstanceOf(AbortSignal)
+  const signal = rootSignal!
+
+  act(() => controller.dispose())
+  expect(signal.aborted).toBe(false)
+  await new Promise((resolve) => setTimeout(resolve, 0))
+  expect(signal.aborted).toBe(true)
+})
+
+test('backgrounding and foregrounding the root keeps its signal', async () => {
+  const {render} = await loadHarness(ROOT_PROBE)
+
+  let controller!: RenderController
+  act(() => {
+    controller = render(container)
+  })
+  expect(rootSignal).toBeInstanceOf(AbortSignal)
+  const signal = rootSignal!
+
+  act(() => controller.setLifecycle('background'))
+  act(() => controller.setLifecycle('foreground'))
+  await new Promise((resolve) => setTimeout(resolve, 0))
+
+  expect(rootSignal).toBe(signal)
+  expect(signal.aborted).toBe(false)
+})
+
+test('re-rendering the root with new props keeps its signal', async () => {
+  const {render} = await loadHarness(ROOT_PROBE)
+
+  act(() => {
+    render(container)
+  })
+  expect(rootSignal).toBeInstanceOf(AbortSignal)
+  const signal = rootSignal!
+
+  act(() => {
+    render(container, {changed: true})
+  })
+  await new Promise((resolve) => setTimeout(resolve, 0))
+
+  expect(rootSignal).toBe(signal)
+  expect(signal.aborted).toBe(false)
+})
+
+async function buildIsolatedHarness(plugins: Plugin[]): Promise<Harness> {
+  const root = fs.mkdtempSync(path.join(TMP_DIR, 'isolated-'))
+  fs.writeFileSync(
+    path.join(root, 'entry.js'),
+    renderRemote({app: '() => null', isolateStyles: true, preamble: ''}),
+  )
+  fs.writeFileSync(
+    path.join(root, 'styled-components.js'),
+    'export const StyleSheetManager = ({children}) => children',
+  )
+  const output = (await build({
+    build: {
+      rolldownOptions: {
+        external: ['react', 'react-dom/client'],
+        input: path.join(root, 'entry.js'),
+        preserveEntrySignatures: 'strict',
+      },
+    },
+    configFile: false,
+    logLevel: 'silent',
+    plugins,
+    resolve: {alias: {'styled-components': path.join(root, 'styled-components.js')}},
+    root,
+  })) as Rolldown.RolldownOutput
+  const entry = output.output.find((chunk) => chunk.type === 'chunk' && chunk.isEntry)!
+  return (await import(
+    /* @vite-ignore */ pathToFileURL(path.join(root, 'dist', entry.fileName)).href
+  )) as Harness
+}
+
+const sheetTarget = () => document.head.querySelector<HTMLElement>('sanity-styles')
+
+describe('styled-components sheet target', () => {
+  beforeEach(() => {
+    document.head.replaceChildren()
+  })
+
+  test("carries the app id, so the host can find the app's styled-components sheets", async () => {
+    const {render} = await buildIsolatedHarness([sanityAppId('favorites')])
+
+    act(() => {
+      render(container)
+    })
+    expect(sheetTarget()?.dataset.applicationId).toBe('favorites')
+  })
 })
