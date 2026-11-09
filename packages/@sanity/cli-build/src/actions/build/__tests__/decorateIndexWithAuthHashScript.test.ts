@@ -84,4 +84,11 @@ describe('decorateIndexWithAuthHashScript', () => {
     expect(location.hash).toBe('#mysid=1&foo=bar')
     expect(scope.__SANITY_AUTH_HASH_PARAMS__).toBeUndefined()
   })
+
+  test('does not leave its bindings on the global object', () => {
+    runScript('#sid=abc&foo=bar')
+
+    expect('params' in globalThis).toBe(false)
+    expect('kept' in globalThis).toBe(false)
+  })
 })

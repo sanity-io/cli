@@ -15,8 +15,8 @@ export const MIN_SANITY_VERSION_READING_AUTH_HASH_STASH = '6.22.0'
  * the bundle means the secrets are gone from the address bar even if the bundle fails to load.
  */
 const authHashScript = `try {
-  var params = location.hash.slice(1).split('&');
-  var kept = params.filter(function (param) {
+  const params = location.hash.slice(1).split('&');
+  const kept = params.filter(function (param) {
     var match = /^(sid|token|claim)=(.*)$/.exec(param);
     if (!match) return true;
     var found = (globalThis.__SANITY_AUTH_HASH_PARAMS__ = globalThis.__SANITY_AUTH_HASH_PARAMS__ || {});
