@@ -73,7 +73,7 @@
     "@vitejs/plugin-react": "catalog:",
     "chokidar": "^5.0.0",
     "cjs-module-lexer": "^2.2.1",
-    "dompurify": "^3.4.14",
+    "dompurify": "^3.4.17",
     "empathic": "catalog:",
     "jsdom": "catalog:",
     "lightningcss": "^1.33.0",
