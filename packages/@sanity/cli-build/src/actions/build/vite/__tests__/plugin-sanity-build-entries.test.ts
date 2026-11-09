@@ -2,12 +2,18 @@ import {mkdir, mkdtemp, readdir, readFile, rm, writeFile} from 'node:fs/promises
 import {tmpdir} from 'node:os'
 import path from 'node:path'
 
+import {getLocalPackageVersion as mockGetLocalPackageVersion} from '@sanity/cli-test/mocks/cli-core/package-manager'
 import {build, type Plugin, type ResolvedConfig} from 'vite'
 import {describe, expect, test, vi} from 'vitest'
 
+import {MIN_SANITY_VERSION_READING_AUTH_HASH_STASH} from '../../decorateIndexWithAuthHashScript.js'
 import {renderDocument} from '../../renderDocument.js'
 import {sanityBuildEntries} from '../plugin-sanity-build-entries.js'
 
+vi.mock(
+  '@sanity/cli-core/package-manager',
+  () => import('@sanity/cli-test/mocks/cli-core/package-manager'),
+)
 vi.mock('../../renderDocument.js', () => ({
   renderDocument: vi.fn(async (options: {props?: {css?: string[]}}) => {
     const links = (options.props?.css ?? [])
@@ -54,12 +60,27 @@ function entryChunk(overrides: Partial<BundleChunk> = {}): BundleChunk {
   }
 }
 
+async function emitIndexHtml(bridge?: boolean, isApp?: boolean): Promise<string> {
+  const {html} = await renderBundle({
+    bridge,
+    bundle: {'static/sanity-abc.js': entryChunk()},
+    isApp,
+  })
+  return html
+}
+
 async function renderBundle(options: {
   bridge?: boolean
   bundle: Bundle
   cssCodeSplit?: boolean
+  isApp?: boolean
 }): Promise<{css: string[]; html: string}> {
-  const plugin = sanityBuildEntries({basePath: '/', bridge: options.bridge, cwd: '/project'})
+  const plugin = sanityBuildEntries({
+    basePath: '/',
+    bridge: options.bridge,
+    cwd: '/project',
+    isApp: options.isApp,
+  })
   if (options.cssCodeSplit !== undefined) {
     await resolveConfig(plugin, options.cssCodeSplit)
   }
@@ -126,6 +147,27 @@ describe('sanityBuildEntries index.html', () => {
     expect(html).not.toContain('bridge.js')
     // The document itself is still emitted.
     expect(html).toContain('id="root"')
+  })
+
+  test('injects the auth hash script first in head for studios', async () => {
+    mockGetLocalPackageVersion.mockResolvedValue(MIN_SANITY_VERSION_READING_AUTH_HASH_STASH)
+    const html = await emitIndexHtml()
+    expect(html).toMatch(/^<html><head>\n<script>[^<]*__SANITY_AUTH_HASH_PARAMS__/)
+  })
+
+  test("omits the auth hash script for sanity versions that don't read the stash", async () => {
+    mockGetLocalPackageVersion.mockResolvedValue('6.18.0')
+    const html = await emitIndexHtml()
+    expect(mockGetLocalPackageVersion).toHaveBeenCalledWith('sanity', '/project')
+    expect(html).not.toContain('__SANITY_AUTH_HASH_PARAMS__')
+  })
+
+  test('omits the auth hash script for apps', async () => {
+    mockGetLocalPackageVersion.mockClear()
+    mockGetLocalPackageVersion.mockResolvedValue(MIN_SANITY_VERSION_READING_AUTH_HASH_STASH)
+    const html = await emitIndexHtml(undefined, true)
+    expect(mockGetLocalPackageVersion).not.toHaveBeenCalled()
+    expect(html).not.toContain('__SANITY_AUTH_HASH_PARAMS__')
   })
 })
 
