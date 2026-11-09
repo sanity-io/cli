@@ -138,7 +138,7 @@
     "string-argv": "^0.3.2",
     "string-width": "^7.2.0",
     "tar": "catalog:",
-    "tar-stream": "^3.2.0",
+    "tar-stream": "^3.2.2",
     "tinyglobby": "catalog:",
     "valibot": "^1.4.2",
     "vite": "catalog:",
