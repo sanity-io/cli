@@ -13,6 +13,7 @@ import {
 const mockStartWorkbenchDevServer = vi.hoisted(() => vi.fn())
 const mockStartDevServerRegistration = vi.hoisted(() => vi.fn())
 const mockGetCliConfigUncached = vi.hoisted(() => vi.fn())
+const mockFetchDevServerDetails = vi.hoisted(() => vi.fn())
 
 vi.mock('@sanity/cli-core', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@sanity/cli-core')>()),
@@ -20,6 +21,10 @@ vi.mock('@sanity/cli-core', async (importOriginal) => ({
 }))
 vi.mock('../startWorkbenchDevServer.js', () => ({
   startWorkbenchDevServer: mockStartWorkbenchDevServer,
+}))
+vi.mock('../devServerSummary.js', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../devServerSummary.js')>()),
+  fetchDevServerDetails: mockFetchDevServerDetails,
 }))
 vi.mock('../startDevServerRegistration.js', () => ({
   startDevServerRegistration: mockStartDevServerRegistration,
@@ -71,6 +76,7 @@ describe('startWorkbenchDev', () => {
     mockStartDevServerRegistration.mockResolvedValue({close: vi.fn().mockResolvedValue(undefined)})
     mockStartAppServer.mockResolvedValue(mockAppServer({port: 3334}))
     mockGetCliConfigUncached.mockResolvedValue(workbenchCliConfig())
+    mockFetchDevServerDetails.mockResolvedValue({organizationName: 'Acme'})
   })
 
   afterEach(() => {
@@ -116,7 +122,9 @@ describe('startWorkbenchDev', () => {
       await run({output})
 
       expect(output.log).toHaveBeenCalledWith(
-        `Dashboard dev server started at ${styleText(['blue', 'underline'], 'http://localhost:3333/applications/my-app')}`,
+        expect.stringContaining(
+          styleText(['blue', 'underline'], 'http://localhost:3333/applications/my-app'),
+        ),
       )
     })
 
@@ -126,8 +134,20 @@ describe('startWorkbenchDev', () => {
       await run({output})
 
       expect(output.log).toHaveBeenCalledWith(
-        `Dashboard dev server started at ${styleText(['blue', 'underline'], 'http://localhost:3333')}`,
+        expect.stringContaining(`${styleText(['blue', 'underline'], 'http://localhost:3333')}\n`),
       )
+    })
+
+    test('starts fetching details before the servers and prints them in the summary', async () => {
+      const output = createMockOutput()
+
+      await run({output})
+
+      expect(mockFetchDevServerDetails.mock.invocationCallOrder[0]).toBeLessThan(
+        mockStartWorkbenchDevServer.mock.invocationCallOrder[0],
+      )
+      expect(output.log).toHaveBeenCalledWith(expect.stringContaining('Organization  Acme'))
+      expect(output.log).toHaveBeenCalledWith(expect.stringContaining('App           Test App'))
     })
 
     test('shows the existing lock host in the URL, not the caller host', async () => {

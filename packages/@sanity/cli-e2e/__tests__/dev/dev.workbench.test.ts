@@ -27,13 +27,7 @@ describe.skipIf(isRegistryMode)('sanity dev (workbench/federation)', {timeout: 1
     // studio it serves. This line only prints when the workbench runtime resolves
     // and the host vite server actually starts (lock acquired, runtime written),
     // so it proves the real workbench dev orchestration ran — not just a build.
-    await session.waitForText(
-      new RegExp(
-        String.raw`Dashboard dev server started at http://localhost:${port}/studios/federated-studio`,
-        'i',
-      ),
-      {timeout: 90_000},
-    )
+    await session.waitForText(/Sanity Dashboard ready in/i, {timeout: 90_000})
 
     // `getOutput()` keeps ANSI codes; the URL isn't split by color escapes, so
     // assert it on the raw buffer too.

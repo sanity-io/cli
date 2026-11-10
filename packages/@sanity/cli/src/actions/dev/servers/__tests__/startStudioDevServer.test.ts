@@ -119,6 +119,16 @@ describe('startStudioDevServer', () => {
     expect(result.server).toBeDefined()
   })
 
+  test('prints no ready line when announceUrl is false', async () => {
+    const started = createMockDevServer()
+    mockStartDevServer.mockResolvedValueOnce(started)
+
+    const result = await startStudioDevServer(createDevOptions({announceUrl: false}))
+
+    expect(result.started).toBe(true)
+    expect(started.server.config.logger.info).not.toHaveBeenCalled()
+  })
+
   describe('unclaimed sign-in URL', () => {
     const unclaimedOptions = createDevOptions({
       cliConfig: {api: {projectId: 'abc123'}} as CliConfig,
