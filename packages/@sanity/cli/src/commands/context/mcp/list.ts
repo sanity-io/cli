@@ -3,8 +3,8 @@ import {exitCodes, SanityCommand, subdebug} from '@sanity/cli-core'
 import {getErrorMessage} from '@sanity/cli-core/errors'
 
 import {resolveOrganizationId} from '../../../actions/context/resolveOrganizationId.js'
+import {contextTable} from '../../../actions/context/table.js'
 import {listMcpEndpoints} from '../../../services/context.js'
-import {Table} from '../../../util/responsiveTable.js'
 import {getOrganizationFlag} from '../../../util/sharedFlags.js'
 
 const listMcpDebug = subdebug('context:mcp:list')
@@ -61,7 +61,7 @@ export class ListMcpEndpointsCommand extends SanityCommand<typeof ListMcpEndpoin
       return
     }
 
-    const table = new Table({
+    const table = contextTable({
       columns: [
         {alignment: 'left', name: 'name', title: 'Name'},
         {alignment: 'left', name: 'title', title: 'Title'},

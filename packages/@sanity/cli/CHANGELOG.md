@@ -1,5 +1,40 @@
 # Change Log
 
+## 8.28.0
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-v8.27.0...cli-v8.28.0)
+
+_2026-11-06_
+
+### Features
+
+- **context:** `sanity context` commands are generated from the Context API spec, and move from imports to sources, syncs and documents ([#2064](https://github.com/sanity-io/cli/pull/2064)) ([aea7aa6](https://github.com/sanity-io/cli/commit/aea7aa6bd45c2248a6ff3e94fa0eff674e28e3b3))
+
+  Most `sanity context` commands are now generated from the Context API's OpenAPI spec: one command per operation, with path parameters as arguments and query and body fields as flags, their types, enums and help text taken from the spec. Output is JSON with `--json`, otherwise a table or key-value lines.
+
+  - `context sources` (`list`, `get`, `create`, `edit`, `delete`, `upload`, `sync`), `context sources syncs` (`list`, `get`, `confirm`, `discard`), `context documents` (`list`, `get`, `content`, `edit`, `delete`) and `context sync` replace `context imports` and `context refresh`, which the Context API no longer serves. Running a removed command names the one that replaced it.
+  - New: `context instructions` (`create`, `edit`, `delete`) and `context mcp initial-context`.
+  - Flags follow the spec's field names. `sources create` takes `--sanity-project-id` and `--sanity-dataset-id` for a dataset source, and `--include-paths`, `--exclude-paths`, `--max-depth`, `--page-limit`, `--sitemap-only` and `--ignore-query-parameters` for a crawl. `context update` drops `--refresh-enabled` and `--refresh-frequency`: syncs are scheduled per source with `context sources edit --sync-frequency`.
+  - `--watch` waits for the job or sync a command starts, and every delete asks for confirmation unless `--yes` is passed.
+  - Lists fetch 200 items a page, and `--limit` caps the total a list returns.
+
+- **init:** tell agents to set up multi-resource TypeGen in app templates ([#2074](https://github.com/sanity-io/cli/pull/2074)) ([1c1031f](https://github.com/sanity-io/cli/commit/1c1031f6cad30ae4002b6e4bce6198b33ae3f64b))
+
+### Bug Fixes
+
+- **deps:** update sanity-tooling ([#2112](https://github.com/sanity-io/cli/pull/2112)) ([662cbb9](https://github.com/sanity-io/cli/commit/662cbb9ed64f9d5bea739c60d911e1522d1c8afb))
+- adapt to sanity 6.22 and workflow-cli 0.37 ([#2113](https://github.com/sanity-io/cli/pull/2113)) ([662cbb9](https://github.com/sanity-io/cli/commit/662cbb9ed64f9d5bea739c60d911e1522d1c8afb))
+- **deps:** unpin workflow-cli and engine ([#2114](https://github.com/sanity-io/cli/pull/2114)) ([c360e8e](https://github.com/sanity-io/cli/commit/c360e8e1b06eb3e033c746f7abf739430f179c9a))
+- **context:** print v2026-11-03 in mcp endpoint urls ([#2120](https://github.com/sanity-io/cli/pull/2120)) ([fd33dc9](https://github.com/sanity-io/cli/commit/fd33dc92dd811b07c3e2052adbfff49fcc436873))
+- **deps:** update dependency @sanity/runtime-cli to ^17.21.0 ([#2130](https://github.com/sanity-io/cli/pull/2130)) ([b005e4d](https://github.com/sanity-io/cli/commit/b005e4d45df0e95837532aa1b1f990577aec886c))
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/workbench-cli bumped to 2.15.1
+    - @sanity/cli-build bumped to 7.1.1
+
 ## 8.27.0
 
 [Compare changes](https://github.com/sanity-io/cli/compare/cli-v8.26.0...cli-v8.27.0)

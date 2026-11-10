@@ -1,12 +1,10 @@
 import {setTimeout as sleep} from 'node:timers/promises'
 
-import {type Context} from '@sanity/client'
-
-import {getJob} from '../../services/context.js'
+import {getJob, type Job} from '../../services/context.js'
 
 const JOB_POLL_INTERVAL_MS = 5000
 
-const TERMINAL_JOB_STATUSES: ReadonlySet<Context.Job['status']> = new Set([
+const TERMINAL_JOB_STATUSES: ReadonlySet<Job['status']> = new Set([
   'cancelled',
   'failed',
   'succeeded',
@@ -20,10 +18,10 @@ export async function waitForJob(
   knowledgeBaseId: string,
   jobId: string,
   options?: {
-    onPoll?: (job: Context.Job) => void
+    onPoll?: (job: Job) => void
     pollIntervalMs?: number
   },
-): Promise<Context.Job> {
+): Promise<Job> {
   const pollIntervalMs = options?.pollIntervalMs ?? JOB_POLL_INTERVAL_MS
 
   while (true) {

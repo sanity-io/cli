@@ -1,5 +1,22 @@
 # @sanity/workbench-cli
 
+## 2.15.1
+
+[Compare changes](https://github.com/sanity-io/cli/compare/workbench-cli-v2.15.0...workbench-cli-v2.15.1)
+
+_2026-11-06_
+
+### Bug Fixes
+
+- **deps:** update dependency @module-federation/vite to v1.23.7 ([#2104](https://github.com/sanity-io/cli/pull/2104)) ([bf42cd5](https://github.com/sanity-io/cli/commit/bf42cd5965fc306af4b27ef3315dca5613dbd252))
+- **workbench-cli:** reject non-svg app icons ([#2109](https://github.com/sanity-io/cli/pull/2109)) ([6bdfe02](https://github.com/sanity-io/cli/commit/6bdfe0235b87c30ec89cb21dfdcedc1b59f97680))
+- **deps:** update sanity-tooling ([#2112](https://github.com/sanity-io/cli/pull/2112)) ([662cbb9](https://github.com/sanity-io/cli/commit/662cbb9ed64f9d5bea739c60d911e1522d1c8afb))
+- adapt to sanity 6.22 and workflow-cli 0.37 ([#2113](https://github.com/sanity-io/cli/pull/2113)) ([662cbb9](https://github.com/sanity-io/cli/commit/662cbb9ed64f9d5bea739c60d911e1522d1c8afb))
+- **workbench-cli:** link to local apps at their deployed URLs ([#2119](https://github.com/sanity-io/cli/pull/2119)) ([7594b0d](https://github.com/sanity-io/cli/commit/7594b0d247bcaef1204f45cc38075e7b52a21e49))
+- **deps:** update dependency @module-federation/runtime to v2.9.3 ([#2124](https://github.com/sanity-io/cli/pull/2124)) ([3638f02](https://github.com/sanity-io/cli/commit/3638f02c29607e5013be7f04ede5802fb8acb820))
+- **deps:** update dependency @module-federation/vite to v1.23.8 ([#2125](https://github.com/sanity-io/cli/pull/2125)) ([a9faf64](https://github.com/sanity-io/cli/commit/a9faf6407e3d68d4024639e7dbf68e8963e47c89))
+- **workbench-cli:** tag app stylesheets with their app id ([#2132](https://github.com/sanity-io/cli/pull/2132)) ([865b8ef](https://github.com/sanity-io/cli/commit/865b8efc63b1d18465d42bd314ed31648068bf7b))
+
 ## 2.15.0
 
 [Compare changes](https://github.com/sanity-io/cli/compare/workbench-cli-v2.14.1...workbench-cli-v2.15.0)

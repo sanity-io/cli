@@ -193,7 +193,7 @@ Only the settings you pass change. Dataset settings (--workspace, --perspective,
     const cliConfig = await this.tryGetCliConfig()
     const datasetId = datasetSourceId(dataset, project ?? cliConfig.api?.projectId)
 
-    const params: Context.EditMcpEndpointParams = {}
+    const params: Context.Body<'PATCH /organizations/{organizationId}/mcp/{mcpEndpoint}'> = {}
     if (title !== undefined) params.title = title
     if (instructions !== undefined) params.instructions = instructions.trim() || null
     if (groqFilter !== undefined) params.groqFilter = groqFilter.trim() || null

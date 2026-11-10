@@ -2,6 +2,7 @@ import {testCommand} from '@sanity/cli-test'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
 import {httpError} from '../../../../../test/helpers/httpError.js'
+import {contextRoutes} from '../../__tests__/contextRoutes.js'
 import {entry, knowledgeBase} from '../../__tests__/fixtures.js'
 import {GetEntryCommand} from '../get.js'
 
@@ -17,7 +18,13 @@ vi.mock('@sanity/cli-core', async (importOriginal) => {
 describe('context entries get', () => {
   beforeEach(() => {
     mockGetGlobalCliClient.mockResolvedValue({
-      context: {entries: {get: mockEntriesGet}, knowledgeBases: {get: mockKnowledgeBasesGet}},
+      context: {
+        fetch: (_query: string, params: {path: string}) => mockEntriesGet({path: params.path}),
+        request: contextRoutes({
+          'GET /knowledge-bases/{knowledgeBaseId}': ({params}) =>
+            mockKnowledgeBasesGet(params?.knowledgeBaseId),
+        }),
+      },
     })
     mockKnowledgeBasesGet.mockResolvedValue(knowledgeBase)
   })

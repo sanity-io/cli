@@ -20,7 +20,7 @@ afterEach(() => {
 })
 
 describe('workbenchVitePlugins', () => {
-  test('appends the app-id define plugin when an appId is given', async () => {
+  test('appends the app-id define and stylesheet-tagging plugins when an appId is given', async () => {
     const result = await workbenchVitePlugins({
       appId: 'drop-desk',
       cwd,
@@ -29,6 +29,7 @@ describe('workbenchVitePlugins', () => {
     expect(result).toEqual([
       {name: 'sanity/federation'},
       expect.objectContaining({name: 'sanity/workbench/app-id'}),
+      expect.objectContaining({name: 'sanity/workbench/app-styles'}),
     ])
   })
 

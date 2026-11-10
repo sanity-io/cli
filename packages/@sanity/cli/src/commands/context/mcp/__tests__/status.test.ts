@@ -2,6 +2,7 @@ import {testCommand} from '@sanity/cli-test'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
 import {httpError} from '../../../../../test/helpers/httpError.js'
+import {contextRoutes} from '../../__tests__/contextRoutes.js'
 import {McpEndpointStatusCommand} from '../status.js'
 import {mcpDoc, withConfig} from './fixtures.js'
 
@@ -64,7 +65,13 @@ const passingStatus = {
 describe('context mcp status', () => {
   beforeEach(() => {
     mockGetGlobalCliClient.mockResolvedValue({
-      context: {fetch: mockGet, mcpEndpoints: {status: mockStatus}},
+      context: {
+        fetch: mockGet,
+        request: contextRoutes({
+          'GET /organizations/{organizationId}/mcp/{mcpEndpoint}/status': ({params}) =>
+            mockStatus({name: params?.mcpEndpoint}),
+        }),
+      },
       withConfig,
     })
     mockGet.mockResolvedValue(mcpDoc)

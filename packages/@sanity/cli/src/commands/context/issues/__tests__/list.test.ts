@@ -2,6 +2,7 @@ import {testCommand} from '@sanity/cli-test'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
 import {httpError} from '../../../../../test/helpers/httpError.js'
+import {contextRoutes} from '../../__tests__/contextRoutes.js'
 import {conflictIssue, issue, knowledgeBase} from '../../__tests__/fixtures.js'
 import {ListIssuesCommand} from '../list.js'
 
@@ -17,7 +18,14 @@ vi.mock('@sanity/cli-core', async (importOriginal) => {
 describe('context issues list', () => {
   beforeEach(() => {
     mockGetGlobalCliClient.mockResolvedValue({
-      context: {issues: {list: mockIssuesList}, knowledgeBases: {get: mockKnowledgeBasesGet}},
+      context: {
+        fetch: (_query: string, params: {status?: string}) =>
+          mockIssuesList({status: params.status}),
+        request: contextRoutes({
+          'GET /knowledge-bases/{knowledgeBaseId}': ({params}) =>
+            mockKnowledgeBasesGet(params?.knowledgeBaseId),
+        }),
+      },
     })
     mockKnowledgeBasesGet.mockResolvedValue(knowledgeBase)
   })
@@ -130,12 +138,6 @@ describe('context issues list', () => {
 
     if (error) throw error
     expect(mockKnowledgeBasesGet).toHaveBeenCalledWith(knowledgeBase.id)
-    expect(mockGetGlobalCliClient).toHaveBeenLastCalledWith(
-      expect.objectContaining({
-        context: {organizationId: 'org-abc123'},
-        resource: {id: 'kb-abc123', type: 'knowledge-base'},
-      }),
-    )
   })
 
   test('filters by --status', async () => {

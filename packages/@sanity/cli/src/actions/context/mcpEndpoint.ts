@@ -4,13 +4,13 @@ import {exitCodes} from '@sanity/cli-core'
 import {getErrorMessage} from '@sanity/cli-core/errors'
 import {type Context} from '@sanity/client'
 
-import {getMcpEndpoint} from '../../services/context.js'
+import {getMcpEndpoint, type McpEndpoint} from '../../services/context.js'
 import {getOrganizationFlag} from '../../util/sharedFlags.js'
 import {formatKeyValue} from '../debug/output.js'
 
-type McpSource = Context.McpEndpoint['sources'][number]
+type McpSource = McpEndpoint['sources'][number]
 type DatasetSource = Extract<McpSource, {type: 'dataset'}>
-type McpSourceInput = Context.CreateMcpEndpointParams['sources'][number]
+type McpSourceInput = Context.Body<'POST /organizations/{organizationId}/mcp'>['sources'][number]
 export type DatasetSettings = Partial<
   Pick<DatasetSource, 'perspective' | 'semanticSearch' | 'workspace'>
 >
@@ -39,7 +39,7 @@ export async function parseEndpointName(input: string): Promise<string> {
 export async function findMcpEndpoint(
   organizationId: string,
   nameOrId: string,
-): Promise<Context.McpEndpoint> {
+): Promise<McpEndpoint> {
   let endpoint
   try {
     endpoint = await getMcpEndpoint(organizationId, nameOrId)
@@ -153,7 +153,7 @@ function findDatasetSource(sources: McpSource[]): DatasetSource | undefined {
 /**
  * Key-value lines describing an endpoint, for `get`, `create` and `update` output
  */
-export function formatMcpEndpoint(endpoint: Context.McpEndpoint): string[] {
+export function formatMcpEndpoint(endpoint: McpEndpoint): string[] {
   const padTo = 15 // "Knowledge bases" and "Semantic search" are the longest keys
   const knowledgeBaseIds = endpoint.sources
     .filter((source) => source.type === 'knowledge-base')

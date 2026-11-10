@@ -1,5 +1,7 @@
 import {type Context} from '@sanity/client'
 
+import {type McpEndpoint} from '../../../../services/context.js'
+
 export const mcpDoc: Context.McpDoc = {
   _createdAt: '2026-10-01T00:00:00Z',
   _id: 'mcp.mcpabc123',
@@ -25,11 +27,12 @@ export const mcpDoc: Context.McpDoc = {
   title: 'Support',
 }
 
-export const mcpEndpoint: Context.McpEndpoint = {
+export const mcpEndpoint: McpEndpoint = {
   createdAt: '2026-10-01T00:00:00Z',
   groqFilter: mcpDoc.groqFilter,
   id: mcpDoc.publicId,
   instructions: mcpDoc.instructions,
+  lastUsedAt: null,
   name: mcpDoc.name,
   organizationId: mcpDoc.organizationId,
   sources: mcpDoc.sources,

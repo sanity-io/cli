@@ -15,7 +15,7 @@ vi.mock('@sanity/cli-core', async (importOriginal) => {
 describe('context mcp list', () => {
   beforeEach(() => {
     mockGetGlobalCliClient.mockResolvedValue({
-      context: {mcpEndpoints: {list: mockList}},
+      context: {fetch: () => mockList()},
       withConfig,
     })
   })

@@ -403,7 +403,7 @@ describe('invokeSanityCli', () => {
   test('ignores a request for JSON and returns the command text output', async () => {
     mockApi({
       apiVersion: 'v2026-08-25',
-      query: {organizationId: 'org-1'},
+      query: {limit: '200', organizationId: 'org-1'},
       uri: '/context/knowledge-bases',
     }).reply(200, {data: [], nextCursor: null})
 
@@ -415,13 +415,13 @@ describe('invokeSanityCli', () => {
     })
 
     expect(result.exitCode).toBe(0)
-    expect(result.output).toBe('No knowledge bases found')
+    expect(result.output).toBe('No results')
   })
 
   test('a dropped JSON flag still reaches the command with its other flags', async () => {
     mockApi({
       apiVersion: 'v2026-08-25',
-      query: {organizationId: 'org-1'},
+      query: {limit: '200', organizationId: 'org-1'},
       uri: '/context/knowledge-bases',
     }).reply(200, {
       data: [{publicId: 'kb1', state: 'created', title: 'Handbook'}],
@@ -442,7 +442,7 @@ describe('invokeSanityCli', () => {
   test('runtime failures stay text and preserve their exit status', async () => {
     mockApi({
       apiVersion: 'v2026-08-25',
-      query: {organizationId: 'org-1'},
+      query: {limit: '200', organizationId: 'org-1'},
       uri: '/context/knowledge-bases',
     }).reply(403, {error: 'Forbidden', message: 'Access denied', statusCode: 403})
     const previousExitCode = process.exitCode
@@ -493,7 +493,7 @@ describe('invokeSanityCli', () => {
   test('failures stay small and carry no parser or transport internals', async () => {
     mockApi({
       apiVersion: 'v2026-08-25',
-      query: {organizationId: 'org-1'},
+      query: {limit: '200', organizationId: 'org-1'},
       uri: '/context/knowledge-bases',
     }).reply(403, {error: 'Forbidden', message: 'Access denied', statusCode: 403})
 
@@ -523,7 +523,7 @@ describe('invokeSanityCli', () => {
     vi.stubEnv('SANITY_CONTENT_TYPE', 'json')
     mockApi({
       apiVersion: 'v2026-08-25',
-      query: {organizationId: 'org-1'},
+      query: {limit: '200', organizationId: 'org-1'},
       uri: '/context/knowledge-bases',
     }).reply(200, {data: [{id: 'kb-1', title: 'Docs'}], nextCursor: null})
 

@@ -29,7 +29,7 @@ catalog:
   '@sanity/vision': ^6.22.0
   '@sanity/types': ^6.22.0
   '@sanity/schema': ^6.22.0
-  '@sanity/client': ^8.14.1
+  '@sanity/client': ^8.15.0
   '@sanity/codegen': ^8.3.0
   '@sanity/sdk': ^3.12.0
   '@sanity/telemetry': ^1.1.0
@@ -42,10 +42,10 @@ catalog:
 
   # Build & Development Tools
   babel-plugin-react-compiler: ^1.0.0
-  oxc-transform-react: ^0.153.0
+  oxc-transform-react: ^0.156.0
   typescript: ^6.0.3
-  vite: ^8.3.3
-  '@vitejs/plugin-react': ^6.1.2
+  vite: ^8.3.6
+  '@vitejs/plugin-react': ^6.2.1
   tsx: ^4.23.12
 
   # Testing
@@ -64,7 +64,7 @@ catalog:
   get-it: ^9.5.4
   obug: ^3.0.0
   jsdom: ^29.1.1
-  zod: ^4.5.2
+  zod: ^4.6.7
   'get-tsconfig': ^4.14.3
   'import-meta-resolve': ^4.2.0
   execa: ^10.0.1
@@ -78,14 +78,14 @@ catalog:
   '@types/semver': ^7.7.1
   yaml: ^2.9.0
   form-data: ^4.0.5
-  tar: ^7.5.18
+  tar: ^7.5.22
 
   # Build Tools
   '@swc/core': ^1.15.43
   '@swc/cli': ^0.8.1
   rimraf: ^6.0.1
   '@sanity/pkg-utils': ^12.3.4
-  oxfmt: ^0.66.0
+  oxfmt: ^0.76.0
 
   # Type Definitions
   '@types/node': ^22.20.5
@@ -142,6 +142,8 @@ minimumReleaseAgeExclude:
   - smol-toml@1.9.0
   # Renovate security update: dompurify@3.4.17
   - dompurify@3.4.17
+  # Renovate security update: zod@4.6.6
+  - zod@4.6.6
 allowBuilds:
   '@swc/core': true
   esbuild: true

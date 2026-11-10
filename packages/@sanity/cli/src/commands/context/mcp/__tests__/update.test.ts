@@ -3,6 +3,7 @@ import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
 import {httpError} from '../../../../../test/helpers/httpError.js'
 import {parseArguments} from '../../../../util/parseArguments.js'
+import {contextRoutes} from '../../__tests__/contextRoutes.js'
 import {UpdateMcpEndpointCommand} from '../update.js'
 import {mcpDoc, mcpEndpoint, withConfig} from './fixtures.js'
 
@@ -33,7 +34,13 @@ const base = ['support', '--organization', 'org-abc123']
 describe('context mcp update', () => {
   beforeEach(() => {
     mockGetGlobalCliClient.mockResolvedValue({
-      context: {fetch: mockGet, mcpEndpoints: {edit: mockEdit}},
+      context: {
+        fetch: mockGet,
+        request: contextRoutes({
+          'PATCH /organizations/{organizationId}/mcp/{mcpEndpoint}': ({body, params}) =>
+            mockEdit({...body, name: params?.mcpEndpoint}),
+        }),
+      },
       request: mockRequest,
       withConfig,
     })

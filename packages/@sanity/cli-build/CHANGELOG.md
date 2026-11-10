@@ -1,5 +1,22 @@
 # Changelog
 
+## 7.1.1
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-build-v7.1.0...cli-build-v7.1.1)
+
+_2026-11-06_
+
+### Bug Fixes
+
+- **workbench-cli:** reject non-svg app icons ([#2109](https://github.com/sanity-io/cli/pull/2109)) ([6bdfe02](https://github.com/sanity-io/cli/commit/6bdfe0235b87c30ec89cb21dfdcedc1b59f97680))
+- **deps:** update sanity-tooling ([#2112](https://github.com/sanity-io/cli/pull/2112)) ([662cbb9](https://github.com/sanity-io/cli/commit/662cbb9ed64f9d5bea739c60d911e1522d1c8afb))
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/workbench-cli bumped to 2.15.1
+
 ## 7.1.0
 
 [Compare changes](https://github.com/sanity-io/cli/compare/cli-build-v7.0.3...cli-build-v7.1.0)
