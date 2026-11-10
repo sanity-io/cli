@@ -1,7 +1,7 @@
 import {PassThrough} from 'node:stream'
 
 import open from 'open'
-import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
+import {afterEach, beforeEach, describe, expect, onTestFinished, test, vi} from 'vitest'
 
 import {bindDevShortcuts} from '../bindDevShortcuts.js'
 import {createMockOutput} from './devTestHelpers.js'
@@ -76,6 +76,7 @@ describe('bindDevShortcuts', () => {
   test.each([
     ['q', 'q'],
     ['Ctrl+C', '\u0003'],
+    ['Ctrl+D', '\u0004'],
   ])('quits through the SIGINT teardown on %s', async (_, key) => {
     const stdin = fakeStdin({isTTY: true})
 
@@ -84,6 +85,39 @@ describe('bindDevShortcuts', () => {
     await unbind()
 
     expect(onSigint).toHaveBeenCalledWith('SIGINT')
+  })
+
+  test('suspends with the terminal restored on Ctrl+Z and resumes raw mode on SIGCONT', async () => {
+    vi.spyOn(process, 'platform', 'get').mockReturnValue('darwin')
+    const stdin = fakeStdin({isTTY: true})
+    const killSpy = vi.spyOn(process, 'kill').mockImplementation(() => {
+      expect(stdin.setRawMode).toHaveBeenLastCalledWith(false)
+      return true
+    })
+    onTestFinished(() => vi.restoreAllMocks())
+
+    const unbind = bindDevShortcuts({output: createMockOutput(), url})
+    await press(stdin, '\u001A')
+
+    expect(killSpy).toHaveBeenCalledWith(0, 'SIGTSTP')
+
+    process.emit('SIGCONT', 'SIGCONT')
+    expect(stdin.setRawMode).toHaveBeenLastCalledWith(true)
+    await unbind()
+  })
+
+  test('ignores Ctrl+Z on Windows, where SIGTSTP cannot suspend', async () => {
+    vi.spyOn(process, 'platform', 'get').mockReturnValue('win32')
+    const killSpy = vi.spyOn(process, 'kill').mockReturnValue(true)
+    onTestFinished(() => vi.restoreAllMocks())
+    const stdin = fakeStdin({isTTY: true})
+
+    const unbind = bindDevShortcuts({output: createMockOutput(), url})
+    await press(stdin, '\u001A')
+
+    expect(killSpy).not.toHaveBeenCalled()
+    expect(stdin.setRawMode).toHaveBeenLastCalledWith(true)
+    await unbind()
   })
 
   test('restores the terminal and stops listening on unbind', async () => {
