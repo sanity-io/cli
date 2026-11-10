@@ -5,7 +5,11 @@ import {
   createUserApplication as createUserApplicationRequest,
   type UserApplication,
 } from '../../../services/userApplications.js'
-import {createUserApplication, generateAppSlug} from '../createUserApplication.js'
+import {
+  createStudioUserApplication,
+  createUserApplication,
+  generateAppSlug,
+} from '../createUserApplication.js'
 
 vi.mock('../../../services/userApplications.js', () => ({
   createUserApplication: vi.fn(),
@@ -52,6 +56,32 @@ describe('createUserApplication', () => {
     await createUserApplication('org-1', 'My App')
 
     expect(mockRequest.mock.calls[0]?.[0].body).not.toHaveProperty('dashboardStatus')
+  })
+})
+
+const submitHostname = () =>
+  mockInput.mockImplementation((async ({validate}: {validate: (value: string) => unknown}) => {
+    await validate('my-studio')
+    return 'my-studio'
+  }) as unknown as typeof input)
+
+describe('createStudioUserApplication', () => {
+  test('explains when the service is unavailable', async () => {
+    submitHostname()
+    mockRequest.mockRejectedValue(Object.assign(new Error('HTTP 503'), {statusCode: 503}))
+
+    await expect(createStudioUserApplication({projectId: 'p1'})).rejects.toThrow(
+      'Error creating user application: Sanity’s deployment service is unavailable (HTTP 503)',
+    )
+  })
+
+  test('keeps the generic message for other failures', async () => {
+    submitHostname()
+    mockRequest.mockRejectedValue(Object.assign(new Error('HTTP 500'), {statusCode: 500}))
+
+    await expect(createStudioUserApplication({projectId: 'p1'})).rejects.toThrow(
+      /^Error creating user application$/,
+    )
   })
 })
 

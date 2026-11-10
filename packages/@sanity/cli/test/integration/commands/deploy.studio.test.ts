@@ -924,6 +924,43 @@ describe('#deploy studio', () => {
     expect(error?.oclif?.exit).toBe(1)
   })
 
+  test('explains when the user-applications endpoint is unavailable for studio', async () => {
+    const cwd = await testFixture('basic-studio')
+    process.cwd = () => cwd
+
+    const projectId = 'test-project-id'
+    const studioHost = 'existing-studio'
+
+    mockApi({
+      apiVersion: USER_APPLICATIONS_API_VERSION,
+      query: {
+        appHost: studioHost,
+        appType: 'studio',
+      },
+      uri: `/projects/${projectId}/user-applications`,
+    }).reply(504, '<html><body><h1>504 Gateway Time-out</h1></body></html>', {
+      'Content-Type': 'text/html',
+    })
+
+    const {error} = await testCommand(DeployCommand, [], {
+      config: {root: cwd},
+      mocks: {
+        cliConfig: {
+          api: {
+            projectId,
+          },
+          studioHost,
+        },
+      },
+    })
+
+    expect(error?.message).toContain(
+      'Failed to resolve deploy target: Sanity’s deployment service is unavailable (HTTP 504)',
+    )
+    expect(error?.message).not.toContain('<html>')
+    expect(error?.oclif?.exit).toBe(1)
+  })
+
   test('should handle deployment API errors for studio', async () => {
     const cwd = await testFixture('basic-studio')
     process.cwd = () => cwd
@@ -1020,6 +1057,51 @@ describe('#deploy studio', () => {
     })
 
     expect(error?.message).toContain('Error creating user application from config')
+    expect(error?.oclif?.exit).toBe(1)
+  })
+
+  test('explains when the service is unavailable during studio hostname creation', async () => {
+    const cwd = await testFixture('basic-studio')
+    process.cwd = () => cwd
+
+    const projectId = 'test-project-id'
+    const studioHost = 'new-studio-host'
+
+    mockApi({
+      apiVersion: USER_APPLICATIONS_API_VERSION,
+      query: {
+        appHost: studioHost,
+        appType: 'studio',
+      },
+      uri: `/projects/${projectId}/user-applications`,
+    }).reply(404, {
+      message: 'Not found',
+    })
+
+    mockApi({
+      apiVersion: USER_APPLICATIONS_API_VERSION,
+      method: 'post',
+      query: {
+        appType: 'studio',
+      },
+      uri: `/projects/${projectId}/user-applications`,
+    }).reply(503, {error: 'Service Unavailable', statusCode: 503})
+
+    const {error} = await testCommand(DeployCommand, [], {
+      config: {root: cwd},
+      mocks: {
+        cliConfig: {
+          api: {
+            projectId,
+          },
+          studioHost,
+        },
+      },
+    })
+
+    expect(error?.message).toContain(
+      'Error creating user application from config: Sanity’s deployment service is unavailable (HTTP 503)',
+    )
     expect(error?.oclif?.exit).toBe(1)
   })
 

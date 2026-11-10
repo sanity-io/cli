@@ -202,6 +202,21 @@ describe('checkStudioTarget', () => {
 
     expect(reporter.results[0]?.message).toContain('Failed to resolve deploy target: network down')
   })
+
+  test('an unreachable service fails with a connection hint', async () => {
+    mockResolveStudio.mockRejectedValue(
+      new TypeError('fetch failed', {
+        cause: Object.assign(new Error('getaddrinfo ENOTFOUND api.sanity.io'), {code: 'ENOTFOUND'}),
+      }),
+    )
+    const reporter = createCollectingReporter<DeployCheck>()
+
+    await checkStudioTarget(reporter, studioArgs)
+
+    expect(reporter.results[0]?.message).toContain(
+      'Failed to resolve deploy target: Couldn’t reach the Sanity API (ENOTFOUND)',
+    )
+  })
 })
 
 describe('checkAppTarget', () => {
@@ -303,6 +318,21 @@ describe('checkAppTarget', () => {
 
     expect(reporter.results[0]?.status).toBe('fail')
     expect(reporter.results[0]?.message).toContain('don’t have permission')
+  })
+
+  test('an unavailable service fails with a retry hint instead of the raw response', async () => {
+    mockResolveApp.mockRejectedValue(
+      Object.assign(new Error('HTTP 503 Service Unavailable (<html></html>)'), {statusCode: 503}),
+    )
+    const reporter = createCollectingReporter<DeployCheck>()
+
+    await checkAppTarget(reporter, {appId: 'core-1', organizationId: 'org-1'})
+
+    expect(reporter.results[0]?.status).toBe('fail')
+    expect(reporter.results[0]?.message).toContain(
+      'Failed to resolve deploy target: Sanity’s deployment service is unavailable (HTTP 503)',
+    )
+    expect(reporter.results[0]?.message).not.toContain('<html>')
   })
 })
 

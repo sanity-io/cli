@@ -11,6 +11,7 @@ import {
 } from '../../services/userApplications.js'
 import {NO_ORGANIZATION_ID} from '../../util/errorMessages.js'
 import {deployDebug} from './deployDebug.js'
+import {describeServiceUnavailable} from './serviceUnavailable.js'
 import {normalizeUrl, validateUrl} from './urlUtils.js'
 
 const LETTERS = 'abcdefghijklmnopqrstuvwxyz'
@@ -82,7 +83,13 @@ export async function createStudioUserApplication(options: CreateStudioUserAppli
 
         deployDebug('Error creating user application', e)
         // otherwise, it's a fatal error
-        throw new CLIError('Error creating user application', {exit: exitCodes.RUNTIME_ERROR})
+        const unavailable = describeServiceUnavailable(e)
+        throw new CLIError(
+          unavailable
+            ? `Error creating user application: ${unavailable}`
+            : 'Error creating user application',
+          {exit: exitCodes.RUNTIME_ERROR},
+        )
       }
     },
   })

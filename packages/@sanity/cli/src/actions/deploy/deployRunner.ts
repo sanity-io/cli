@@ -1,6 +1,6 @@
 import {CLIError} from '@oclif/core/errors'
 import {exitCodes, type Output} from '@sanity/cli-core'
-import {getErrorMessage, JsonOutputError} from '@sanity/cli-core/errors'
+import {JsonOutputError} from '@sanity/cli-core/errors'
 import {type WorkbenchDeployPayload} from '@sanity/workbench-cli/deploy'
 
 import {createCollectingReporter, createFailFastReporter} from '../../util/checks.js'
@@ -14,6 +14,7 @@ import {
   isDeployable,
   renderDeploymentPlan,
 } from './deploymentPlan.js'
+import {getDeployErrorMessage} from './serviceUnavailable.js'
 import {type DeployAppOptions} from './types.js'
 
 export interface DeployResult {
@@ -150,6 +151,6 @@ function normalizeFailure(
   deployDebug(`Error deploying ${type === 'coreApp' ? 'application' : 'studio'}`, error)
   return {
     exit: exitCodes.RUNTIME_ERROR,
-    message: `Error deploying ${type === 'coreApp' ? 'application' : 'studio'}: ${getErrorMessage(error)}`,
+    message: `Error deploying ${type === 'coreApp' ? 'application' : 'studio'}: ${getDeployErrorMessage(error)}`,
   }
 }
