@@ -1442,6 +1442,128 @@ describe('#deploy app', () => {
     expect(error?.oclif?.exit).toBe(1)
   })
 
+  test('explains when the user-applications endpoint is unavailable', async () => {
+    const cwd = await testFixture('basic-app')
+    process.cwd = () => cwd
+
+    const existingAppId = 'existing-app-id'
+
+    mockApi({
+      apiVersion: USER_APPLICATIONS_API_VERSION,
+      query: {
+        appType: 'coreApp',
+      },
+      uri: `/user-applications/${existingAppId}`,
+    })
+      .times(6)
+      .reply(503, '<html><body><h1>503 Service Temporarily Unavailable</h1></body></html>', {
+        'Content-Type': 'text/html',
+      })
+
+    const {error} = await testCommand(DeployCommand, ['--no-build'], {
+      config: {root: cwd},
+      mocks: {
+        cliConfig: {
+          ...defaultMocks.cliConfig,
+          deployment: {
+            appId: existingAppId,
+          },
+        },
+      },
+    })
+
+    expect(error?.message).toContain(
+      'Failed to resolve deploy target: Sanity’s deployment service is unavailable (HTTP 503)',
+    )
+    expect(error?.message).toContain('https://www.sanity-status.com')
+    expect(error?.message).not.toContain('<html>')
+    expect(error?.oclif?.exit).toBe(1)
+  })
+
+  test('explains when the user-applications endpoint cannot be reached', async () => {
+    const cwd = await testFixture('basic-app')
+    process.cwd = () => cwd
+
+    const existingAppId = 'existing-app-id'
+
+    mockApi({
+      apiVersion: USER_APPLICATIONS_API_VERSION,
+      query: {
+        appType: 'coreApp',
+      },
+      uri: `/user-applications/${existingAppId}`,
+    }).replyWithError({code: 'ECONNREFUSED', message: 'connect ECONNREFUSED'})
+
+    const {error} = await testCommand(DeployCommand, ['--no-build'], {
+      config: {root: cwd},
+      mocks: {
+        cliConfig: {
+          ...defaultMocks.cliConfig,
+          deployment: {
+            appId: existingAppId,
+          },
+        },
+      },
+    })
+
+    expect(error?.message).toContain(
+      'Failed to resolve deploy target: Couldn’t reach the Sanity API (ECONNREFUSED)',
+    )
+    expect(error?.message).toContain('Check your internet connection and proxy settings')
+    expect(error?.oclif?.exit).toBe(1)
+  })
+
+  test('explains when the deployments endpoint is unavailable', async () => {
+    const cwd = await testFixture('basic-app')
+    process.cwd = () => cwd
+
+    const existingAppId = 'existing-app-id'
+
+    mockApi({
+      apiVersion: USER_APPLICATIONS_API_VERSION,
+      query: {
+        appType: 'coreApp',
+      },
+      uri: `/user-applications/${existingAppId}`,
+    }).reply(200, {
+      appHost: 'existing-host',
+      createdAt: '2024-01-01T00:00:00Z',
+      id: existingAppId,
+      organizationId,
+      projectId: null,
+      title: 'Existing App',
+      type: 'coreApp',
+      updatedAt: '2024-01-01T00:00:00Z',
+      urlType: 'internal',
+    })
+
+    mockApi({
+      apiVersion: USER_APPLICATIONS_API_VERSION,
+      method: 'post',
+      query: {
+        appType: 'coreApp',
+      },
+      uri: `/user-applications/${existingAppId}/deployments`,
+    }).reply(502, {error: 'Bad Gateway'})
+
+    const {error} = await testCommand(DeployCommand, ['--no-build'], {
+      config: {root: cwd},
+      mocks: {
+        cliConfig: {
+          ...defaultMocks.cliConfig,
+          deployment: {
+            appId: existingAppId,
+          },
+        },
+      },
+    })
+
+    expect(error?.message).toContain(
+      'Error deploying application: Sanity’s deployment service is unavailable (HTTP 502)',
+    )
+    expect(error?.oclif?.exit).toBe(1)
+  })
+
   test('should handle deployment API errors', async () => {
     const cwd = await testFixture('basic-app')
     process.cwd = () => cwd

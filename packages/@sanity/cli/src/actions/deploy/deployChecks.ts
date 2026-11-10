@@ -23,6 +23,7 @@ import {
   resolveWorkbenchStudio,
   type StudioDeployTargetResolution,
 } from './resolveDeployTarget.js'
+import {getDeployErrorMessage} from './serviceUnavailable.js'
 import {type DeployFlags} from './types.js'
 import {normalizeUrl, validateUrl} from './urlUtils.js'
 
@@ -333,7 +334,7 @@ function describeSlugTaken({
 export function describeAppTargetError(err: unknown, organizationId: string | undefined): string {
   return (err as {statusCode?: number})?.statusCode === 403
     ? `You don’t have permission to view applications for the configured organization ID ("${organizationId}"). Verify the organization ID, or ask your organization’s admin for access.`
-    : `Failed to resolve deploy target: ${getErrorMessage(err)}`
+    : `Failed to resolve deploy target: ${getDeployErrorMessage(err)}`
 }
 
 /**
@@ -508,7 +509,7 @@ export async function checkStudioTarget(
 
   return runStep(reporter, {
     debug: deployDebug,
-    formatError: (err) => `Failed to resolve deploy target: ${getErrorMessage(err)}`,
+    formatError: (err) => `Failed to resolve deploy target: ${getDeployErrorMessage(err)}`,
     name: 'target',
     work: async () => {
       const check = describeStudioTarget(await resolve, {
