@@ -1,5 +1,24 @@
 # Change Log
 
+## 8.28.1
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-v8.28.0...cli-v8.28.1)
+
+_2026-11-10_
+
+### Bug Fixes
+
+- **deps:** update dependency tar-stream to ^3.2.2 ([#2142](https://github.com/sanity-io/cli/pull/2142)) ([9cd7aee](https://github.com/sanity-io/cli/commit/9cd7aee0853522a191a4c93462ec232558957cf6))
+- **cli-build:** warn instead of failing when module server version check is unavailable ([#2096](https://github.com/sanity-io/cli/pull/2096)) ([adee5fe](https://github.com/sanity-io/cli/commit/adee5feb5f51ed30c5c46926fd26969758ac5e42))
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/cli-build bumped to 7.1.2
+    - @sanity/cli-core bumped to 3.14.2
+    - @sanity/workbench-cli bumped to 2.15.2
+
 ## 8.28.0
 
 [Compare changes](https://github.com/sanity-io/cli/compare/cli-v8.27.0...cli-v8.28.0)

@@ -1,5 +1,25 @@
 # Changelog
 
+## 7.1.2
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-build-v7.1.1...cli-build-v7.1.2)
+
+_2026-11-10_
+
+### Bug Fixes
+
+- **build:** remove auth secrets from the url hash before the studio loads ([#1966](https://github.com/sanity-io/cli/pull/1966)) ([9b13061](https://github.com/sanity-io/cli/commit/9b13061b4e3f582d2c28ed77d006d5473c369a14))
+- **deps:** update dependency dompurify to ^3.4.17 ([#2140](https://github.com/sanity-io/cli/pull/2140)) ([b782511](https://github.com/sanity-io/cli/commit/b7825113ce41aa50f05a3d4f3e15b8ddd59ac918))
+- clean up duplicate code in build logic ([#2148](https://github.com/sanity-io/cli/pull/2148)) ([37f8874](https://github.com/sanity-io/cli/commit/37f88746db79178f1906d3e146e85e885dfa9a6d))
+- **cli-build:** warn instead of failing when module server version check is unavailable ([#2096](https://github.com/sanity-io/cli/pull/2096)) ([adee5fe](https://github.com/sanity-io/cli/commit/adee5feb5f51ed30c5c46926fd26969758ac5e42))
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/cli-core bumped to 3.14.2
+    - @sanity/workbench-cli bumped to 2.15.2
+
 ## 7.1.1
 
 [Compare changes](https://github.com/sanity-io/cli/compare/cli-build-v7.1.0...cli-build-v7.1.1)

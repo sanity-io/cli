@@ -1,5 +1,15 @@
 # Changelog
 
+## 3.14.2
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-core-v3.14.1...cli-core-v3.14.2)
+
+_2026-11-10_
+
+### Bug Fixes
+
+- **deps:** require `@sanity/client` 8.15 or later, which the generated `sanity context` commands need ([#2144](https://github.com/sanity-io/cli/pull/2144)) ([35ea6e0](https://github.com/sanity-io/cli/commit/35ea6e0fae0e66a2bf6c7c1bc10875c56989bab4))
+
 ## 3.14.1
 
 [Compare changes](https://github.com/sanity-io/cli/compare/cli-core-v3.14.0...cli-core-v3.14.1)
