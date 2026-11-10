@@ -166,6 +166,7 @@ const commandPaths = new Set([
   'workflows abort',
   'workflows blueprint generate',
   'workflows blueprints generate',
+  'workflows codemod packages',
   'workflows definition delete',
   'workflows definition diff',
   'workflows definition list',
@@ -182,10 +183,10 @@ const commandPaths = new Set([
   'workflows list',
   'workflows nuke',
   'workflows reset-activity',
-  'workflows set-stage',
   'workflows show',
   'workflows start',
   'workflows tail',
+  'workflows whoami',
 ])
 
 const knownRoots = new Set([...commandPaths].map((path) => path.split(' ')[0]))

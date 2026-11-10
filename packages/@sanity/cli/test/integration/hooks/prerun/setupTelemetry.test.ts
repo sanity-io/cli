@@ -172,10 +172,10 @@ describe('setupTelemetry integration test', () => {
 
   test('preserves every resolved built-in and bundled plugin command without positional input', async () => {
     const pluginCommands = config.commands.filter((command) =>
-      ['@sanity/runtime-cli', '@sanity/workflow-cli'].includes(command.pluginName ?? ''),
+      ['@sanity/runtime-cli', '@sanity/workflows-cli'].includes(command.pluginName ?? ''),
     )
     expect(new Set(pluginCommands.map((command) => command.pluginName))).toEqual(
-      new Set(['@sanity/runtime-cli', '@sanity/workflow-cli']),
+      new Set(['@sanity/runtime-cli', '@sanity/workflows-cli']),
     )
     for (const command of config.commands) {
       const {id} = await command.load()
