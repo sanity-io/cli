@@ -1367,6 +1367,10 @@ snapshots:
 				"@sanity/types": "catalog:",
 				"@vitejs/plugin-react": "catalog:",
 				"form-data": "catalog:",
+				"open": {
+					"specifier": "^11.0.0",
+					"version": "11.0.4",
+				},
 				"rxjs": "catalog:",
 				"semver": "catalog:",
 				"tar": "catalog:",

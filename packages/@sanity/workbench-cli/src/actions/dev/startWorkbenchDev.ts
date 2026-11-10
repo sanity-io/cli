@@ -4,6 +4,7 @@ import {isWorkbenchApp} from '../../defineApp.js'
 import {createServerLifecycle, toDisplayHost} from '../../util/serverOrchestration.js'
 import {formatDashboardSummary} from '../dashboardSummary.js'
 import {type AppServerResult, startAppServerSupervisor} from './appServerSupervisor.js'
+import {bindDevShortcuts} from './bindDevShortcuts.js'
 import {fetchDevServerDetails, waitForDevServerDetails} from './devServerSummary.js'
 import {type DevServerManifest} from './registry.js'
 import {startDevServerRegistration} from './startDevServerRegistration.js'
@@ -145,7 +146,10 @@ export async function startWorkbenchDev(
     throw err
   }
 
+  installSignalHandlers()
+
   if (workbench.workbenchAvailable) {
+    const url = `http://${toDisplayHost(workbench.httpHost)}:${workbench.workbenchPort}${dashboardAppPath ?? ''}`
     output.log(
       formatDashboardSummary({
         ...resolvedDetails,
@@ -153,12 +157,11 @@ export async function startWorkbenchDev(
         durationMs,
         isApp,
         title: isWorkbenchApp(cliConfig.app) ? cliConfig.app.title : undefined,
-        url: `http://${toDisplayHost(workbench.httpHost)}:${workbench.workbenchPort}${dashboardAppPath ?? ''}`,
+        url,
       }),
     )
+    closers.push(bindDevShortcuts({output, url}))
   }
-
-  installSignalHandlers()
 
   return {close}
 }
