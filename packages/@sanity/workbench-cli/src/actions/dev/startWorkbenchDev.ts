@@ -1,9 +1,10 @@
-import {styleText} from 'node:util'
-
 import {type CliConfig, type Output} from '@sanity/cli-core'
 
+import {isWorkbenchApp} from '../../defineApp.js'
 import {createServerLifecycle, toDisplayHost} from '../../util/serverOrchestration.js'
+import {formatDashboardSummary} from '../dashboardSummary.js'
 import {type AppServerResult, startAppServerSupervisor} from './appServerSupervisor.js'
+import {fetchDevServerDetails, waitForDevServerDetails} from './devServerSummary.js'
 import {type DevServerManifest} from './registry.js'
 import {startDevServerRegistration} from './startDevServerRegistration.js'
 import {
@@ -83,6 +84,8 @@ export async function startWorkbenchDev(
   // Unwound in reverse on any failure or on close(): the watcher stops before
   // the app server, and the supervisor waits out an in-flight rebuild.
   const {close, closers, installSignalHandlers} = createServerLifecycle()
+  const startedAt = Date.now()
+  const details = fetchDevServerDetails(cliConfig)
 
   const workbench = await startWorkbenchDevServer({
     cacheDir,
@@ -117,6 +120,9 @@ export async function startWorkbenchDev(
   const {supervisor} = supervised
   closers.push(supervisor.close)
 
+  const durationMs = Date.now() - startedAt
+  const resolvedDetails = workbench.workbenchAvailable ? await waitForDevServerDetails(details) : {}
+
   let dashboardAppPath: string | undefined
   try {
     // The deprecated-id check and manifest extractor are CLI-domain, injected here.
@@ -140,8 +146,16 @@ export async function startWorkbenchDev(
   }
 
   if (workbench.workbenchAvailable) {
-    const appUrl = `http://${toDisplayHost(workbench.httpHost)}:${workbench.workbenchPort}${dashboardAppPath ?? ''}`
-    output.log(`Dashboard dev server started at ${styleText(['blue', 'underline'], appUrl)}`)
+    output.log(
+      formatDashboardSummary({
+        ...resolvedDetails,
+        action: 'ready',
+        durationMs,
+        isApp,
+        title: isWorkbenchApp(cliConfig.app) ? cliConfig.app.title : undefined,
+        url: `http://${toDisplayHost(workbench.httpHost)}:${workbench.workbenchPort}${dashboardAppPath ?? ''}`,
+      }),
+    )
   }
 
   installSignalHandlers()

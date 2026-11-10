@@ -89,6 +89,28 @@ export async function getApplication(applicationId: string): Promise<Application
   }
 }
 
+export async function getOrganizationApplication(
+  organizationId: string,
+  idOrSlug: string,
+): Promise<
+  (Application & {activeDeployment: {createdAt: string; deployedBy: string} | null}) | null
+> {
+  const client = await getGlobalCliClient({
+    apiVersion: APP_WORKBENCH_API_VERSION,
+    ignoreWarnings: ['This is an experimental API version', 'which will change without warning'],
+    requireUser: true,
+  })
+  try {
+    return await client.request({
+      query: {include: 'activeDeployment'},
+      url: `/organizations/${organizationId}/applications/${idOrSlug}`,
+    })
+  } catch (err) {
+    if ((err as {statusCode?: number})?.statusCode === 404) return null
+    throw err
+  }
+}
+
 /** Every application in an organization, in one page (`limit=none`). */
 export async function listApplications(organizationId: string): Promise<Application[]> {
   const client = await getClient()

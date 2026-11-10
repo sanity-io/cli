@@ -157,7 +157,7 @@ export async function startStudioDevServer(
           }),
         ),
       )
-    } else {
+    } else if (announceUrl) {
       const startupDuration = Date.now() - startTime
       const protocol = https ? 'https' : 'http'
       const url = withUnclaimedSignInHash(
@@ -172,9 +172,11 @@ export async function startStudioDevServer(
       loggerInfo(
         `${appType} ` +
           `using ${styleText('cyan', `vite@${viteVersion}`)} ` +
-          `ready in ${styleText('cyan', `${Math.ceil(startupDuration)}ms`)}` +
-          (announceUrl ? ` and running at ${styleText('cyan', url)}` : ''),
+          `ready in ${styleText('cyan', `${Math.ceil(startupDuration)}ms`)} ` +
+          `and running at ${styleText('cyan', url)}`,
       )
+    } else {
+      spin.succeed()
     }
 
     return {close, server, started: true}
