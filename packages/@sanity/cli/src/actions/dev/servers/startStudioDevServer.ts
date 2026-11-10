@@ -28,7 +28,7 @@ import {getDevServerConfig} from './getDevServerConfig.js'
 export async function startStudioDevServer(
   options: DevActionOptions,
 ): Promise<StartDevServerResult> {
-  const {announceUrl = true, cliConfig, flags, httpPort, output, workDir} = options
+  const {announceUrl = true, cliConfig, flags, httpPort, output, rebuild, workDir} = options
   const projectId = cliConfig?.api?.projectId
   let organizationId: string | undefined
 
@@ -45,7 +45,7 @@ export async function startStudioDevServer(
   })
 
   // Check if auto-updates are enabled
-  const autoUpdatesEnabled = shouldAutoUpdate({cliConfig, flags, output})
+  const autoUpdatesEnabled = !rebuild && shouldAutoUpdate({cliConfig, flags, output})
 
   if (autoUpdatesEnabled) {
     // Get the clean version without build metadata: https://semver.org/#spec-item-10

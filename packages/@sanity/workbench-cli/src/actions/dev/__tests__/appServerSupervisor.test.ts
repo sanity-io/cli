@@ -67,7 +67,8 @@ describe('startAppServerSupervisor', () => {
 
     await expect(supervisor.rebuild()).resolves.toBe(second.server)
     expect(first.close).toHaveBeenCalledTimes(1)
-    expect(start).toHaveBeenLastCalledWith(freshConfig)
+    expect(start).toHaveBeenNthCalledWith(1, expect.anything(), {rebuild: false})
+    expect(start).toHaveBeenLastCalledWith(freshConfig, {rebuild: true})
     // The live server re-points at the replacement.
     expect(supervisor.server).toBe(second.server)
   })

@@ -35,6 +35,7 @@ export interface StartWorkbenchDevOptions {
     announceUrl: boolean
     cliConfig: CliConfig
     httpPort: number
+    rebuild: boolean
   }) => Promise<AppServerResult>
   workDir: string
 }
@@ -69,7 +70,7 @@ export async function startWorkbenchDev(
   // The remote can't render itself, so it runs as a plain app server (not the
   // shell) that still bridges the registry.
   if (process.env.SANITY_INTERNAL_IS_WORKBENCH_REMOTE === 'true') {
-    const remote = await startAppServer({announceUrl: true, cliConfig, httpPort})
+    const remote = await startAppServer({announceUrl: true, cliConfig, httpPort, rebuild: false})
     if (!remote.started) return {close: async () => {}}
 
     const coordinator = startWorkbenchRemoteCoordinator({server: remote.server})
@@ -106,7 +107,8 @@ export async function startWorkbenchDev(
 
   const supervised = await startAppServerSupervisor({
     cliConfig,
-    start: (config) => startAppServer({announceUrl, cliConfig: config, httpPort: appPort}),
+    start: (config, {rebuild}) =>
+      startAppServer({announceUrl, cliConfig: config, httpPort: appPort, rebuild}),
     workDir,
   }).catch(async (err) => {
     await close()

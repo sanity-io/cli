@@ -21,6 +21,8 @@ export interface DevActionOptions {
    * absent and the server resolves its port from flags/env/config.
    */
   httpPort?: number
+
+  rebuild?: boolean
 }
 
 /**

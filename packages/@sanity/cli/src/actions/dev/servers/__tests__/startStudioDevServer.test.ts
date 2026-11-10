@@ -376,6 +376,18 @@ describe('startStudioDevServer', () => {
       )
     })
 
+    test('skips the version check when the workbench rebuilds the server', async () => {
+      mockShouldAutoUpdate.mockReturnValue(true)
+      mockIsInteractive.mockReturnValue(true)
+
+      const result = await startStudioDevServer(
+        createDevOptions({announceUrl: false, rebuild: true}),
+      )
+
+      expect(result.started).toBe(true)
+      expect(mockCompareDependencyVersions).not.toHaveBeenCalled()
+    })
+
     test('does not upgrade when user declines the prompt', async () => {
       mockCompareDependencyVersions.mockResolvedValueOnce({
         mismatched: [{installed: '3.49.0', pkg: 'sanity', remote: '3.50.0'}],
