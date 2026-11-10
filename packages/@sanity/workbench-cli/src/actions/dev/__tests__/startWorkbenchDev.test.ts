@@ -239,7 +239,7 @@ describe('startWorkbenchDev', () => {
       expect(first.close).toHaveBeenCalledTimes(1)
       expect(mockStartAppServer).toHaveBeenCalledTimes(2)
       expect(mockStartAppServer).toHaveBeenLastCalledWith(
-        expect.objectContaining({cliConfig: freshConfig}),
+        expect.objectContaining({cliConfig: freshConfig, rebuild: true}),
       )
     })
 
