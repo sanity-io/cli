@@ -87,13 +87,9 @@ export async function createStudioUserApplication(options: CreateStudioUserAppli
           ? 'Error registering external studio'
           : 'Error creating studio hostname'
         const unavailable = describeServiceUnavailable(e)
-        // CLIError's constructor drops a `cause` option, so it's set on the instance
-        throw Object.assign(
-          new CLIError(unavailable ? `${failure}: ${unavailable}` : failure, {
-            exit: exitCodes.RUNTIME_ERROR,
-          }),
-          {cause: e},
-        )
+        throw new CLIError(unavailable ? `${failure}: ${unavailable}` : failure, {
+          exit: exitCodes.RUNTIME_ERROR,
+        })
       }
     },
   })
