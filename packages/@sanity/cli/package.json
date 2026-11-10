@@ -124,7 +124,7 @@
     "lodash-es": "catalog:",
     "obug": "catalog:",
     "oneline": "^2.0.0",
-    "open": "^11.0.0",
+    "open": "catalog:",
     "p-map": "^7.0.3",
     "peek-stream": "^1.1.3",
     "picomatch": "^4.0.4",
