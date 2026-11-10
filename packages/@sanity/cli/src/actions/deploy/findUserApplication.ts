@@ -208,8 +208,12 @@ async function createFromConfiguredHost({
     }
     // otherwise, it's a fatal error
     deployDebug('Error creating user application from config', e)
+    const failure =
+      urlType === 'external'
+        ? 'Error registering external studio'
+        : 'Error creating studio hostname'
     output.error(
-      `Error creating user application from config: ${describeServiceUnavailable(e) ?? (e instanceof Error ? e.message : e)}`,
+      `${failure}: ${describeServiceUnavailable(e) ?? (e instanceof Error ? e.message : e)}`,
       {exit: exitCodes.RUNTIME_ERROR},
     )
     return null

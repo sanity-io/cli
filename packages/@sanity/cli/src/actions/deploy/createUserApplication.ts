@@ -83,13 +83,13 @@ export async function createStudioUserApplication(options: CreateStudioUserAppli
 
         deployDebug('Error creating user application', e)
         // otherwise, it's a fatal error
+        const failure = isExternal
+          ? 'Error registering external studio'
+          : 'Error creating studio hostname'
         const unavailable = describeServiceUnavailable(e)
-        throw new CLIError(
-          unavailable
-            ? `Error creating user application: ${unavailable}`
-            : 'Error creating user application',
-          {exit: exitCodes.RUNTIME_ERROR},
-        )
+        throw new CLIError(unavailable ? `${failure}: ${unavailable}` : failure, {
+          exit: exitCodes.RUNTIME_ERROR,
+        })
       }
     },
   })

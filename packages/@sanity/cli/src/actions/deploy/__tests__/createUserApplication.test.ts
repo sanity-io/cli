@@ -59,10 +59,10 @@ describe('createUserApplication', () => {
   })
 })
 
-const submitHostname = () =>
+const submitHostname = (value = 'my-studio') =>
   mockInput.mockImplementation((async ({validate}: {validate: (value: string) => unknown}) => {
-    await validate('my-studio')
-    return 'my-studio'
+    await validate(value)
+    return value
   }) as unknown as typeof input)
 
 describe('createStudioUserApplication', () => {
@@ -71,7 +71,7 @@ describe('createStudioUserApplication', () => {
     mockRequest.mockRejectedValue(Object.assign(new Error('HTTP 503'), {statusCode: 503}))
 
     await expect(createStudioUserApplication({projectId: 'p1'})).rejects.toThrow(
-      'Error creating user application: Sanity’s deployment service is unavailable (HTTP 503)',
+      'Error creating studio hostname: Sanity’s deployment service is unavailable (HTTP 503)',
     )
   })
 
@@ -80,7 +80,18 @@ describe('createStudioUserApplication', () => {
     mockRequest.mockRejectedValue(Object.assign(new Error('HTTP 500'), {statusCode: 500}))
 
     await expect(createStudioUserApplication({projectId: 'p1'})).rejects.toThrow(
-      /^Error creating user application$/,
+      /^Error creating studio hostname$/,
+    )
+  })
+
+  test('names the external studio registration when it fails', async () => {
+    submitHostname('https://studio.example.com')
+    mockRequest.mockRejectedValue(Object.assign(new Error('HTTP 503'), {statusCode: 503}))
+
+    await expect(
+      createStudioUserApplication({projectId: 'p1', urlType: 'external'}),
+    ).rejects.toThrow(
+      'Error registering external studio: Sanity’s deployment service is unavailable (HTTP 503)',
     )
   })
 })

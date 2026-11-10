@@ -788,7 +788,7 @@ describe('#deploy studio', () => {
       },
     })
 
-    expect(error?.message).toContain('Error creating user application')
+    expect(error?.message).toContain('Error creating studio hostname')
     expect(error?.oclif?.exit).toBe(1)
   })
 
@@ -1056,7 +1056,7 @@ describe('#deploy studio', () => {
       },
     })
 
-    expect(error?.message).toContain('Error creating user application from config')
+    expect(error?.message).toContain('Error creating studio hostname')
     expect(error?.oclif?.exit).toBe(1)
   })
 
@@ -1100,7 +1100,7 @@ describe('#deploy studio', () => {
     })
 
     expect(error?.message).toContain(
-      'Error creating user application from config: Sanity’s deployment service is unavailable (HTTP 503)',
+      'Error creating studio hostname: Sanity’s deployment service is unavailable (HTTP 503)',
     )
     expect(error?.oclif?.exit).toBe(1)
   })
