@@ -21,8 +21,12 @@ export function bindDevShortcuts({
   if (!stdin.isTTY) return async () => {}
 
   const onKeypress = (_: string | undefined, key: {ctrl?: boolean; name?: string} = {}) => {
-    if (key.name === 'q' || (key.ctrl && key.name === 'c')) {
+    if (key.name === 'q' || (key.ctrl && (key.name === 'c' || key.name === 'd'))) {
       process.emit('SIGINT', 'SIGINT')
+    } else if (key.ctrl && key.name === 'z' && process.platform !== 'win32') {
+      stdin.setRawMode(false)
+      process.once('SIGCONT', () => stdin.setRawMode(true))
+      process.kill(0, 'SIGTSTP')
     } else if (key.name === 'o') {
       open(url).catch((err) => output.warn(`Could not open ${url}: ${err.message}`))
     } else if (key.name === 'h') {
