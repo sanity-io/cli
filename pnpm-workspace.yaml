@@ -95,6 +95,7 @@ minimumReleaseAge: 4320
 minimumReleaseAgeExclude:
   - '@portabletext/*'
   - '@sanity/*'
+  - '@sanity-labs/*'
   - '@types/*'
   - 'eventsource'
   - 'eventsource-parser'
