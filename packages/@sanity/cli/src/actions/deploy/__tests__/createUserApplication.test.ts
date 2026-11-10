@@ -84,6 +84,17 @@ describe('createStudioUserApplication', () => {
     )
   })
 
+  test('keeps the request error as the cause', async () => {
+    submitHostname()
+    const requestError = Object.assign(new Error('HTTP 500'), {statusCode: 500})
+    mockRequest.mockRejectedValue(requestError)
+
+    await expect(createStudioUserApplication({projectId: 'p1'})).rejects.toMatchObject({
+      cause: requestError,
+      oclif: {exit: 1},
+    })
+  })
+
   test('names the external studio registration when it fails', async () => {
     submitHostname('https://studio.example.com')
     mockRequest.mockRejectedValue(Object.assign(new Error('HTTP 503'), {statusCode: 503}))
