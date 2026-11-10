@@ -84,7 +84,7 @@
     "@sanity/types": "catalog:",
     "@vitejs/plugin-react": "catalog:",
     "form-data": "catalog:",
-    "open": "^11.0.0",
+    "open": "catalog:",
     "rxjs": "catalog:",
     "semver": "catalog:",
     "tar": "catalog:",

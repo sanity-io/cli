@@ -321,6 +321,10 @@ snapshots:
 					"specifier": "^3.0.0",
 					"version": "3.0.0",
 				},
+				"open": {
+					"specifier": "^11.0.4",
+					"version": "11.0.4",
+				},
 				"ora": {
 					"specifier": "^9.0.0",
 					"version": "9.4.1",
@@ -949,10 +953,7 @@ snapshots:
 					"specifier": "^2.0.0",
 					"version": "2.0.0",
 				},
-				"open": {
-					"specifier": "^11.0.4",
-					"version": "11.0.4",
-				},
+				"open": "catalog:",
 				"p-map": {
 					"specifier": "^7.0.3",
 					"version": "7.0.7",
@@ -1367,10 +1368,7 @@ snapshots:
 				"@sanity/types": "catalog:",
 				"@vitejs/plugin-react": "catalog:",
 				"form-data": "catalog:",
-				"open": {
-					"specifier": "^11.0.0",
-					"version": "11.0.4",
-				},
+				"open": "catalog:",
 				"rxjs": "catalog:",
 				"semver": "catalog:",
 				"tar": "catalog:",
