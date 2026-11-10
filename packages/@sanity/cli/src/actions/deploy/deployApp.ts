@@ -17,6 +17,7 @@ import {
   createCoreApp,
   deployConfig,
   deployWorkbenchApp,
+  formatDeploySummary,
   getApplicationUrl,
   getWorkbench,
   getWorkbenchUrl,
@@ -185,6 +186,8 @@ async function runAppDeployment(
   // Read up front so a bad icon path fails before we create or build.
   const appIcon =
     !dryRun && workbench?.icon ? await readIconFromPath(workDir, workbench.icon) : undefined
+
+  const startedAt = Date.now()
 
   // Create the app before the build so the bundle carries its real id. A
   // redeploy already has it from `deployment.appId`; a dry run skips creation.
@@ -415,15 +418,19 @@ async function runAppDeployment(
             type: 'coreApp',
           })
         : getWorkbenchUrl(organizationId)
-      logAppDeployed({
-        applicationId,
-        cliConfig,
-        created: applicationCreated,
-        organizationId,
-        output,
-        title: appTitle,
-        url,
-      })
+      output.log(
+        await formatDeploySummary({
+          applicationId,
+          configFile: basename(options.projectRoot.path),
+          created: applicationCreated,
+          durationMs: Date.now() - startedAt,
+          hasAppId: Boolean(appId),
+          isApp: true,
+          organizationId,
+          title: appTitle,
+          url,
+        }),
+      )
       return {
         action: applicationCreated ? 'create' : 'update',
         application: workbenchApp ?? null,
@@ -669,7 +676,6 @@ export function logAppDeployed({
   organizationId,
   output,
   title,
-  url = getCoreAppUrl(organizationId, applicationId),
 }: {
   applicationId: string
   cliConfig: DeployAppOptions['cliConfig']
@@ -678,8 +684,8 @@ export function logAppDeployed({
   organizationId: string
   output: DeployAppOptions['output']
   title: string | null
-  url?: string
 }): void {
+  const url = getCoreAppUrl(organizationId, applicationId)
   const named = title ? ` — "${title}"` : ''
   output.log(`\nSuccess! Application deployed to ${styleText('cyan', url)}${named}`)
   output.log(created ? 'Created a new application.' : 'Updated the existing application.')

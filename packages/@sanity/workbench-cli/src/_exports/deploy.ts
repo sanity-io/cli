@@ -4,6 +4,7 @@ export {
   summarizeConfig,
 } from '../actions/deploy/deployConfig.js'
 export {toWorkbenchPayload, type WorkbenchDeployPayload} from '../actions/deploy/deployPayload.js'
+export {formatDeploySummary} from '../actions/deploy/deploySummary.js'
 export {
   createCoreApp,
   type CreatedApplication,

@@ -5,6 +5,7 @@ import {readBuiltManifest} from '@sanity/workbench-cli/build'
 import {
   createStudio,
   deployWorkbenchApp,
+  formatDeploySummary,
   getApplication,
   listApplications,
   selectWorkbenchAppId,
@@ -29,6 +30,7 @@ vi.mock(import('@sanity/workbench-cli/deploy'), async (importOriginal) => ({
   ...(await importOriginal()),
   createStudio: vi.fn(),
   deployWorkbenchApp: vi.fn(),
+  formatDeploySummary: vi.fn(async () => 'deploy summary'),
   getApplication: vi.fn(),
   listApplications: vi.fn(),
   selectWorkbenchAppId: vi.fn(),
@@ -186,16 +188,24 @@ describe('deployStudio (federated studio)', () => {
     )
   })
 
-  test('prints the workbench URL at the configured slug', async () => {
+  test('a first deploy prints the summary as created, without a configured appId, at the slug URL', async () => {
     const options = deployOptions({flags: {json: false}})
 
     await deployStudio(options)
 
-    expect(options.output.log).toHaveBeenCalledWith(
-      expect.stringContaining(
-        'Success! Studio deployed to https://org-1.sanity.run/studios/my-studio',
-      ),
+    expect(formatDeploySummary).toHaveBeenCalledWith(
+      expect.objectContaining({
+        applicationId: 'studio-1',
+        configFile: 'sanity.cli.ts',
+        created: true,
+        hasAppId: false,
+        isApp: false,
+        organizationId: 'org-1',
+        title: 'Test App',
+        url: 'https://org-1.sanity.run/studios/my-studio',
+      }),
     )
+    expect(options.output.log).toHaveBeenCalledWith('deploy summary')
   })
 
   test('a redeploy targets `deployment.appId` and reports the resolved record', async () => {
