@@ -145,6 +145,9 @@ minimumReleaseAgeExclude:
   - dompurify@3.4.17
   # Renovate security update: zod@4.6.6
   - zod@4.6.6
+  # skills@1.8.0 adds the programmatic API and an `exports` map that no longer
+  # exposes `./bin/cli.mjs`, which broke `sanity init` on install.
+  - skills@1.8.0
 allowBuilds:
   '@swc/core': true
   esbuild: true
