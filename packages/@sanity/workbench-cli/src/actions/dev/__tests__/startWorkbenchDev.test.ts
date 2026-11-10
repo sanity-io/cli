@@ -1,3 +1,4 @@
+import {PassThrough} from 'node:stream'
 import {styleText} from 'node:util'
 
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
@@ -324,6 +325,27 @@ describe('startWorkbenchDev', () => {
 
       expect(process.listenerCount('SIGINT')).toBe(sigintBefore)
       expect(process.listenerCount('SIGTERM')).toBe(sigtermBefore)
+    })
+
+    test('q tears down through the signal handler and restores the terminal', async () => {
+      const killSpy = vi.spyOn(process, 'kill').mockReturnValue(true)
+      const realStdin = process.stdin
+      const stdin = Object.assign(new PassThrough(), {isTTY: true, setRawMode: vi.fn()})
+      Object.defineProperty(process, 'stdin', {configurable: true, value: stdin})
+      try {
+        const appClose = vi.fn().mockResolvedValue(undefined)
+        mockStartAppServer.mockResolvedValue({...mockAppServer({port: 3334}), close: appClose})
+
+        await run()
+        stdin.write('q')
+        await vi.waitFor(() => expect(killSpy).toHaveBeenCalledWith(process.pid, 'SIGINT'))
+
+        expect(appClose).toHaveBeenCalled()
+        expect(stdin.setRawMode).toHaveBeenLastCalledWith(false)
+      } finally {
+        Object.defineProperty(process, 'stdin', {configurable: true, value: realStdin})
+        killSpy.mockRestore()
+      }
     })
 
     test('re-raises the signal once teardown settles so the default exit runs', async () => {
