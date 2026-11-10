@@ -13,6 +13,7 @@ import {StudioBuildTrace} from '../../telemetry/build.telemetry.js'
 import {
   CompareDependencyVersions,
   CompareDependencyVersionsResult,
+  getUnavailableVersionsWarning,
 } from '../../util/compareDependencyVersions.js'
 import {formatModuleSizes, sortModulesBySize} from '../../util/moduleFormatUtils.js'
 import {buildDebug} from './buildDebug.js'
@@ -154,8 +155,15 @@ export async function buildStudio(
     autoUpdatesCssUrls = getAutoUpdatesCssUrls(sanityDependencies, {appId})
 
     // Check the versions
-    const {mismatched, unresolvedPrerelease} =
-      await options.compareDependencyVersions(sanityDependencies)
+    const {
+      mismatched,
+      unavailable = [],
+      unresolvedPrerelease,
+    } = await options.compareDependencyVersions(sanityDependencies)
+
+    if (unavailable.length > 0) {
+      output.warn(getUnavailableVersionsWarning(unavailable))
+    }
 
     if (unresolvedPrerelease.length > 0) {
       await handlePrereleaseVersions({
