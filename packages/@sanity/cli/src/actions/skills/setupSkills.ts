@@ -1,10 +1,8 @@
-import {fileURLToPath} from 'node:url'
 import {styleText} from 'node:util'
 
 import {type Output, subdebug} from '@sanity/cli-core'
 import {getErrorMessage, toError} from '@sanity/cli-core/errors'
 import {logSymbols, spinner} from '@sanity/cli-core/ux'
-import {execa} from 'execa'
 
 import {
   getSkillsCliAgentDisplayNameById,
@@ -14,20 +12,14 @@ import {
 
 const skillsDebug = subdebug('skills:setup')
 
-/** Source repo for the bundled `skills` CLI. See https://www.sanity.io/docs/ai/skills. */
+/** Source repo for the bundled `skills` package. See https://www.sanity.io/docs/ai/skills. */
 export const SANITY_SKILLS_REPO = 'sanity-io/agent-toolkit'
 
 /** Names of the skills we install — must match the entries in the source repo. */
 export const SANITY_SKILL_NAMES = ['sanity-best-practices', 'sanity-migration']
 
-/**
- * Absolute path to the bundled `skills` CLI bin. Resolved once at module load
- * via `import.meta.resolve` so we run the version pinned in our package.json
- * instead of paying the `npx -y` registry lookup at runtime.
- */
-export const SKILLS_BIN_PATH = fileURLToPath(
-  import.meta.resolve('skills/bin/cli.mjs', import.meta.url),
-)
+/** Upper bound for fetching and installing the skills (checked between steps). */
+const INSTALL_TIMEOUT_MS = 90_000
 
 interface SetupSkillsOptions {
   /** Skills-CLI agent IDs (e.g. 'cursor', 'claude-code') to install for. */
@@ -41,7 +33,7 @@ interface SetupSkillsOptions {
 }
 
 interface SetupSkillsResult {
-  /** Deduplicated `--agent` values passed to `skills add`. */
+  /** Deduplicated agent IDs the skills were installed for. */
   installedAgents: string[]
   skipped: boolean
 
@@ -86,7 +78,9 @@ function printInstallSummary(agents: string[], output: Output): void {
 }
 
 /**
- * Runs the bundled `skills add` globally for the given agents. Failures are
+ * Installs the Sanity skills globally for the given agents using the bundled
+ * `skills` package's programmatic API (equivalent to
+ * `skills add <repo> --skill <names> -g -a <agent>... -y`). Failures are
  * surfaced as warnings and never throw — skills install is best-effort and
  * must not abort `sanity init`.
  */
@@ -99,41 +93,59 @@ export async function setupSkills(options: SetupSkillsOptions): Promise<SetupSki
     return {installedAgents: [], skipped: true}
   }
 
-  const args = [
-    SKILLS_BIN_PATH,
-    'add',
+  skillsDebug(
+    'Installing %s from %s globally for agents: %s',
+    SANITY_SKILL_NAMES.join(', '),
     SANITY_SKILLS_REPO,
-    '--skill',
-    ...SANITY_SKILL_NAMES,
-    '-g',
-    ...uniqueAgents.flatMap((agent) => ['-a', agent]),
-    '-y',
-  ]
-
-  skillsDebug('Running: %s %s', process.execPath, args.join(' '))
+    uniqueAgents.join(', '),
+  )
 
   const spin = spinner('Installing Sanity agent skills').start()
 
   try {
-    const result = await execa(process.execPath, args, {stdio: 'pipe', timeout: 90_000})
-    skillsDebug('skills stdout: %s', result.stdout)
-    skillsDebug('skills stderr: %s', result.stderr)
+    // Loaded lazily so a problem with the `skills` package only affects this
+    // best-effort step, not every command that imports this module.
+    // eslint-disable-next-line no-restricted-syntax -- package import, not a file path
+    const {installSkills} = await import('skills')
+    const result = await installSkills(SANITY_SKILLS_REPO, {
+      agents: uniqueAgents,
+      onWarning: (warning) => skillsDebug('skills warning: %s', warning.message),
+      scope: 'global',
+      signal: AbortSignal.timeout(INSTALL_TIMEOUT_MS),
+      skills: SANITY_SKILL_NAMES,
+    })
+    skillsDebug('skills install result: %O', result)
     spin.stop()
-    output.log(
-      `${logSymbols.success} Sanity agent skills installed: [${SANITY_SKILL_NAMES.join(', ')}]`,
+
+    const failedAgents = new Set(result.failed.map((failure) => failure.agent))
+    const installedAgents = uniqueAgents.filter((agent) => !failedAgents.has(agent))
+
+    if (installedAgents.length > 0) {
+      output.log(
+        `${logSymbols.success} Sanity agent skills installed: [${SANITY_SKILL_NAMES.join(', ')}]`,
+      )
+      printInstallSummary(installedAgents, output)
+    }
+
+    if (result.failed.length === 0) {
+      return {installedAgents, skipped: false}
+    }
+
+    const failureMessages = result.failed.map((failure) => failure.message)
+    output.warn(
+      installedAgents.length > 0
+        ? 'Could not install Sanity agent skills for some agents:'
+        : 'Could not install Sanity agent skills:',
     )
-    printInstallSummary(uniqueAgents, output)
-    return {installedAgents: uniqueAgents, skipped: false}
+    for (const message of failureMessages) output.warn(message)
+    return {error: new Error(failureMessages.join('\n')), installedAgents, skipped: false}
   } catch (error) {
     skillsDebug('Error installing skills %O', error)
     const err = toError(error)
     spin.stop()
     output.warn(`Could not install Sanity agent skills: ${getErrorMessage(error)}`)
-    if (error && typeof error === 'object') {
-      const {stderr, stdout} = error as {stderr?: string; stdout?: string}
-      if (stdout) output.warn(stdout)
-      if (stderr) output.warn(stderr)
-    }
+    const fix = (error as {fix?: unknown} | null)?.fix
+    if (typeof fix === 'string' && fix) output.warn(fix)
     return {error: err, installedAgents: [], skipped: false}
   }
 }
