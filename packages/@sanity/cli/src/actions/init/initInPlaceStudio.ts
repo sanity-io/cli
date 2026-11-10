@@ -142,8 +142,8 @@ export async function initInPlaceStudio({
   trace.log({selectedOption: chosen, step: 'selectPackageManager'})
 
   const packages = [
-    '@sanity/vision@5',
-    'sanity@5',
+    '@sanity/vision@6',
+    'sanity@6',
     'styled-components@6',
     ...(scaffold?.packages ?? []),
   ]

@@ -109,7 +109,7 @@ describe('initInPlaceStudio', () => {
     expect(mockInstallNewPackages).toHaveBeenCalledWith(
       expect.objectContaining({
         packageManager: 'pnpm',
-        packages: expect.arrayContaining(['sanity@5', '@sanity/vision@5', '@sanity/image-url@2']),
+        packages: expect.arrayContaining(['sanity@6', '@sanity/vision@6', '@sanity/image-url@2']),
       }),
       expect.objectContaining({workDir}),
     )
@@ -130,7 +130,7 @@ describe('initInPlaceStudio', () => {
     // to name the packages rather than point at a bare install
     const lines = outputLog.mock.calls.flat().join('\n')
     expect(lines).toContain(
-      'Skipped dependency install. Run pnpm add --save-prod @sanity/vision@5 sanity@5 styled-components@6 @sanity/image-url@2 next-sanity@13 to add them.',
+      'Skipped dependency install. Run pnpm add --save-prod @sanity/vision@6 sanity@6 styled-components@6 @sanity/image-url@2 next-sanity@13 to add them.',
     )
   })
 
@@ -435,7 +435,7 @@ describe('initInPlaceStudio', () => {
       expect(mockInstallNewPackages).toHaveBeenCalledWith(
         {
           packageManager: 'pnpm',
-          packages: ['@sanity/vision@5', 'sanity@5', 'styled-components@6'],
+          packages: ['@sanity/vision@6', 'sanity@6', 'styled-components@6'],
         },
         expect.objectContaining({workDir}),
       )
