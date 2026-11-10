@@ -12,6 +12,15 @@ const mockStartStudioDevServer = vi.hoisted(() => vi.fn())
 const mockGetSharedServerConfig = vi.hoisted(() => vi.fn())
 const mockGetAppId = vi.hoisted(() => vi.fn())
 const mockCheckForDeprecatedAppId = vi.hoisted(() => vi.fn())
+const mockExtractCoreAppManifest = vi.hoisted(() => vi.fn())
+const mockExtractStudioManifest = vi.hoisted(() => vi.fn())
+
+vi.mock('@sanity/cli-build/_internal/manifest', () => ({
+  extractCoreAppManifest: mockExtractCoreAppManifest,
+}))
+vi.mock('../../manifest/extractStudioManifest.js', () => ({
+  extractStudioManifest: mockExtractStudioManifest,
+}))
 
 vi.mock('@sanity/workbench-cli/dev', () => ({
   startWorkbenchDev: mockStartWorkbenchDev,
@@ -117,6 +126,18 @@ describe('devAction', () => {
       )
       // The orchestrator's close is handed straight back.
       expect(result.close).toBe(orchestratorClose)
+    })
+
+    test.each([
+      {extractor: mockExtractStudioManifest, isApp: false, kind: 'studio'},
+      {extractor: mockExtractCoreAppManifest, isApp: true, kind: 'app'},
+    ])('extracts the $kind manifest without a spinner', async ({extractor, isApp}) => {
+      await devAction(createBaseDevOptions({cliConfig: workbenchCliConfig(), isApp}))
+      const {extractManifest} = mockStartWorkbenchDev.mock.calls[0][0]
+
+      await extractManifest({configPath: '/tmp/sanity.config.ts', workDir: '/tmp'})
+
+      expect(extractor).toHaveBeenCalledWith(expect.objectContaining({silent: true}))
     })
 
     test('passes isApp: true through for app mode', async () => {

@@ -1,6 +1,7 @@
 import {readFile} from 'node:fs/promises'
 
 import {getCliConfigUncached} from '@sanity/cli-core'
+import {spinner} from '@sanity/cli-core/ux'
 import {defineApplication, unstable_defineMediaLibrary} from '@sanity/workbench-cli'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
@@ -57,6 +58,14 @@ describe('extractCoreAppManifest', () => {
 
     expect(result).toBeUndefined()
     expect(mockSpinner.info).not.toHaveBeenCalled()
+  })
+
+  test('extracts without a visible spinner when silent', async () => {
+    mockGetCliConfig.mockResolvedValue({app: {organizationId: 'org-1', title: 'My App'}} as never)
+
+    await extractCoreAppManifest({silent: true, workDir: '/project'})
+
+    expect(spinner).toHaveBeenCalledWith(expect.objectContaining({isSilent: true}))
   })
 
   test('returns manifest with title only when app has no icon', async () => {
