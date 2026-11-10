@@ -1,5 +1,15 @@
 # Change Log
 
+## 8.28.2
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-v8.28.1...cli-v8.28.2)
+
+_2026-11-10_
+
+### Bug Fixes
+
+- **cli:** install agent skills via the skills programmatic API ([#2156](https://github.com/sanity-io/cli/pull/2156)) ([f2e2cba](https://github.com/sanity-io/cli/commit/f2e2cba26d16b381ac8fddd1f938edce5cc8f2ec))
+
 ## 8.28.1
 
 [Compare changes](https://github.com/sanity-io/cli/compare/cli-v8.28.0...cli-v8.28.1)
