@@ -35,6 +35,10 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
         '<%= config.bin %> <%= command.id %> -y --project-name "Movies Unlimited" --dataset moviedb --visibility private --template moviedb --output-path /Users/espenh/movies-unlimited',
       description: 'Create a brand new project with name "Movies Unlimited"',
     },
+    {
+      command: '<%= config.bin %> <%= command.id %> --in-place-studio',
+      description: 'Add a Studio to this project, instead of a separate folder',
+    },
   ] satisfies Array<Command.Example>
 
   static override flags = {
@@ -111,11 +115,13 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
       default: true,
       description: 'Enable AI editor integration (MCP) setup',
     }),
+    // Deprecated alias for --[no-]in-place-studio. Hidden, but still accepted for existing scripts.
     'nextjs-add-config-files': Flags.boolean({
       allowNo: true,
       default: undefined,
-      description: 'Add a Sanity Studio to the Next.js project',
-      helpGroup: 'Next.js',
+      description: 'Alias for --[no-]in-place-studio',
+      exclusive: ['in-place-studio'],
+      hidden: true,
     }),
     'nextjs-append-env': Flags.boolean({
       allowNo: true,
@@ -163,6 +169,13 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
       description: 'Project ID to use for the studio',
       exclusive: ['create-project', 'project-name'],
       semantics: 'specify',
+    }),
+    'in-place-studio': Flags.boolean({
+      allowNo: true,
+      default: undefined,
+      description:
+        'Add a Studio to this project. Use --no-in-place-studio to create it in a separate folder',
+      exclusive: ['bare', 'nextjs-add-config-files'],
     }),
     'project-name': Flags.string({
       description: 'Create a new project with the given name',

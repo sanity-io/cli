@@ -160,7 +160,7 @@ describe('sanity init - Next.js integration', {timeout: 120_000}, () => {
         interactive: true,
       })
 
-      await session.waitForText(/Add a Sanity Studio to this Next\.js project/i)
+      await session.waitForText(/Add a Sanity Studio to this project/i)
       session.sendKey('Enter')
 
       await session.waitForText(/Do you want to use TypeScript/i)
@@ -202,17 +202,17 @@ describe('sanity init - Next.js integration', {timeout: 120_000}, () => {
         interactive: true,
       })
 
-      await session.waitForText(/Add a Sanity Studio to this Next\.js project/i)
+      await session.waitForText(/Add a Sanity Studio to this project/i)
       session.sendKey('Enter')
 
       await session.waitForText(/Do you want to use TypeScript/i)
       session.sendKey('Enter')
 
-      await session.waitForText(/What route do you want to use for the Studio/i)
-      session.write('/admin\n')
-
       await session.waitForText(/Select project template to use/i)
       session.sendKey('Enter')
+
+      await session.waitForText(/What route do you want to use for the Studio/i)
+      session.write('/admin\n')
 
       await session.waitForText(/Would you like to add the project ID and dataset/i)
       session.sendKey('Enter')

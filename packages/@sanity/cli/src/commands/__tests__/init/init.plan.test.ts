@@ -263,6 +263,7 @@ describe('#init: retrieving plan', () => {
         '--dataset=test',
         '--project=test',
         '--no-nextjs-add-config-files',
+        '--output-path=/test/output',
       ],
       {
         mocks: {
@@ -419,6 +420,7 @@ describe('#init: retrieving plan', () => {
         '--dataset=test',
         '--project=test',
         '--no-nextjs-add-config-files',
+        '--output-path=/test/output',
       ],
       {
         mocks: {

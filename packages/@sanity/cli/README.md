@@ -3545,8 +3545,8 @@ Initialize a new Sanity Studio, project and/or app
 USAGE
   $ sanity init [--json] [--auto-updates | --bare] [--coupon <code> | --project-plan <name>] [--dashboard
     |  | --env <filename>] [--dataset <name> | --dataset-default] [--git <message> | ] [--import-dataset] [--install | ]
-    [--mcp] [--nextjs-add-config-files] [--nextjs-append-env] [--nextjs-embed-studio] [--organization <id>]
-    [--output-path <path> | ] [--overwrite-files] [--package-manager <manager> | ] [-p <id> |  | --project-name <name>]
+    [--mcp] [--nextjs-append-env] [--nextjs-embed-studio] [--organization <id>] [--output-path <path> | ]
+    [--overwrite-files] [--package-manager <manager> | ] [-p <id> |  | --project-name <name>] [--in-place-studio |  | ]
     [--provider <provider>] [--skills] [--template <template> | ] [--typescript | ] [--visibility <mode>] [-y]
 
 FLAGS
@@ -3562,6 +3562,8 @@ FLAGS
       --env=<filename>             Write environment variables to file
       --[no-]git=<message>         Specify a commit message for initial commit, or disable git init
       --[no-]import-dataset        Import template sample dataset
+      --[no-]in-place-studio       Add a Studio to this project. Use --no-in-place-studio to create it in a separate
+                                   folder
       --[no-]install               Install dependencies after scaffolding
       --[no-]mcp                   Enable AI editor integration (MCP) setup
       --organization=<id>          Organization ID to use for the project (required for unattended project creation)
@@ -3580,10 +3582,9 @@ GLOBAL FLAGS
   --json  Format output as json.
 
 NEXT.JS FLAGS
-  --[no-]nextjs-add-config-files  Add a Sanity Studio to the Next.js project
-  --[no-]nextjs-append-env        Append project ID and dataset to .env file
-  --[no-]nextjs-embed-studio      Embed the Studio at a Next.js route (legacy). By default, the Studio runs separately
-                                  in this project
+  --[no-]nextjs-append-env    Append project ID and dataset to .env file
+  --[no-]nextjs-embed-studio  Embed the Studio at a Next.js route (legacy). By default, the Studio runs separately in
+                              this project
 
 DESCRIPTION
   Initialize a new Sanity Studio, project and/or app
@@ -3607,6 +3608,10 @@ EXAMPLES
 
     $ sanity init -y --project-name "Movies Unlimited" --dataset moviedb --visibility private --template moviedb \
       --output-path /Users/espenh/movies-unlimited
+
+  Add a Studio to this project, instead of a separate folder
+
+    $ sanity init --in-place-studio
 ```
 
 ## `sanity install [PACKAGES]`

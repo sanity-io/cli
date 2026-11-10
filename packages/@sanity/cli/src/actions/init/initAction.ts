@@ -1,3 +1,5 @@
+import {existsSync} from 'node:fs'
+import path from 'node:path'
 import {styleText} from 'node:util'
 
 import {
@@ -28,10 +30,11 @@ import {checkNextJsReactCompatibility} from './checkNextJsReactCompatibility.js'
 import {determineAppTemplate} from './determineAppTemplate.js'
 import {determineMediaLibraryTemplate} from './determineMediaLibraryTemplate.js'
 import {createOrAppendEnvVars} from './env/createOrAppendEnvVars.js'
+import {isInPlaceFramework} from './frameworkScaffolds/index.js'
 import {initApp} from './initApp.js'
 import {InitError} from './initError.js'
 import {flagOrDefault, shouldPrompt, writeStagingEnvIfNeeded} from './initHelpers.js'
-import {initNextJs} from './initNextJs.js'
+import {initInPlaceStudio} from './initInPlaceStudio.js'
 import {initStudio} from './initStudio.js'
 import {getPlan} from './plan/getPlan.js'
 import {createProjectFromName} from './project/createProjectFromName.js'
@@ -58,6 +61,15 @@ export async function initAction(options: InitOptions, context: InitContext): Pr
 
   if (options.reconfigure) {
     throw new InitError('--reconfigure is deprecated - manual configuration is now required', 1)
+  }
+
+  // The Studio's packages and scripts go in package.json, so the opt-in flag
+  // cannot run in a folder that does not have one.
+  if (options.inPlaceStudio && !existsSync(path.join(workDir, 'package.json'))) {
+    throw new InitError(
+      "Couldn't add a Studio to this folder: no package.json found. Run this command from a project folder.",
+      1,
+    )
   }
 
   // Media Library config templates ride the app init flow end to end:
@@ -88,6 +100,9 @@ export async function initAction(options: InitOptions, context: InitContext): Pr
     rootPath: workDir,
   })
   const isNextJs = detectedFramework?.slug === 'nextjs'
+  // `--[no-]in-place-studio` is explicit when passed. Otherwise documented
+  // frameworks get the Studio in this folder.
+  const inPlaceFramework = options.inPlaceStudio ?? isInPlaceFramework(detectedFramework, workDir)
 
   let remoteTemplateInfo: RepoInfo | undefined
   if (options.template && checkIsRemoteTemplate(options.template)) {
@@ -119,7 +134,7 @@ export async function initAction(options: InitOptions, context: InitContext): Pr
   }
 
   if (options.unattended) {
-    checkFlagsInUnattendedMode(options, {isAppTemplate, isMediaLibraryTemplate, isNextJs})
+    checkFlagsInUnattendedMode(options, {inPlaceFramework, isAppTemplate, isMediaLibraryTemplate})
   }
 
   trace.start()
@@ -263,16 +278,16 @@ export async function initAction(options: InitOptions, context: InitContext): Pr
     spinner(label).start().succeed()
   }
 
-  // Unattended Next.js init adds a Studio to this project. Interactive runs
-  // still ask. `--no-nextjs-add-config-files` keeps the separate Studio scaffold.
-  let initNext = flagOrDefault(options.nextjsAddConfigFiles, isNextJs)
-  if (isNextJs && shouldPrompt(options.unattended, options.nextjsAddConfigFiles)) {
-    initNext = await promptForConfigFiles()
+  // Without an explicit flag, interactive runs in a documented framework ask,
+  // and unattended runs add the Studio. `--no-in-place-studio` keeps the separate folder.
+  let initInPlace = inPlaceFramework
+  if (inPlaceFramework && shouldPrompt(options.unattended, options.inPlaceStudio)) {
+    initInPlace = await promptForConfigFiles()
   }
 
   trace.log({
     detectedFramework: detectedFramework?.name,
-    selectedOption: initNext ? 'yes' : 'no',
+    selectedOption: initInPlace ? 'yes' : 'no',
     step: 'useDetectedFramework',
   })
 
@@ -285,7 +300,7 @@ export async function initAction(options: InitOptions, context: InitContext): Pr
       .replaceAll(/\s+/g, '-')
       .replaceAll(/[^a-z0-9-]/g, '') || (isMediaLibraryTemplate ? 'media-library-config' : '')
 
-  const initFramework = initNext
+  const initFramework = initInPlace
 
   const defaults = await getProjectDefaults({isPlugin: false, workDir})
 
@@ -306,11 +321,20 @@ export async function initAction(options: InitOptions, context: InitContext): Pr
     })
   }
 
-  if (initNext) {
+  if (initInPlace) {
     if (options.dashboard) {
-      output.warn('--dashboard is ignored for Next.js projects')
+      output.warn(
+        detectedFramework
+          ? `--dashboard is ignored for ${detectedFramework.name} projects`
+          : '--dashboard is ignored when adding a Studio to this project',
+      )
     }
-    await initNextJs({
+    if (options.inPlaceStudio && options.outputPath) {
+      output.warn(
+        '--output-path is ignored with --in-place-studio. The Studio is added to the current folder.',
+      )
+    }
+    await initInPlaceStudio({
       datasetName,
       detectedFramework,
       envFilename,
@@ -377,10 +401,10 @@ export async function initAction(options: InitOptions, context: InitContext): Pr
 function checkFlagsInUnattendedMode(
   options: InitOptions,
   {
+    inPlaceFramework,
     isAppTemplate,
     isMediaLibraryTemplate,
-    isNextJs,
-  }: {isAppTemplate: boolean; isMediaLibraryTemplate: boolean; isNextJs: boolean},
+  }: {inPlaceFramework: boolean; isAppTemplate: boolean; isMediaLibraryTemplate: boolean},
 ): void {
   debug('Unattended mode, validating required options')
 
@@ -412,7 +436,7 @@ function checkFlagsInUnattendedMode(
       )
     }
   } else {
-    if (!isNextJs && !options.bare && !options.outputPath) {
+    if (!inPlaceFramework && !options.bare && !options.outputPath) {
       errors.push(
         'Output path is required in unattended mode. Pass it with `--output-path <path>`.',
       )

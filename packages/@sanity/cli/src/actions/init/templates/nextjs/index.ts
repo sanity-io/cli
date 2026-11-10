@@ -271,32 +271,38 @@ export const urlFor = (source) => {
 
 type FolderStructure = Record<string, Record<string, string> | string>
 
-export const sanityFolder = (
+/**
+ * Schema and structure files for the Studio. Shared by every framework, so it
+ * has no client or env wiring.
+ */
+export const studioSourceFolder = (
   useTypeScript: boolean,
   template?: 'blog' | 'clean',
 ): FolderStructure => {
-  // Files used in both templates
-  const structure: FolderStructure = {
-    'env.': useTypeScript ? envTS : envJS,
-    lib: {
-      'client.': client,
-      'image.': useTypeScript ? imageTS : imageJS,
-      'live.': live,
-    },
-  }
-
   if (template === 'blog') {
-    structure.schemaTypes = {
-      ...blogSchemaFolder,
-      'index.': useTypeScript ? blogSchemaTS : blogSchemaJS,
+    return {
+      schemaTypes: {
+        ...blogSchemaFolder,
+        'index.': useTypeScript ? blogSchemaTS : blogSchemaJS,
+      },
+      'structure.': useTypeScript ? blogStructureTS : blogStructureJS,
     }
-    structure['structure.'] = useTypeScript ? blogStructureTS : blogStructureJS
-  } else {
-    structure.schemaTypes = {
-      'index.': useTypeScript ? schemaTS : schemaJS,
-    }
-    structure['structure.'] = useTypeScript ? structureTS : structureJS
   }
 
-  return structure
+  return {
+    schemaTypes: {
+      'index.': useTypeScript ? schemaTS : schemaJS,
+    },
+    'structure.': useTypeScript ? structureTS : structureJS,
+  }
 }
+
+/** Env and client files the Next.js app imports to query Sanity. */
+export const nextClientFolder = (useTypeScript: boolean): FolderStructure => ({
+  'env.': useTypeScript ? envTS : envJS,
+  lib: {
+    'client.': client,
+    'image.': useTypeScript ? imageTS : imageJS,
+    'live.': live,
+  },
+})

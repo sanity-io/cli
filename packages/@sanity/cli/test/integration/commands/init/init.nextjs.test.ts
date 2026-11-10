@@ -245,7 +245,7 @@ describe('#init:nextjs-app-initialization', () => {
     expect(mocks.installNewPackages).toHaveBeenCalledWith(
       {
         packageManager: 'npm',
-        packages: ['@sanity/vision@5', 'sanity@5', '@sanity/image-url@2', 'styled-components@6'],
+        packages: ['@sanity/vision@5', 'sanity@5', 'styled-components@6', '@sanity/image-url@2'],
       },
       {
         output: expect.any(Object),

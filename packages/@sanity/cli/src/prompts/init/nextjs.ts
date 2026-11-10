@@ -50,6 +50,6 @@ export function promptForAppendEnv(envFilename: string): Promise<boolean> {
 export function promptForConfigFiles() {
   return confirm({
     default: true,
-    message: 'Add a Sanity Studio to this Next.js project?',
+    message: 'Add a Sanity Studio to this project?',
   })
 }
