@@ -107,6 +107,7 @@
       "matchPackageNames": [
         "@portabletext/*",
         "@sanity/*",
+        "@sanity-labs/*",
         "@types/*",
         "groq-js",
         "groq",

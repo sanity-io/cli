@@ -1,10 +1,9 @@
 import {isMainThread} from 'node:worker_threads'
 
 import {getStudioWorkspaces, subdebug} from '@sanity/cli-core'
-import {type StudioManifest, type Workspace} from 'sanity'
 
 import {extractWorkspaceManifest} from '../manifest/extractWorkspaceManifest.js'
-import {type CreateWorkspaceManifest, WorkspaceSchemaInput} from '../manifest/types.js'
+import {type WorkspaceSchemaInput} from '../manifest/types.js'
 import {writeManifestFile} from '../manifest/writeManifestFile.js'
 import {type BuildStudioSchemasAndManifestsWorkerSuccess} from './buildStudioSchemasAndManifests.js'
 import {type BuildStudioSchemasAndManifestsWorkerData} from './types.js'
@@ -52,132 +51,38 @@ export async function workerBuildStudioSchemasAndManifests(
 
   debug('Handling build for %s', isExternal ? 'external' : 'internal')
 
-  async function workspaceManifestsHandler(
-    workspaceManifests: CreateWorkspaceManifest[],
-  ): Promise<WorkspaceSchemaInput[] | null> {
-    if (!isExternal || schemaRequired) {
-      const schemaInputs: WorkspaceSchemaInput[] = workspaceManifests.map((manifest) => ({
-        dataset: manifest.dataset,
-        manifestSchema: manifest.schema,
-        name: manifest.name,
-        projectId: manifest.projectId,
-        title: manifest.title,
-      }))
+  const uploadToLexiconPromise = uploadSchemaToLexicon({
+    projectId,
+    verbose,
+    workDir,
+    workspaces,
+  })
 
-      if (workspaceSchemaHandler) {
-        await workspaceSchemaHandler(schemaInputs)
-      }
+  let writeManifestPromise: Promise<void> | undefined
+  if (!isExternal) writeManifestPromise = writeManifestFile({outPath, workDir, workspaceManifests})
 
-      return schemaInputs
-    }
+  let schemaInputs: WorkspaceSchemaInput[] | null = null
+  let workspaceSchemaPromise: Promise<void> | undefined
+  if (!isExternal || schemaRequired) {
+    schemaInputs = workspaceManifests.map((manifest) => ({
+      dataset: manifest.dataset,
+      manifestSchema: manifest.schema,
+      name: manifest.name,
+      projectId: manifest.projectId,
+      title: manifest.title,
+    }))
 
-    return null
+    if (workspaceSchemaHandler) workspaceSchemaPromise = workspaceSchemaHandler(schemaInputs)
   }
 
-  const result = isExternal
-    ? await handleExternalStudio({
-        projectId,
-        verbose,
-        workDir,
-        workspaceManifests,
-        workspaceManifestsHandler,
-        workspaces,
-      })
-    : await handleInternalStudio({
-        outPath,
-        projectId,
-        verbose,
-        workDir,
-        workspaceManifests,
-        workspaceManifestsHandler,
-        workspaces,
-      })
+  const promises: Promise<unknown>[] = [uploadToLexiconPromise]
+  if (writeManifestPromise) promises.push(writeManifestPromise)
+  if (workspaceSchemaPromise) promises.push(workspaceSchemaPromise)
+  await Promise.all(promises)
 
   return {
-    schemaInputs: result.schemaInputs,
-    studioManifest: result.studioManifest,
+    schemaInputs,
+    studioManifest: await uploadToLexiconPromise,
     type: 'success',
   }
-}
-
-type HandleStudioResult = {
-  schemaInputs: WorkspaceSchemaInput[] | null
-  studioManifest: StudioManifest | null
-}
-
-/**
- * External deployments:
- * 1. Update the workspace schemas to the /schemas endpoint IF --schema-required is passed
- * 2. Call the workspace manifest handler if provided to update server-side schemas
- */
-async function handleExternalStudio({
-  projectId,
-  verbose,
-  workDir,
-  workspaceManifests,
-  workspaceManifestsHandler,
-  workspaces,
-}: {
-  projectId: string
-  verbose: boolean
-  workDir: string
-  workspaceManifests: CreateWorkspaceManifest[]
-  workspaceManifestsHandler: (
-    workspaceManifests: CreateWorkspaceManifest[],
-  ) => Promise<WorkspaceSchemaInput[] | null>
-  workspaces: Workspace[]
-}): Promise<HandleStudioResult> {
-  const [studioManifest, schemaInputs] = await Promise.all([
-    uploadSchemaToLexicon({
-      projectId,
-      verbose,
-      workDir,
-      workspaces,
-    }),
-    workspaceManifestsHandler(workspaceManifests),
-  ])
-
-  return {schemaInputs, studioManifest}
-}
-
-/**
- *
- * Internal deployments:
- * 1. Write the workspace manifests to the dist directory
- * 2. Update the workspaces schemas to the /schemas endpoint
- * 3. Call the workspace manifest handler if provided to update server-side schemas
- *
- * @param workspaces - The workspaces to deploy
- */
-async function handleInternalStudio({
-  outPath,
-  projectId,
-  verbose,
-  workDir,
-  workspaceManifests,
-  workspaceManifestsHandler,
-  workspaces,
-}: {
-  outPath: string
-  projectId: string
-  verbose: boolean
-  workDir: string
-  workspaceManifests: CreateWorkspaceManifest[]
-  workspaceManifestsHandler: (
-    workspaceManifests: CreateWorkspaceManifest[],
-  ) => Promise<WorkspaceSchemaInput[] | null>
-  workspaces: Workspace[]
-}): Promise<HandleStudioResult> {
-  const [studioManifest, schemaInputs] = await Promise.all([
-    uploadSchemaToLexicon({
-      projectId,
-      verbose,
-      workDir,
-      workspaces,
-    }),
-    workspaceManifestsHandler(workspaceManifests),
-    writeManifestFile({outPath, workDir, workspaceManifests}),
-  ])
-
-  return {schemaInputs, studioManifest}
 }
