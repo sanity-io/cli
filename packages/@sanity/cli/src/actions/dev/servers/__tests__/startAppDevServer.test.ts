@@ -158,17 +158,16 @@ describe('startAppDevServer', () => {
     expect(mockGetDashboardAppURL).not.toHaveBeenCalled()
   })
 
-  test('skips the port log line for workbench apps when the workbench announces instead', async () => {
+  test('logs nothing for workbench apps when the workbench announces instead', async () => {
     mockStartDevServer.mockResolvedValue(createMockDevServer({port: 3334}))
     const output = createMockOutput()
 
-    await startAppDevServer(
+    const result = await startAppDevServer(
       createOptions({announceUrl: false, cliConfig: workbenchCliConfig(), output}),
     )
 
-    // 'Starting dev server' is still logged, but the port announcement is not
-    const logCalls = (output.log as ReturnType<typeof vi.fn>).mock.calls.flat()
-    expect(logCalls.some((c) => String(c).includes('App dev server started'))).toBe(false)
+    expect(result.started).toBe(true)
+    expect(output.log).not.toHaveBeenCalled()
     expect(mockGetDashboardAppURL).not.toHaveBeenCalled()
   })
 

@@ -1,4 +1,5 @@
 import {type CliConfig, exitCodes} from '@sanity/cli-core'
+import {spinner} from '@sanity/cli-core/ux'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
 import {
@@ -126,6 +127,7 @@ describe('startStudioDevServer', () => {
     const result = await startStudioDevServer(createDevOptions({announceUrl: false}))
 
     expect(result.started).toBe(true)
+    expect(spinner).toHaveBeenCalledWith(expect.objectContaining({isSilent: true}))
     expect(started.server.config.logger.info).not.toHaveBeenCalled()
   })
 

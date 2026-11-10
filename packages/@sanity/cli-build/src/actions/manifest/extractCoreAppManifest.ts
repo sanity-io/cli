@@ -11,6 +11,8 @@ import {type CoreAppManifest, coreAppManifestSchema} from './types.js'
 
 interface ExtractCoreAppManifestOptions {
   workDir: string
+
+  silent?: boolean
 }
 
 /**
@@ -95,7 +97,7 @@ export async function readIconFromPath(workDir: string, iconPath: string): Promi
 export async function extractCoreAppManifest(
   options: ExtractCoreAppManifestOptions,
 ): Promise<CoreAppManifest | undefined> {
-  const {workDir} = options
+  const {silent, workDir} = options
   const {app} = await getCliConfigUncached(workDir)
   if (!app) {
     return undefined
@@ -107,7 +109,7 @@ export async function extractCoreAppManifest(
     return undefined
   }
 
-  const spin = spinner('Extracting manifest').start()
+  const spin = spinner({isSilent: silent, text: 'Extracting manifest'}).start()
 
   try {
     let icon: string | undefined
