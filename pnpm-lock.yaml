@@ -201,8 +201,8 @@ catalogs:
       specifier: ^6.22.0
       version: 6.22.0
     '@sanity/validation':
-      specifier: ^6.22.0
-      version: 6.22.0
+      specifier: ^6.23.0
+      version: 6.23.0
     '@sanity/vision':
       specifier: ^6.22.0
       version: 6.22.0
@@ -796,7 +796,7 @@ importers:
         version: 6.22.0(@types/react@19.3.0)(vitest@5.1.0)
       '@sanity/validation':
         specifier: 'catalog:'
-        version: 6.22.0(@types/react@19.3.0)(typescript@6.0.3)(vitest@5.1.0)
+        version: 6.23.0(@types/react@19.3.0)(typescript@6.0.3)(vitest@5.1.0)
       '@sanity/workbench-cli':
         specifier: workspace:^
         version: link:../workbench-cli
@@ -5111,6 +5111,10 @@ packages:
     resolution: {integrity: sha512-YMJgPNma5APZn0V3nsRb73TbylMwiZqQfWAk1LenN+pqe8elaDYsXfEB8mSEA6ermntBs5ZWUjqGBVKiXC7yiw==}
     engines: {node: '>=22.12'}
 
+  '@sanity/schema@6.23.0':
+    resolution: {integrity: sha512-UwiaQhPjNWaS8J30vfXQPVKMjueugc0Ec0zmnmHQSzb/yJoB89MfZBeRUkjqz6NMRjT07V+V9uaw+d+T6YOF2A==}
+    engines: {node: '>=22.12'}
+
   '@sanity/sdk-react@2.20.2':
     resolution: {integrity: sha512-o/eekngFiYmKWhnTxE+FMkx9pFxXOluxix36l9RgwRdLKN0DhrQh4TI4bmHiGqyJDyTKe8hWHFmzKFqpAQsVCg==}
     peerDependencies:
@@ -5195,6 +5199,12 @@ packages:
     peerDependencies:
       '@types/react': '*'
 
+  '@sanity/types@6.23.0':
+    resolution: {integrity: sha512-DAadIB4nlQ6zCnuuEpVi3mwKi49NhqlUgAInraYahKUE6evLnH7zlqIMNQJTvosL82cllsxlxokG1KwgylLP1Q==}
+    engines: {node: '>=22.12'}
+    peerDependencies:
+      '@types/react': '*'
+
   '@sanity/ui@3.5.4':
     resolution: {integrity: sha512-YFFUfcrYWVa/54nmwetifJl3m41D+aZp+fcszCPjzB2Y7dH9Q8llY//MHKc4Xwgk6ujANgqtPkVAYTMLE/g4uQ==}
     engines: {node: '>=20.19 <22 || >=22.12'}
@@ -5235,6 +5245,10 @@ packages:
     resolution: {integrity: sha512-vqSyvLYOOlFhJm38SmepBZPkyvTS6ujd+FZx5VZZbd1XumM73ZT6Vf7oTmQOpZO8GeH1FMy09dqcL5nW5YGaFg==}
     engines: {node: '>=22.12'}
 
+  '@sanity/util@6.23.0':
+    resolution: {integrity: sha512-+EkDtfq9k9KiiuH2Dbif9u2lRgypn4Ii4BohldipbyIiR+qNGuxnetKd23/KYvfKLlQgjrB3w3pXWtldQeZFQw==}
+    engines: {node: '>=22.12'}
+
   '@sanity/uuid@3.0.3':
     resolution: {integrity: sha512-aJvKuFwzcZKRwuIjrRPfXfXKpSdnLF4CnedV5WcX1n5SzhufvRNHIot5lkx1+Y1DwiMVQOZ5gDSPJH+P6Ao70A==}
 
@@ -5244,6 +5258,10 @@ packages:
 
   '@sanity/validation@6.22.0':
     resolution: {integrity: sha512-7+gnV0t+1V28DmOvlk9u/1YAX3v71CPr/oz8p9RC1Ej2l9oCVKztu/A6oJxJI6I2Xfdnem1oOzteb2SEW5UoHw==}
+    engines: {node: '>=22.12'}
+
+  '@sanity/validation@6.23.0':
+    resolution: {integrity: sha512-T6mfiIzEJgzbDRq2SfdtlXkdiN2O+q3wogvN1WXWoYuPCMft4ZYovYi9pqXCuvaD3nNQ2LeipMbNgyyTC8irpg==}
     engines: {node: '>=22.12'}
 
   '@sanity/vanilla-extract-integration@0.1.17':
@@ -14400,6 +14418,10 @@ snapshots:
     dependencies:
       '@sanity/types': 6.22.0(@types/react@19.3.0)(vitest@5.1.0)
 
+  '@sanity/media-library-types@1.7.1(@sanity/types@6.23.0(@types/react@19.3.0)(vitest@5.1.0))':
+    dependencies:
+      '@sanity/types': 6.23.0(@types/react@19.3.0)(vitest@5.1.0)
+
   '@sanity/message-protocol@0.24.0':
     dependencies:
       '@sanity/comlink': 4.0.3
@@ -14674,6 +14696,22 @@ snapshots:
       '@sanity/descriptors': 1.3.0
       '@sanity/generate-help-url': 4.0.0
       '@sanity/types': 6.22.0(@types/react@19.3.0)(vitest@5.1.0)
+      arrify: 3.0.0
+      dequal: 2.0.3
+      get-it: 9.6.2(vitest@5.1.0)
+      groq-js: 2.0.1
+      humanize-list: 1.0.1
+      leven: 4.1.0
+      lodash-es: 4.18.1
+    transitivePeerDependencies:
+      - '@types/react'
+      - vitest
+
+  '@sanity/schema@6.23.0(@types/react@19.3.0)(vitest@5.1.0)':
+    dependencies:
+      '@sanity/descriptors': 1.3.0
+      '@sanity/generate-help-url': 4.0.0
+      '@sanity/types': 6.23.0(@types/react@19.3.0)(vitest@5.1.0)
       arrify: 3.0.0
       dequal: 2.0.3
       get-it: 9.6.2(vitest@5.1.0)
@@ -14960,6 +14998,14 @@ snapshots:
     transitivePeerDependencies:
       - vitest
 
+  '@sanity/types@6.23.0(@types/react@19.3.0)(vitest@5.1.0)':
+    dependencies:
+      '@sanity/client': 8.15.0(vitest@5.1.0)
+      '@sanity/media-library-types': 1.7.1(@sanity/types@6.23.0(@types/react@19.3.0)(vitest@5.1.0))
+      '@types/react': 19.3.0
+    transitivePeerDependencies:
+      - vitest
+
   '@sanity/ui@3.5.4(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(styled-components@6.5.3(react-dom@19.3.0(react@19.3.0))(react@19.3.0))':
     dependencies:
       '@floating-ui/react-dom': 2.1.9(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
@@ -15043,6 +15089,19 @@ snapshots:
       - '@types/react'
       - vitest
 
+  '@sanity/util@6.23.0(@types/react@19.3.0)(vitest@5.1.0)':
+    dependencies:
+      '@date-fns/tz': 1.5.0
+      '@date-fns/utc': 2.1.1
+      '@sanity/client': 8.15.0(vitest@5.1.0)
+      '@sanity/types': 6.23.0(@types/react@19.3.0)(vitest@5.1.0)
+      date-fns: 4.4.0
+      get-it: 9.6.2(vitest@5.1.0)
+      rxjs: 7.8.2
+    transitivePeerDependencies:
+      - '@types/react'
+      - vitest
+
   '@sanity/uuid@3.0.3':
     dependencies:
       uuid: 11.1.1
@@ -15070,6 +15129,22 @@ snapshots:
       '@sanity/schema': 6.22.0(@types/react@19.3.0)(vitest@5.1.0)
       '@sanity/types': 6.22.0(@types/react@19.3.0)(vitest@5.1.0)
       '@sanity/util': 6.22.0(@types/react@19.3.0)(vitest@5.1.0)
+      dequal: 2.0.3
+      i18next: 26.6.0(typescript@6.0.3)
+      lodash-es: 4.18.1
+      rxjs: 7.8.2
+    transitivePeerDependencies:
+      - '@types/react'
+      - typescript
+      - vitest
+
+  '@sanity/validation@6.23.0(@types/react@19.3.0)(typescript@6.0.3)(vitest@5.1.0)':
+    dependencies:
+      '@sanity/client': 8.15.0(vitest@5.1.0)
+      '@sanity/id-utils': 1.1.0
+      '@sanity/schema': 6.23.0(@types/react@19.3.0)(vitest@5.1.0)
+      '@sanity/types': 6.23.0(@types/react@19.3.0)(vitest@5.1.0)
+      '@sanity/util': 6.23.0(@types/react@19.3.0)(vitest@5.1.0)
       dequal: 2.0.3
       i18next: 26.6.0(typescript@6.0.3)
       lodash-es: 4.18.1

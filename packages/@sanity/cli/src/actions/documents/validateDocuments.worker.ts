@@ -253,6 +253,8 @@ async function main() {
           maxFetchConcurrency,
           schema: workspace.schema,
           signal: AbortSignal.timeout(DOCUMENT_VALIDATION_TIMEOUT),
+          // Referenced documents can exist only in the input, without a live API counterpart
+          validateReferenceTypes: false,
         })
 
         markers = result.markers

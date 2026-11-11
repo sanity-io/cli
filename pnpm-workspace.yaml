@@ -30,7 +30,7 @@ catalog:
   '@sanity/types': ^6.22.0
   '@sanity/schema': ^6.22.0
   '@sanity/util': ^6.22.0
-  '@sanity/validation': ^6.22.0
+  '@sanity/validation': ^6.23.0
   '@sanity/client': ^8.15.0
   '@sanity/codegen': ^8.3.0
   '@sanity/sdk': ^3.12.0
