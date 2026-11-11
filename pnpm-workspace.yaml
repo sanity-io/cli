@@ -46,8 +46,8 @@ catalog:
   babel-plugin-react-compiler: ^1.0.0
   oxc-transform-react: ^0.156.0
   typescript: ^6.0.3
-  vite: ^8.3.6
-  '@vitejs/plugin-react': ^6.2.1
+  vite: ^8.3.8
+  '@vitejs/plugin-react': ^6.3.0
   tsx: ^4.23.12
 
   # Testing
@@ -87,7 +87,7 @@ catalog:
   '@swc/cli': ^0.8.1
   rimraf: ^6.0.1
   '@sanity/pkg-utils': ^12.3.4
-  oxfmt: ^0.76.0
+  oxfmt: ^0.78.0
 
   # Type Definitions
   '@types/node': ^22.20.5
