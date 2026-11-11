@@ -5,7 +5,11 @@ import {
   createUserApplication as createUserApplicationRequest,
   type UserApplication,
 } from '../../../services/userApplications.js'
-import {createUserApplication, generateAppSlug} from '../createUserApplication.js'
+import {
+  createStudioUserApplication,
+  createUserApplication,
+  generateAppSlug,
+} from '../createUserApplication.js'
 
 vi.mock('../../../services/userApplications.js', () => ({
   createUserApplication: vi.fn(),
@@ -52,6 +56,43 @@ describe('createUserApplication', () => {
     await createUserApplication('org-1', 'My App')
 
     expect(mockRequest.mock.calls[0]?.[0].body).not.toHaveProperty('dashboardStatus')
+  })
+})
+
+const submitHostname = (value = 'my-studio') =>
+  mockInput.mockImplementation((async ({validate}: {validate: (value: string) => unknown}) => {
+    await validate(value)
+    return value
+  }) as unknown as typeof input)
+
+describe('createStudioUserApplication', () => {
+  test('explains when the service is unavailable', async () => {
+    submitHostname()
+    mockRequest.mockRejectedValue(Object.assign(new Error('HTTP 503'), {statusCode: 503}))
+
+    await expect(createStudioUserApplication({projectId: 'p1'})).rejects.toThrow(
+      'Error creating studio hostname: Sanity’s deployment service is unavailable (HTTP 503)',
+    )
+  })
+
+  test('keeps the generic message for other failures', async () => {
+    submitHostname()
+    mockRequest.mockRejectedValue(Object.assign(new Error('HTTP 500'), {statusCode: 500}))
+
+    await expect(createStudioUserApplication({projectId: 'p1'})).rejects.toThrow(
+      /^Error creating studio hostname$/,
+    )
+  })
+
+  test('names the external studio registration when it fails', async () => {
+    submitHostname('https://studio.example.com')
+    mockRequest.mockRejectedValue(Object.assign(new Error('HTTP 503'), {statusCode: 503}))
+
+    await expect(
+      createStudioUserApplication({projectId: 'p1', urlType: 'external'}),
+    ).rejects.toThrow(
+      'Error registering external studio: Sanity’s deployment service is unavailable (HTTP 503)',
+    )
   })
 })
 

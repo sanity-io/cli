@@ -1,13 +1,13 @@
+import {type InstalledSkillInfo} from 'skills'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
 import {type Editor} from '../../mcp/types.js'
 import {readSkillState} from '../readSkillState.js'
-import {SKILLS_BIN_PATH} from '../setupSkills.js'
 
-const mockExeca = vi.hoisted(() => vi.fn())
+const mockListSkills = vi.hoisted(() => vi.fn())
 
-vi.mock('execa', () => ({
-  execa: mockExeca,
+vi.mock('skills', () => ({
+  listSkills: mockListSkills,
 }))
 
 const SKILL = 'sanity-best-practices'
@@ -17,40 +17,48 @@ function editor(name: Editor['name']): Editor {
   return {configPath: `/fake/${name}/config.json`, configured: false, name}
 }
 
+function installed(
+  name: string,
+  agents: string[],
+  path = `/home/u/.cursor/skills/${name}`,
+): InstalledSkillInfo {
+  return {agents, description: '', name, path, scope: 'global'}
+}
+
+function mockInstalledSkills(skills: InstalledSkillInfo[]): void {
+  mockListSkills.mockResolvedValue({skills})
+}
+
 describe('readSkillState', () => {
   afterEach(() => {
     vi.clearAllMocks()
   })
 
-  test('returns the agents reported by `skills list -g --json`', async () => {
-    mockExeca.mockResolvedValue({
-      stdout: JSON.stringify([
-        {
-          agents: ['Cursor', 'Claude Code'],
-          name: SKILL,
-          path: '/home/u/.cursor/skills/sanity-best-practices',
-          scope: 'global',
-        },
-      ]),
-    })
+  test('lists global skills and maps agent IDs to display names', async () => {
+    mockInstalledSkills([installed(SKILL, ['cursor', 'claude-code'])])
 
     const result = await readSkillState({editors: [], skillNames: [SKILL]})
 
-    expect(mockExeca).toHaveBeenCalledWith(
-      process.execPath,
-      [SKILLS_BIN_PATH, 'list', '-g', '--json'],
-      expect.objectContaining({stdio: 'pipe', timeout: 10_000}),
-    )
+    expect(mockListSkills).toHaveBeenCalledWith({
+      scope: 'global',
+      signal: expect.any(AbortSignal),
+    })
     expect([...result.installedAgentDisplayNames]).toEqual(['Cursor', 'Claude Code'])
   })
 
+  test('keeps agent IDs without a known display name as-is', async () => {
+    mockInstalledSkills([installed(SKILL, ['some-new-agent'])])
+
+    const result = await readSkillState({editors: [], skillNames: [SKILL]})
+
+    expect([...result.installedAgentDisplayNames]).toEqual(['some-new-agent'])
+  })
+
   test('only returns agents that have every requested skill installed', async () => {
-    mockExeca.mockResolvedValue({
-      stdout: JSON.stringify([
-        {agents: ['Cursor', 'Claude Code'], name: SKILL},
-        {agents: ['Claude Code'], name: MIGRATION_SKILL},
-      ]),
-    })
+    mockInstalledSkills([
+      installed(SKILL, ['cursor', 'claude-code']),
+      installed(MIGRATION_SKILL, ['claude-code']),
+    ])
 
     const result = await readSkillState({editors: [], skillNames: [SKILL, MIGRATION_SKILL]})
 
@@ -58,20 +66,10 @@ describe('readSkillState', () => {
   })
 
   test('credits detected universal editors when skills live in the universal directory', async () => {
-    mockExeca.mockResolvedValue({
-      stdout: JSON.stringify([
-        {
-          agents: ['Claude Code'],
-          name: SKILL,
-          path: '/home/u/.agents/skills/sanity-best-practices',
-        },
-        {
-          agents: ['Claude Code'],
-          name: MIGRATION_SKILL,
-          path: '/home/u/.agents/skills/sanity-migration',
-        },
-      ]),
-    })
+    mockInstalledSkills([
+      installed(SKILL, ['claude-code'], '/home/u/.agents/skills/sanity-best-practices'),
+      installed(MIGRATION_SKILL, ['claude-code'], '/home/u/.agents/skills/sanity-migration'),
+    ])
 
     // Cursor is universal (reads from `.agents/skills`) but is not listed in the
     // `agents` arrays; it should still be credited because the skills live in
@@ -85,20 +83,14 @@ describe('readSkillState', () => {
   })
 
   test('credits universal editors for Windows-style (backslash) universal paths', async () => {
-    mockExeca.mockResolvedValue({
-      stdout: JSON.stringify([
-        {
-          agents: ['Claude Code'],
-          name: SKILL,
-          path: 'C:\\Users\\u\\.agents\\skills\\sanity-best-practices',
-        },
-        {
-          agents: ['Claude Code'],
-          name: MIGRATION_SKILL,
-          path: 'C:\\Users\\u\\.agents\\skills\\sanity-migration',
-        },
-      ]),
-    })
+    mockInstalledSkills([
+      installed(SKILL, ['claude-code'], 'C:\\Users\\u\\.agents\\skills\\sanity-best-practices'),
+      installed(
+        MIGRATION_SKILL,
+        ['claude-code'],
+        'C:\\Users\\u\\.agents\\skills\\sanity-migration',
+      ),
+    ])
 
     const result = await readSkillState({
       editors: [editor('Cursor'), editor('Claude Code')],
@@ -109,20 +101,10 @@ describe('readSkillState', () => {
   })
 
   test('does not credit universal editors when skills are not in the universal directory', async () => {
-    mockExeca.mockResolvedValue({
-      stdout: JSON.stringify([
-        {
-          agents: ['Claude Code'],
-          name: SKILL,
-          path: '/home/u/.claude/skills/sanity-best-practices',
-        },
-        {
-          agents: ['Claude Code'],
-          name: MIGRATION_SKILL,
-          path: '/home/u/.claude/skills/sanity-migration',
-        },
-      ]),
-    })
+    mockInstalledSkills([
+      installed(SKILL, ['claude-code'], '/home/u/.claude/skills/sanity-best-practices'),
+      installed(MIGRATION_SKILL, ['claude-code'], '/home/u/.claude/skills/sanity-migration'),
+    ])
 
     const result = await readSkillState({
       editors: [editor('Cursor'), editor('Claude Code')],
@@ -133,12 +115,10 @@ describe('readSkillState', () => {
   })
 
   test('does not credit editors without a skills-CLI mapping even when universal', async () => {
-    mockExeca.mockResolvedValue({
-      stdout: JSON.stringify([
-        {agents: [], name: SKILL, path: '/home/u/.agents/skills/sanity-best-practices'},
-        {agents: [], name: MIGRATION_SKILL, path: '/home/u/.agents/skills/sanity-migration'},
-      ]),
-    })
+    mockInstalledSkills([
+      installed(SKILL, [], '/home/u/.agents/skills/sanity-best-practices'),
+      installed(MIGRATION_SKILL, [], '/home/u/.agents/skills/sanity-migration'),
+    ])
 
     // Zed has no skills-CLI agent mapping, so it should never be credited.
     const result = await readSkillState({
@@ -150,9 +130,7 @@ describe('readSkillState', () => {
   })
 
   test('returns an empty Set when one of the requested skills is missing entirely', async () => {
-    mockExeca.mockResolvedValue({
-      stdout: JSON.stringify([{agents: ['Cursor', 'Claude Code'], name: SKILL}]),
-    })
+    mockInstalledSkills([installed(SKILL, ['cursor', 'claude-code'])])
 
     const result = await readSkillState({editors: [], skillNames: [SKILL, MIGRATION_SKILL]})
 
@@ -160,49 +138,31 @@ describe('readSkillState', () => {
   })
 
   test('returns an empty Set when the named skill is not present', async () => {
-    mockExeca.mockResolvedValue({
-      stdout: JSON.stringify([{agents: ['Cursor'], name: 'something-else'}]),
-    })
+    mockInstalledSkills([installed('something-else', ['cursor'])])
 
     const result = await readSkillState({editors: [], skillNames: [SKILL]})
 
     expect(result.installedAgentDisplayNames.size).toBe(0)
   })
 
-  test('returns an empty Set when the skill entry has no agents array', async () => {
-    mockExeca.mockResolvedValue({stdout: JSON.stringify([{name: SKILL}])})
+  test('returns an empty Set when the skill has no agents', async () => {
+    mockInstalledSkills([installed(SKILL, [])])
 
     const result = await readSkillState({editors: [], skillNames: [SKILL]})
 
     expect(result.installedAgentDisplayNames.size).toBe(0)
   })
 
-  test('returns an empty Set when the list is empty', async () => {
-    mockExeca.mockResolvedValue({stdout: '[]'})
+  test('returns an empty Set when nothing is installed', async () => {
+    mockInstalledSkills([])
 
     const result = await readSkillState({editors: [], skillNames: [SKILL]})
 
     expect(result.installedAgentDisplayNames.size).toBe(0)
   })
 
-  test('returns an empty Set when JSON is malformed', async () => {
-    mockExeca.mockResolvedValue({stdout: '{not json'})
-
-    const result = await readSkillState({editors: [], skillNames: [SKILL]})
-
-    expect(result.installedAgentDisplayNames.size).toBe(0)
-  })
-
-  test('returns an empty Set when the JSON root is not an array', async () => {
-    mockExeca.mockResolvedValue({stdout: JSON.stringify({wrong: 'shape'})})
-
-    const result = await readSkillState({editors: [], skillNames: [SKILL]})
-
-    expect(result.installedAgentDisplayNames.size).toBe(0)
-  })
-
-  test('returns an empty Set when the subprocess fails', async () => {
-    mockExeca.mockRejectedValue(new Error('boom'))
+  test('returns an empty Set when listing skills fails', async () => {
+    mockListSkills.mockRejectedValue(new Error('boom'))
 
     const result = await readSkillState({editors: [], skillNames: [SKILL]})
 

@@ -12,7 +12,10 @@ import {readBuiltManifest, type WorkbenchExposes} from '@sanity/workbench-cli/bu
 import {parse as semverParse} from 'semver'
 
 import {AppBuildTrace} from '../../telemetry/build.telemetry.js'
-import {CompareDependencyVersionsResult} from '../../util/compareDependencyVersions.js'
+import {
+  CompareDependencyVersionsResult,
+  getUnavailableVersionsWarning,
+} from '../../util/compareDependencyVersions.js'
 import {formatModuleSizes, sortModulesBySize} from '../../util/moduleFormatUtils.js'
 import {buildDebug} from './buildDebug.js'
 import {buildStaticFiles} from './buildStaticFiles.js'
@@ -133,8 +136,15 @@ export async function buildApp(
     options.checkAppId()
 
     // Check the versions
-    const {mismatched, unresolvedPrerelease} =
-      await options.compareDependencyVersions(autoUpdatedPackages)
+    const {
+      mismatched,
+      unavailable = [],
+      unresolvedPrerelease,
+    } = await options.compareDependencyVersions(autoUpdatedPackages)
+
+    if (unavailable.length > 0) {
+      output.warn(getUnavailableVersionsWarning(unavailable))
+    }
 
     if (unresolvedPrerelease.length > 0) {
       await handlePrereleaseVersions({
