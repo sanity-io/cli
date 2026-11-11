@@ -11,7 +11,7 @@ function getConfig(
   command: 'build' | 'serve' = 'build',
 ): Config {
   const plugin = sanityEnvironmentPlugin(options)
-  return (plugin.config as (config: unknown, env: {command: string}) => Config)({}, {command})
+  return (plugin.config as (...args: unknown[]) => Config)({}, {command})
 }
 
 async function buildOrder(config: Config): Promise<string[]> {
