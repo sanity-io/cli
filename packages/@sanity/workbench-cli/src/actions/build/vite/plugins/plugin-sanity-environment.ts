@@ -41,7 +41,11 @@ export function sanityEnvironmentPlugin(options: EnvironmentOptions): Plugin {
   const output = isBlueprints ? resourceBindingsOutput : undefined
 
   return {
-    config() {
+    config(_, {command}) {
+      if (command !== 'build') {
+        return
+      }
+
       return {
         builder: {
           async buildApp(builder) {

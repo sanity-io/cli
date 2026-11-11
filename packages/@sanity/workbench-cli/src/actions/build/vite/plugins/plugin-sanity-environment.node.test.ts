@@ -6,9 +6,12 @@ import {sanityEnvironmentPlugin} from './plugin-sanity-environment.js'
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type Config = any
 
-function getConfig(options: Parameters<typeof sanityEnvironmentPlugin>[0]): Config {
+function getConfig(
+  options: Parameters<typeof sanityEnvironmentPlugin>[0],
+  command: 'build' | 'serve' = 'build',
+): Config {
   const plugin = sanityEnvironmentPlugin(options)
-  return (plugin.config as () => Config)()
+  return (plugin.config as (config: unknown, env: {command: string}) => Config)({}, {command})
 }
 
 async function buildOrder(config: Config): Promise<string[]> {
@@ -24,6 +27,18 @@ async function buildOrder(config: Config): Promise<string[]> {
 }
 
 describe('sanityEnvironmentPlugin', () => {
+  test('registers no environments in serve', () => {
+    const config = getConfig(
+      {
+        clientInput: '/project/.sanity/runtime/app.js',
+        input: '/project/.sanity/federation/remote-entry.jsx',
+      },
+      'serve',
+    )
+
+    expect(config).toBeUndefined()
+  })
+
   test('registers only the federation environment when there is no clientInput', async () => {
     const config = getConfig({input: '/project/.sanity/federation/remote-entry.jsx'})
 
