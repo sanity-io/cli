@@ -5,6 +5,7 @@ import {readBuiltManifest} from '@sanity/workbench-cli/build'
 import {
   createStudio,
   deployWorkbenchApp,
+  fetchDeploySummaryDetails,
   formatDeploySummary,
   getApplication,
   listApplications,
@@ -30,7 +31,8 @@ vi.mock(import('@sanity/workbench-cli/deploy'), async (importOriginal) => ({
   ...(await importOriginal()),
   createStudio: vi.fn(),
   deployWorkbenchApp: vi.fn(),
-  formatDeploySummary: vi.fn(async () => 'deploy summary'),
+  fetchDeploySummaryDetails: vi.fn(async () => ({organizationName: 'Acme', userName: 'Sam'})),
+  formatDeploySummary: vi.fn(() => 'deploy summary'),
   getApplication: vi.fn(),
   listApplications: vi.fn(),
   selectWorkbenchAppId: vi.fn(),
@@ -186,9 +188,10 @@ describe('deployStudio (federated studio)', () => {
     expect(vi.mocked(deployStudioSchemasAndManifests).mock.calls[0][0]).toEqual(
       expect.objectContaining({applicationId: 'studio-1'}),
     )
+    expect(fetchDeploySummaryDetails).not.toHaveBeenCalled()
   })
 
-  test('a first deploy prints the summary as created, without a configured appId, at the slug URL', async () => {
+  test('a first deploy prints the summary as created at the slug URL', async () => {
     const options = deployOptions({flags: {json: false}})
 
     await deployStudio(options)
@@ -196,15 +199,15 @@ describe('deployStudio (federated studio)', () => {
     expect(formatDeploySummary).toHaveBeenCalledWith(
       expect.objectContaining({
         applicationId: 'studio-1',
-        configFile: 'sanity.cli.ts',
         created: true,
-        hasAppId: false,
         isApp: false,
         organizationId: 'org-1',
+        organizationName: 'Acme',
         title: 'Test App',
         url: 'https://org-1.sanity.run/studios/my-studio',
       }),
     )
+    expect(fetchDeploySummaryDetails).toHaveBeenCalledWith('org-1')
     expect(options.output.log).toHaveBeenCalledWith('deploy summary')
   })
 
