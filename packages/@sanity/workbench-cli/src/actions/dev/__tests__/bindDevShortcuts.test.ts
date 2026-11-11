@@ -1,7 +1,7 @@
 import {PassThrough} from 'node:stream'
 
 import open from 'open'
-import {afterEach, beforeEach, describe, expect, onTestFinished, test, vi} from 'vitest'
+import {afterEach, describe, expect, onTestFinished, test, vi} from 'vitest'
 
 import {bindDevShortcuts} from '../bindDevShortcuts.js'
 import {createMockOutput} from './devTestHelpers.js'
@@ -25,15 +25,9 @@ function press(stdin: PassThrough, key: string) {
 }
 
 describe('bindDevShortcuts', () => {
-  let onSigint: ReturnType<typeof vi.fn<(signal: NodeJS.Signals) => void>>
-
-  beforeEach(() => {
-    onSigint = vi.fn<(signal: NodeJS.Signals) => void>()
-    process.on('SIGINT', onSigint)
-  })
+  const quit = vi.fn()
 
   afterEach(() => {
-    process.off('SIGINT', onSigint)
     Object.defineProperty(process, 'stdin', {configurable: true, value: realStdin})
     vi.clearAllMocks()
   })
@@ -42,7 +36,7 @@ describe('bindDevShortcuts', () => {
     const stdin = fakeStdin({isTTY: true})
     const output = createMockOutput()
 
-    const unbind = bindDevShortcuts({output, url})
+    const unbind = bindDevShortcuts({output, quit, url})
     await press(stdin, 'o')
     await unbind()
 
@@ -55,36 +49,52 @@ describe('bindDevShortcuts', () => {
     const stdin = fakeStdin({isTTY: true})
     const output = createMockOutput()
 
-    const unbind = bindDevShortcuts({output, url})
+    const unbind = bindDevShortcuts({output, quit, url})
     await press(stdin, 'o')
     await unbind()
 
     expect(output.warn).toHaveBeenCalledWith(`Could not open ${url}: no browser`)
   })
 
-  test('lists the shortcuts on h', async () => {
-    const stdin = fakeStdin({isTTY: true})
-    const output = createMockOutput()
-
-    const unbind = bindDevShortcuts({output, url})
-    await press(stdin, 'h')
-    await unbind()
-
-    expect(output.log).toHaveBeenLastCalledWith(expect.stringContaining('o  open the app'))
-  })
-
   test.each([
     ['q', 'q'],
-    ['Ctrl+C', '\u0003'],
     ['Ctrl+D', '\u0004'],
-  ])('quits through the SIGINT teardown on %s', async (_, key) => {
+  ])('quits on %s', async (_, key) => {
     const stdin = fakeStdin({isTTY: true})
 
-    const unbind = bindDevShortcuts({output: createMockOutput(), url})
+    const unbind = bindDevShortcuts({output: createMockOutput(), quit, url})
     await press(stdin, key)
     await unbind()
 
-    expect(onSigint).toHaveBeenCalledWith('SIGINT')
+    expect(quit).toHaveBeenCalledOnce()
+  })
+
+  test('sends SIGINT to the process group on Ctrl+C', async () => {
+    vi.spyOn(process, 'platform', 'get').mockReturnValue('darwin')
+    const killSpy = vi.spyOn(process, 'kill').mockReturnValue(true)
+    onTestFinished(() => vi.restoreAllMocks())
+    const stdin = fakeStdin({isTTY: true})
+
+    const unbind = bindDevShortcuts({output: createMockOutput(), quit, url})
+    await press(stdin, '\u0003')
+    await unbind()
+
+    expect(killSpy).toHaveBeenCalledWith(0, 'SIGINT')
+    expect(quit).not.toHaveBeenCalled()
+  })
+
+  test('quits on Ctrl+C on Windows, which has no process group signals', async () => {
+    vi.spyOn(process, 'platform', 'get').mockReturnValue('win32')
+    const killSpy = vi.spyOn(process, 'kill').mockReturnValue(true)
+    onTestFinished(() => vi.restoreAllMocks())
+    const stdin = fakeStdin({isTTY: true})
+
+    const unbind = bindDevShortcuts({output: createMockOutput(), quit, url})
+    await press(stdin, '\u0003')
+    await unbind()
+
+    expect(killSpy).not.toHaveBeenCalled()
+    expect(quit).toHaveBeenCalledOnce()
   })
 
   test('suspends with the terminal restored on Ctrl+Z and resumes raw mode on SIGCONT', async () => {
@@ -96,7 +106,7 @@ describe('bindDevShortcuts', () => {
     })
     onTestFinished(() => vi.restoreAllMocks())
 
-    const unbind = bindDevShortcuts({output: createMockOutput(), url})
+    const unbind = bindDevShortcuts({output: createMockOutput(), quit, url})
     await press(stdin, '\u001A')
 
     expect(killSpy).toHaveBeenCalledWith(0, 'SIGTSTP')
@@ -112,7 +122,7 @@ describe('bindDevShortcuts', () => {
     onTestFinished(() => vi.restoreAllMocks())
     const stdin = fakeStdin({isTTY: true})
 
-    const unbind = bindDevShortcuts({output: createMockOutput(), url})
+    const unbind = bindDevShortcuts({output: createMockOutput(), quit, url})
     await press(stdin, '\u001A')
 
     expect(killSpy).not.toHaveBeenCalled()
@@ -123,19 +133,19 @@ describe('bindDevShortcuts', () => {
   test('restores the terminal and stops listening on unbind', async () => {
     const stdin = fakeStdin({isTTY: true})
 
-    const unbind = bindDevShortcuts({output: createMockOutput(), url})
+    const unbind = bindDevShortcuts({output: createMockOutput(), quit, url})
     await unbind()
     await press(stdin, 'q')
 
     expect(stdin.setRawMode).toHaveBeenLastCalledWith(false)
-    expect(onSigint).not.toHaveBeenCalled()
+    expect(quit).not.toHaveBeenCalled()
   })
 
   test('binds nothing when stdin is not a terminal', () => {
     const stdin = fakeStdin({isTTY: false})
     const output = createMockOutput()
 
-    bindDevShortcuts({output, url})
+    bindDevShortcuts({output, quit, url})
 
     expect(stdin.setRawMode).not.toHaveBeenCalled()
     expect(output.log).not.toHaveBeenCalled()

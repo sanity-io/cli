@@ -10,9 +10,10 @@ describe('formatDashboardSummary', () => {
 
   test('lists organization, app, URL and deployed version under the ready line', () => {
     const summary = formatDashboardSummary({
-      action: 'ready',
       durationMs: 1234,
+      heading: 'Sanity Dashboard ready',
       isApp: true,
+      organizationId: 'oAbc123',
       organizationName: 'Acme',
       title: 'Reports',
       url,
@@ -33,21 +34,38 @@ describe('formatDashboardSummary', () => {
     )
   })
 
-  test('labels a studio and names the deploy action', () => {
+  test('labels a studio under the given heading', () => {
     const summary = formatDashboardSummary({
-      action: 'deployed',
       durationMs: 800,
+      heading: 'Federated Studio deployed',
       isApp: false,
       title: 'Federated Studio',
       url,
     })
 
-    expect(summary).toContain('  Sanity Dashboard deployed in 0.8s')
+    expect(summary).toContain('  Federated Studio deployed in 0.8s')
     expect(summary).toContain('    Studio  Federated Studio')
   })
 
+  test('falls back to the organization id when the name is unknown', () => {
+    const summary = formatDashboardSummary({
+      durationMs: 800,
+      heading: 'Sanity Dashboard ready',
+      isApp: true,
+      organizationId: 'oAbc123',
+      url,
+    })
+
+    expect(summary).toContain('    Organization  oAbc123')
+  })
+
   test('shows only the URL when nothing else is known', () => {
-    const summary = formatDashboardSummary({action: 'ready', durationMs: 800, isApp: true, url})
+    const summary = formatDashboardSummary({
+      durationMs: 800,
+      heading: 'Sanity Dashboard ready',
+      isApp: true,
+      url,
+    })
 
     expect(summary.split('\n').slice(3)).toEqual([`    URL  ${link}`, ''])
   })

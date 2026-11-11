@@ -376,16 +376,23 @@ describe('startStudioDevServer', () => {
       )
     })
 
-    test('skips the version check when the workbench rebuilds the server', async () => {
+    test('skips the startup checks and notices when the workbench rebuilds the server', async () => {
       mockShouldAutoUpdate.mockReturnValue(true)
       mockIsInteractive.mockReturnValue(true)
+      const options = createDevOptions({
+        announceUrl: false,
+        cliConfig: {schemaExtraction: {enabled: true}} as CliConfig,
+        rebuild: true,
+      })
 
-      const result = await startStudioDevServer(
-        createDevOptions({announceUrl: false, rebuild: true}),
-      )
+      const result = await startStudioDevServer(options)
 
       expect(result.started).toBe(true)
       expect(mockCompareDependencyVersions).not.toHaveBeenCalled()
+      expect(mockCheckStudioDependencyVersions).not.toHaveBeenCalled()
+      expect(options.output.log).not.toHaveBeenCalledWith(
+        expect.stringContaining('schema extraction'),
+      )
     })
 
     test('does not upgrade when user declines the prompt', async () => {

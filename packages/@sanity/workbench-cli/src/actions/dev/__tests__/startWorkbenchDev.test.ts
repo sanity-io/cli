@@ -151,6 +151,15 @@ describe('startWorkbenchDev', () => {
       expect(output.log).toHaveBeenCalledWith(expect.stringContaining('App           Test App'))
     })
 
+    test('lists the organization id when its name is unavailable', async () => {
+      mockFetchDevServerDetails.mockResolvedValue({})
+      const output = createMockOutput()
+
+      await run({output})
+
+      expect(output.log).toHaveBeenCalledWith(expect.stringContaining('Organization  org-123'))
+    })
+
     test('shows the existing lock host in the URL, not the caller host', async () => {
       mockStartWorkbenchDevServer.mockResolvedValue(mockWorkbenchServer({httpHost: 'mydev.local'}))
       const output = createMockOutput()
@@ -327,8 +336,8 @@ describe('startWorkbenchDev', () => {
       expect(process.listenerCount('SIGTERM')).toBe(sigtermBefore)
     })
 
-    test('q tears down through the signal handler and restores the terminal', async () => {
-      const killSpy = vi.spyOn(process, 'kill').mockReturnValue(true)
+    test('q tears down, restores the terminal, and exits cleanly', async () => {
+      const exitSpy = vi.spyOn(process, 'exit').mockReturnValue(undefined as never)
       const realStdin = process.stdin
       const stdin = Object.assign(new PassThrough(), {isTTY: true, setRawMode: vi.fn()})
       Object.defineProperty(process, 'stdin', {configurable: true, value: stdin})
@@ -338,13 +347,13 @@ describe('startWorkbenchDev', () => {
 
         await run()
         stdin.write('q')
-        await vi.waitFor(() => expect(killSpy).toHaveBeenCalledWith(process.pid, 'SIGINT'))
+        await vi.waitFor(() => expect(exitSpy).toHaveBeenCalledWith(0))
 
         expect(appClose).toHaveBeenCalled()
         expect(stdin.setRawMode).toHaveBeenLastCalledWith(false)
       } finally {
         Object.defineProperty(process, 'stdin', {configurable: true, value: realStdin})
-        killSpy.mockRestore()
+        exitSpy.mockRestore()
       }
     })
 

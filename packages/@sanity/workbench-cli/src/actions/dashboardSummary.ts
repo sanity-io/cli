@@ -6,18 +6,21 @@ const API_VERSION = 'v2025-05-14'
 const REQUEST_TIMEOUT_MS = 3000
 
 export function formatDashboardSummary(options: {
-  action: 'deployed' | 'ready'
   durationMs: number
+  heading: string
   isApp: boolean
+  organizationId?: string
   organizationName?: string
   title?: string
   url: string
   version?: string
 }): string {
-  const {action, durationMs, isApp, organizationName, title, url, version} = options
+  const {durationMs, heading, isApp, organizationId, organizationName, title, url, version} =
+    options
+  const organization = organizationName ?? organizationId
 
   const rows: Array<[string, string]> = []
-  if (organizationName) rows.push(['Organization', organizationName])
+  if (organization) rows.push(['Organization', organization])
   if (title) rows.push([isApp ? 'App' : 'Studio', title])
   rows.push(['URL', styleText(['blue', 'underline'], url)])
   if (version) rows.push(['Version', version])
@@ -26,7 +29,7 @@ export function formatDashboardSummary(options: {
 
   return [
     '',
-    `  Sanity Dashboard ${action} in ${(durationMs / 1000).toFixed(1)}s`,
+    `  ${heading} in ${(durationMs / 1000).toFixed(1)}s`,
     '',
     ...rows.map(([label, value]) => `    ${label.padEnd(width)}  ${value}`),
     '',

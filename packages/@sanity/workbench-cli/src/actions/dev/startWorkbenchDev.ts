@@ -123,9 +123,6 @@ export async function startWorkbenchDev(
   const {supervisor} = supervised
   closers.push(supervisor.close)
 
-  const durationMs = Date.now() - startedAt
-  const resolvedDetails = workbench.workbenchAvailable ? await waitForDevServerDetails(details) : {}
-
   let dashboardAppPath: string | undefined
   try {
     // The deprecated-id check and manifest extractor are CLI-domain, injected here.
@@ -148,6 +145,9 @@ export async function startWorkbenchDev(
     throw err
   }
 
+  const durationMs = Date.now() - startedAt
+  const resolvedDetails = workbench.workbenchAvailable ? await waitForDevServerDetails(details) : {}
+
   installSignalHandlers()
 
   if (workbench.workbenchAvailable) {
@@ -155,14 +155,16 @@ export async function startWorkbenchDev(
     output.log(
       formatDashboardSummary({
         ...resolvedDetails,
-        action: 'ready',
         durationMs,
+        heading: 'Sanity Dashboard ready',
         isApp,
+        organizationId: cliConfig.app?.organizationId,
         title: isWorkbenchApp(cliConfig.app) ? cliConfig.app.title : undefined,
         url,
       }),
     )
-    closers.push(bindDevShortcuts({output, url}))
+    const quit = () => void close().then(() => process.exit(0))
+    closers.push(bindDevShortcuts({output, quit, url}))
   }
 
   return {close}
