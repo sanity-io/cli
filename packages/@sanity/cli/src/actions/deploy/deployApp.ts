@@ -17,6 +17,7 @@ import {
   createCoreApp,
   deployConfig,
   deployWorkbenchApp,
+  fetchDeploySummaryDetails,
   formatDeploySummary,
   getApplicationUrl,
   getWorkbench,
@@ -188,6 +189,10 @@ async function runAppDeployment(
     !dryRun && workbench?.icon ? await readIconFromPath(workDir, workbench.icon) : undefined
 
   const startedAt = Date.now()
+  const summaryDetails =
+    workbench && organizationId && !flags.json
+      ? fetchDeploySummaryDetails(organizationId)
+      : undefined
 
   // Create the app before the build so the bundle carries its real id. A
   // redeploy already has it from `deployment.appId`; a dry run skips creation.
@@ -419,12 +424,11 @@ async function runAppDeployment(
           })
         : getWorkbenchUrl(organizationId)
       output.log(
-        await formatDeploySummary({
+        formatDeploySummary({
+          ...(await summaryDetails),
           applicationId,
-          configFile: basename(options.projectRoot.path),
           created: applicationCreated,
           durationMs: Date.now() - startedAt,
-          hasAppId: Boolean(appId),
           isApp: true,
           organizationId,
           title: appTitle,

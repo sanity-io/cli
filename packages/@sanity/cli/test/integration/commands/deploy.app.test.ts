@@ -744,8 +744,8 @@ describe('#deploy app', () => {
     expect(mockDeployWorkbenchApp).toHaveBeenCalledWith(
       expect.objectContaining({applicationId: 'app_existing'}),
     )
-    expect(stdout).toContain('Sanity Dashboard deployed in')
-    expect(stdout).toContain('Updated Workbench App application.')
+    expect(stdout).toContain('Workbench App deployed in')
+    expect(stdout).toContain('Updated Workbench App.')
     expect(stdout).toMatch(
       new RegExp(`URL\\s+https://${organizationId}\\.sanity\\.run/applications/drop-desk-host\n`),
     )
@@ -809,7 +809,8 @@ describe('#deploy app', () => {
       expect(mockDeployWorkbenchApp).toHaveBeenCalledWith(
         expect.objectContaining({applicationId: 'app_taken'}),
       )
-      expect(stdout).toContain('deployment.appId: "app_taken" to sanity.cli.ts')
+      expect(stdout).toContain('Updated Workbench App.')
+      expect(stdout).not.toContain('deployment.appId')
     })
 
     test('picking a new deployment creates the app at the configured slug', async () => {
@@ -840,6 +841,7 @@ describe('#deploy app', () => {
       expect(stdout).toMatch(/App {11}Workbench App\n/)
       expect(stdout).toMatch(/Version {7}just now by Sam\n/)
       expect(stdout).toContain('Created Workbench App as a new application.')
+      expect(stdout).toContain('deployment.appId: "app_new"')
     })
 
     test('an interactive deploy without apps of its type creates without prompting', async () => {

@@ -9,33 +9,36 @@ import {
   settle,
 } from '../dashboardSummary.js'
 
-export async function formatDeploySummary(options: {
-  applicationId: string
-  configFile: string
-  created: boolean
-  durationMs: number
-  hasAppId: boolean
-  isApp: boolean
-  organizationId: string
-  title: string
-  url: string
-}): Promise<string> {
-  const {applicationId, configFile, created, hasAppId, isApp, organizationId, title, ...rest} =
-    options
-
+export async function fetchDeploySummaryDetails(organizationId: string) {
   const [organizationName, userName] = await Promise.all([
     fetchOrganizationName(organizationId),
     settle(request<{name: string}>('/users/me').then((user) => user.name)),
   ])
 
-  const kind = isApp ? 'application' : 'studio'
-  const result = created ? `Created ${title} as a new ${kind}.` : `Updated ${title} ${kind}.`
+  return {organizationName, userName}
+}
+
+export function formatDeploySummary(options: {
+  applicationId: string
+  created: boolean
+  durationMs: number
+  isApp: boolean
+  organizationId: string
+  organizationName?: string
+  title: string
+  url: string
+  userName?: string
+}): string {
+  const {applicationId, created, isApp, title, userName, ...rest} = options
+
+  const result = created
+    ? `Created ${title} as a new ${isApp ? 'application' : 'studio'}.`
+    : `Updated ${title}.`
   const lines = [
     formatDashboardSummary({
       ...rest,
-      action: 'deployed',
+      heading: `${title} deployed`,
       isApp,
-      organizationName,
       title,
       version: userName ? `just now by ${userName}` : 'just now',
     }),
@@ -43,9 +46,9 @@ export async function formatDeploySummary(options: {
     '',
   ]
 
-  if (!hasAppId) {
+  if (created) {
     lines.push(
-      `  ${styleText('dim', 'Add')} deployment.appId: ${styleText('dim', `"${applicationId}" to ${configFile}`)}`,
+      `  ${styleText('dim', 'Add')} deployment.appId: "${applicationId}" ${styleText('dim', 'to sanity.cli.ts so the next deploy updates it')}`,
       '',
     )
   }

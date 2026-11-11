@@ -4,7 +4,7 @@ import {getGlobalCliClient} from '@sanity/cli-core'
 import {logSymbols} from '@sanity/cli-core/ux'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
-import {formatDeploySummary} from '../deploySummary.js'
+import {fetchDeploySummaryDetails, formatDeploySummary} from '../deploySummary.js'
 
 vi.mock(import('@sanity/cli-core'), async (importOriginal) => ({
   ...(await importOriginal()),
@@ -19,10 +19,8 @@ const mockRequest = vi.fn()
 function summarize(options: Partial<Parameters<typeof formatDeploySummary>[0]> = {}) {
   return formatDeploySummary({
     applicationId: 'k3vq8m2rxt',
-    configFile: 'sanity.cli.ts',
     created: false,
     durationMs: 8400,
-    hasAppId: true,
     isApp: true,
     organizationId: 'org-1',
     title: 'Reports',
@@ -44,12 +42,30 @@ afterEach(() => {
   vi.clearAllMocks()
 })
 
+describe('fetchDeploySummaryDetails', () => {
+  test('resolves the organization and deployer names', async () => {
+    await expect(fetchDeploySummaryDetails('org-1')).resolves.toEqual({
+      organizationName: 'Acme',
+      userName: 'Sam',
+    })
+  })
+
+  test('resolves without names when the requests fail', async () => {
+    mockRequest.mockRejectedValue(new Error('Unauthorized'))
+
+    await expect(fetchDeploySummaryDetails('org-1')).resolves.toEqual({
+      organizationName: undefined,
+      userName: undefined,
+    })
+  })
+})
+
 describe('formatDeploySummary', () => {
-  test('a first deploy lists the app, the deployer, and how to pin the created id', async () => {
-    await expect(summarize({created: true, hasAppId: false})).resolves.toBe(
+  test('a first deploy lists the app, the deployer, and how to pin the created id', () => {
+    expect(summarize({created: true, organizationName: 'Acme', userName: 'Sam'})).toBe(
       [
         '',
-        '  Sanity Dashboard deployed in 8.4s',
+        '  Reports deployed in 8.4s',
         '',
         '    Organization  Acme',
         '    App           Reports',
@@ -58,23 +74,24 @@ describe('formatDeploySummary', () => {
         '',
         styleText('green', `  ${logSymbols.success} Created Reports as a new application.`),
         '',
-        `  ${styleText('dim', 'Add')} deployment.appId: ${styleText('dim', '"k3vq8m2rxt" to sanity.cli.ts')}`,
+        `  ${styleText('dim', 'Add')} deployment.appId: "k3vq8m2rxt" ${styleText('dim', 'to sanity.cli.ts so the next deploy updates it')}`,
         '',
       ].join('\n'),
     )
   })
 
-  test('a studio redeploy without org or user access shows only what is known', async () => {
-    mockRequest.mockRejectedValue(new Error('Unauthorized'))
+  test('a redeploy without names lists the organization id and no appId hint', () => {
+    const summary = summarize({isApp: false, title: 'Federated Studio'})
 
-    const summary = await summarize({isApp: false, title: 'Federated Studio'})
-
-    expect(summary.split('\n').slice(3)).toEqual([
-      '    Studio   Federated Studio',
-      `    URL      ${link}`,
-      '    Version  just now',
+    expect(summary.split('\n').slice(1)).toEqual([
+      '  Federated Studio deployed in 8.4s',
       '',
-      styleText('green', `  ${logSymbols.success} Updated Federated Studio studio.`),
+      '    Organization  org-1',
+      '    Studio        Federated Studio',
+      `    URL           ${link}`,
+      '    Version       just now',
+      '',
+      styleText('green', `  ${logSymbols.success} Updated Federated Studio.`),
       '',
     ])
   })
