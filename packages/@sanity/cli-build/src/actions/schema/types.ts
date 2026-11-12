@@ -37,13 +37,13 @@ const baseBuildStudioSchemasAndManifestsWorkerDataFields = {
   workDir: z.string(),
 }
 
-export const projectBuildStudioSchemasAndManifestsWorkerData = z.object({
+const projectBuildStudioSchemasAndManifestsWorkerData = z.object({
   ...baseBuildStudioSchemasAndManifestsWorkerDataFields,
   projectId: z.string(),
   scope: z.literal('project'),
 })
 
-export const globalBuildStudioSchemasAndManifestsWorkerData = z.object({
+const globalBuildStudioSchemasAndManifestsWorkerData = z.object({
   ...baseBuildStudioSchemasAndManifestsWorkerDataFields,
   descriptorClaimType: z.enum(['temporary', 'permanent']),
   scope: z.literal('global'),
