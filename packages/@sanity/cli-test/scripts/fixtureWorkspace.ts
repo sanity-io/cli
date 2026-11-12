@@ -16,7 +16,7 @@ const STUDIO_RELEASE_EXCLUDE = [
 
 /** `allowBuilds` for a fixture install, plus the Studio packages CI should see immediately. */
 export function fixtureWorkspaceConfig(
-  workspace: {allowBuilds?: unknown},
+  workspace: object,
   source = 'pnpm-workspace.yaml',
 ): {allowBuilds: unknown; minimumReleaseAgeExclude: readonly string[]} {
   if (!('allowBuilds' in workspace)) {
