@@ -9,9 +9,9 @@ export interface FixtureOptions {
 /**
  * Name of the `pnpm-workspace.yaml` template bundled alongside the fixtures.
  *
- * The build generates it from the repository's own `pnpm-workspace.yaml` so fixture
- * installs apply the same install policy as the repository, and fixture setup writes
- * it into each fixture as its `pnpm-workspace.yaml`.
+ * The build generates it from the repository's `allowBuilds`, so fixture installs can
+ * run the same dependency scripts. Fixture setup writes it into each fixture as its
+ * `pnpm-workspace.yaml`. The repository's release-age gate stays on the repository.
  *
  * @internal
  */
