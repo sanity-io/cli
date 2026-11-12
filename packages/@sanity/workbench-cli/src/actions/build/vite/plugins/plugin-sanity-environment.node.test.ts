@@ -24,6 +24,12 @@ async function buildOrder(config: Config): Promise<string[]> {
 }
 
 describe('sanityEnvironmentPlugin', () => {
+  test('applies only to build, so serve creates no environments', () => {
+    const plugin = sanityEnvironmentPlugin({input: '/project/.sanity/federation/remote-entry.jsx'})
+
+    expect(plugin.apply).toBe('build')
+  })
+
   test('registers only the federation environment when there is no clientInput', async () => {
     const config = getConfig({input: '/project/.sanity/federation/remote-entry.jsx'})
 

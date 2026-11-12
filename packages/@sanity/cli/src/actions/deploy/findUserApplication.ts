@@ -5,7 +5,6 @@
  */
 
 import {type CliConfig, exitCodes, type Output} from '@sanity/cli-core'
-import {getErrorMessage} from '@sanity/cli-core/errors'
 import {select, Separator, spinner} from '@sanity/cli-core/ux'
 
 import {
@@ -18,6 +17,7 @@ import {createFailFastReporter} from '../../util/checks.js'
 import {describeAppTarget, describeAppTargetError, describeStudioTarget} from './deployChecks.js'
 import {deployDebug} from './deployDebug.js'
 import {resolveAppDeployTarget, resolveStudioDeployTarget} from './resolveDeployTarget.js'
+import {describeServiceUnavailable, getDeployErrorMessage} from './serviceUnavailable.js'
 
 interface FindUserApplicationOptions {
   cliConfig: CliConfig
@@ -114,7 +114,7 @@ export async function findUserApplicationForStudio(
   } catch (error) {
     spin.fail()
     deployDebug('Error finding user application', error)
-    output.error(`Failed to resolve deploy target: ${getErrorMessage(error)}`, {
+    output.error(`Failed to resolve deploy target: ${getDeployErrorMessage(error)}`, {
       exit: exitCodes.RUNTIME_ERROR,
     })
     return {application: null, created: false}
@@ -208,8 +208,12 @@ async function createFromConfiguredHost({
     }
     // otherwise, it's a fatal error
     deployDebug('Error creating user application from config', e)
+    const failure =
+      urlType === 'external'
+        ? 'Error registering external studio'
+        : 'Error creating studio hostname'
     output.error(
-      `Error creating user application from config: ${e instanceof Error ? e.message : e}`,
+      `${failure}: ${describeServiceUnavailable(e) ?? (e instanceof Error ? e.message : e)}`,
       {exit: exitCodes.RUNTIME_ERROR},
     )
     return null

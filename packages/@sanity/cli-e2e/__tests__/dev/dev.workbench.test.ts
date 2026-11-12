@@ -1,4 +1,5 @@
 import {testFixture} from '@sanity/cli-test'
+import stripAnsi from 'strip-ansi'
 import {describe, expect, test} from 'vitest'
 
 import {runCli} from '../../helpers/runCli.js'
@@ -20,6 +21,8 @@ describe.skipIf(isRegistryMode)('sanity dev (workbench/federation)', {timeout: 1
       // starting (and this test never answers it).
       args: ['dev', '--port', String(port), '--no-auto-updates'],
       cwd,
+      // Without DEBUG, Vite only prints its optimizer line when bundling takes over 1s, so a fast run shows none.
+      env: {DEBUG: 'vite:deps'},
       interactive: true,
     })
 
@@ -39,6 +42,9 @@ describe.skipIf(isRegistryMode)('sanity dev (workbench/federation)', {timeout: 1
     // assert it on the raw buffer too.
     const output = session.getOutput()
     expect(output).toContain(`http://localhost:${port}/studios/federated-studio`)
+    // The federation environment is build-only; in dev its optimizer would pre-bundle the deps a second time.
+    expect(stripAnsi(output)).toMatch(/vite:deps \(client\)/)
+    expect(stripAnsi(output)).not.toMatch(/vite:deps \(federation\)/)
 
     // The app server carries the app's bus identity (`__SANITY_APP_ID__`) for
     // `@sanity/runtime` — its slug, so a running app never collides with its

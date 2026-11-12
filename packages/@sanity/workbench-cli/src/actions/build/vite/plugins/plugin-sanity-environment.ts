@@ -41,6 +41,7 @@ export function sanityEnvironmentPlugin(options: EnvironmentOptions): Plugin {
   const output = isBlueprints ? resourceBindingsOutput : undefined
 
   return {
+    apply: 'build',
     config() {
       return {
         builder: {
