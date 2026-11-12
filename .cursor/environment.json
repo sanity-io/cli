@@ -1,0 +1,11 @@
+{
+  "name": "Sanity CLI",
+  "install": "pnpm install --frozen-lockfile && pnpm build:cli",
+  "terminals": [
+    {
+      "name": "watch:cli",
+      "command": "pnpm watch:cli",
+      "description": "Rebuilds the CLI packages on source changes (dist/). Run `npx sanity <command>` inside a fixtures/* directory to try commands without rebuilding."
+    }
+  ]
+}
