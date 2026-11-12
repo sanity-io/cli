@@ -70,7 +70,7 @@ describe('sanity init - Next.js integration', {timeout: 120_000}, () => {
       expect(pkg.scripts.dev).toBe('next dev')
       expect(pkg.scripts.studio).toBe('sanity dev')
       expect(pkg.scripts['studio:build']).toBe('sanity build studio-static')
-      expect(pkg.scripts['studio:deploy']).toBe('sanity deploy')
+      expect(pkg.scripts['studio:deploy']).toBe('sanity deploy studio-static')
 
       const tsconfig = JSON.parse(readFileSync(`${nextjsDir}/tsconfig.json`, 'utf8')) as {
         exclude: string[]

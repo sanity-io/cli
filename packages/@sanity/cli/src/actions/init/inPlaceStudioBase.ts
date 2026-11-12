@@ -15,17 +15,24 @@ import {
 import {type InitOptions} from './types.js'
 import {writeOrOverwrite, writeSourceFiles} from './writeFiles.js'
 
+const STUDIO_OUTPUT_DIR = 'studio-static'
+
+// Deploy builds into the same folder as studio:build. `sanity deploy` with no
+// directory writes to `dist`, which Astro and other frameworks already use.
+const STUDIO_BUILD_COMMAND = `sanity build ${STUDIO_OUTPUT_DIR}`
+const STUDIO_DEPLOY_COMMAND = `sanity deploy ${STUDIO_OUTPUT_DIR}`
+
 const STUDIO_SCRIPTS = {
   studio: 'sanity dev',
-  'studio:build': 'sanity build studio-static',
-  'studio:deploy': 'sanity deploy',
+  'studio:build': STUDIO_BUILD_COMMAND,
+  'studio:deploy': STUDIO_DEPLOY_COMMAND,
 } as const
 
-const STUDIO_TSCONFIG_EXCLUDES = ['.sanity', 'studio-static']
+const STUDIO_TSCONFIG_EXCLUDES = ['.sanity', STUDIO_OUTPUT_DIR]
 
 const STUDIO_GITIGNORE_ENTRIES = [
   {line: '.sanity/', name: '.sanity'},
-  {line: 'studio-static/', name: 'studio-static'},
+  {line: `${STUDIO_OUTPUT_DIR}/`, name: STUDIO_OUTPUT_DIR},
 ]
 
 /**
@@ -154,7 +161,7 @@ async function addStudioScripts({
   const pkgPath = path.join(workDir, 'package.json')
   if (!existsSync(pkgPath)) {
     output.warn(
-      'No package.json found. Add a "studio" script that runs `sanity dev`, plus "studio:build" (`sanity build studio-static`) and "studio:deploy" (`sanity deploy`).',
+      `No package.json found. Add a "studio" script that runs \`sanity dev\`, plus "studio:build" (\`${STUDIO_BUILD_COMMAND}\`) and "studio:deploy" (\`${STUDIO_DEPLOY_COMMAND}\`).`,
     )
     return
   }
@@ -165,14 +172,14 @@ async function addStudioScripts({
     pkg = JSON.parse(raw) as {scripts?: Record<string, string>}
   } catch {
     output.warn(
-      'Couldn\'t update package.json. Add a "studio" script that runs `sanity dev`, plus "studio:build" (`sanity build studio-static`) and "studio:deploy" (`sanity deploy`).',
+      `Couldn't update package.json. Add a "studio" script that runs \`sanity dev\`, plus "studio:build" (\`${STUDIO_BUILD_COMMAND}\`) and "studio:deploy" (\`${STUDIO_DEPLOY_COMMAND}\`).`,
     )
     return
   }
 
   if (!pkg || typeof pkg !== 'object' || Array.isArray(pkg)) {
     output.warn(
-      'Couldn\'t update package.json. Add a "studio" script that runs `sanity dev`, plus "studio:build" (`sanity build studio-static`) and "studio:deploy" (`sanity deploy`).',
+      `Couldn't update package.json. Add a "studio" script that runs \`sanity dev\`, plus "studio:build" (\`${STUDIO_BUILD_COMMAND}\`) and "studio:deploy" (\`${STUDIO_DEPLOY_COMMAND}\`).`,
     )
     return
   }

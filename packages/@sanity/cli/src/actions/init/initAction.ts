@@ -101,8 +101,13 @@ export async function initAction(options: InitOptions, context: InitContext): Pr
   })
   const isNextJs = detectedFramework?.slug === 'nextjs'
   // `--[no-]in-place-studio` is explicit when passed. Otherwise documented
-  // frameworks get the Studio in this folder.
-  const inPlaceFramework = options.inPlaceStudio ?? isInPlaceFramework(detectedFramework, workDir)
+  // frameworks get the Studio in this folder. `--env` and templates this flow
+  // cannot scaffold keep their own init mode.
+  const inPlaceFramework =
+    options.inPlaceStudio ??
+    (isInPlaceFramework(detectedFramework, workDir) &&
+      !options.env &&
+      isInPlaceStudioTemplate(options.template))
 
   let remoteTemplateInfo: RepoInfo | undefined
   if (options.template && checkIsRemoteTemplate(options.template)) {
@@ -317,7 +322,9 @@ export async function initAction(options: InitOptions, context: InitContext): Pr
     await checkNextJsReactCompatibility({
       detectedFramework,
       output,
-      outputPath,
+      // In-place init writes into this folder, so a passed --output-path is
+      // not the app whose React version matters.
+      outputPath: initInPlace ? workDir : outputPath,
     })
   }
 
@@ -329,9 +336,9 @@ export async function initAction(options: InitOptions, context: InitContext): Pr
           : '--dashboard is ignored when adding a Studio to this project',
       )
     }
-    if (options.inPlaceStudio && options.outputPath) {
+    if (options.outputPath) {
       output.warn(
-        '--output-path is ignored with --in-place-studio. The Studio is added to the current folder.',
+        '--output-path is ignored when adding a Studio to this folder. Pass --no-in-place-studio to write the Studio to that path.',
       )
     }
     await initInPlaceStudio({
@@ -396,6 +403,14 @@ export async function initAction(options: InitOptions, context: InitContext): Pr
       }))
 
   trace.complete()
+}
+
+/** In-place Studio scaffolds the blog and clean schemas. Other templates keep their own init flow. */
+const IN_PLACE_STUDIO_TEMPLATES = new Set(['blog', 'clean'])
+
+function isInPlaceStudioTemplate(template: string | undefined): boolean {
+  // No template means the clean/blog prompt, or the clean default when unattended.
+  return template === undefined || IN_PLACE_STUDIO_TEMPLATES.has(template)
 }
 
 function checkFlagsInUnattendedMode(

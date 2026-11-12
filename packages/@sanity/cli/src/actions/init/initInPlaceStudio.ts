@@ -1,3 +1,5 @@
+import {readFile} from 'node:fs/promises'
+import path from 'node:path'
 import {styleText} from 'node:util'
 
 import {type Output, type TelemetryUserProperties} from '@sanity/cli-core'
@@ -145,6 +147,9 @@ export async function initInPlaceStudio({
     '@sanity/vision@6',
     'sanity@6',
     'styled-components@6',
+    // Studio requires React. Next.js, Remix, and React Router already depend on
+    // it; Astro and Nuxt do not, and Yarn does not install peer dependencies.
+    ...(await missingReactPackages(workDir)),
     ...(scaffold?.packages ?? []),
   ]
   if (studioTemplate === 'blog') {
@@ -201,6 +206,39 @@ export async function initInPlaceStudio({
   }
 
   await writeStagingEnvIfNeeded(output, workDir)
+}
+
+const REACT_PACKAGES = [
+  ['react', 'react@19'],
+  ['react-dom', 'react-dom@19'],
+] as const
+
+/** React packages the app does not already declare. Studio needs both. */
+async function missingReactPackages(workDir: string): Promise<string[]> {
+  const declared = await declaredDependencyNames(workDir)
+  return REACT_PACKAGES.filter(([name]) => !declared.has(name)).map(([, spec]) => spec)
+}
+
+async function declaredDependencyNames(workDir: string): Promise<Set<string>> {
+  try {
+    const raw = await readFile(path.join(workDir, 'package.json'), 'utf8')
+    const pkg: unknown = JSON.parse(raw)
+    if (!isRecord(pkg)) return new Set()
+
+    const names = new Set<string>()
+    for (const field of ['dependencies', 'devDependencies', 'peerDependencies'] as const) {
+      const deps = pkg[field]
+      if (!isRecord(deps)) continue
+      for (const name of Object.keys(deps)) names.add(name)
+    }
+    return names
+  } catch {
+    return new Set()
+  }
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value)
 }
 
 /**

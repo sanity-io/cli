@@ -99,18 +99,28 @@ describe('initInPlaceStudio', () => {
   async function writeNextPackageJson() {
     await writeFile(
       join(workDir, 'package.json'),
-      `${JSON.stringify({name: 'next-app', scripts: {build: 'next build', dev: 'next dev'}}, null, 2)}\n`,
+      `${JSON.stringify(
+        {
+          dependencies: {react: '^19.2.0', 'react-dom': '^19.2.0'},
+          name: 'next-app',
+          scripts: {build: 'next build', dev: 'next dev'},
+        },
+        null,
+        2,
+      )}\n`,
     )
   }
 
   test('installs the Sanity packages by default', async () => {
+    await writeNextPackageJson()
+
     await initInPlaceStudio(args())
 
     expect(mockInstallNewPackages).toHaveBeenCalledWith(
-      expect.objectContaining({
+      {
         packageManager: 'pnpm',
-        packages: expect.arrayContaining(['sanity@6', '@sanity/vision@6', '@sanity/image-url@2']),
-      }),
+        packages: ['@sanity/vision@6', 'sanity@6', 'styled-components@6', '@sanity/image-url@2'],
+      },
       expect.objectContaining({workDir}),
     )
     expect(mockInstallNewPackages).toHaveBeenCalledWith(
@@ -130,7 +140,7 @@ describe('initInPlaceStudio', () => {
     // to name the packages rather than point at a bare install
     const lines = outputLog.mock.calls.flat().join('\n')
     expect(lines).toContain(
-      'Skipped dependency install. Run pnpm add --save-prod @sanity/vision@6 sanity@6 styled-components@6 @sanity/image-url@2 next-sanity@13 to add them.',
+      'Skipped dependency install. Run pnpm add --save-prod @sanity/vision@6 sanity@6 styled-components@6 react@19 react-dom@19 @sanity/image-url@2 next-sanity@13 to add them.',
     )
   })
 
@@ -187,7 +197,7 @@ describe('initInPlaceStudio', () => {
       dev: 'next dev',
       studio: 'sanity dev',
       'studio:build': 'sanity build studio-static',
-      'studio:deploy': 'sanity deploy',
+      'studio:deploy': 'sanity deploy studio-static',
     })
 
     const tsconfig = JSON.parse(await readFile(join(workDir, 'tsconfig.json'), 'utf8')) as {
@@ -435,7 +445,13 @@ describe('initInPlaceStudio', () => {
       expect(mockInstallNewPackages).toHaveBeenCalledWith(
         {
           packageManager: 'pnpm',
-          packages: ['@sanity/vision@6', 'sanity@6', 'styled-components@6'],
+          packages: [
+            '@sanity/vision@6',
+            'sanity@6',
+            'styled-components@6',
+            'react@19',
+            'react-dom@19',
+          ],
         },
         expect.objectContaining({workDir}),
       )
@@ -450,7 +466,7 @@ describe('initInPlaceStudio', () => {
         dev: 'astro dev',
         studio: 'sanity dev',
         'studio:build': 'sanity build studio-static',
-        'studio:deploy': 'sanity deploy',
+        'studio:deploy': 'sanity deploy studio-static',
       })
 
       const lines = outputLog.mock.calls.flat().join('\n')
