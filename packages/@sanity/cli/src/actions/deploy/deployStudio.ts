@@ -11,6 +11,8 @@ import {
   type BrettWorkspace,
   createStudio,
   deployWorkbenchApp,
+  fetchDeploySummaryDetails,
+  formatDeploySummary,
   getApplicationUrl,
   getWorkbench,
   getWorkbenchUrl,
@@ -146,6 +148,12 @@ async function runStudioDeployment(
   const appIcon =
     !dryRun && workbench?.icon ? await readIconFromPath(workDir, workbench.icon) : undefined
 
+  const startedAt = Date.now()
+  const summaryDetails =
+    workbench && organizationId && !flags.json
+      ? fetchDeploySummaryDetails(organizationId)
+      : undefined
+
   // Create the studio before the build so the bundle carries its real id. A
   // redeploy already has it from `deployment.appId`; a dry run skips creation.
   let applicationId = targetAppId
@@ -247,7 +255,18 @@ async function runStudioDeployment(
         slug: workbench.slug,
         type: 'studio',
       })
-      logWorkbenchStudioDeployed({applicationId, cliConfig, output, url})
+      output.log(
+        formatDeploySummary({
+          ...(await summaryDetails),
+          applicationId,
+          created: applicationCreated,
+          durationMs: Date.now() - startedAt,
+          isApp: false,
+          organizationId,
+          title: appTitle,
+          url,
+        }),
+      )
       if (isExternallyHosted)
         logExternalHost({built: flags.build, organizationId, output, sourceDir})
       return {
@@ -472,26 +491,6 @@ function toWorkspaces(manifest: StudioManifest | null): BrettWorkspace[] {
     subtitle: workspace.subtitle,
     title: workspace.title,
   }))
-}
-
-/** Renders the workbench studio's deploy result; the appId hint shows only when none is configured. */
-function logWorkbenchStudioDeployed({
-  applicationId,
-  cliConfig,
-  output,
-  url,
-}: {
-  applicationId: string
-  cliConfig: DeployAppOptions['cliConfig']
-  output: DeployAppOptions['output']
-  url: string
-}): void {
-  output.log(`\nSuccess! Studio deployed to ${styleText('cyan', url)}`)
-  if (getAppId(cliConfig)) return
-
-  output.log(`\nAdd ${styleText('cyan', `appId: '${applicationId}'`)}`)
-  output.log(`to the \`deployment\` section in sanity.cli.js or sanity.cli.ts`)
-  output.log(`to avoid prompting for application id on next deploy.`)
 }
 
 /** Tells the customer what their host must do for the Dashboard to load the studio from it. */
