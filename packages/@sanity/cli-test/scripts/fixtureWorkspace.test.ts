@@ -16,6 +16,13 @@ describe('fixtureWorkspaceConfig', () => {
 
     expect(config).toEqual({
       allowBuilds: {esbuild: true, sharp: false},
+      minimumReleaseAgeExclude: [
+        '@portabletext/*',
+        '@sanity/*',
+        '@sanity-labs/*',
+        'sanity',
+        'sanity-plugin-media',
+      ],
     })
   })
 
@@ -29,11 +36,18 @@ describe('fixtureWorkspaceConfig', () => {
     const repoWorkspace = resolve(import.meta.dirname, '../../../..', 'pnpm-workspace.yaml')
     const config = parseYaml(await buildFixtureWorkspace(repoWorkspace)) as {
       allowBuilds: Record<string, boolean>
+      minimumReleaseAgeExclude: string[]
     }
 
     expect(config.allowBuilds.esbuild).toBe(true)
+    expect(config.minimumReleaseAgeExclude).toEqual([
+      '@portabletext/*',
+      '@sanity/*',
+      '@sanity-labs/*',
+      'sanity',
+      'sanity-plugin-media',
+    ])
     expect(config).not.toHaveProperty('minimumReleaseAge')
-    expect(config).not.toHaveProperty('minimumReleaseAgeExclude')
     expect(config).not.toHaveProperty('minimumReleaseAgeStrict')
     expect(config).not.toHaveProperty('catalog')
   })

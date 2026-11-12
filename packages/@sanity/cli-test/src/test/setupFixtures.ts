@@ -166,7 +166,7 @@ export async function setup(_: TestProject, options: SetupTestFixturesOptions = 
 
       if (ignoreWorkspace) {
         // pnpm 11 reads build-script policy from pnpm-workspace.yaml.
-        // The bundled file supplies `allowBuilds` and isolates the install.
+        // The bundled file supplies `allowBuilds`, admits a fresh Studio release, and isolates the install.
         await writeFile(join(toPath, 'pnpm-workspace.yaml'), await readFixtureWorkspace())
       }
 
