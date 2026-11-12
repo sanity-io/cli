@@ -16,7 +16,7 @@ const exec = promisify(execNode)
 /**
  * Reads the bundled `pnpm-workspace.yaml` template that fixture installs run under.
  *
- * It is generated from the repository's own workspace config by the package build, so a
+ * It is generated from the repository's `allowBuilds` by the package build, so a
  * missing file means the package was not built rather than a misconfigured consumer.
  */
 async function readFixtureWorkspace(): Promise<string> {
@@ -166,8 +166,7 @@ export async function setup(_: TestProject, options: SetupTestFixturesOptions = 
 
       if (ignoreWorkspace) {
         // pnpm 11 reads build-script policy from pnpm-workspace.yaml.
-        // A fixture-local workspace both isolates the install and applies the repository's policy,
-        // which the build generated from the repository's own pnpm-workspace.yaml.
+        // The bundled file supplies `allowBuilds`, admits a fresh Studio release, and isolates the install.
         await writeFile(join(toPath, 'pnpm-workspace.yaml'), await readFixtureWorkspace())
       }
 
