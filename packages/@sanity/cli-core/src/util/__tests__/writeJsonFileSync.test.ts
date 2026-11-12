@@ -1,4 +1,4 @@
-import {writeFileSync} from 'node:fs'
+import {chmodSync, writeFileSync} from 'node:fs'
 
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
@@ -22,6 +22,31 @@ describe('writeJsonFileSync', () => {
       '/path/to/file.json',
       `${JSON.stringify({key: 'value'}, null, 2)}\n`,
       'utf8',
+    )
+  })
+
+  test('does not change permissions when no mode is given', () => {
+    writeJsonFileSync('/path/to/file.json', {key: 'value'})
+    expect(chmodSync).not.toHaveBeenCalled()
+  })
+
+  test('creates the file with the given mode and applies it to existing files', () => {
+    writeJsonFileSync('/path/to/file.json', {key: 'value'}, {mode: 0o600})
+    expect(writeFileSync).toHaveBeenCalledWith('/path/to/file.json', '{"key":"value"}\n', {
+      encoding: 'utf8',
+      mode: 0o600,
+    })
+    expect(chmodSync).toHaveBeenCalledWith('/path/to/file.json', 0o600)
+  })
+
+  test('wraps chmod errors with descriptive message and cause', () => {
+    const fsError = new Error('EPERM: operation not permitted')
+    vi.mocked(chmodSync).mockImplementationOnce(() => {
+      throw fsError
+    })
+
+    expect(() => writeJsonFileSync('/path/to/file.json', {}, {mode: 0o600})).toThrow(
+      expect.objectContaining({cause: fsError, message: 'Failed to write "/path/to/file.json"'}),
     )
   })
 
