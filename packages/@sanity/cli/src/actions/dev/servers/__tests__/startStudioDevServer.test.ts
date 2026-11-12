@@ -1,4 +1,5 @@
 import {type CliConfig, exitCodes} from '@sanity/cli-core'
+import {spinner} from '@sanity/cli-core/ux'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
 import {
@@ -117,6 +118,17 @@ describe('startStudioDevServer', () => {
     if (!result.started) throw new Error('expected the server to start')
     expect(result.close).toBeDefined()
     expect(result.server).toBeDefined()
+  })
+
+  test('prints no ready line when announceUrl is false', async () => {
+    const started = createMockDevServer()
+    mockStartDevServer.mockResolvedValueOnce(started)
+
+    const result = await startStudioDevServer(createDevOptions({announceUrl: false}))
+
+    expect(result.started).toBe(true)
+    expect(spinner).toHaveBeenCalledWith(expect.objectContaining({isSilent: true}))
+    expect(started.server.config.logger.info).not.toHaveBeenCalled()
   })
 
   describe('unclaimed sign-in URL', () => {
@@ -361,6 +373,25 @@ describe('startStudioDevServer', () => {
           packages: [['sanity', '3.50.0']],
         }),
         expect.anything(),
+      )
+    })
+
+    test('skips the startup checks and notices when the workbench rebuilds the server', async () => {
+      mockShouldAutoUpdate.mockReturnValue(true)
+      mockIsInteractive.mockReturnValue(true)
+      const options = createDevOptions({
+        announceUrl: false,
+        cliConfig: {schemaExtraction: {enabled: true}} as CliConfig,
+        rebuild: true,
+      })
+
+      const result = await startStudioDevServer(options)
+
+      expect(result.started).toBe(true)
+      expect(mockCompareDependencyVersions).not.toHaveBeenCalled()
+      expect(mockCheckStudioDependencyVersions).not.toHaveBeenCalled()
+      expect(options.output.log).not.toHaveBeenCalledWith(
+        expect.stringContaining('schema extraction'),
       )
     })
 

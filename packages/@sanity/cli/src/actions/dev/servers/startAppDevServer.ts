@@ -52,7 +52,7 @@ export async function startAppDevServer(options: DevActionOptions): Promise<Star
   const config = getDevServerConfig({cliConfig, flags, httpPort, output, workDir})
 
   try {
-    output.log('Starting dev server')
+    if (announceUrl) output.log('Starting dev server')
 
     const appTitle = cliConfig && 'app' in cliConfig ? cliConfig.app?.title : undefined
     const {close, server} = await startDevServer({

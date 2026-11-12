@@ -28,7 +28,7 @@ import {getDevServerConfig} from './getDevServerConfig.js'
 export async function startStudioDevServer(
   options: DevActionOptions,
 ): Promise<StartDevServerResult> {
-  const {announceUrl = true, cliConfig, flags, httpPort, output, workDir} = options
+  const {announceUrl = true, cliConfig, flags, httpPort, output, rebuild, workDir} = options
   const projectId = cliConfig?.api?.projectId
   let organizationId: string | undefined
 
@@ -36,18 +36,14 @@ export async function startStudioDevServer(
   // meaning for them and is ignored.
   const loadInDashboard = flags['load-in-dashboard'] && !isWorkbenchApp(cliConfig?.app)
 
-  // Check studio dependency versions
-  await checkStudioDependencyVersions(workDir, output)
+  if (!rebuild) await checkStudioDependencyVersions(workDir, output)
 
   const {installedSanityVersion} = await checkRequiredDependencies({
     ...options,
     ...checkDependenciesEventListenerFactory(output),
   })
 
-  // Check if auto-updates are enabled
-  const autoUpdatesEnabled = shouldAutoUpdate({cliConfig, flags, output})
-
-  if (autoUpdatesEnabled) {
+  if (!rebuild && shouldAutoUpdate({cliConfig, flags, output})) {
     // Get the clean version without build metadata: https://semver.org/#spec-item-10
     const cleanSanityVersion = semverParse(installedSanityVersion)?.version
     if (!cleanSanityVersion) {
@@ -112,7 +108,7 @@ export async function startStudioDevServer(
     }
   }
 
-  if (cliConfig?.schemaExtraction?.enabled) {
+  if (!rebuild && cliConfig?.schemaExtraction?.enabled) {
     output.log(`${logSymbols.info} Running dev server with schema extraction enabled`)
   }
 
@@ -134,16 +130,15 @@ export async function startStudioDevServer(
 
   try {
     const startTime = Date.now()
-    const spin = spinner('Starting dev server').start()
+    const spin = spinner({isSilent: !announceUrl, text: 'Starting dev server'}).start()
     const {close, server} = await startDevServer(config)
+    spin.succeed()
 
     const {info: loggerInfo} = server.config.logger
     const {port} = server.config.server
     const httpHost = config.httpHost || 'localhost'
 
     if (loadInDashboard) {
-      spin.succeed()
-
       output.log(`Dev server started on port ${port}`)
       output.log(`View your studio in the Sanity dashboard here:`)
       output.log(
@@ -156,7 +151,7 @@ export async function startStudioDevServer(
           }),
         ),
       )
-    } else {
+    } else if (announceUrl) {
       const startupDuration = Date.now() - startTime
       const url = withUnclaimedSignInHash(
         `http://${httpHost || 'localhost'}:${port}${config.basePath}`,
@@ -165,13 +160,12 @@ export async function startStudioDevServer(
       const appType = 'Sanity Studio'
 
       const viteVersion = await getLocalPackageVersion('vite', import.meta.url)
-      spin.succeed()
 
       loggerInfo(
         `${appType} ` +
           `using ${styleText('cyan', `vite@${viteVersion}`)} ` +
-          `ready in ${styleText('cyan', `${Math.ceil(startupDuration)}ms`)}` +
-          (announceUrl ? ` and running at ${styleText('cyan', url)}` : ''),
+          `ready in ${styleText('cyan', `${Math.ceil(startupDuration)}ms`)} ` +
+          `and running at ${styleText('cyan', url)}`,
       )
     }
 

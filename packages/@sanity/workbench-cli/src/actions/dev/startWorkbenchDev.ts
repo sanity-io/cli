@@ -1,9 +1,11 @@
-import {styleText} from 'node:util'
-
 import {type CliConfig, type Output} from '@sanity/cli-core'
 
+import {isWorkbenchApp} from '../../defineApp.js'
 import {createServerLifecycle, toDisplayHost} from '../../util/serverOrchestration.js'
+import {formatDashboardSummary} from '../dashboardSummary.js'
 import {type AppServerResult, startAppServerSupervisor} from './appServerSupervisor.js'
+import {bindDevShortcuts} from './bindDevShortcuts.js'
+import {fetchDevServerDetails, waitForDevServerDetails} from './devServerSummary.js'
 import {type DevServerManifest} from './registry.js'
 import {startDevServerRegistration} from './startDevServerRegistration.js'
 import {
@@ -33,6 +35,7 @@ export interface StartWorkbenchDevOptions {
     announceUrl: boolean
     cliConfig: CliConfig
     httpPort: number
+    rebuild: boolean
   }) => Promise<AppServerResult>
   workDir: string
 }
@@ -67,7 +70,7 @@ export async function startWorkbenchDev(
   // The remote can't render itself, so it runs as a plain app server (not the
   // shell) that still bridges the registry.
   if (process.env.SANITY_INTERNAL_IS_WORKBENCH_REMOTE === 'true') {
-    const remote = await startAppServer({announceUrl: true, cliConfig, httpPort})
+    const remote = await startAppServer({announceUrl: true, cliConfig, httpPort, rebuild: false})
     if (!remote.started) return {close: async () => {}}
 
     const coordinator = startWorkbenchRemoteCoordinator({server: remote.server})
@@ -83,6 +86,8 @@ export async function startWorkbenchDev(
   // Unwound in reverse on any failure or on close(): the watcher stops before
   // the app server, and the supervisor waits out an in-flight rebuild.
   const {close, closers, installSignalHandlers} = createServerLifecycle()
+  const startedAt = Date.now()
+  const details = fetchDevServerDetails(cliConfig)
 
   const workbench = await startWorkbenchDevServer({
     cacheDir,
@@ -102,7 +107,8 @@ export async function startWorkbenchDev(
 
   const supervised = await startAppServerSupervisor({
     cliConfig,
-    start: (config) => startAppServer({announceUrl, cliConfig: config, httpPort: appPort}),
+    start: (config, {rebuild}) =>
+      startAppServer({announceUrl, cliConfig: config, httpPort: appPort, rebuild}),
     workDir,
   }).catch(async (err) => {
     await close()
@@ -139,12 +145,27 @@ export async function startWorkbenchDev(
     throw err
   }
 
-  if (workbench.workbenchAvailable) {
-    const appUrl = `http://${toDisplayHost(workbench.httpHost)}:${workbench.workbenchPort}${dashboardAppPath ?? ''}`
-    output.log(`Dashboard dev server started at ${styleText(['blue', 'underline'], appUrl)}`)
-  }
+  const durationMs = Date.now() - startedAt
+  const resolvedDetails = workbench.workbenchAvailable ? await waitForDevServerDetails(details) : {}
 
   installSignalHandlers()
+
+  if (workbench.workbenchAvailable) {
+    const url = `http://${toDisplayHost(workbench.httpHost)}:${workbench.workbenchPort}${dashboardAppPath ?? ''}`
+    output.log(
+      formatDashboardSummary({
+        ...resolvedDetails,
+        durationMs,
+        heading: 'Sanity Dashboard ready',
+        isApp,
+        organizationId: cliConfig.app?.organizationId,
+        title: isWorkbenchApp(cliConfig.app) ? cliConfig.app.title : undefined,
+        url,
+      }),
+    )
+    const quit = () => void close().then(() => process.exit(0))
+    closers.push(bindDevShortcuts({output, quit, url}))
+  }
 
   return {close}
 }

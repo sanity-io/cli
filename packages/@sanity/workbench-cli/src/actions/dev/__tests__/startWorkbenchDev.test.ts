@@ -1,3 +1,4 @@
+import {PassThrough} from 'node:stream'
 import {styleText} from 'node:util'
 
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
@@ -13,6 +14,7 @@ import {
 const mockStartWorkbenchDevServer = vi.hoisted(() => vi.fn())
 const mockStartDevServerRegistration = vi.hoisted(() => vi.fn())
 const mockGetCliConfigUncached = vi.hoisted(() => vi.fn())
+const mockFetchDevServerDetails = vi.hoisted(() => vi.fn())
 
 vi.mock('@sanity/cli-core', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@sanity/cli-core')>()),
@@ -20,6 +22,10 @@ vi.mock('@sanity/cli-core', async (importOriginal) => ({
 }))
 vi.mock('../startWorkbenchDevServer.js', () => ({
   startWorkbenchDevServer: mockStartWorkbenchDevServer,
+}))
+vi.mock('../devServerSummary.js', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../devServerSummary.js')>()),
+  fetchDevServerDetails: mockFetchDevServerDetails,
 }))
 vi.mock('../startDevServerRegistration.js', () => ({
   startDevServerRegistration: mockStartDevServerRegistration,
@@ -71,6 +77,7 @@ describe('startWorkbenchDev', () => {
     mockStartDevServerRegistration.mockResolvedValue({close: vi.fn().mockResolvedValue(undefined)})
     mockStartAppServer.mockResolvedValue(mockAppServer({port: 3334}))
     mockGetCliConfigUncached.mockResolvedValue(workbenchCliConfig())
+    mockFetchDevServerDetails.mockResolvedValue({organizationName: 'Acme'})
   })
 
   afterEach(() => {
@@ -116,7 +123,9 @@ describe('startWorkbenchDev', () => {
       await run({output})
 
       expect(output.log).toHaveBeenCalledWith(
-        `Dashboard dev server started at ${styleText(['blue', 'underline'], 'http://localhost:3333/applications/my-app')}`,
+        expect.stringContaining(
+          styleText(['blue', 'underline'], 'http://localhost:3333/applications/my-app'),
+        ),
       )
     })
 
@@ -126,8 +135,29 @@ describe('startWorkbenchDev', () => {
       await run({output})
 
       expect(output.log).toHaveBeenCalledWith(
-        `Dashboard dev server started at ${styleText(['blue', 'underline'], 'http://localhost:3333')}`,
+        expect.stringContaining(`${styleText(['blue', 'underline'], 'http://localhost:3333')}\n`),
       )
+    })
+
+    test('starts fetching details before the servers and prints them in the summary', async () => {
+      const output = createMockOutput()
+
+      await run({output})
+
+      expect(mockFetchDevServerDetails.mock.invocationCallOrder[0]).toBeLessThan(
+        mockStartWorkbenchDevServer.mock.invocationCallOrder[0],
+      )
+      expect(output.log).toHaveBeenCalledWith(expect.stringContaining('Organization  Acme'))
+      expect(output.log).toHaveBeenCalledWith(expect.stringContaining('App           Test App'))
+    })
+
+    test('lists the organization id when its name is unavailable', async () => {
+      mockFetchDevServerDetails.mockResolvedValue({})
+      const output = createMockOutput()
+
+      await run({output})
+
+      expect(output.log).toHaveBeenCalledWith(expect.stringContaining('Organization  org-123'))
     })
 
     test('shows the existing lock host in the URL, not the caller host', async () => {
@@ -218,7 +248,7 @@ describe('startWorkbenchDev', () => {
       expect(first.close).toHaveBeenCalledTimes(1)
       expect(mockStartAppServer).toHaveBeenCalledTimes(2)
       expect(mockStartAppServer).toHaveBeenLastCalledWith(
-        expect.objectContaining({cliConfig: freshConfig}),
+        expect.objectContaining({cliConfig: freshConfig, rebuild: true}),
       )
     })
 
@@ -304,6 +334,27 @@ describe('startWorkbenchDev', () => {
 
       expect(process.listenerCount('SIGINT')).toBe(sigintBefore)
       expect(process.listenerCount('SIGTERM')).toBe(sigtermBefore)
+    })
+
+    test('q tears down, restores the terminal, and exits cleanly', async () => {
+      const exitSpy = vi.spyOn(process, 'exit').mockReturnValue(undefined as never)
+      const realStdin = process.stdin
+      const stdin = Object.assign(new PassThrough(), {isTTY: true, setRawMode: vi.fn()})
+      Object.defineProperty(process, 'stdin', {configurable: true, value: stdin})
+      try {
+        const appClose = vi.fn().mockResolvedValue(undefined)
+        mockStartAppServer.mockResolvedValue({...mockAppServer({port: 3334}), close: appClose})
+
+        await run()
+        stdin.write('q')
+        await vi.waitFor(() => expect(exitSpy).toHaveBeenCalledWith(0))
+
+        expect(appClose).toHaveBeenCalled()
+        expect(stdin.setRawMode).toHaveBeenLastCalledWith(false)
+      } finally {
+        Object.defineProperty(process, 'stdin', {configurable: true, value: realStdin})
+        exitSpy.mockRestore()
+      }
     })
 
     test('re-raises the signal once teardown settles so the default exit runs', async () => {

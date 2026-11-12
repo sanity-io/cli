@@ -6,7 +6,8 @@ export async function extractManifest({
   applicationId,
   outPath,
   path,
+  silent,
   workDir,
 }: ExtractManifestOptions): Promise<void> {
-  await internalExtractManifest({applicationId, outPath, path, workDir})
+  await internalExtractManifest({applicationId, outPath, path, silent, workDir})
 }

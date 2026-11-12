@@ -275,6 +275,9 @@ catalogs:
     obug:
       specifier: ^3.0.0
       version: 3.0.0
+    open:
+      specifier: ^11.0.0
+      version: 11.0.2
     ora:
       specifier: ^9.0.0
       version: 9.4.1
@@ -858,7 +861,7 @@ importers:
         specifier: ^2.0.0
         version: 2.0.0
       open:
-        specifier: ^11.0.0
+        specifier: 'catalog:'
         version: 11.0.2
       p-map:
         specifier: ^7.0.3
@@ -1468,6 +1471,9 @@ importers:
       form-data:
         specifier: 'catalog:'
         version: 4.0.6
+      open:
+        specifier: 'catalog:'
+        version: 11.0.2
       rxjs:
         specifier: 'catalog:'
         version: 7.8.2
