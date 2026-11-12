@@ -7,15 +7,18 @@ import {uploadSchemaToLexicon} from '../uploadSchemaToLexicon.js'
 const mockGetLocalPackageVersion = vi.hoisted(() => vi.fn())
 const mockPrepareSchemaUpload = vi.hoisted(() => vi.fn())
 const mockGetProjectCliClient = vi.hoisted(() => vi.fn())
+const mockGetGlobalCliClient = vi.hoisted(() => vi.fn())
 
 let mockUploadSchema: Mock
 let mockGenerateStudioManifest: Mock
 let mockWithConfig: Mock
+let mockGlobalRequest: Mock
 
 vi.mock(import('@sanity/cli-core'), async (importOriginal) => {
   const actual = await importOriginal()
   return {
     ...actual,
+    getGlobalCliClient: mockGetGlobalCliClient,
     getLocalPackageVersion: mockGetLocalPackageVersion,
     getProjectCliClient: mockGetProjectCliClient,
     resolveLocalPackage: vi.fn(),
@@ -54,9 +57,13 @@ describe('uploadSchemaToLexicon', () => {
     mockUploadSchema = vi.fn()
     mockGenerateStudioManifest = vi.fn()
     mockWithConfig = vi.fn()
+    mockGlobalRequest = vi.fn()
 
     mockGetProjectCliClient.mockResolvedValue({
       withConfig: (...args: unknown[]) => mockWithConfig(...args),
+    })
+    mockGetGlobalCliClient.mockResolvedValue({
+      request: (...args: unknown[]) => mockGlobalRequest(...args),
     })
   })
 
@@ -100,6 +107,68 @@ describe('uploadSchemaToLexicon', () => {
       expect(result).not.toBeNull()
       expect(result?.workspaces).toHaveLength(1)
       expect(mockPrepareSchemaUpload).toHaveBeenCalledTimes(1)
+      expect(mockGetGlobalCliClient).toHaveBeenCalledWith({
+        apiVersion: 'v2025-06-01',
+        requireUser: true,
+      })
+    })
+
+    test('requests go through the global client and commit is called', async () => {
+      const mockCommit = vi.fn().mockResolvedValue(undefined)
+      mockGetLocalPackageVersion.mockResolvedValue('3.0.0')
+      mockResolveLocalPackage.mockResolvedValue({
+        generateStudioManifest: mockGenerateStudioManifest,
+        uploadSchema: mockUploadSchema,
+      })
+      mockGlobalRequest.mockResolvedValue({ok: true})
+      mockPrepareSchemaUpload.mockImplementation(async (_schema, options) => {
+        await options.requester({
+          body: '{"foo":"bar"}',
+          headers: {'Content-Type': 'application/json'},
+          method: 'POST',
+          url: '/v2025-06-01/descriptors/upload',
+        })
+        return {commit: mockCommit, descriptorId: 'descriptor-123'}
+      })
+      mockGenerateStudioManifest.mockResolvedValueOnce({
+        buildId: '"123"',
+        bundleVersion: '3.0.0',
+        createdAt: '2024-01-01T00:00:00.000Z',
+        workspaces: [
+          {
+            basePath: '/',
+            dataset: 'production',
+            name: 'default',
+            projectId: 'proj-123',
+            schemaDescriptorId: 'descriptor-123',
+            title: 'Test Workspace',
+          },
+        ],
+      })
+
+      await uploadSchemaToLexicon({
+        ...listeners,
+        claimType: 'temporary',
+        scope: 'global',
+        workDir: '/tmp/test',
+        workspaces: [createWorkspace()],
+      })
+
+      expect(mockPrepareSchemaUpload).toHaveBeenCalledWith(
+        expect.anything(),
+        expect.objectContaining({
+          apiVersion: 'v2025-06-01',
+          claim: 'temporary',
+          contextKey: 'dataset:proj-123:production',
+        }),
+      )
+      expect(mockGlobalRequest).toHaveBeenCalledWith({
+        body: '{"foo":"bar"}',
+        headers: {'content-type': 'application/json'},
+        method: 'POST',
+        url: '/descriptors/upload',
+      })
+      expect(mockCommit).toHaveBeenCalledTimes(1)
     })
 
     test('multiple workspaces', async () => {

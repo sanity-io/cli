@@ -206,6 +206,7 @@ describe('buildStudioSchemasAndManifestsWorker', () => {
       expect(result.studioManifest).toBe(studioManifest)
       expect(mockUploadSchemaToLexicon).toHaveBeenCalledWith({
         ...listeners,
+        claimType: 'temporary',
         scope: 'global',
         verbose: true,
         workDir: '/studio',
