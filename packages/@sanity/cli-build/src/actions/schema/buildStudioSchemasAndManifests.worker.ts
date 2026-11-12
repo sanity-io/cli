@@ -17,7 +17,11 @@ async function main() {
   const options = buildStudioSchemasAndManifestsWorkerData.parse(workerData)
 
   try {
-    const message = await workerBuildStudioSchemasAndManifests(options)
+    const message = await workerBuildStudioSchemasAndManifests(options, {
+      onGenerateManifestDone() {},
+      onGenerateManifestFail(_error) {},
+      onGenerateManifestStart() {},
+    })
 
     parentPort.postMessage(message)
   } catch (error) {

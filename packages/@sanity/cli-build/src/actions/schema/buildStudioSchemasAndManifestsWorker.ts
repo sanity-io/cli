@@ -11,6 +11,12 @@ import {uploadSchemaToLexicon} from './uploadSchemaToLexicon.js'
 
 const debug = subdebug('buildStudioSchemasAndManifests.worker')
 
+interface BuildStudioSchemasAndManifestsListeners {
+  onGenerateManifestDone: () => void
+  onGenerateManifestFail: (error: unknown) => void
+  onGenerateManifestStart: () => void
+}
+
 /**
  * This function must only be called from another worker process.
  * @param options - The worker options
@@ -19,6 +25,7 @@ export async function workerBuildStudioSchemasAndManifests(
   options: BuildStudioSchemasAndManifestsWorkerData & {
     workspaceSchemaHandler?: (workspaces: WorkspaceSchemaInput[]) => Promise<void>
   },
+  listeners: BuildStudioSchemasAndManifestsListeners,
 ): Promise<BuildStudioSchemasAndManifestsWorkerSuccess> {
   if (isMainThread) {
     throw new Error(
@@ -30,7 +37,6 @@ export async function workerBuildStudioSchemasAndManifests(
     configPath,
     isExternal,
     outPath,
-    projectId,
     schemaRequired,
     verbose,
     workDir,
@@ -51,12 +57,12 @@ export async function workerBuildStudioSchemasAndManifests(
 
   debug('Handling build for %s', isExternal ? 'external' : 'internal')
 
-  const uploadToLexiconPromise = uploadSchemaToLexicon({
-    projectId,
-    verbose,
-    workDir,
-    workspaces,
-  })
+  const uploadOptions = {verbose, workDir, workspaces, ...listeners}
+  const uploadToLexiconPromise = uploadSchemaToLexicon(
+    options.scope === 'project'
+      ? {...uploadOptions, projectId: options.projectId, scope: options.scope}
+      : {...uploadOptions, claimType: options.descriptorClaimType, scope: options.scope},
+  )
 
   let writeManifestPromise: Promise<void> | undefined
   if (!isExternal) writeManifestPromise = writeManifestFile({outPath, workDir, workspaceManifests})
