@@ -113,9 +113,15 @@ describe('deployStudioSchemasAndManifestsWorker', () => {
         outPath: 'dist/static',
         projectId,
         schemaRequired: false,
+        scope: 'project',
         verbose: true,
         workDir: '/studio',
         workspaceSchemaHandler: expect.any(Function),
+      }),
+      expect.objectContaining({
+        onGenerateManifestDone: expect.any(Function),
+        onGenerateManifestFail: expect.any(Function),
+        onGenerateManifestStart: expect.any(Function),
       }),
     )
   })
