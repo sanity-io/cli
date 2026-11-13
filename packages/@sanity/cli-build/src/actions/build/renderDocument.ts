@@ -1,7 +1,11 @@
+import {existsSync} from 'node:fs'
+import path from 'node:path'
+
 import {ux} from '@oclif/core'
 import {tsxWorkerTask} from '@sanity/cli-core/tasks'
 
 import {buildDebug} from './buildDebug.js'
+import {getPossibleDocumentComponentLocations} from './getPossibleDocumentComponentLocations.js'
 
 interface DocumentProps {
   basePath: string
@@ -15,6 +19,12 @@ interface RenderDocumentOptions {
   studioRootPath: string
 
   autoUpdatesCssUrls?: string[]
+  /**
+   * Whether to load a custom `_document.js`/`_document.tsx` component from the
+   * project root. Defaults to `true`. When `false`, the default document is
+   * rendered and a warning is printed if such a file exists.
+   */
+  documentComponent?: boolean
   importMap?: {
     imports?: Record<string, string>
   }
@@ -33,6 +43,10 @@ interface RenderDocumentWorkerResult {
 }
 
 export async function renderDocument(options: RenderDocumentOptions): Promise<string> {
+  if (options.documentComponent === false) {
+    warnAboutIgnoredDocumentComponents(options.studioRootPath)
+  }
+
   buildDebug('Starting worker thread for %s', import.meta.url)
   try {
     const msg = await tsxWorkerTask<RenderDocumentWorkerResult>(
@@ -85,5 +99,19 @@ export async function renderDocument(options: RenderDocumentOptions): Promise<st
   } catch (err) {
     buildDebug('Worker errored: %s', err.message)
     throw err
+  }
+}
+
+function warnAboutIgnoredDocumentComponents(studioRootPath: string): void {
+  for (const location of getPossibleDocumentComponentLocations(studioRootPath)) {
+    const warnKey = `ignored:${location}`
+    if (hasWarnedAbout.has(warnKey) || !existsSync(location)) continue
+
+    hasWarnedAbout.add(warnKey)
+    ux.warn(
+      `Ignoring ${path.relative(process.cwd(), location) || location}: custom document ` +
+        'components are not loaded when `unstable_documentComponent` is `false`. To customize ' +
+        'the HTML document, add a Vite plugin through the `vite` option in sanity.cli.ts.',
+    )
   }
 }

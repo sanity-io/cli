@@ -13,10 +13,16 @@ export async function getDocumentComponent(
   parent: MessagePort,
   studioRootPath: string,
   isApp?: boolean,
+  documentComponent = true,
 ) {
   buildDebug('Loading default document component from `sanity` module')
 
   const Document = isApp ? BasicDocument : DefaultDocument
+
+  if (!documentComponent) {
+    buildDebug('Custom document components are disabled, using default document component')
+    return Document
+  }
 
   buildDebug('Attempting to load user-defined document component from %s', studioRootPath)
   const userDefined = await tryLoadDocumentComponent(studioRootPath)

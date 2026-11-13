@@ -10,6 +10,8 @@ export interface RenderDocumentWorkerOptions {
   studioRootPath: string
 
   autoUpdatesCssUrls?: string[]
+  /** Whether to load a custom `_document.js`/`_document.tsx` component. Defaults to `true`. */
+  documentComponent?: boolean
   importMap?: {
     imports?: Record<string, string>
   }
@@ -28,7 +30,7 @@ export async function renderDocumentWorker(
   parent: MessagePort,
   options: RenderDocumentWorkerOptions,
 ) {
-  const {autoUpdatesCssUrls, importMap, isApp, props, studioRootPath} = options
+  const {autoUpdatesCssUrls, documentComponent, importMap, isApp, props, studioRootPath} = options
 
   if (typeof studioRootPath !== 'string') {
     parent.postMessage({
@@ -53,6 +55,7 @@ export async function renderDocumentWorker(
     importMap,
     isApp,
     autoUpdatesCssUrls,
+    documentComponent,
   )
 
   parent.postMessage({
