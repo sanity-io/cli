@@ -38,19 +38,6 @@ export default unstable_defineView("panel", {
       import { Box, Button, Flex, ThemeProvider, usePrefersDark } from "@sanity/ui";
       import { buildTheme } from "@sanity/ui/theme";
       import { CloseIcon } from "@sanity/icons";
-
-      const Title = () => (
-        <PanelProvider>
-          <PanelTitle />
-        </PanelProvider>
-      );
-
-      const Body = () => (
-        <PanelProvider>
-          <PanelBody />
-        </PanelProvider>
-      );
-
       const theme = buildTheme();
 
       export default function Panel() {
@@ -61,7 +48,9 @@ export default unstable_defineView("panel", {
           <ThemeProvider scheme={prefersDark ? "dark" : "light"} theme={theme}>
             <Flex direction="column" height="fill" paddingY={2}>
               <Flex align="center" gap={2} justify="space-between" paddingX={3} paddingY={2}>
-                <Title />
+                <PanelProvider>
+                  <PanelTitle />
+                </PanelProvider>
                 <Button
                   aria-label="Close panel"
                   fontSize={1}
@@ -72,7 +61,9 @@ export default unstable_defineView("panel", {
                 />
               </Flex>
               <Box flex={1} overflow="auto" paddingX={3}>
-                <Body />
+                <PanelProvider>
+                  <PanelBody />
+                </PanelProvider>
               </Box>
             </Flex>
           </ThemeProvider>
@@ -100,10 +91,59 @@ export default unstable_defineView("panel", {
       import { buildTheme } from "@sanity/ui/theme";
       import { CloseIcon } from "@sanity/icons";
       import { usePanel } from "sanity/dashboard";
+      const theme = buildTheme();
+
+      export default function Panel() {
+        const { onClose, view } = usePanel();
+        const prefersDark = usePrefersDark();
+
+        return (
+          <ThemeProvider scheme={prefersDark ? "dark" : "light"} theme={theme}>
+            <Flex direction="column" height="fill" paddingY={2}>
+              <Flex align="center" gap={2} justify="space-between" paddingX={3} paddingY={2}>
+                <Text size={2}>{view.title}</Text>
+                <Button
+                  aria-label="Close panel"
+                  fontSize={1}
+                  icon={CloseIcon}
+                  mode="bleed"
+                  onClick={onClose}
+                  padding={2}
+                />
+              </Flex>
+              <Box flex={1} overflow="auto" paddingX={3}>
+                <NotificationsPanel />
+              </Box>
+            </Flex>
+          </ThemeProvider>
+        );
+      }"
+    `)
+  })
+
+  test('aliases a panel UI component the file already imports and hoists a title it cannot inline', () => {
+    expect(
+      migrate(`import { unstable_defineView } from "sanity/dashboard";
+import { Box } from "ui5";
+
+export default unstable_defineView("panel", {
+  panel: () => <Box>Body</Box>,
+  title: () => {
+    const label = "Title";
+    return <Box>{label}</Box>;
+  },
+});`),
+    ).toMatchInlineSnapshot(`
+      "import { usePanel } from "sanity/dashboard";
+      import { Box } from "ui5";
+
+      import { Box as Box2, Button, Flex, ThemeProvider, usePrefersDark } from "@sanity/ui";
+      import { buildTheme } from "@sanity/ui/theme";
+      import { CloseIcon } from "@sanity/icons";
 
       const Title = () => {
-        const { view } = usePanel();
-        return <Text size={2}>{view.title}</Text>;
+        const label = "Title";
+        return <Box>{label}</Box>;
       };
 
       const theme = buildTheme();
@@ -126,56 +166,8 @@ export default unstable_defineView("panel", {
                   padding={2}
                 />
               </Flex>
-              <Box flex={1} overflow="auto" paddingX={3}>
-                <NotificationsPanel />
-              </Box>
-            </Flex>
-          </ThemeProvider>
-        );
-      }"
-    `)
-  })
-
-  test('aliases a panel UI component that the file already imports from another package', () => {
-    expect(
-      migrate(`import { unstable_defineView } from "sanity/dashboard";
-import { Box } from "ui5";
-
-export default unstable_defineView("panel", {
-  panel: () => <Box>Body</Box>,
-  title: () => <Box>Title</Box>,
-});`),
-    ).toMatchInlineSnapshot(`
-      "import { usePanel } from "sanity/dashboard";
-      import { Box } from "ui5";
-
-      import { Box as Box2, Button, Flex, ThemeProvider, usePrefersDark } from "@sanity/ui";
-      import { buildTheme } from "@sanity/ui/theme";
-      import { CloseIcon } from "@sanity/icons";
-      const Title = () => <Box>Title</Box>;
-      const Body = () => <Box>Body</Box>;
-      const theme = buildTheme();
-
-      export default function Panel() {
-        const { onClose } = usePanel();
-        const prefersDark = usePrefersDark();
-
-        return (
-          <ThemeProvider scheme={prefersDark ? "dark" : "light"} theme={theme}>
-            <Flex direction="column" height="fill" paddingY={2}>
-              <Flex align="center" gap={2} justify="space-between" paddingX={3} paddingY={2}>
-                <Title />
-                <Button
-                  aria-label="Close panel"
-                  fontSize={1}
-                  icon={CloseIcon}
-                  mode="bleed"
-                  onClick={onClose}
-                  padding={2}
-                />
-              </Flex>
               <Box2 flex={1} overflow="auto" paddingX={3}>
-                <Body />
+                <Box>Body</Box>
               </Box2>
             </Flex>
           </ThemeProvider>
@@ -221,7 +213,7 @@ export default unstable_defineView("tile", {
 // Renders the overview.
 export default unstable_defineView("tile", {
   tile: function OverviewTile({ view }) {
-    return <Overview title={view.title} size={view.size} />;
+    return <Overview title={view.title} />;
   },
 });`),
     ).toMatchInlineSnapshot(`
@@ -230,19 +222,19 @@ export default unstable_defineView("tile", {
       // Renders the overview.
       function OverviewTile() {
         const { view } = useTile();
-        return <Overview title={view.title} size={view.metadata.size} />;
+        return <Overview title={view.title} />;
       }
 
       export default OverviewTile;"
     `)
   })
 
-  test('reads tile props with useTile and the size from the view metadata', () => {
+  test('reads tile props with useTile', () => {
     expect(
       migrate(`import { unstable_defineView } from "sanity/dashboard";
 
 function OverviewTile(props: TileViewProps) {
-  return <Tile title={props.view.title} size={props.view.size} />;
+  return <Tile title={props.view.title} />;
 }
 
 export default unstable_defineView("tile", { tile: OverviewTile });`),
@@ -251,10 +243,24 @@ export default unstable_defineView("tile", { tile: OverviewTile });`),
 
       function OverviewTile() {
         const props = useTile();
-        return <Tile title={props.view.title} size={props.view.metadata.size} />;
+        return <Tile title={props.view.title} />;
       }
 
       export default OverviewTile;"
+    `)
+  })
+
+  test('drops tile props it never reads instead of calling useTile', () => {
+    expect(
+      migrate(`import { unstable_defineView } from "sanity/dashboard";
+
+export default unstable_defineView("tile", {
+  tile: (props: TileViewProps) => <Greeting />,
+});`),
+    ).toMatchInlineSnapshot(`
+      "const Tile = () => <Greeting />;
+
+      export default Tile;"
     `)
   })
 
@@ -306,16 +312,62 @@ export default unstable_defineService("worker", ({ service }) => {
        * A background worker for Drop Desk.
        */
       export default ({
-        worker: service
+        worker
       }: WebWorkerProps) => {
         const interval = setInterval(() => {
-          console.warn(\`Drop Desk worker "\${service.name}" checked for drop updates\`);
+          console.warn(\`Drop Desk worker "\${worker.name}" checked for drop updates\`);
         }, 1_000);
 
         return () => {
           clearInterval(interval);
-          console.warn(\`Drop Desk worker "\${service.name}" stopped\`);
+          console.warn(\`Drop Desk worker "\${worker.name}" stopped\`);
         };
+      };"
+    `)
+  })
+
+  test('renames service references but not keys that share the name', () => {
+    expect(
+      migrate(
+        `import { unstable_defineService } from "sanity/dashboard";
+
+export default unstable_defineService("worker", ({ service = fallback }) => {
+  const api = { service() {}, label: service.name };
+  return () => report({ service });
+});`,
+        'src/service.ts',
+      ),
+    ).toMatchInlineSnapshot(`
+      "import type { WebWorkerProps } from "sanity/dashboard";
+
+      export default ({
+        worker = fallback
+      }: WebWorkerProps) => {
+        const api = { service() {}, label: worker.name };
+        return () => report({ service: worker });
+      };"
+    `)
+  })
+
+  test('keeps service as the variable name when the worker already uses worker', () => {
+    expect(
+      migrate(
+        `import { unstable_defineService } from "sanity/dashboard";
+
+export default unstable_defineService("worker", ({ service }) => {
+  const worker = new Worker(service.name);
+  return () => worker.terminate();
+});`,
+        'src/service.ts',
+      ),
+    ).toMatchInlineSnapshot(`
+      "import type { WebWorkerProps } from "sanity/dashboard";
+
+      export default ({
+        worker: service
+      }: WebWorkerProps) => {
+        const worker = new Worker(service.name);
+        return () => worker.terminate();
       };"
     `)
   })

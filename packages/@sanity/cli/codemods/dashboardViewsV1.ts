@@ -8,8 +8,10 @@ import {
   type FileInfo,
   type FunctionDeclaration,
   type FunctionExpression,
+  type Identifier,
   type ImportSpecifier,
   type JSCodeshift,
+  type ObjectPattern,
   type VariableDeclaration,
 } from 'jscodeshift'
 
@@ -73,9 +75,29 @@ function findFunction(
   return init ? findFunction(j, root, init) : undefined
 }
 
+function readsProps(
+  j: JSCodeshift,
+  fn: ComponentFunction,
+  param: Identifier | ObjectPattern,
+): boolean {
+  const names = j.Identifier.check(param)
+    ? [param.name]
+    : j(param)
+        .find(j.Identifier)
+        .nodes()
+        .map((node) => node.name)
+
+  return names.some((name) => j(fn.body).find(j.Identifier, {name}).size() > 0)
+}
+
 function readPropsFromHook(j: JSCodeshift, fn: ComponentFunction | undefined, hook: string): void {
   const [param] = fn?.params ?? []
   if (!fn || (!j.Identifier.check(param) && !j.ObjectPattern.check(param))) return
+
+  if (!readsProps(j, fn, param)) {
+    fn.params = []
+    return
+  }
 
   param.typeAnnotation = null
   const declaration = j.variableDeclaration('const', [
@@ -85,29 +107,6 @@ function readPropsFromHook(j: JSCodeshift, fn: ComponentFunction | undefined, ho
   fn.body = j.BlockStatement.check(fn.body)
     ? j.blockStatement([declaration, ...fn.body.body])
     : j.blockStatement([declaration, j.returnStatement(fn.body)])
-}
-
-function readTileSize(j: JSCodeshift, fn: ComponentFunction | undefined): void {
-  const [param] = fn?.params ?? []
-  if (!fn) return
-
-  const isView = (node: unknown) =>
-    (j.ObjectPattern.check(param) && j.Identifier.check(node) && node.name === 'view') ||
-    (j.Identifier.check(param) &&
-      j.MemberExpression.check(node) &&
-      j.Identifier.check(node.object) &&
-      node.object.name === param.name &&
-      j.Identifier.check(node.property) &&
-      node.property.name === 'view')
-  const members = j(fn.body)
-    .find(j.MemberExpression, {computed: false, property: {name: 'size'}})
-    .nodes()
-
-  for (const member of members) {
-    if (isView(member.object)) {
-      member.object = j.memberExpression(member.object, j.identifier('metadata'))
-    }
-  }
 }
 
 function localName(j: JSCodeshift, root: Collection, source: string, name: string): string {
@@ -236,6 +235,39 @@ function hoistComponent(
   return {declaration, name}
 }
 
+function inlineSlot(
+  j: JSCodeshift,
+  component: unknown,
+): {element: string; properties: string[]} | undefined {
+  if (!j.ArrowFunctionExpression.check(component) && !j.FunctionExpression.check(component)) {
+    return undefined
+  }
+
+  const [param, ...rest] = component.params
+  const isPattern =
+    j.ObjectPattern.check(param) &&
+    !param.properties.some((property) => j.RestElement.check(property))
+  if (rest.length > 0 || (param && !isPattern)) return undefined
+
+  const [statement, ...statements] = j.BlockStatement.check(component.body)
+    ? component.body.body
+    : [j.returnStatement(component.body)]
+  if (statements.length > 0 || !j.ReturnStatement.check(statement) || !statement.argument) {
+    return undefined
+  }
+
+  const source = j(statement.argument).toSource()
+  const isJSX = j.JSXElement.check(statement.argument) || j.JSXFragment.check(statement.argument)
+
+  return {
+    element: isJSX ? source.replace(/^\(([\s\S]*)\)$/, '$1') : `{${source}}`,
+    properties:
+      param && readsProps(j, component, param)
+        ? param.properties.map((property) => j(property).toSource())
+        : [],
+  }
+}
+
 function migratePanel(
   j: JSCodeshift,
   root: Collection,
@@ -254,21 +286,31 @@ function migratePanel(
   ] as const
   const locals = imports.map(([source, name]) => localName(j, root, source, name))
   const [box, button, flex, themeProvider, usePrefersDark, buildTheme, closeIcon, usePanel] = locals
-  const {name: title} = hoistComponent(j, root, define, slot('title'), usePanel, 'Title')
-  const {name: body} = hoistComponent(j, root, define, slot('panel'), usePanel, 'Body')
+  const properties = new Set(['onClose'])
+  const [title, body] = [
+    ['title', 'Title'],
+    ['panel', 'Body'],
+  ].map(([name, base]) => {
+    const inlined = inlineSlot(j, slot(name))
+    if (!inlined) return `<${hoistComponent(j, root, define, slot(name), usePanel, base).name} />`
+
+    for (const property of inlined.properties) properties.add(property)
+
+    return inlined.element.replaceAll('\n', '\n          ')
+  })
   const theme = uniqueName(j, root, 'theme')
 
   const statements = j(`const ${theme} = ${buildTheme}();
 
 export default function ${uniqueName(j, root, 'Panel')}() {
-  const { onClose } = ${usePanel}();
+  const { ${[...properties].join(', ')} } = ${usePanel}();
   const prefersDark = ${usePrefersDark}();
 
   return (
     <${themeProvider} scheme={prefersDark ? "dark" : "light"} theme={${theme}}>
       <${flex} direction="column" height="fill" paddingY={2}>
         <${flex} align="center" gap={2} justify="space-between" paddingX={3} paddingY={2}>
-          <${title} />
+          ${title}
           <${button}
             aria-label="Close panel"
             fontSize={1}
@@ -279,7 +321,7 @@ export default function ${uniqueName(j, root, 'Panel')}() {
           />
         </${flex}>
         <${box} flex={1} overflow="auto" paddingX={3}>
-          <${body} />
+          ${body}
         </${box}>
       </${flex}>
     </${themeProvider}>
@@ -322,8 +364,6 @@ function migrateView(j: JSCodeshift, root: Collection): boolean {
     migratePanel(j, root, define, slot)
   } else {
     const hook = localName(j, root, SANITY_DASHBOARD, view.hook)
-    if (surface.value === 'tile') readTileSize(j, findFunction(j, root, slot('tile')))
-
     const {declaration, name} = hoistComponent(
       j,
       root,
@@ -349,29 +389,71 @@ function migrateView(j: JSCodeshift, root: Collection): boolean {
   return true
 }
 
-function renameServiceToWorker(j: JSCodeshift, fn: ComponentFunction): void {
+function renameServiceToWorker(j: JSCodeshift, root: Collection, fn: ComponentFunction): void {
   const [param] = fn.params
 
-  if (j.ObjectPattern.check(param)) {
-    const property = param.properties.find((node) => keyName(j, node) === 'service')
-    if (!(j.ObjectProperty.check(property) || j.Property.check(property))) return
+  if (j.Identifier.check(param)) {
+    const members = j(fn.body)
+      .find(j.MemberExpression, {
+        computed: false,
+        object: {name: param.name},
+        property: {name: 'service'},
+      })
+      .nodes()
 
-    property.key = j.identifier('worker')
+    for (const member of members) member.property = j.identifier('worker')
+    return
+  }
+
+  if (!j.ObjectPattern.check(param)) return
+
+  const property = param.properties.find((node) => keyName(j, node) === 'service')
+  if (!(j.ObjectProperty.check(property) || j.Property.check(property))) return
+
+  const body = root
+    .find(j.Function)
+    .filter((path) => path.node === fn)
+    .paths()[0]
+    ?.get('body')
+  const scope = body?.scope.lookup('service')
+  const references = j(body)
+    .find(j.Identifier, {name: 'service'})
+    .filter((reference) => reference.scope.lookup('service') === scope)
+    .paths()
+
+  property.key = j.identifier('worker')
+  if (!property.shorthand) return
+
+  if (j(fn.body).find(j.Identifier, {name: 'worker'}).size() > 0) {
     property.shorthand = false
     return
   }
 
-  if (!j.Identifier.check(param)) return
+  if (j.AssignmentPattern.check(property.value)) {
+    property.value.left = j.identifier('worker')
+  } else {
+    property.value = j.identifier('worker')
+  }
 
-  const members = j(fn.body)
-    .find(j.MemberExpression, {
-      computed: false,
-      object: {name: param.name},
-      property: {name: 'service'},
-    })
-    .nodes()
+  for (const reference of references) {
+    const parent: unknown = reference.parent?.node
+    const isComputed =
+      (j.MemberExpression.check(parent) ||
+        j.ObjectProperty.check(parent) ||
+        j.Property.check(parent)) &&
+      parent.computed
+    const isKey = (reference.name === 'key' || reference.name === 'property') && !isComputed
 
-  for (const member of members) member.property = j.identifier('worker')
+    if (!isKey) {
+      reference.node.name = 'worker'
+      continue
+    }
+
+    if ((j.ObjectProperty.check(parent) || j.Property.check(parent)) && parent.shorthand) {
+      parent.shorthand = false
+      parent.value = j.identifier('worker')
+    }
+  }
 }
 
 function migrateWebWorker(j: JSCodeshift, root: Collection, isTypeScript: boolean): boolean {
@@ -392,7 +474,7 @@ function migrateWebWorker(j: JSCodeshift, root: Collection, isTypeScript: boolea
     throw new Error('Expected `unstable_defineService` with a function.')
   }
 
-  renameServiceToWorker(j, fn)
+  renameServiceToWorker(j, root, fn)
   const [param] = fn.params
 
   if (isTypeScript && (j.Identifier.check(param) || j.ObjectPattern.check(param))) {
