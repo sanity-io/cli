@@ -412,15 +412,17 @@ function migratePanel(
   const theme = uniqueName(j, root, 'theme')
   const panel = uniqueName(j, root, 'Panel')
   const frame = uniqueName(j, root, 'PanelFrame')
+  const scheme = uniqueName(j, root, 'scheme')
 
   const [themeDeclaration, frameDeclaration, panelExport] =
     j(`const ${theme} = ${buildTheme}();
 
 function ${frame}() {
   const { ${[...properties].join(', ')} } = ${usePanel}();
+  const ${scheme} = ${useTopic}("preferences.color-scheme");
 
   return (
-    <${themeProvider} scheme={${useTopic}("preferences.color-scheme")} theme={${theme}}>
+    <${themeProvider} scheme={${scheme}} theme={${theme}}>
       <${flex} direction="column" height="fill" paddingY={2}>
         <${flex} align="center" gap={2} justify="space-between" paddingX={3} paddingY={2}>
           ${title}

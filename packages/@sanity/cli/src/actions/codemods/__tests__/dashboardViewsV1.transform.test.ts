@@ -66,9 +66,10 @@ export default unstable_defineView("panel", { title: InboxTitle, panel: Inbox })
 
       function PanelFrame() {
         const { onClose } = usePanel();
+        const scheme = useTopic("preferences.color-scheme");
 
         return (
-          <ThemeProvider scheme={useTopic("preferences.color-scheme")} theme={theme}>
+          <ThemeProvider scheme={scheme} theme={theme}>
             <Flex direction="column" height="fill" paddingY={2}>
               <Flex align="center" gap={2} justify="space-between" paddingX={3} paddingY={2}>
                 <InboxTitle />
@@ -161,9 +162,10 @@ export default unstable_defineView("panel", {
 
       function PanelFrame() {
         const { onClose } = usePanel();
+        const scheme = useTopic("preferences.color-scheme");
 
         return (
-          <ThemeProvider scheme={useTopic("preferences.color-scheme")} theme={theme}>
+          <ThemeProvider scheme={scheme} theme={theme}>
             <Flex direction="column" height="fill" paddingY={2}>
               <Flex align="center" gap={2} justify="space-between" paddingX={3} paddingY={2}>
                 <PanelProvider>
@@ -223,9 +225,10 @@ export default unstable_defineView("panel", {
 
       function PanelFrame() {
         const { onClose, view } = usePanel();
+        const scheme = useTopic("preferences.color-scheme");
 
         return (
-          <ThemeProvider scheme={useTopic("preferences.color-scheme")} theme={theme}>
+          <ThemeProvider scheme={scheme} theme={theme}>
             <Flex direction="column" height="fill" paddingY={2}>
               <Flex align="center" gap={2} justify="space-between" paddingX={3} paddingY={2}>
                 <Text size={2}>{view.title}</Text>
@@ -287,9 +290,10 @@ export default unstable_defineView("panel", {
 
       function PanelFrame() {
         const { onClose } = usePanel();
+        const scheme = useTopic("preferences.color-scheme");
 
         return (
-          <ThemeProvider scheme={useTopic("preferences.color-scheme")} theme={theme}>
+          <ThemeProvider scheme={scheme} theme={theme}>
             <Flex direction="column" height="fill" paddingY={2}>
               <Flex align="center" gap={2} justify="space-between" paddingX={3} paddingY={2}>
                 <Title />
