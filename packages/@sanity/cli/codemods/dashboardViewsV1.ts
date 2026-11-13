@@ -4,23 +4,27 @@ import {
   type ASTPath,
   type CallExpression,
   type Collection,
-  type ExportDefaultDeclaration,
   type FileInfo,
   type FunctionDeclaration,
   type FunctionExpression,
   type Identifier,
-  type ImportSpecifier,
   type JSCodeshift,
   type ObjectPattern,
-  type VariableDeclaration,
+  type ObjectProperty,
+  type Program,
+  type Property,
+  type Statement,
 } from 'jscodeshift'
+
+type ProgramStatement = Program['body'][number]
 
 type ComponentFunction = ArrowFunctionExpression | FunctionDeclaration | FunctionExpression
 
+type Component = FunctionExpression | ObjectProperty['value'] | Property['value']
+
 interface DefineCall {
-  call: CallExpression
-  exportPath: ASTPath<ExportDefaultDeclaration>
-  specifier: ImportSpecifier
+  callPath: ASTPath<CallExpression>
+  statementPath: ASTPath<Statement>
 }
 
 interface ViewMigration {
@@ -37,26 +41,79 @@ const VIEWS: Partial<Record<string, ViewMigration>> = {
 }
 
 function keyName(j: JSCodeshift, node: unknown): string | undefined {
-  if (!j.ObjectProperty.check(node) && !j.Property.check(node)) return undefined
+  if (!j.ObjectProperty.check(node) && !j.Property.check(node) && !j.ObjectMethod.check(node)) {
+    return undefined
+  }
+
   if (j.Identifier.check(node.key)) return node.key.name
 
   return j.StringLiteral.check(node.key) ? node.key.value : undefined
 }
 
-function findDefineCall(j: JSCodeshift, root: Collection, name: string): DefineCall | undefined {
-  const specifier = root.find(j.ImportSpecifier, {imported: {name}}).nodes()[0]
-  if (!specifier) return undefined
+function unwrap(j: JSCodeshift, node: unknown): unknown {
+  return j.TSAsExpression.check(node) || j.TSSatisfiesExpression.check(node)
+    ? unwrap(j, node.expression)
+    : node
+}
 
-  const local = specifier.local?.name ?? name
-  const exportPath = root
-    .find(j.ExportDefaultDeclaration, {
-      declaration: {callee: {name: local}, type: 'CallExpression'},
+function resolve(j: JSCodeshift, root: Collection, node: unknown): unknown {
+  const value = unwrap(j, node)
+  if (!j.Identifier.check(value)) return value
+
+  const init = root.find(j.VariableDeclarator, {id: {name: value.name}}).nodes()[0]?.init
+
+  return init ? resolve(j, root, init) : value
+}
+
+function declaration(j: JSCodeshift, source: string): ProgramStatement | undefined {
+  const [statement] = j(source).find(j.Program).nodes()[0]?.body ?? []
+  if (statement) statement.loc = null
+
+  return statement
+}
+
+function findDefineCalls(
+  j: JSCodeshift,
+  root: Collection,
+  name: string,
+  sources: Set<string>,
+): DefineCall[] {
+  const locals: string[] = []
+
+  for (const declaration of root.find(j.ImportDeclaration).nodes()) {
+    for (const specifier of declaration.specifiers ?? []) {
+      const isNamed = j.ImportSpecifier.check(specifier) && specifier.imported.name === name
+      if (!(isNamed || j.ImportNamespaceSpecifier.check(specifier))) continue
+      if (!j.Identifier.check(specifier.local)) continue
+
+      locals.push(specifier.local.name)
+      if (isNamed) sources.add(String(declaration.source.value))
+    }
+  }
+
+  return root
+    .find(j.CallExpression)
+    .filter(({node: {callee}}) =>
+      j.MemberExpression.check(callee)
+        ? j.Identifier.check(callee.object) &&
+          locals.includes(callee.object.name) &&
+          j.Identifier.check(callee.property) &&
+          callee.property.name === name
+        : j.Identifier.check(callee) && locals.includes(callee.name),
+    )
+    .paths()
+    .map((callPath) => {
+      let statementPath: ASTPath<Statement> = callPath.parent
+      while (!j.Program.check(statementPath.parent?.node)) statementPath = statementPath.parent
+
+      return {callPath, statementPath}
     })
-    .paths()[0]
-  const call = exportPath?.node.declaration
-  if (!exportPath || !j.CallExpression.check(call)) return undefined
+}
 
-  return {call, exportPath, specifier}
+function isComponentWrapper(j: JSCodeshift, call: CallExpression): boolean {
+  const callee = j.MemberExpression.check(call.callee) ? call.callee.property : call.callee
+
+  return j.Identifier.check(callee) && ['forwardRef', 'memo'].includes(callee.name)
 }
 
 function findFunction(
@@ -64,25 +121,36 @@ function findFunction(
   root: Collection,
   node: unknown,
 ): ComponentFunction | undefined {
-  if (j.ArrowFunctionExpression.check(node) || j.FunctionExpression.check(node)) return node
-  if (!j.Identifier.check(node)) return undefined
+  const value = unwrap(j, node)
+  if (j.ArrowFunctionExpression.check(value) || j.FunctionExpression.check(value)) return value
+  if (j.CallExpression.check(value) && isComponentWrapper(j, value)) {
+    return findFunction(j, root, value.arguments[0])
+  }
 
-  const declaration = root.find(j.FunctionDeclaration, {id: {name: node.name}}).nodes()[0]
+  if (!j.Identifier.check(value)) return undefined
+
+  const declaration = root.find(j.FunctionDeclaration, {id: {name: value.name}}).nodes()[0]
   if (declaration) return declaration
 
-  const init = root.find(j.VariableDeclarator, {id: {name: node.name}}).nodes()[0]?.init
+  const init = root.find(j.VariableDeclarator, {id: {name: value.name}}).nodes()[0]?.init
 
   return init ? findFunction(j, root, init) : undefined
+}
+
+function propsPattern(j: JSCodeshift, param: unknown): Identifier | ObjectPattern | undefined {
+  const pattern = j.AssignmentPattern.check(param) ? param.left : param
+
+  return j.Identifier.check(pattern) || j.ObjectPattern.check(pattern) ? pattern : undefined
 }
 
 function readsProps(
   j: JSCodeshift,
   fn: ComponentFunction,
-  param: Identifier | ObjectPattern,
+  pattern: Identifier | ObjectPattern,
 ): boolean {
-  const names = j.Identifier.check(param)
-    ? [param.name]
-    : j(param)
+  const names = j.Identifier.check(pattern)
+    ? [pattern.name]
+    : j(pattern)
         .find(j.Identifier)
         .nodes()
         .map((node) => node.name)
@@ -90,23 +158,44 @@ function readsProps(
   return names.some((name) => j(fn.body).find(j.Identifier, {name}).size() > 0)
 }
 
-function readPropsFromHook(j: JSCodeshift, fn: ComponentFunction | undefined, hook: string): void {
-  const [param] = fn?.params ?? []
-  if (!fn || (!j.Identifier.check(param) && !j.ObjectPattern.check(param))) return
+function readPropsFromHook(j: JSCodeshift, fn: ComponentFunction, hook: string): boolean {
+  if (fn.params.length === 0) return true
+  if (fn.params.length > 1) return false
 
-  if (!readsProps(j, fn, param)) {
-    fn.params = []
-    return
-  }
+  const pattern = propsPattern(j, fn.params[0])
+  if (!pattern) return false
 
-  param.typeAnnotation = null
-  const declaration = j.variableDeclaration('const', [
-    j.variableDeclarator(param, j.callExpression(j.identifier(hook), [])),
-  ])
   fn.params = []
+  if (!readsProps(j, fn, pattern)) return true
+
+  const props = j.Identifier.check(pattern)
+    ? pattern.name
+    : `{ ${pattern.properties.map((property) => j(property).toSource()).join(', ')} }`
+  const hookCall = declaration(j, `const ${props} = ${hook}();`)
+  if (!hookCall) return false
+
   fn.body = j.BlockStatement.check(fn.body)
-    ? j.blockStatement([declaration, ...fn.body.body])
-    : j.blockStatement([declaration, j.returnStatement(fn.body)])
+    ? j.blockStatement([hookCall, ...fn.body.body])
+    : j.blockStatement([hookCall, j.returnStatement(fn.body)])
+
+  return true
+}
+
+function uniqueName(j: JSCodeshift, root: Collection, base: string): string {
+  const used = new Set([
+    ...root
+      .find(j.Identifier)
+      .nodes()
+      .map((node) => node.name),
+    ...root
+      .find(j.JSXIdentifier)
+      .nodes()
+      .map((node) => node.name),
+  ])
+  let name = base
+  for (let index = 2; used.has(name); index++) name = `${base}${index}`
+
+  return name
 }
 
 function localName(j: JSCodeshift, root: Collection, source: string, name: string): string {
@@ -138,7 +227,11 @@ function addImport(
 
   const specifier = j.importSpecifier(j.identifier(name), j.identifier(local))
   const existing = declarations
-    .filter((path) => (path.node.importKind ?? 'value') === kind)
+    .filter(
+      (path) =>
+        (path.node.importKind ?? 'value') === kind &&
+        !path.node.specifiers?.some((node) => j.ImportNamespaceSpecifier.check(node)),
+    )
     .nodes()[0]
   if (existing) {
     existing.specifiers = [...(existing.specifiers ?? []), specifier]
@@ -156,23 +249,27 @@ function addImport(
   }
 }
 
-function removeImportIfUnused(j: JSCodeshift, root: Collection, specifier: ImportSpecifier): void {
-  if (!j.Identifier.check(specifier.local)) return
-
-  const {name} = specifier.local
-  const used = root
-    .find(j.Identifier, {name})
-    .filter((path) => path.node !== specifier.local && path.node !== specifier.imported)
-    .size()
-  if (used > 0) return
+function removeUnusedImports(j: JSCodeshift, root: Collection, sources: Set<string>): void {
+  const isUsed = (name: string, specifier: unknown) =>
+    root
+      .find(j.Identifier, {name})
+      .filter((path) => path.parent?.node !== specifier)
+      .size() +
+      root.find(j.JSXIdentifier, {name}).size() >
+    0
 
   const declarations = root
     .find(j.ImportDeclaration)
-    .filter((path) => (path.node.specifiers ?? []).includes(specifier))
+    .filter((path) => sources.has(String(path.node.source.value)))
     .paths()
 
   for (const path of declarations) {
-    const specifiers = (path.node.specifiers ?? []).filter((node) => node !== specifier)
+    if (!path.node.specifiers?.length) continue
+
+    const specifiers = path.node.specifiers.filter(
+      (specifier) =>
+        !j.Identifier.check(specifier.local) || isUsed(specifier.local.name, specifier),
+    )
 
     if (specifiers.length > 0) {
       path.node.specifiers = specifiers
@@ -187,52 +284,30 @@ function removeImportIfUnused(j: JSCodeshift, root: Collection, specifier: Impor
   }
 }
 
-function uniqueName(j: JSCodeshift, root: Collection, base: string): string {
-  const used = new Set([
-    ...root
-      .find(j.Identifier)
-      .nodes()
-      .map((node) => node.name),
-    ...root
-      .find(j.JSXIdentifier)
-      .nodes()
-      .map((node) => node.name),
-  ])
-  let name = base
-  for (let index = 2; used.has(name); index++) name = `${base}${index}`
-
-  return name
-}
-
 function hoistComponent(
   j: JSCodeshift,
   root: Collection,
   define: DefineCall,
-  component: unknown,
-  hook: string,
+  component: Component,
   base: string,
-): {declaration?: FunctionDeclaration | VariableDeclaration; name: string} {
-  readPropsFromHook(j, findFunction(j, root, component), hook)
+): {declaration?: ProgramStatement; name: string} {
   if (j.Identifier.check(component)) return {name: component.name}
 
-  if (j.FunctionExpression.check(component) && j.Identifier.check(component.id)) {
-    const declaration = j.functionDeclaration(component.id, component.params, component.body)
-    define.exportPath.insertBefore(declaration)
+  if (j.FunctionExpression.check(component)) {
+    const id = j.Identifier.check(component.id)
+      ? component.id
+      : j.identifier(uniqueName(j, root, base))
+    const declaration = j.functionDeclaration(id, component.params, component.body)
+    define.statementPath.insertBefore(declaration)
 
-    return {declaration, name: component.id.name}
-  }
-
-  if (!j.ArrowFunctionExpression.check(component) && !j.FunctionExpression.check(component)) {
-    throw new Error(`Expected the \`${base}\` component to be a function or a component name.`)
+    return {declaration, name: id.name}
   }
 
   const name = uniqueName(j, root, base)
-  const declaration = j.variableDeclaration('const', [
-    j.variableDeclarator(j.identifier(name), component),
-  ])
-  define.exportPath.insertBefore(declaration)
+  const hoisted = declaration(j, `const ${name} = ${j(component).toSource()};`)
+  if (hoisted) define.statementPath.insertBefore(hoisted)
 
-  return {declaration, name}
+  return {declaration: hoisted, name}
 }
 
 function inlineSlot(
@@ -268,46 +343,84 @@ function inlineSlot(
   }
 }
 
+function slotComponent(j: JSCodeshift, components: unknown, name: string): Component | undefined {
+  if (!j.ObjectExpression.check(components)) return undefined
+
+  const property = components.properties.find((node) => keyName(j, node) === name)
+  if (j.ObjectMethod.check(property)) {
+    return j.functionExpression(null, property.params, property.body)
+  }
+
+  return j.ObjectProperty.check(property) || j.Property.check(property) ? property.value : undefined
+}
+
+function prepareSlot(
+  j: JSCodeshift,
+  root: Collection,
+  api: API,
+  component: Component,
+  hook: string,
+): void {
+  const fn = findFunction(j, root, component)
+  const isMigrated = fn ? readPropsFromHook(j, fn, hook) : false
+  if (isMigrated) return
+
+  const name = j.Identifier.check(component) ? `\`${component.name}\`` : 'A component'
+  api.report(`${name} no longer receives props. Read them with \`${hook}()\` instead.`)
+}
+
 function migratePanel(
   j: JSCodeshift,
   root: Collection,
+  api: API,
   define: DefineCall,
-  slot: (name: string) => unknown,
+  components: unknown,
 ): void {
   const imports = [
     ['@sanity/ui', 'Box'],
     ['@sanity/ui', 'Button'],
     ['@sanity/ui', 'Flex'],
     ['@sanity/ui', 'ThemeProvider'],
-    ['@sanity/ui', 'usePrefersDark'],
     ['@sanity/ui/theme', 'buildTheme'],
-    ['@sanity/icons', 'CloseIcon'],
+    ['@sanity/icons/Close', 'CloseIcon'],
+    ['@sanity/sdk-react', 'SanityApp'],
+    ['@sanity/sdk-react/dashboard', 'useTopic'],
     [SANITY_DASHBOARD, 'usePanel'],
   ] as const
   const locals = imports.map(([source, name]) => localName(j, root, source, name))
-  const [box, button, flex, themeProvider, usePrefersDark, buildTheme, closeIcon, usePanel] = locals
+  const [box, button, flex, themeProvider, buildTheme, closeIcon, sanityApp, useTopic, usePanel] =
+    locals
   const properties = new Set(['onClose'])
   const [title, body] = [
     ['title', 'Title'],
     ['panel', 'Body'],
   ].map(([name, base]) => {
-    const inlined = inlineSlot(j, slot(name))
-    if (!inlined) return `<${hoistComponent(j, root, define, slot(name), usePanel, base).name} />`
+    const component = slotComponent(j, components, name)
+    if (!component) return ''
+
+    const inlined = inlineSlot(j, component)
+    if (!inlined) {
+      prepareSlot(j, root, api, component, usePanel)
+
+      return `<${hoistComponent(j, root, define, component, base).name} />`
+    }
 
     for (const property of inlined.properties) properties.add(property)
 
     return inlined.element.replaceAll('\n', '\n          ')
   })
   const theme = uniqueName(j, root, 'theme')
+  const panel = uniqueName(j, root, 'Panel')
+  const frame = uniqueName(j, root, 'PanelFrame')
 
-  const statements = j(`const ${theme} = ${buildTheme}();
+  const [themeDeclaration, frameDeclaration, panelExport] =
+    j(`const ${theme} = ${buildTheme}();
 
-export default function ${uniqueName(j, root, 'Panel')}() {
+function ${frame}() {
   const { ${[...properties].join(', ')} } = ${usePanel}();
-  const prefersDark = ${usePrefersDark}();
 
   return (
-    <${themeProvider} scheme={prefersDark ? "dark" : "light"} theme={${theme}}>
+    <${themeProvider} scheme={${useTopic}("preferences.color-scheme")} theme={${theme}}>
       <${flex} direction="column" height="fill" paddingY={2}>
         <${flex} align="center" gap={2} justify="space-between" paddingX={3} paddingY={2}>
           ${title}
@@ -326,77 +439,105 @@ export default function ${uniqueName(j, root, 'Panel')}() {
       </${flex}>
     </${themeProvider}>
   );
-}`)
-    .find(j.Program)
-    .nodes()[0]?.body
-  if (!statements) return
+}
 
-  statements[0].comments = define.exportPath.node.comments
-  define.exportPath.replace(...statements)
+export default function ${panel}() {
+  return (
+    <${sanityApp} fallback={null}>
+      <${frame} />
+    </${sanityApp}>
+  );
+}`)
+      .find(j.Program)
+      .nodes()[0]?.body ?? []
+  if (
+    !themeDeclaration ||
+    !frameDeclaration ||
+    !j.ExportDefaultDeclaration.check(panelExport) ||
+    !j.FunctionDeclaration.check(panelExport.declaration)
+  ) {
+    return
+  }
+
+  if (j.ExportDefaultDeclaration.check(define.callPath.parent?.node)) {
+    themeDeclaration.comments = define.statementPath.node.comments
+    define.statementPath.replace(themeDeclaration, frameDeclaration, panelExport)
+  } else {
+    define.statementPath.insertBefore(themeDeclaration)
+    define.statementPath.insertBefore(frameDeclaration)
+    define.statementPath.insertBefore(panelExport.declaration)
+    define.callPath.replace(j.identifier(panel))
+  }
 
   for (const [index, [source, name]] of imports.entries()) {
     addImport(j, root, source, name, locals[index])
   }
 }
 
-function migrateView(j: JSCodeshift, root: Collection): boolean {
-  const define = findDefineCall(j, root, 'unstable_defineView')
-  if (!define) return false
+function removeUnusedDeclarator(j: JSCodeshift, root: Collection, node: unknown): void {
+  if (!j.Identifier.check(node) || root.find(j.Identifier, {name: node.name}).size() > 1) return
 
-  const [surface, components] = define.call.arguments
+  const declarators = root
+    .find(j.VariableDeclarator, {id: {name: node.name}})
+    .filter((path) => !j.ExportNamedDeclaration.check(path.parent?.parent?.node))
+    .paths()
+
+  for (const path of declarators) path.prune()
+}
+
+function migrateView(j: JSCodeshift, root: Collection, api: API, define: DefineCall): boolean {
+  const [surfaceArg, componentsArg] = define.callPath.node.arguments
+  const surface = resolve(j, root, surfaceArg)
+  const components = resolve(j, root, componentsArg)
   const view = j.StringLiteral.check(surface) ? VIEWS[surface.value] : undefined
 
   if (!view || !j.StringLiteral.check(surface) || !j.ObjectExpression.check(components)) {
-    throw new Error(
-      'Expected `unstable_defineView` with a panel, tile or asset_source surface and an object of components.',
+    api.report(
+      'Left `unstable_defineView` unchanged: expected a panel, tile or asset_source surface and an object of components.',
     )
-  }
-
-  const slot = (name: string) => {
-    const property = components.properties.find((node) => keyName(j, node) === name)
-
-    return j.ObjectProperty.check(property) || j.Property.check(property)
-      ? property.value
-      : undefined
+    return false
   }
 
   if (surface.value === 'panel') {
-    migratePanel(j, root, define, slot)
-  } else {
-    const hook = localName(j, root, SANITY_DASHBOARD, view.hook)
-    const {declaration, name} = hoistComponent(
-      j,
-      root,
-      define,
-      slot(surface.value),
-      hook,
-      view.name,
-    )
-    define.exportPath.node.declaration = j.identifier(name)
+    migratePanel(j, root, api, define, components)
+    removeUnusedDeclarator(j, root, componentsArg)
 
-    if (declaration) {
-      declaration.comments = define.exportPath.node.comments
-      define.exportPath.node.comments = null
-    }
-
-    if (root.find(j.CallExpression, {callee: {name: hook}}).size() > 0) {
-      addImport(j, root, SANITY_DASHBOARD, view.hook, hook)
-    }
+    return true
   }
 
-  removeImportIfUnused(j, root, define.specifier)
+  const component = slotComponent(j, components, surface.value)
+  if (!component) {
+    api.report(`Left \`unstable_defineView\` unchanged: it has no \`${surface.value}\` component.`)
+    return false
+  }
+
+  const hook = localName(j, root, SANITY_DASHBOARD, view.hook)
+  prepareSlot(j, root, api, component, hook)
+  const {declaration, name} = hoistComponent(j, root, define, component, view.name)
+  define.callPath.replace(j.identifier(name))
+
+  if (declaration) {
+    declaration.comments = define.statementPath.node.comments
+    define.statementPath.node.comments = null
+  }
+
+  if (root.find(j.CallExpression, {callee: {name: hook}}).size() > 0) {
+    addImport(j, root, SANITY_DASHBOARD, view.hook, hook)
+  }
+
+  removeUnusedDeclarator(j, root, componentsArg)
 
   return true
 }
 
 function renameServiceToWorker(j: JSCodeshift, root: Collection, fn: ComponentFunction): void {
-  const [param] = fn.params
+  const pattern = propsPattern(j, fn.params[0])
 
-  if (j.Identifier.check(param)) {
+  if (j.Identifier.check(pattern)) {
     const members = j(fn.body)
       .find(j.MemberExpression, {
         computed: false,
-        object: {name: param.name},
+        object: {name: pattern.name},
         property: {name: 'service'},
       })
       .nodes()
@@ -405,9 +546,7 @@ function renameServiceToWorker(j: JSCodeshift, root: Collection, fn: ComponentFu
     return
   }
 
-  if (!j.ObjectPattern.check(param)) return
-
-  const property = param.properties.find((node) => keyName(j, node) === 'service')
+  const property = pattern?.properties.find((node) => keyName(j, node) === 'service')
   if (!(j.ObjectProperty.check(property) || j.Property.check(property))) return
 
   const body = root
@@ -456,46 +595,79 @@ function renameServiceToWorker(j: JSCodeshift, root: Collection, fn: ComponentFu
   }
 }
 
-function migrateWebWorker(j: JSCodeshift, root: Collection, isTypeScript: boolean): boolean {
-  const define = findDefineCall(j, root, 'unstable_defineService')
-  if (!define) return false
-
-  const [, run] = define.call.arguments
-  const fn = findFunction(j, root, run)
-
-  if (
-    !fn ||
-    !(
-      j.ArrowFunctionExpression.check(run) ||
-      j.FunctionExpression.check(run) ||
-      j.Identifier.check(run)
-    )
-  ) {
-    throw new Error('Expected `unstable_defineService` with a function.')
+function migrateWebWorker(
+  j: JSCodeshift,
+  root: Collection,
+  api: API,
+  define: DefineCall,
+  isTypeScript: boolean,
+): boolean {
+  const [, run] = define.callPath.node.arguments
+  if (!run || j.SpreadElement.check(run)) {
+    api.report('Left `unstable_defineService` unchanged: expected a function.')
+    return false
   }
 
-  renameServiceToWorker(j, root, fn)
-  const [param] = fn.params
+  const fn = findFunction(j, root, run)
+  if (!fn) {
+    api.report(
+      `Rename \`service\` to \`worker\` where \`${j(run).toSource()}\` reads its props; it now receives \`{bus, worker}\`.`,
+    )
+  }
 
-  if (isTypeScript && (j.Identifier.check(param) || j.ObjectPattern.check(param))) {
+  const pattern = fn && propsPattern(j, fn.params[0])
+  if (fn) renameServiceToWorker(j, root, fn)
+
+  if (isTypeScript && pattern) {
     const props = localName(j, root, SANITY_DASHBOARD, 'WebWorkerProps')
-    param.typeAnnotation = j.tsTypeAnnotation(j.tsTypeReference(j.identifier(props)))
+    pattern.typeAnnotation = j.tsTypeAnnotation(j.tsTypeReference(j.identifier(props)))
     addImport(j, root, SANITY_DASHBOARD, 'WebWorkerProps', props, 'type')
   }
 
-  define.exportPath.node.declaration = run
-  removeImportIfUnused(j, root, define.specifier)
+  define.callPath.replace(run)
 
   return true
 }
 
+function isAtModuleScope(api: API, define: DefineCall, name: string): boolean {
+  if (define.callPath.scope?.isGlobal) return true
+
+  api.report(`Left \`${name}\` unchanged: it is called inside a function.`)
+
+  return false
+}
+
 export default function dashboardViewsV1(fileInfo: FileInfo, api: API): string | undefined {
   const j = api.jscodeshift
-  const root = j(fileInfo.source)
-  const migratedView = migrateView(j, root)
-  const migratedWebWorker = migrateWebWorker(j, root, /\.tsx?$/.test(fileInfo.path))
 
-  return migratedView || migratedWebWorker ? root.toSource() : undefined
+  try {
+    const root = j(fileInfo.source)
+    const sources = new Set<string>()
+    const views = findDefineCalls(j, root, 'unstable_defineView', sources)
+    const webWorkers = findDefineCalls(j, root, 'unstable_defineService', sources)
+    const isTypeScript = /\.tsx?$/.test(fileInfo.path)
+
+    const migrated = [
+      ...views.map(
+        (define) =>
+          isAtModuleScope(api, define, 'unstable_defineView') && migrateView(j, root, api, define),
+      ),
+      ...webWorkers.map(
+        (define) =>
+          isAtModuleScope(api, define, 'unstable_defineService') &&
+          migrateWebWorker(j, root, api, define, isTypeScript),
+      ),
+    ]
+    if (!migrated.includes(true)) return undefined
+
+    removeUnusedImports(j, root, sources)
+
+    return root.toSource()
+  } catch (error) {
+    api.report(`Left the file unchanged: ${error instanceof Error ? error.message : String(error)}`)
+
+    return undefined
+  }
 }
 
 export const parser = 'tsx'

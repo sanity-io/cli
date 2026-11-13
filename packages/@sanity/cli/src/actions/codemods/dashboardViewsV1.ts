@@ -20,8 +20,9 @@ Rewrites the view and web worker files declared in sanity.cli.ts (or .js) from
 data with \`usePanel\`, \`useTile\` and \`useAssetSource\` from \`sanity/dashboard\`, and a panel's
 title and body become one component with a close button. Web workers receive \`{bus, worker}\`.
 
-Installs or upgrades sanity (${MIN_SANITY_VERSION} or later) and, in SDK apps, @sanity/sdk-react
-(${MIN_SDK_VERSION} or later). Installs @sanity/ui and @sanity/icons when a panel needs them.
+Installs or upgrades sanity (${MIN_SANITY_VERSION} or later) and, in SDK apps or when a panel
+needs it, @sanity/sdk-react (${MIN_SDK_VERSION} or later). For panels, installs @sanity/ui when it is
+missing and upgrades @sanity/icons to 4.0.0 or later.
 `.trim()
 
 export const dashboardViewsV1: CodeMod = {
@@ -45,9 +46,12 @@ export const dashboardViewsV1: CodeMod = {
 
     const isApp = determineIsApp(config)
     const listOnly = dry || !isInteractive()
+    const hasPanel = views.some((view) => view.surface === 'panel')
     const needed = [
-      ...(isApp ? [['@sanity/sdk-react', `@sanity/sdk-react@^${MIN_SDK_VERSION}`]] : []),
-      ...(views.some((view) => view.surface === 'panel')
+      ...(isApp || hasPanel
+        ? [['@sanity/sdk-react', `@sanity/sdk-react@^${MIN_SDK_VERSION}`]]
+        : []),
+      ...(hasPanel
         ? [
             ['@sanity/ui', '@sanity/ui@^4'],
             ['@sanity/icons', '@sanity/icons'],
@@ -74,7 +78,8 @@ export const dashboardViewsV1: CodeMod = {
     await upgradeRequiredPackages(
       [
         {min: MIN_SANITY_VERSION, name: 'sanity', neededBy},
-        ...(isApp ? [{min: MIN_SDK_VERSION, name: '@sanity/sdk-react', neededBy}] : []),
+        ...(isApp || hasPanel ? [{min: MIN_SDK_VERSION, name: '@sanity/sdk-react', neededBy}] : []),
+        ...(hasPanel ? [{min: '4.0.0', name: '@sanity/icons', neededBy}] : []),
       ],
       {dry: listOnly, output, workDir},
     )

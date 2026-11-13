@@ -4,6 +4,7 @@ import {existsSync} from 'node:fs'
 import {testCommand} from '@sanity/cli-test'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
+import {dashboardViewsV1} from '../../actions/codemods/dashboardViewsV1.js'
 import {CodemodCommand} from '../codemod.js'
 
 const mockGetLocalPackageVersion = vi.hoisted(() => vi.fn())
@@ -79,6 +80,7 @@ describe('#codemod', () => {
     expect(stdout).toContain('partsTypeDirective')
     expect(stdout).toContain('deskRename')
     expect(stdout).toContain('dashboard')
+    expect(stdout).toContain('dashboard-views-v1')
   })
 
   test('validates codemod exists', async () => {
@@ -215,6 +217,20 @@ describe('#codemod', () => {
       await testCommand(CodemodCommand, args)
 
       expect(mockDashboardPrepare).toHaveBeenCalledWith(expect.objectContaining({dry}))
+    })
+
+    test('runs dashboard-views-v1 through its TypeScript transform', async () => {
+      const {spawnMock} = setupBasicMocks()
+      vi.spyOn(dashboardViewsV1, 'prepare').mockResolvedValue({
+        options: {},
+        paths: ['/project/src/views/panel.tsx'],
+      })
+
+      await testCommand(CodemodCommand, ['dashboard-views-v1'])
+
+      const args = spawnMock.mock.calls[0][1] as string[]
+      expect(args[args.indexOf('-t') + 1]).toMatch(/codemods[/\\]dashboardViewsV1\.ts$/)
+      expect(args.at(-1)).toBe('/project/src/views/panel.tsx')
     })
 
     test('does not run the transform when prepare fails', async () => {
