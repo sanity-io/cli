@@ -124,6 +124,7 @@ export interface DefinedView<TSurface extends ViewSurface = ViewSurface> {
  * Returns the component(s) tagged with their surface and contract version, for
  * the CLI build to generate render artifacts from. Used as the default export of
  * a view's `src` file.
+ * @deprecated Default-export a plain React component from the view's `src` file instead.
  * @public
  */
 export function unstable_defineView<TSurface extends ViewSurface>(
