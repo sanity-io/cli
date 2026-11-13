@@ -2,7 +2,6 @@ import {type AssetSourceComponentProps} from '@sanity/types'
 
 import {
   type TileSize,
-  VIEW_CONTRACT_VERSION,
   type ViewComponent,
   type ViewComponentBaseProps,
   type ViewSurface,
@@ -114,7 +113,7 @@ export interface DefinedView<TSurface extends ViewSurface = ViewSurface> {
   readonly components: ViewComponentsBySurface[TSurface]
   readonly surface: TSurface
   /** @internal */
-  readonly version: typeof VIEW_CONTRACT_VERSION
+  readonly version: 1
 }
 
 /**
@@ -131,5 +130,5 @@ export function unstable_defineView<TSurface extends ViewSurface>(
   surface: TSurface,
   components: ViewComponentsBySurface[TSurface],
 ): DefinedView<TSurface> {
-  return {components, surface, version: VIEW_CONTRACT_VERSION}
+  return {components, surface, version: 1}
 }

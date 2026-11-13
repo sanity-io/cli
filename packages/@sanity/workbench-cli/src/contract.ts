@@ -5,7 +5,7 @@ import {z} from 'zod/mini'
 // `zod/mini` keeps the bundle small.
 
 /** @internal */
-export const VIEW_CONTRACT_VERSION = 1
+export const VIEW_CONTRACT_VERSION = 2
 
 /** @internal */
 export const SERVICE_CONTRACT_VERSION = 1

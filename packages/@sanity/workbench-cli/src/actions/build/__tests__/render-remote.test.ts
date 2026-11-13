@@ -99,7 +99,9 @@ describe('renderRemote', () => {
             stylisPlugins.set(rootElement, [uniqueStylisPlugin()])
           }
         }
-        let element = React.createElement(RootContext.Provider, { value: rootContexts.get(rootElement).value }, React.createElement(App, args.props))
+        const rootContext = rootContexts.get(rootElement)
+        if (rootContext.value.props !== args.props) rootContext.value = { ...rootContext.value, props: args.props }
+        let element = React.createElement(RootContext.Provider, { value: rootContext.value }, React.createElement(App, args.props))
         if (StyleSheetManager) element = React.createElement(StyleSheetManager, { target: styleTargets.get(rootElement), stylisPlugins: stylisPlugins.get(rootElement) }, element)
         // The host's React can't pause this root, so the host pauses the app through this Activity.
         // Keep it inside StrictMode: outside, it stops StrictMode double-invoking effects.
@@ -212,7 +214,9 @@ describe('renderRemote', () => {
             stylisPlugins.set(rootElement, [uniqueStylisPlugin()])
           }
         }
-        let element = React.createElement(RootContext.Provider, { value: rootContexts.get(rootElement).value }, React.createElement(App, args.props))
+        const rootContext = rootContexts.get(rootElement)
+        if (rootContext.value.props !== args.props) rootContext.value = { ...rootContext.value, props: args.props }
+        let element = React.createElement(RootContext.Provider, { value: rootContext.value }, React.createElement(App, args.props))
         if (StyleSheetManager) element = React.createElement(StyleSheetManager, { target: styleTargets.get(rootElement), stylisPlugins: stylisPlugins.get(rootElement) }, element)
         // The host's React can't pause this root, so the host pauses the app through this Activity.
         // Keep it inside StrictMode: outside, it stops StrictMode double-invoking effects.
