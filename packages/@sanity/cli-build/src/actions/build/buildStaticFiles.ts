@@ -32,6 +32,8 @@ interface StaticBuildOptions {
 
   appTitle?: string
   autoUpdates?: AutoUpdatesBuildConfig
+  /** Whether to load a custom `_document.js`/`_document.tsx` component. Defaults to `true`. */
+  documentComponent?: boolean
   entry?: string
   exposes?: WorkbenchExposes
   isApp?: boolean
@@ -62,6 +64,7 @@ export async function buildStaticFiles(
     autoUpdates,
     basePath,
     cwd,
+    documentComponent,
     entry,
     exposes,
     isApp,
@@ -97,6 +100,7 @@ export async function buildStaticFiles(
         appTitle,
         basePath,
         cwd,
+        documentComponent,
         entry,
         isApp,
         isBlueprints,
@@ -114,6 +118,7 @@ export async function buildStaticFiles(
       autoUpdates,
       basePath,
       cwd,
+      documentComponent,
       entries,
       exposes,
       getEnvironmentVariables,
@@ -168,6 +173,7 @@ export async function buildStaticFiles(
     appTitle,
     basePath,
     cwd,
+    documentComponent,
     entry,
     isApp,
     isBlueprints,
@@ -187,6 +193,7 @@ export async function buildStaticFiles(
     autoUpdates,
     basePath,
     cwd,
+    documentComponent,
     entries,
     getEnvironmentVariables,
     isApp,

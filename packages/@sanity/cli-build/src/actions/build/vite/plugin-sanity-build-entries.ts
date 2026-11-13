@@ -55,9 +55,11 @@ export function sanityBuildEntries(options: {
    */
   bridge?: boolean
   cwd: string
+  /** Whether to load a custom `_document.js`/`_document.tsx` component. Defaults to `true`. */
+  documentComponent?: boolean
   isApp?: boolean
 }): Plugin {
-  const {autoUpdates, basePath, bridge = true, cwd, isApp} = options
+  const {autoUpdates, basePath, bridge = true, cwd, documentComponent, isApp} = options
   // Vite's default. `configResolved` replaces this with the resolved value,
   // including a userland `vite` config that sets `build.cssCodeSplit: false`.
   let cssCodeSplit = true
@@ -102,6 +104,7 @@ export function sanityBuildEntries(options: {
 
       const html = await renderDocument({
         autoUpdatesCssUrls: autoUpdates?.cssUrls,
+        documentComponent,
         importMap,
         isApp,
         props: {

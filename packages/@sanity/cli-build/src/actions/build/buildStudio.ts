@@ -68,6 +68,8 @@ export interface BuildOptions {
   vite: UserViteConfig | undefined
   workDir: string
 
+  /** Whether to load a custom `_document.js`/`_document.tsx` component. Defaults to `true`. */
+  documentComponent?: boolean
   exposes?: WorkbenchExposes
   /**
    * The build is running under Sanity Blueprints (invoked programmatically by
@@ -262,6 +264,7 @@ export async function buildStudio(
       autoUpdates,
       basePath,
       cwd: workDir,
+      documentComponent: options.documentComponent,
       exposes,
       isBlueprints: options.isBlueprints,
       isWorkbenchApp: options.isWorkbenchApp,

@@ -43,8 +43,9 @@ export async function getDocumentHtml(
   importMap?: {imports?: Record<string, string>},
   isApp?: boolean,
   autoUpdatesCssUrls?: string[],
+  documentComponent?: boolean,
 ): Promise<string> {
-  const Document = await getDocumentComponent(parent, studioRootPath, isApp)
+  const Document = await getDocumentComponent(parent, studioRootPath, isApp, documentComponent)
   const {renderToStaticMarkup} = await resolveLocalPackage<typeof import('react-dom/server')>(
     'react-dom/server',
     studioRootPath,

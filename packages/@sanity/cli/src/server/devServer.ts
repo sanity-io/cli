@@ -32,6 +32,8 @@ export interface DevServerOptions {
   appTitle?: string
   /** Enable Vite's experimental bundled dev mode (`experimental.bundledDev`). */
   bundledDev?: boolean
+  /** Whether to load a custom `_document.js`/`_document.tsx` component. Defaults to `true`. */
+  documentComponent?: boolean
   entry?: string
   exposes?: WorkbenchExposes
   httpHost?: string
@@ -58,6 +60,7 @@ export async function startDevServer(options: DevServerOptions): Promise<DevServ
     basePath,
     bundledDev,
     cwd,
+    documentComponent,
     entry,
     exposes,
     httpHost,
@@ -77,6 +80,7 @@ export async function startDevServer(options: DevServerOptions): Promise<DevServ
     appTitle,
     basePath,
     cwd,
+    documentComponent,
     entry,
     isApp,
     isWorkbenchApp,
