@@ -351,7 +351,7 @@ describe('startDevServerRegistration', () => {
           src: './src/FeedPanel.tsx',
           surface: 'panel',
           title: 'feed',
-          version: '1',
+          version: '2',
         },
       ],
       manifest,

@@ -31,12 +31,14 @@ export function renderRemote({
   isolateStyles = false,
   preamble,
   version,
+  viewType,
 }: {
   app?: string
   hmr?: boolean
   isolateStyles?: boolean
   preamble: string
   version?: string
+  viewType?: string
 }): string {
   // Keep apps without styled-components buildable; the unused branch is removed from their bundle.
   const stylesheetImport = isolateStyles
@@ -89,7 +91,7 @@ function mount(rootElement, args) {
     const controller = new AbortController()
     // Read once: the SDK pins the root's bus identity when it first connects.
     const { moduleId, parentKey } = args?.renderOptions ?? {}
-    rootContexts.set(rootElement, { controller, value: { signal: controller.signal, moduleId, parentKey } })
+    rootContexts.set(rootElement, { controller, value: { signal: controller.signal, moduleId, parentKey${viewType ? `, viewType: ${JSON.stringify(viewType)}` : ''} } })
     if (StyleSheetManager) {
       const target = rootElement.ownerDocument.createElement('sanity-styles')
       if (typeof __SANITY_APP_ID__ === 'string') target.setAttribute('data-application-id', __SANITY_APP_ID__)
@@ -99,7 +101,11 @@ function mount(rootElement, args) {
       stylisPlugins.set(rootElement, [uniqueStylisPlugin()])
     }
   }
-  let element = React.createElement(RootContext.Provider, { value: rootContexts.get(rootElement).value }, React.createElement(App, args.props))
+  const rootContext = rootContexts.get(rootElement)
+
+  if (rootContext.value.props !== args.props) rootContext.value = { ...rootContext.value, props: args.props }
+
+  let element = React.createElement(RootContext.Provider, { value: rootContext.value }, React.createElement(App, args.props))
   if (StyleSheetManager) element = React.createElement(StyleSheetManager, { target: styleTargets.get(rootElement), stylisPlugins: stylisPlugins.get(rootElement) }, element)
   // The host's React can't pause this root, so the host pauses the app through this Activity.
   // Keep it inside StrictMode: outside, it stops StrictMode double-invoking effects.

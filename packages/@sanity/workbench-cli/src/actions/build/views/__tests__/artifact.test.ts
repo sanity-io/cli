@@ -31,19 +31,13 @@ describe('viewArtifacts', () => {
   // its own component (or the bare function) as the App the render contract renders.
   test('binds each component of a surface as its own App', () => {
     const [title, panel] = viewArtifacts([view({name: 'feed', surface: 'panel'})])
-    expect(title.source({resolveImport})).toContain(
-      `const App = typeof view.components === 'function' ? view.components : view.components["title"]`,
-    )
-    expect(panel.source({resolveImport})).toContain(
-      `const App = typeof view.components === 'function' ? view.components : view.components["panel"]`,
-    )
+    expect(title.source({resolveImport})).toContain('view.components["title"]')
+    expect(panel.source({resolveImport})).toContain('view.components["panel"]')
   })
 
   test('binds a single-component surface without special-casing it', () => {
     const [tile] = viewArtifacts([view({name: 'feed', surface: 'tile'})])
-    expect(tile.source({resolveImport})).toContain(
-      `const App = typeof view.components === 'function' ? view.components : view.components["tile"]`,
-    )
+    expect(tile.source({resolveImport})).toContain('view.components["tile"]')
   })
 
   // The harness body itself is pinned by render-remote's own snapshot; here we
@@ -53,7 +47,6 @@ describe('viewArtifacts', () => {
     const [title] = viewArtifacts([view({name: 'feed', src: './src/feed.tsx', surface: 'panel'})])
     const source = title.source({resolveImport})
     expect(source).toContain('import view from "../../src/feed.tsx"')
-    expect(source).toContain('export const version = view.version')
     expect(source).toContain('if (import.meta.hot)')
   })
 

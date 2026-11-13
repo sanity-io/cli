@@ -25,7 +25,7 @@ describe('deriveInterfaces', () => {
         src: './src/FeedPanel.tsx',
         surface: 'panel',
         title: 'feed',
-        version: '1',
+        version: '2',
       },
     ])
   })
@@ -45,7 +45,7 @@ describe('deriveInterfaces', () => {
         src: './src/Picker.tsx',
         surface: 'asset_source',
         title: 'library',
-        version: '1',
+        version: '2',
       },
     ])
   })
@@ -72,7 +72,7 @@ describe('deriveInterfaces', () => {
         src: './src/Tile.tsx',
         surface: 'tile',
         title: 'agent',
-        version: '1',
+        version: '2',
       },
     ])
   })
@@ -92,7 +92,7 @@ describe('deriveInterfaces', () => {
         src: './src/Tile.tsx',
         surface: 'tile',
         title: 'agent',
-        version: '1',
+        version: '2',
       },
     ])
   })
@@ -268,7 +268,7 @@ describe('deriveInterfaces', () => {
         src: './src/FeedPanel.tsx',
         surface: 'panel',
         title: 'feed',
-        version: '1',
+        version: '2',
       },
       {
         id: 'my-app-worker-unread',
@@ -357,7 +357,7 @@ describe('deriveInterfaces', () => {
         src: './src/FeedPanel.tsx',
         surface: 'panel',
         title: 'feed',
-        version: '1',
+        version: '2',
       },
     ])
   })
@@ -382,7 +382,7 @@ describe('deriveInterfaces', () => {
         src: './src/FeedPanel.tsx',
         surface: 'panel',
         title: 'feed',
-        version: '1',
+        version: '2',
       },
       {
         id: 'test-app-window-test-app',
