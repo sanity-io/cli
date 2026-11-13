@@ -3,8 +3,8 @@ import {
   type MediaLibraryConfigArtifactOptions,
   mediaLibraryConfigArtifacts,
 } from './configs/artifact.js'
-import {serviceArtifacts} from './services/artifact.js'
 import {viewArtifacts} from './views/artifact.js'
+import {webWorkerArtifacts} from './webWorkers/artifact.js'
 
 /**
  * What a {@link GeneratedArtifact.source} builder receives from the build — the
@@ -35,7 +35,7 @@ export interface GeneratedArtifact {
 
   /**
    * Module-federation expose key when the host loads this artifact directly —
-   * a view component `./views/feed/panel`, a service loader `./services/unread`.
+   * a view component `./views/feed/panel`, a web worker loader `./services/unread`.
    * Omitted for a file the host never loads on its own, like a worker bundle
    * (reached through its sibling loader).
    */
@@ -72,7 +72,7 @@ export function workbenchArtifacts(
 ): GeneratedArtifact[] {
   return [
     ...viewArtifacts(exposes.views ?? []),
-    ...serviceArtifacts(exposes.webWorkers ?? []),
+    ...webWorkerArtifacts(exposes.webWorkers ?? []),
     ...mediaLibraryConfigArtifacts(exposes.config, configOptions),
   ]
 }

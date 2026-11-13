@@ -1,5 +1,21 @@
 # Changelog
 
+## 3.15.0
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-core-v3.14.2...cli-core-v3.15.0)
+
+_2026-11-13_
+
+### Features
+
+- **build:** add `unstable_documentComponent` option to opt out of `_document` components ([#2180](https://github.com/sanity-io/cli/pull/2180)) ([721f9e3](https://github.com/sanity-io/cli/commit/721f9e34e5794a4029087515bdeb53a33407af5b))
+
+### Bug Fixes
+
+- **deps:** update vite and oxc dependencies ([#2160](https://github.com/sanity-io/cli/pull/2160)) ([b624cab](https://github.com/sanity-io/cli/commit/b624cab924f7e17d34eea2fbff6d50553a1f4521))
+- **deps:** update dependency @inquirer/core to ^12.0.6 ([#2163](https://github.com/sanity-io/cli/pull/2163)) ([d8e7e11](https://github.com/sanity-io/cli/commit/d8e7e11b36be836a202455d8ff286b53e1686ed1))
+- **deps:** update dependency @inquirer/prompts to ^8.7.5 ([#2164](https://github.com/sanity-io/cli/pull/2164)) ([97e01cd](https://github.com/sanity-io/cli/commit/97e01cdb4b318131fa2a3bf417aa1c1eeb58a297))
+
 ## 3.14.2
 
 [Compare changes](https://github.com/sanity-io/cli/compare/cli-core-v3.14.1...cli-core-v3.14.2)

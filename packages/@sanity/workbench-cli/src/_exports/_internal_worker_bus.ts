@@ -1,1 +1,1 @@
-export {createWorkerBus} from '../actions/build/services/workerBus.js'
+export {createWorkerBus} from '../actions/build/webWorkers/workerBus.js'

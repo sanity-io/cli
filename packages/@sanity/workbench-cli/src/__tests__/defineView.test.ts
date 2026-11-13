@@ -1,7 +1,7 @@
 import {type AssetSourceComponentProps} from '@sanity/types'
 import {describe, expect, expectTypeOf, test} from 'vitest'
 
-import {type TileSize, VIEW_CONTRACT_VERSION} from '../contract.js'
+import {type TileSize} from '../contract.js'
 import {
   type DefinedView,
   type PanelViewProps,
@@ -21,7 +21,7 @@ describe('unstable_defineView', () => {
     const view = unstable_defineView('panel', {panel, title})
 
     expect(view.surface).toBe('panel')
-    expect(view.version).toBe(VIEW_CONTRACT_VERSION)
+    expect(view.version).toBe(1)
     // Components pass through by reference — the helper is pure identity.
     expect(view.components.title).toBe(title)
     expect(view.components.panel).toBe(panel)
@@ -86,7 +86,7 @@ describe('asset_source view', () => {
     const view = unstable_defineView('asset_source', {asset_source: assetSource})
 
     expect(view.surface).toBe('asset_source')
-    expect(view.version).toBe(VIEW_CONTRACT_VERSION)
+    expect(view.version).toBe(1)
     expect(view.components.asset_source).toBe(assetSource)
   })
 
@@ -113,7 +113,7 @@ describe('tile view', () => {
     const view = unstable_defineView('tile', {tile})
 
     expect(view.surface).toBe('tile')
-    expect(view.version).toBe(VIEW_CONTRACT_VERSION)
+    expect(view.version).toBe(1)
     expect(view.components.tile).toBe(tile)
   })
 

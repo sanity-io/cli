@@ -155,7 +155,7 @@ describe('dev orchestration chain', () => {
               src: './src/Feed.tsx',
               title: 'Feed',
               type: 'panel',
-              version: '1',
+              version: '2',
             },
             // `surface: 'window'` → `type: 'app'`, the mapping that regressed before.
             {

@@ -1,5 +1,27 @@
 # @sanity/workbench-cli
 
+## 2.16.0
+
+[Compare changes](https://github.com/sanity-io/cli/compare/workbench-cli-v2.15.2...workbench-cli-v2.16.0)
+
+_2026-11-13_
+
+### Features
+
+- **workbench-cli:** build views from plain component exports ([#2173](https://github.com/sanity-io/cli/pull/2173)) ([ce86134](https://github.com/sanity-io/cli/commit/ce86134722e38ac15fa2425215ee0dc7e9bd5b26))
+- **workbench-cli:** build web workers from plain function exports ([#2177](https://github.com/sanity-io/cli/pull/2177)) ([e8b2f05](https://github.com/sanity-io/cli/commit/e8b2f05f6b2596b5873d0b5c1408d80a189010df))
+
+### Bug Fixes
+
+- **deps:** update vite and oxc dependencies ([#2160](https://github.com/sanity-io/cli/pull/2160)) ([b624cab](https://github.com/sanity-io/cli/commit/b624cab924f7e17d34eea2fbff6d50553a1f4521))
+- **workbench-cli:** stop pre-bundling dependencies twice ([#2161](https://github.com/sanity-io/cli/pull/2161)) ([e7eba49](https://github.com/sanity-io/cli/commit/e7eba49d85be6c1bd6a640182db2031ba259eeb9))
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/cli-core bumped to 3.15.0
+
 ## 2.15.2
 
 [Compare changes](https://github.com/sanity-io/cli/compare/workbench-cli-v2.15.1...workbench-cli-v2.15.2)

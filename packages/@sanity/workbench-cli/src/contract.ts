@@ -1,14 +1,14 @@
 import {z} from 'zod/mini'
 
-// Shared module-federation extension contract: interface (view/service) and
+// Shared module-federation extension contract: interface (view/web worker) and
 // config declaration schemas, plus the versions the build stamps.
 // `zod/mini` keeps the bundle small.
 
 /** @internal */
-export const VIEW_CONTRACT_VERSION = 1
+export const VIEW_CONTRACT_VERSION = 2
 
 /** @internal */
-export const SERVICE_CONTRACT_VERSION = 1
+export const WEB_WORKER_CONTRACT_VERSION = 1
 
 /** @internal */
 export const MEDIA_LIBRARY_CONFIG_CONTRACT_VERSION = 1
@@ -49,7 +49,13 @@ export const TileSizeSchema = z.enum(['small', 'large', 'banner'])
 export type TileSize = z.infer<typeof TileSizeSchema>
 
 /** @public */
-export type ServiceType = 'worker'
+export type WebWorkerType = 'worker'
+
+/**
+ * @deprecated Use `WebWorkerType`.
+ * @public
+ */
+export type ServiceType = WebWorkerType
 
 const DockGroupSchema = z.enum(['system', 'applications'])
 
@@ -97,10 +103,10 @@ const INTERFACE_CONTRACT_VERSIONS = {
   panel: VIEW_CONTRACT_VERSION,
   tile: VIEW_CONTRACT_VERSION,
   window: undefined,
-  worker: SERVICE_CONTRACT_VERSION,
+  worker: WEB_WORKER_CONTRACT_VERSION,
 } as const
 
-/** Every interface type an app exposes — a window, a view, or a service. */
+/** Every interface type an app exposes — a window, a view, or a web worker. */
 export type InterfaceKind = keyof typeof INTERFACE_CONTRACT_VERSIONS
 
 /** @internal */
@@ -249,7 +255,7 @@ export function defineWebWorker(webWorker: DefineWebWorkerInput): WebWorker {
 }
 
 /** @internal */
-export const ServiceDeclarationSchema = z.discriminatedUnion('type', [WebWorkerSchema])
+export const WebWorkerDeclarationSchema = z.discriminatedUnion('type', [WebWorkerSchema])
 
 const MediaLibraryFieldSchema = z.object({
   ...extensionDeclarationFields('Field'),

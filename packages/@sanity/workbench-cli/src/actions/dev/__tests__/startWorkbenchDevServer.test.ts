@@ -701,7 +701,7 @@ describe('startWorkbenchDevServer', () => {
     })
 
     test('full-reloads the page when a running app gains or drops an interface', async () => {
-      // Adding/removing a view or service rebuilds the app remote with new
+      // Adding/removing a view or web worker rebuilds the app remote with new
       // exposes; module federation has the old remote-entry cached, so the page
       // must reload to re-fetch it. A soft reconcile would render an empty panel.
       const mockServer = createMockViteServer()
