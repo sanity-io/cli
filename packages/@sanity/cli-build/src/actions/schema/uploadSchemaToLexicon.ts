@@ -135,7 +135,7 @@ async function sanitySchemaToLexicon(
     await tryUpload(workspace, async () => {
       const {commit, descriptorId} = await prepareSchemaUpload(schema, {
         apiVersion: DESCRIPTOR_API_VERSION,
-        claim: 'temporary',
+        claim: options.claimType,
         contextKey,
         requester: ({body, headers, method, url}) =>
           client.request({
