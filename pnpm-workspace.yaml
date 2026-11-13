@@ -83,8 +83,8 @@ catalog:
   tar: ^7.5.22
 
   # Build Tools
-  '@swc/core': ^1.15.43
-  '@swc/cli': ^0.8.1
+  '@swc/core': ^1.16.22
+  '@swc/cli': ^0.8.2
   rimraf: ^6.0.1
   '@sanity/pkg-utils': ^12.3.4
   oxfmt: ^0.78.0
