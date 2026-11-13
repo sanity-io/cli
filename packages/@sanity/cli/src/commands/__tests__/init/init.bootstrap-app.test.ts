@@ -14,7 +14,7 @@ const mocks = vi.hoisted(() => ({
   bootstrapTemplate: vi.fn(),
   createOrAppendEnvVars: vi.fn(),
   getGitHubRepoInfo: vi.fn(),
-  initNextJs: vi.fn(),
+  initInPlaceStudio: vi.fn(),
   installDeclaredPackages: vi.fn(),
   search: vi.fn(),
   select: vi.fn(),
@@ -133,8 +133,8 @@ vi.mock('../../../actions/init/remoteTemplate.js', async (importOriginal) => ({
   getGitHubRepoInfo: mocks.getGitHubRepoInfo,
 }))
 
-vi.mock('../../../actions/init/initNextJs.js', () => ({
-  initNextJs: mocks.initNextJs,
+vi.mock('../../../actions/init/initInPlaceStudio.js', () => ({
+  initInPlaceStudio: mocks.initInPlaceStudio,
 }))
 
 vi.mock('../../../actions/init/checkNextJsReactCompatibility.js', () => ({
@@ -375,7 +375,7 @@ describe('#init: bootstrap-app-initialization', () => {
     if (error) throw error
 
     expect(stderr).toContain('--dashboard is ignored for Next.js projects')
-    expect(mocks.initNextJs).toHaveBeenCalled()
+    expect(mocks.initInPlaceStudio).toHaveBeenCalled()
     expect(mocks.bootstrapTemplate).not.toHaveBeenCalled()
   })
 

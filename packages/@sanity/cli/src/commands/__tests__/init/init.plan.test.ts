@@ -257,7 +257,14 @@ describe('#init: retrieving plan', () => {
 
     const {error, stderr, stdout} = await testCommand(
       InitCommand,
-      ['--coupon=INVALID123', '--yes', '--dataset=test', '--project=test'],
+      [
+        '--coupon=INVALID123',
+        '--yes',
+        '--dataset=test',
+        '--project=test',
+        '--no-nextjs-add-config-files',
+        '--output-path=/test/output',
+      ],
       {
         mocks: {
           ...defaultMocks,
@@ -407,7 +414,14 @@ describe('#init: retrieving plan', () => {
 
     const {error, stderr, stdout} = await testCommand(
       InitCommand,
-      ['--project-plan=growth', '--yes', '--dataset=test', '--project=test'],
+      [
+        '--project-plan=growth',
+        '--yes',
+        '--dataset=test',
+        '--project=test',
+        '--no-nextjs-add-config-files',
+        '--output-path=/test/output',
+      ],
       {
         mocks: {
           ...defaultMocks,

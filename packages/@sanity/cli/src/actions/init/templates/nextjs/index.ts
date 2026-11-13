@@ -30,6 +30,48 @@ export default defineConfig({
 })
 `
 
+/**
+ * Studio config for a Next.js project. The Studio is a separate dev server,
+ * not a route in the Next.js app. Project id and dataset are written inline
+ * because the Studio does not load Next.js `NEXT_PUBLIC_` environment variables.
+ */
+export function standaloneSanityConfigTemplate(projectId: string, dataset: string): string {
+  const apiVersion = new Date().toISOString().split('T')[0]
+
+  return `/**
+ * Configuration for the Sanity Studio in this project.
+ * The Studio runs separately from the Next.js app. Start it with the \`studio\` script.
+ */
+
+import {visionTool} from '@sanity/vision'
+import {defineConfig} from 'sanity'
+import {structureTool} from 'sanity/structure'
+
+import {schema} from './sanity/schemaTypes'
+import {structure} from './sanity/structure'
+
+// Go to https://www.sanity.io/docs/api-versioning to learn how API versioning works
+const apiVersion = '${apiVersion}'
+
+export default defineConfig({
+  projectId: ${JSON.stringify(projectId)},
+  dataset: ${JSON.stringify(dataset)},
+  // Add and edit the content schema in the './sanity/schemaTypes' folder
+  schema,
+  plugins: [
+    structureTool({structure}),
+    // Vision is for querying with GROQ from inside the Studio
+    // https://www.sanity.io/docs/the-vision-plugin
+    visionTool({defaultApiVersion: apiVersion}),
+  ],
+  vite: {
+    // Keep Studio assets out of the Next.js public directory
+    publicDir: 'sanity/static',
+  },
+})
+`
+}
+
 export const sanityCliTemplate = `/**
 * This configuration file lets you run \`$ sanity [command]\` in this folder
 * Go to https://www.sanity.io/docs/cli to learn more.
@@ -41,6 +83,33 @@ const dataset = process.env.NEXT_PUBLIC_SANITY_DATASET
 
 export default defineCliConfig({ api: { projectId, dataset } })
 `
+
+export function standaloneSanityCliTemplate(
+  autoUpdates: boolean,
+  projectId: string,
+  dataset: string,
+): string {
+  return `/**
+* This configuration file lets you run \`$ sanity [command]\` in this folder
+* Go to https://www.sanity.io/docs/cli to learn more.
+**/
+import { defineCliConfig } from 'sanity/cli'
+
+export default defineCliConfig({
+  api: {
+    projectId: ${JSON.stringify(projectId)},
+    dataset: ${JSON.stringify(dataset)},
+  },
+  deployment: {
+    /**
+     * Enable auto-updates for studios.
+     * Learn more at https://www.sanity.io/docs/studio/latest-version-of-sanity#k47faf43faf56
+     */
+    autoUpdates: ${autoUpdates},
+  },
+})
+`
+}
 
 export const sanityStudioTemplate = `/**
  * This route is responsible for the built-in authoring environment using Sanity Studio.
@@ -202,32 +271,38 @@ export const urlFor = (source) => {
 
 type FolderStructure = Record<string, Record<string, string> | string>
 
-export const sanityFolder = (
+/**
+ * Schema and structure files for the Studio. Shared by every framework, so it
+ * has no client or env wiring.
+ */
+export const studioSourceFolder = (
   useTypeScript: boolean,
   template?: 'blog' | 'clean',
 ): FolderStructure => {
-  // Files used in both templates
-  const structure: FolderStructure = {
-    'env.': useTypeScript ? envTS : envJS,
-    lib: {
-      'client.': client,
-      'image.': useTypeScript ? imageTS : imageJS,
-      'live.': live,
-    },
-  }
-
   if (template === 'blog') {
-    structure.schemaTypes = {
-      ...blogSchemaFolder,
-      'index.': useTypeScript ? blogSchemaTS : blogSchemaJS,
+    return {
+      schemaTypes: {
+        ...blogSchemaFolder,
+        'index.': useTypeScript ? blogSchemaTS : blogSchemaJS,
+      },
+      'structure.': useTypeScript ? blogStructureTS : blogStructureJS,
     }
-    structure['structure.'] = useTypeScript ? blogStructureTS : blogStructureJS
-  } else {
-    structure.schemaTypes = {
-      'index.': useTypeScript ? schemaTS : schemaJS,
-    }
-    structure['structure.'] = useTypeScript ? structureTS : structureJS
   }
 
-  return structure
+  return {
+    schemaTypes: {
+      'index.': useTypeScript ? schemaTS : schemaJS,
+    },
+    'structure.': useTypeScript ? structureTS : structureJS,
+  }
 }
+
+/** Env and client files the Next.js app imports to query Sanity. */
+export const nextClientFolder = (useTypeScript: boolean): FolderStructure => ({
+  'env.': useTypeScript ? envTS : envJS,
+  lib: {
+    'client.': client,
+    'image.': useTypeScript ? imageTS : imageJS,
+    'live.': live,
+  },
+})
