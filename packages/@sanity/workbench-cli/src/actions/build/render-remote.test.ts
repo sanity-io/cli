@@ -417,6 +417,34 @@ describe('viewArtifacts', () => {
     })
   })
 
+  test('puts the asset source props in the root context of a plain asset source', () => {
+    const [assetSourceArtifact] = viewArtifacts([
+      {name: 'library', src: './library.tsx', surface: 'asset_source'},
+    ])
+    const React = makeReact()
+    const mod = loadWrapper(assetSourceArtifact.source({resolveImport: (src) => src}), React, {
+      view: Panel,
+    })
+    const assetSourceProps = {
+      assetSource: {name: 'library'},
+      onClose: () => {},
+      onSelect: () => {},
+      view: {name: 'library'},
+    }
+    mod.render({}, assetSourceProps)
+
+    expect(rootValueOf(mod.rendered[0], React)).toMatchObject({
+      props: assetSourceProps,
+      viewType: 'asset_source',
+    })
+    const app = appOf(mod.rendered[0])!
+    expect((app.type as (props: unknown) => Element)(app.props)).toEqual({
+      children: [],
+      props: undefined,
+      type: Panel,
+    })
+  })
+
   test('renders an unstable_defineView slot as contract v1, with the host props', () => {
     const React = makeReact()
     const mod = loadWrapper(panelSource, React, {
