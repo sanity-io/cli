@@ -112,7 +112,7 @@
     "@sanity/workflow-engine": "^0.37.0",
     "@vercel/frameworks": "3.29.0",
     "chokidar": "^5.0.0",
-    "console-table-printer": "^2.15.0",
+    "console-table-printer": "^2.16.1",
     "eventsource": "^5.1.5",
     "execa": "catalog:",
     "form-data": "catalog:",

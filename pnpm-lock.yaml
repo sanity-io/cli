@@ -816,7 +816,7 @@ importers:
         specifier: ^5.0.0
         version: 5.0.0
       console-table-printer:
-        specifier: ^2.15.0
+        specifier: ^2.16.1
         version: 2.16.1
       eventsource:
         specifier: ^5.1.5
