@@ -44,6 +44,7 @@ export function viewArtifacts(views: readonly InterfaceArtifact[]): GeneratedArt
             isolateStyles,
             preamble: `import view from ${JSON.stringify(resolveImport(view.src))}`,
             version: `view.components ? view.version : ${VIEW_CONTRACT_VERSION}`,
+            viewType: view.surface,
           }),
       })
     }

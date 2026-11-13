@@ -35,7 +35,13 @@ function find(element: Element, matches: (node: Element) => boolean): Element | 
   return node
 }
 
-type RootValue = {moduleId?: string; parentKey?: string; props?: unknown; signal: AbortSignal}
+type RootValue = {
+  moduleId?: string
+  parentKey?: string
+  props?: unknown
+  signal: AbortSignal
+  viewType?: string
+}
 
 /** The value of the root context the wrapper stored for this React copy. */
 function rootValueOf(element: Element, React: ReactStub): RootValue | undefined {
@@ -402,7 +408,7 @@ describe('viewArtifacts', () => {
     mod.render({}, props)
 
     expect(mod.version).toBe(2)
-    expect(rootValueOf(mod.rendered[0], React)?.props).toBe(props)
+    expect(rootValueOf(mod.rendered[0], React)).toMatchObject({props, viewType: 'panel'})
     const app = appOf(mod.rendered[0])!
     expect((app.type as (props: unknown) => Element)(app.props)).toEqual({
       children: [],
