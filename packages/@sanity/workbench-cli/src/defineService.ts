@@ -53,6 +53,16 @@ export interface ServiceContext {
 }
 
 /**
+ * Props a web worker function receives when its worker starts. The function can
+ * return a disposer the host calls before terminating the worker.
+ * @public
+ */
+export interface WebWorkerProps {
+  readonly bus: ServiceBus
+  readonly worker: ServiceInfo
+}
+
+/**
  * A service callback. Runs once inside the worker on start; returns an optional
  * disposer the host calls before terminating the worker.
  * @public
@@ -117,6 +127,7 @@ export interface DefinedService<TType extends ServiceType = ServiceType> {
  * Identity at runtime: returns the callback tagged with its type and the contract
  * version, for the CLI build to generate a worker artifact from. Used as the
  * default export of a service's `src` file.
+ * @deprecated Default-export a plain function that receives {@link WebWorkerProps} from the web worker's `src` file instead.
  * @public
  */
 export function unstable_defineService<TType extends ServiceType>(

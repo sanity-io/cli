@@ -11,8 +11,8 @@ const SERVICE_TYPES: readonly ServiceType[] = ['worker']
 
 /**
  * A service to generate a worker artifact for. The `src` file default-exports
- * an `unstable_defineService(...)` result; the build emits a self-contained Web
- * Worker bundle plus a loader module that hands the host its URL.
+ * a worker function or an `unstable_defineService(...)` result; the build emits
+ * a self-contained Web Worker bundle plus a loader module that hands the host its URL.
  * @internal
  */
 export interface ServiceArtifact {
@@ -55,7 +55,7 @@ export function serviceArtifacts(services: readonly ServiceArtifact[]): Generate
 
 /**
  * Source for one service's **worker** bundle — the Web Worker entry. Imports
- * the user's `unstable_defineService` result and runs its callback with the
+ * the user's worker function or `unstable_defineService` result and runs it with the
  * service's own declaration (mirroring how a view component receives its
  * `view`) and a message bus client (`workerBus.ts`), then wires the returned
  * disposer to the host's terminate message.
@@ -97,7 +97,8 @@ const { bus, close: closeBus, receive: receiveBus } = createWorkerBus()
 
 let dispose
 try {
-  const result = service.run({ bus, service: SERVICE })
+  // Backwards compatibility: an \`unstable_defineService\` result passes the worker as \`service\`. Remove in SDK-3210.
+  const result = service.run ? service.run({ bus, service: SERVICE }) : service({ bus, worker: SERVICE })
   if (typeof result === 'function') dispose = result
 } catch (error) {
   self.postMessage({ kind: 'workbench.worker.error', payload: { message: String(error) } })
