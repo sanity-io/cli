@@ -43,6 +43,7 @@ export type {
   ServiceCallback,
   ServiceContext,
   ServiceInfo,
+  WebWorkerProps,
 } from '../defineService.js'
 export {unstable_defineView} from '../defineView.js'
 export type {

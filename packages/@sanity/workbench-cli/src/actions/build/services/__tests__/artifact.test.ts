@@ -1,5 +1,6 @@
-import {describe, expect, test} from 'vitest'
+import {describe, expect, test, vi} from 'vitest'
 
+import {type ServiceCallback, unstable_defineService} from '../../../../defineService.js'
 import {type ServiceArtifact, serviceArtifacts} from '../artifact.js'
 
 // Test stub for the build-supplied `resolveImport` — turns an app `src` into a
@@ -25,10 +26,9 @@ describe('serviceArtifacts', () => {
     expect(artifacts.map((artifact) => artifact.expose)).toEqual([undefined, './services/unread'])
   })
 
-  // Pin the whole worker bundle: the console bridge, the `service.run` call with
-  // the bus, and the terminate sequence (close the bus, then dispose, then close
-  // the worker) are all load-bearing and none is caught by a fragment check. The
-  // `src` is threaded through `resolveImport`.
+  // Pin the whole worker bundle: the console bridge and crash forwarding are
+  // load-bearing and not caught by a fragment check. The `src` is threaded
+  // through `resolveImport`.
   test('emits the worker bundle that runs the user service and forwards crashes', () => {
     const [worker] = serviceArtifacts([service({name: 'unread', src: './src/unread.ts'})])
     expect(worker.source({resolveImport})).toMatchInlineSnapshot(`
@@ -61,7 +61,8 @@ describe('serviceArtifacts', () => {
 
       let dispose
       try {
-        const result = service.run({ bus, service: SERVICE })
+        // Backwards compatibility: an \`unstable_defineService\` result passes the worker as \`service\`. Remove in SDK-3210.
+        const result = service.run ? service.run({ bus, service: SERVICE }) : service({ bus, worker: SERVICE })
         if (typeof result === 'function') dispose = result
       } catch (error) {
         self.postMessage({ kind: 'workbench.worker.error', payload: { message: String(error) } })
@@ -130,4 +131,56 @@ describe('serviceArtifacts', () => {
   test('returns nothing for an empty service list', () => {
     expect(serviceArtifacts([])).toEqual([])
   })
+
+  test('runs a default-exported function with the bus and its worker', () => {
+    const run = vi.fn()
+    const {bus} = startWorker(run)
+    expect(run).toHaveBeenCalledWith({bus, worker: {name: 'unread', type: 'worker'}})
+    expect(run.mock.calls[0][0].bus).toBe(bus)
+  })
+
+  test('runs an unstable_defineService result with the bus and its service', () => {
+    const run = vi.fn<ServiceCallback>()
+    const {bus} = startWorker(unstable_defineService('worker', run))
+    expect(run).toHaveBeenCalledWith({bus, service: {name: 'unread', type: 'worker'}})
+    expect(run.mock.calls[0][0].bus).toBe(bus)
+  })
+
+  test('closes the bus, calls the disposer, then closes the worker on workbench.worker.terminate', () => {
+    const dispose = vi.fn()
+    const {closeBus, self, terminate} = startWorker(() => dispose)
+    terminate()
+    expect(dispose).toHaveBeenCalledOnce()
+    expect(closeBus.mock.invocationCallOrder[0]).toBeLessThan(dispose.mock.invocationCallOrder[0])
+    expect(self.close).toHaveBeenCalledOnce()
+  })
 })
+
+/** Evaluates the generated worker entry with `defaultExport` as the user's `src` default export. */
+function startWorker(defaultExport: unknown) {
+  const bus = {emit: vi.fn()}
+  const closeBus = vi.fn()
+  const listeners: Record<string, (event: unknown) => void> = {}
+  const self = {
+    addEventListener: (type: string, listener: (event: unknown) => void) => {
+      listeners[type] = listener
+    },
+    close: vi.fn(),
+    postMessage: vi.fn(),
+  }
+  const [worker] = serviceArtifacts([service()])
+  const body = worker.source({resolveImport}).replaceAll(/^import .*$/gm, '')
+  // `console` is shadowed so the entry's console bridge doesn't patch the test runner's console.
+  new Function('service', 'createWorkerBus', 'self', 'console', body)(
+    defaultExport,
+    () => ({bus, close: closeBus, receive: () => {}}),
+    self,
+    {},
+  )
+  return {
+    bus,
+    closeBus,
+    self,
+    terminate: () => listeners.message({data: {kind: 'workbench.worker.terminate'}}),
+  }
+}
