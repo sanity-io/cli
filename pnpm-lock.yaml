@@ -225,7 +225,7 @@ catalogs:
       specifier: ^19.3.0
       version: 19.3.0
     '@types/semver':
-      specifier: ^7.7.1
+      specifier: ^7.8.0
       version: 7.8.0
     '@vitejs/plugin-react':
       specifier: ^6.3.0
@@ -303,8 +303,8 @@ catalogs:
       specifier: ^6.22.0
       version: 6.22.0
     semver:
-      specifier: ^7.8.1
-      version: 7.8.5
+      specifier: ^7.8.6
+      version: 7.8.6
     strip-ansi:
       specifier: ^7.1.0
       version: 7.2.0
@@ -883,7 +883,7 @@ importers:
         version: 7.8.2
       semver:
         specifier: 'catalog:'
-        version: 7.8.5
+        version: 7.8.6
       skills:
         specifier: ^1.8.0
         version: 1.8.0
@@ -1085,7 +1085,7 @@ importers:
         version: 19.3.0
       semver:
         specifier: 'catalog:'
-        version: 7.8.5
+        version: 7.8.6
       vite:
         specifier: 'catalog:'
         version: 8.3.8(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.13)(yaml@2.9.0)
@@ -1473,7 +1473,7 @@ importers:
         version: 7.8.2
       semver:
         specifier: 'catalog:'
-        version: 7.8.5
+        version: 7.8.6
       tar:
         specifier: 'catalog:'
         version: 7.5.22
@@ -9717,8 +9717,8 @@ packages:
     engines: {node: '>=10'}
     hasBin: true
 
-  semver@7.8.5:
-    resolution: {integrity: sha512-Y7/KDsb8LjooZpwaqGyulO6DQlksgCncchHGk+sZIY4SBvUocMBEFH5Ur1fI4dV+Jvl0w6cjvucaIi40puRioA==}
+  semver@7.8.6:
+    resolution: {integrity: sha512-9lpSSU4Mly3mrtruwLs1eLK6+gzbzqeBFwRNjIjE+9LuDpWdYctrQlQ3ej1Ilgi7gknpsTRnPoLP8DpCHqHIJw==}
     engines: {node: '>=10'}
     hasBin: true
 
@@ -11773,7 +11773,7 @@ snapshots:
       outdent: 0.5.0
       prettier: 2.8.8
       resolve-from: 5.0.0
-      semver: 7.8.5
+      semver: 7.8.6
 
   '@changesets/assemble-release-plan@6.0.10':
     dependencies:
@@ -11782,7 +11782,7 @@ snapshots:
       '@changesets/should-skip-package': 0.1.2
       '@changesets/types': 6.1.0
       '@manypkg/get-packages': 1.1.3
-      semver: 7.8.5
+      semver: 7.8.6
 
   '@changesets/changelog-git@0.2.1':
     dependencies:
@@ -11813,7 +11813,7 @@ snapshots:
       package-manager-detector: 0.2.11
       picocolors: 1.1.1
       resolve-from: 5.0.0
-      semver: 7.8.5
+      semver: 7.8.6
       spawndamnit: 3.0.1
       term-size: 2.2.1
     transitivePeerDependencies:
@@ -11839,7 +11839,7 @@ snapshots:
       '@changesets/types': 6.1.0
       '@manypkg/get-packages': 1.1.3
       picocolors: 1.1.1
-      semver: 7.8.5
+      semver: 7.8.6
 
   '@changesets/get-release-plan@4.0.16':
     dependencies:
@@ -12114,7 +12114,7 @@ snapshots:
   '@commitlint/is-ignored@20.5.0':
     dependencies:
       '@commitlint/types': 20.5.0
-      semver: 7.8.5
+      semver: 7.8.6
 
   '@commitlint/lint@20.5.3':
     dependencies:
@@ -12188,7 +12188,7 @@ snapshots:
     dependencies:
       '@simple-libs/child-process-utils': 1.0.2
       '@simple-libs/stream-utils': 1.2.0
-      semver: 7.8.5
+      semver: 7.8.6
     optionalDependencies:
       conventional-commits-parser: 6.4.0
 
@@ -13374,7 +13374,7 @@ snapshots:
       indent-string: 4.0.0
       lilconfig: 3.1.3
       minimatch: 10.2.6
-      semver: 7.8.5
+      semver: 7.8.6
       string-width: 4.2.3
       supports-color: 8.1.1
       tinyglobby: 0.2.17
@@ -14202,7 +14202,7 @@ snapshots:
       picomatch: 4.0.7
       react: 19.3.0
       react-is: 19.3.1
-      semver: 7.8.5
+      semver: 7.8.6
       vite: 8.3.8(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.13)(yaml@2.9.0)
       zod: 4.6.7
     optionalDependencies:
@@ -15336,7 +15336,7 @@ snapshots:
       '@vitejs/plugin-react': 6.3.0(@rolldown/plugin-babel@0.2.4(@babel/core@7.29.7(supports-color@8.1.1))(@babel/runtime@7.29.7)(rolldown@1.2.19)(vite@8.3.8(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.13)(yaml@2.9.0)))(babel-plugin-react-compiler@1.0.0)(oxc-transform-react@0.156.0)(vite@8.3.8(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.13)(yaml@2.9.0))
       form-data: 4.0.6
       rxjs: 7.8.2
-      semver: 7.8.5
+      semver: 7.8.6
       tar: 7.5.22
       vite: 8.3.8(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.13)(yaml@2.9.0)
       zod: 4.6.7
@@ -15589,7 +15589,7 @@ snapshots:
       commander: 8.3.0
       minimatch: 9.0.9
       piscina: 4.9.4
-      semver: 7.8.5
+      semver: 7.8.6
       slash: 3.0.0
       source-map: 0.7.6
       tinyglobby: 0.2.17
@@ -15910,7 +15910,7 @@ snapshots:
       '@typescript-eslint/visitor-keys': 8.56.1
       debug: 4.4.3(supports-color@8.1.1)
       minimatch: 10.2.6
-      semver: 7.8.5
+      semver: 7.8.6
       tinyglobby: 0.2.17
       ts-api-utils: 2.5.0(typescript@6.0.3)
       typescript: 6.0.3
@@ -15925,7 +15925,7 @@ snapshots:
       '@typescript-eslint/visitor-keys': 8.68.0
       debug: 4.4.3(supports-color@8.1.1)
       minimatch: 10.2.6
-      semver: 7.8.5
+      semver: 7.8.6
       tinyglobby: 0.2.17
       ts-api-utils: 2.5.0(typescript@6.0.3)
       typescript: 6.0.3
@@ -16640,7 +16640,7 @@ snapshots:
   binary-version-check@6.1.0:
     dependencies:
       binary-version: 7.1.0
-      semver: 7.8.5
+      semver: 7.8.6
       semver-truncate: 3.0.0
 
   binary-version@7.1.0:
@@ -17296,7 +17296,7 @@ snapshots:
   eslint-compat-utils@0.5.1(eslint@10.9.1(jiti@2.7.0)(supports-color@8.1.1)):
     dependencies:
       eslint: 10.9.1(jiti@2.7.0)(supports-color@8.1.1)
-      semver: 7.8.5
+      semver: 7.8.6
 
   eslint-config-prettier@10.1.8(eslint@10.9.1(jiti@2.7.0)(supports-color@8.1.1)):
     dependencies:
@@ -17340,7 +17340,7 @@ snapshots:
       eslint-import-context: 0.1.9(unrs-resolver@1.12.2)
       is-glob: 4.0.3
       minimatch: 10.2.6
-      semver: 7.8.5
+      semver: 7.8.6
       stable-hash-x: 0.2.0
       unrs-resolver: 1.12.2
     optionalDependencies:
@@ -17358,7 +17358,7 @@ snapshots:
       globals: 15.15.0
       globrex: 0.1.2
       ignore: 5.3.2
-      semver: 7.8.5
+      semver: 7.8.6
       ts-declaration-location: 1.0.7(typescript@6.0.3)
     transitivePeerDependencies:
       - typescript
@@ -17399,7 +17399,7 @@ snapshots:
       pluralize: 8.0.0
       regexp-tree: 0.1.27
       regjsparser: 0.13.2
-      semver: 7.8.5
+      semver: 7.8.6
       strip-indent: 4.1.1
 
   eslint-plugin-unused-imports@4.4.1(@typescript-eslint/eslint-plugin@8.68.0(@typescript-eslint/parser@8.68.0(eslint@10.9.1(jiti@2.7.0)(supports-color@8.1.1))(supports-color@8.1.1)(typescript@6.0.3))(eslint@10.9.1(jiti@2.7.0)(supports-color@8.1.1))(supports-color@8.1.1)(typescript@6.0.3))(eslint@10.9.1(jiti@2.7.0)(supports-color@8.1.1)):
@@ -17806,7 +17806,7 @@ snapshots:
       get-it: 8.8.3
       registry-auth-token: 5.1.1
       registry-url: 7.2.0
-      semver: 7.8.5
+      semver: 7.8.6
 
   get-package-type@0.1.0: {}
 
@@ -18146,7 +18146,7 @@ snapshots:
 
   is-bun-module@2.0.0:
     dependencies:
-      semver: 7.8.5
+      semver: 7.8.6
 
   is-core-module@2.16.2:
     dependencies:
@@ -18819,7 +18819,7 @@ snapshots:
   normalize-package-data@6.0.2:
     dependencies:
       hosted-git-info: 7.0.2
-      semver: 7.8.5
+      semver: 7.8.6
       validate-npm-package-license: 3.0.4
 
   normalize-path@3.0.0: {}
@@ -18875,7 +18875,7 @@ snapshots:
       github-slugger: 2.0.0
       got: 13.0.0
       normalize-package-data: 6.0.2
-      semver: 7.8.5
+      semver: 7.8.6
       tiny-jsonc: 1.0.2
       validate-npm-package-name: 5.0.1
     transitivePeerDependencies:
@@ -19804,7 +19804,7 @@ snapshots:
       rxjs-mergemap-array: 0.1.0(rxjs@7.8.2)
       scroll-into-view-if-needed: 3.1.0
       scrollmirror: 1.2.4
-      semver: 7.8.5
+      semver: 7.8.6
       speakingurl: 14.0.1
       styled-components: 6.5.3(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       swr: 2.5.1(react@19.3.0)
@@ -19930,7 +19930,7 @@ snapshots:
       rxjs-mergemap-array: 0.1.0(rxjs@7.8.2)
       scroll-into-view-if-needed: 3.1.0
       scrollmirror: 1.2.4
-      semver: 7.8.5
+      semver: 7.8.6
       speakingurl: 14.0.1
       styled-components: 6.5.3(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       swr: 2.5.1(react@19.3.0)
@@ -19977,7 +19977,7 @@ snapshots:
 
   semver-truncate@3.0.0:
     dependencies:
-      semver: 7.8.5
+      semver: 7.8.6
 
   semver@5.7.2: {}
 
@@ -19985,7 +19985,7 @@ snapshots:
 
   semver@7.7.4: {}
 
-  semver@7.8.5: {}
+  semver@7.8.6: {}
 
   sentence-case@3.0.4:
     dependencies:
@@ -20012,7 +20012,7 @@ snapshots:
     dependencies:
       '@img/colour': 1.1.0
       detect-libc: 2.1.2
-      semver: 7.8.5
+      semver: 7.8.6
     optionalDependencies:
       '@img/sharp-darwin-arm64': 0.34.5
       '@img/sharp-darwin-x64': 0.34.5
