@@ -13,6 +13,7 @@ export type {
   ViewDeclaration,
   ViewSurface,
   WebWorker,
+  WebWorkerType,
   WindowView,
 } from '../contract.js'
 export {
@@ -36,15 +37,6 @@ export type {
   WorkbenchApp,
   WorkbenchConfig,
 } from '../defineApp.js'
-export {unstable_defineService} from '../defineService.js'
-export type {
-  DefinedService,
-  ServiceBus,
-  ServiceCallback,
-  ServiceContext,
-  ServiceInfo,
-  WebWorkerProps,
-} from '../defineService.js'
 export {unstable_defineView} from '../defineView.js'
 export type {
   AssetSourceComponent,
@@ -59,3 +51,14 @@ export type {
   ViewComponentsBySurface,
   WindowViewProps,
 } from '../defineView.js'
+export {unstable_defineService} from '../webWorker.js'
+export type {
+  DefinedService,
+  ServiceBus,
+  ServiceCallback,
+  ServiceContext,
+  ServiceInfo,
+  WebWorkerBus,
+  WebWorkerInfo,
+  WebWorkerProps,
+} from '../webWorker.js'

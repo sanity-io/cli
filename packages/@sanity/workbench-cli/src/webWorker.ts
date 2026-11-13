@@ -9,25 +9,25 @@ import {
   type ValueOf,
 } from '@sanity/sdk/dashboard'
 
-import {SERVICE_CONTRACT_VERSION, type ServiceType} from './contract.js'
+import {WEB_WORKER_CONTRACT_VERSION, type WebWorkerType} from './contract.js'
 
 /**
- * The service's own declaration, surfaced to the callback.
+ * The web worker's own declaration.
  * @public
  */
-export interface ServiceInfo {
+export interface WebWorkerInfo {
   readonly name: string
   readonly type: string
 }
 
 /**
- * The message bus as a service sees it: the SDK's `MessageBus` without the
- * `subscribe` forms that return observables, which would make the service's
+ * The message bus as a web worker sees it: the SDK's `MessageBus` without the
+ * `subscribe` forms that return observables, which would make the web worker's
  * project install rxjs. There is no `disconnect`: Dashboard owns the connection
  * and ends it when it stops the worker.
  * @public
  */
-export interface ServiceBus extends Omit<MessageBus, 'subscribe'> {
+export interface WebWorkerBus extends Omit<MessageBus, 'subscribe'> {
   /** Runs a responder for each event until its signal aborts. */
   subscribe<K extends EventTopic>(
     type: K,
@@ -45,52 +45,19 @@ export interface ServiceBus extends Omit<MessageBus, 'subscribe'> {
 /**
  * Context every service callback receives when its worker starts. Mirrors how a
  * view component receives its `view` — the service receives its own `service`.
+ * @deprecated Use {@link WebWorkerProps}.
  * @public
  */
 export interface ServiceContext {
-  readonly bus: ServiceBus
-  readonly service: ServiceInfo
+  readonly bus: WebWorkerBus
+  readonly service: WebWorkerInfo
 }
 
 /**
- * Props a web worker function receives when its worker starts. The function can
- * return a disposer the host calls before terminating the worker.
- * @public
- */
-export interface WebWorkerProps {
-  readonly bus: ServiceBus
-  readonly worker: ServiceInfo
-}
-
-/**
- * A service callback. Runs once inside the worker on start; returns an optional
- * disposer the host calls before terminating the worker.
- * @public
- */
-export type ServiceCallback = (context: ServiceContext) => (() => void) | void
-
-/** The callback shape each service type defines, keyed by type. */
-interface ServiceCallbacksByType {
-  worker: ServiceCallback
-}
-
-/**
- * The result of `unstable_defineService`: the author's callback, the service
- * type, and the internal contract version the worker artifact targets.
- * @public
- */
-export interface DefinedService<TType extends ServiceType = ServiceType> {
-  readonly run: ServiceCallbacksByType[TType]
-  readonly type: TType
-  /** @internal */
-  readonly version: typeof SERVICE_CONTRACT_VERSION
-}
-
-/**
- * Define a Sanity Dashboard background service. The first argument narrows the
- * callback shape — `"worker"` runs the callback inside a Web Worker.
+ * Props a web worker function receives when its worker starts. The default
+ * export of a web worker's `src` file runs once inside the worker.
  *
- * The callback receives `bus`, its connection to the Dashboard message bus:
+ * `bus` is its connection to the Dashboard message bus:
  * `bus.emit` sends an event (such as a dock-badge update), `bus.query` reads the
  * current value of a state topic, and `bus.subscribe` runs a handler on each
  * new value of a state topic, or on each event of an event topic, until its
@@ -103,13 +70,13 @@ export interface DefinedService<TType extends ServiceType = ServiceType> {
  *
  * An event handler answers the sender with `message.reply(value)` or refuses
  * with `message.reject(reason)`; one that throws refuses with code
- * `HANDLER_THREW`. For example, a service that keeps a snapshot for its app's
+ * `HANDLER_THREW`. For example, a worker that keeps a snapshot for its app's
  * views, which listen with `useWorker` first and then post to it. A view's post
  * arrives on `workers.post` as `{name, payload}`, and `workers.message` reaches
  * only this app's views:
  *
  * ```ts
- * export default unstable_defineService('worker', ({bus}) => {
+ * export default ({bus}: WebWorkerProps) => {
  *   const controller = new AbortController()
  *   bus.subscribe('workers.post', (message) => message.reply(snapshot), {
  *     signal: controller.signal,
@@ -117,12 +84,49 @@ export interface DefinedService<TType extends ServiceType = ServiceType> {
  *   // Views that are already listening post again.
  *   bus.emit('workers.message', {type: 'welcome'})
  *   return () => controller.abort()
- * })
+ * }
  * ```
  *
- * The callback can return a disposer, which runs when Dashboard stops the
+ * The function can return a disposer, which runs when Dashboard stops the
  * worker. By then the bus is closed: subscriptions have ended, `emit` and
  * `query` reject with code `ABORTED`, and `subscribe` throws that error.
+ * @public
+ */
+export interface WebWorkerProps {
+  readonly bus: WebWorkerBus
+  readonly worker: WebWorkerInfo
+}
+
+/**
+ * A service callback. Runs once inside the worker on start; returns an optional
+ * disposer the host calls before terminating the worker.
+ * @deprecated Default-export a plain function that receives {@link WebWorkerProps} instead.
+ * @public
+ */
+export type ServiceCallback = (context: ServiceContext) => (() => void) | void
+
+/** The callback shape each service type defines, keyed by type. */
+interface ServiceCallbacksByType {
+  worker: ServiceCallback
+}
+
+/**
+ * The result of `unstable_defineService`: the author's callback, the service
+ * type, and the internal contract version the worker artifact targets.
+ * @deprecated Default-export a plain function that receives {@link WebWorkerProps} instead.
+ * @public
+ */
+export interface DefinedService<TType extends WebWorkerType = WebWorkerType> {
+  readonly run: ServiceCallbacksByType[TType]
+  readonly type: TType
+  /** @internal */
+  readonly version: typeof WEB_WORKER_CONTRACT_VERSION
+}
+
+/**
+ * Define a Sanity Dashboard background service. The first argument narrows the
+ * callback shape — `"worker"` runs the callback inside a Web Worker with the
+ * bus described on {@link WebWorkerProps}.
  *
  * Identity at runtime: returns the callback tagged with its type and the contract
  * version, for the CLI build to generate a worker artifact from. Used as the
@@ -130,9 +134,21 @@ export interface DefinedService<TType extends ServiceType = ServiceType> {
  * @deprecated Default-export a plain function that receives {@link WebWorkerProps} from the web worker's `src` file instead.
  * @public
  */
-export function unstable_defineService<TType extends ServiceType>(
+export function unstable_defineService<TType extends WebWorkerType>(
   type: TType,
   run: ServiceCallbacksByType[TType],
 ): DefinedService<TType> {
-  return {run, type, version: SERVICE_CONTRACT_VERSION}
+  return {run, type, version: WEB_WORKER_CONTRACT_VERSION}
 }
+
+/**
+ * @deprecated Use `WebWorkerBus`.
+ * @public
+ */
+export type ServiceBus = WebWorkerBus
+
+/**
+ * @deprecated Use `WebWorkerInfo`.
+ * @public
+ */
+export type ServiceInfo = WebWorkerInfo

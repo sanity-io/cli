@@ -99,7 +99,7 @@ describe('deriveInterfaces', () => {
 
   test('maps web workers to worker interfaces', () => {
     const app = workbenchApp({
-      webWorkers: [{name: 'unread', src: './src/service.ts', title: 'unread', type: 'worker'}],
+      webWorkers: [{name: 'unread', src: './src/worker.ts', title: 'unread', type: 'worker'}],
     })
     expect(deriveInterfaces(app, {isApp: true})).toStrictEqual([
       {
@@ -107,7 +107,7 @@ describe('deriveInterfaces', () => {
         metadata: null,
         moduleId: 'services/unread',
         name: 'unread',
-        src: './src/service.ts',
+        src: './src/worker.ts',
         title: 'unread',
         type: 'worker',
         version: '1',
@@ -220,7 +220,7 @@ describe('deriveInterfaces', () => {
   test('stamps the moduleId a deploy would, so a local interface resolves like a deployed one', () => {
     const panelApp = workbenchApp({
       views: [{name: 'feed', src: './src/FeedPanel.tsx', surface: 'panel', title: 'feed'}],
-      webWorkers: [{name: 'unread', src: './src/service.ts', title: 'unread', type: 'worker'}],
+      webWorkers: [{name: 'unread', src: './src/worker.ts', title: 'unread', type: 'worker'}],
     })
     expect(deriveInterfaces(panelApp, {isApp: true})?.map((iface) => iface.moduleId)).toStrictEqual(
       ['views/feed', 'services/unread'],
@@ -228,7 +228,7 @@ describe('deriveInterfaces', () => {
 
     const entryApp = workbenchApp({
       entry: './src/App.tsx',
-      webWorkers: [{name: 'unread', src: './src/service.ts', title: 'unread', type: 'worker'}],
+      webWorkers: [{name: 'unread', src: './src/worker.ts', title: 'unread', type: 'worker'}],
     })
     expect(deriveInterfaces(entryApp, {isApp: true})?.map((iface) => iface.moduleId)).toStrictEqual(
       ['services/unread', 'App'],
@@ -238,7 +238,7 @@ describe('deriveInterfaces', () => {
   test('carries null metadata on every interface (not yet populated)', () => {
     const app = workbenchApp({
       entry: './src/App.tsx',
-      webWorkers: [{name: 'unread', src: './src/service.ts', title: 'unread', type: 'worker'}],
+      webWorkers: [{name: 'unread', src: './src/worker.ts', title: 'unread', type: 'worker'}],
     })
     expect(deriveInterfaces(app, {isApp: true})?.every((iface) => iface.metadata === null)).toBe(
       true,
@@ -257,7 +257,7 @@ describe('deriveInterfaces', () => {
     const app = workbenchApp({
       slug: 'my-app',
       views: [{name: 'feed', src: './src/FeedPanel.tsx', surface: 'panel', title: 'feed'}],
-      webWorkers: [{name: 'unread', src: './src/service.ts', title: 'unread', type: 'worker'}],
+      webWorkers: [{name: 'unread', src: './src/worker.ts', title: 'unread', type: 'worker'}],
     })
     expect(deriveInterfaces(app, {isApp: true})).toStrictEqual([
       {
@@ -275,7 +275,7 @@ describe('deriveInterfaces', () => {
         metadata: null,
         moduleId: 'services/unread',
         name: 'unread',
-        src: './src/service.ts',
+        src: './src/worker.ts',
         title: 'unread',
         type: 'worker',
         version: '1',
@@ -287,7 +287,7 @@ describe('deriveInterfaces', () => {
     const app = workbenchApp({
       entry: './src/App.tsx',
       slug: 'my-app',
-      webWorkers: [{name: 'unread', src: './src/service.ts', title: 'unread', type: 'worker'}],
+      webWorkers: [{name: 'unread', src: './src/worker.ts', title: 'unread', type: 'worker'}],
     })
     expect(deriveInterfaces(app, {isApp: true})).toStrictEqual([
       {
@@ -295,7 +295,7 @@ describe('deriveInterfaces', () => {
         metadata: null,
         moduleId: 'services/unread',
         name: 'unread',
-        src: './src/service.ts',
+        src: './src/worker.ts',
         title: 'unread',
         type: 'worker',
         version: '1',

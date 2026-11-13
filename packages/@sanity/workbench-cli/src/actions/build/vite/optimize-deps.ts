@@ -45,12 +45,12 @@ function resolveSourceFile(absPath: string): string {
  * app's `entry` (or a studio's config) — never the federation `exposes` (dock
  * views, web workers, media-library config fields), which the host loads
  * dynamically at runtime. So a dep imported only by an exposed module (e.g.
- * `sanity/workbench` in a service or view) escapes the startup scan; Vite
+ * `sanity/workbench` in a web worker or view) escapes the startup scan; Vite
  * discovers it on first request, re-optimizes, and full-page reloads — which
  * flakes Playwright in e2e.
  *
  * Point `entries` at the source of every interface: the app `entry` (or, for a
- * studio, its config), plus each view, service, and installation-config source.
+ * studio, its config), plus each view, web worker, and installation-config source.
  * `entries` follows real import statements, so it covers whatever those sources
  * transitively use — correct subpaths and all — with no hand-maintained dep
  * list, and never crashes on an unresolvable name the way a bad `include` entry

@@ -416,7 +416,7 @@ describe('startDevServerRegistration', () => {
     ).rejects.toThrow('App views for studios are not implemented yet')
   })
 
-  // Adding/removing a view or service must rebuild the federation remote so the
+  // Adding/removing a view or web worker must rebuild the federation remote so the
   // new interface gets an expose + artifact. The watcher drives it.
   const feed = {name: 'feed', src: './src/Feed.tsx', surface: 'panel', title: 'feed'}
 
@@ -466,7 +466,9 @@ describe('startDevServerRegistration', () => {
     const onInterfaceSetChange = vi
       .fn()
       // e.g. the recreated server never came up (organizationId removed)
-      .mockRejectedValueOnce(new Error('Dev server did not restart after the view/service change'))
+      .mockRejectedValueOnce(
+        new Error('Dev server did not restart after the view/web worker change'),
+      )
       .mockResolvedValueOnce(mockServer({port: 3334}))
 
     await register({cliConfig: {app: workbenchApp()} as any, isApp: true, onInterfaceSetChange})

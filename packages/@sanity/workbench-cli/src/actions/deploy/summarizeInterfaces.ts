@@ -1,4 +1,4 @@
-import {type ServiceType, type ViewSurface} from '../../contract.js'
+import {type ViewSurface, type WebWorkerType} from '../../contract.js'
 import {type WorkbenchExposes} from '../../resolveWorkbenchApp.js'
 
 interface DeployedInterfaceBase {
@@ -14,7 +14,7 @@ export interface DeployedView extends DeployedInterfaceBase {
 
 /** A web worker as the deploy report and `--json` output surface it. */
 export interface DeployedWebWorker extends DeployedInterfaceBase {
-  type: ServiceType
+  type: WebWorkerType
 }
 
 export type DeployedInterface = DeployedView | DeployedWebWorker
@@ -48,7 +48,7 @@ export function summarizeInterfaces({views, webWorkers}: WorkbenchExposes): {
     surface: view.surface,
     title: view.title,
   }))
-  const deployedServices = (webWorkers ?? []).map((webWorker): DeployedWebWorker => ({
+  const deployedWebWorkers = (webWorkers ?? []).map((webWorker): DeployedWebWorker => ({
     name: webWorker.name,
     src: webWorker.src,
     title: webWorker.title,
@@ -57,6 +57,6 @@ export function summarizeInterfaces({views, webWorkers}: WorkbenchExposes): {
 
   const lines: string[] = []
   if (deployedViews.length > 0) lines.push(summarizeGroup('Views', deployedViews))
-  if (deployedServices.length > 0) lines.push(summarizeGroup('Web workers', deployedServices))
-  return {lines, services: deployedServices, views: deployedViews}
+  if (deployedWebWorkers.length > 0) lines.push(summarizeGroup('Web workers', deployedWebWorkers))
+  return {lines, services: deployedWebWorkers, views: deployedViews}
 }

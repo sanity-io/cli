@@ -151,7 +151,7 @@ describe('sanityExtensionArtifacts', () => {
       sanityExtensionArtifacts({
         artifacts: workbenchArtifacts({
           views: [],
-          webWorkers: [{name: 'unread', src: './src/service.ts', title: 'unread', type: 'worker'}],
+          webWorkers: [{name: 'unread', src: './src/worker.ts', title: 'unread', type: 'worker'}],
         }),
       }),
       root,
@@ -161,10 +161,10 @@ describe('sanityExtensionArtifacts', () => {
     expect(fs.readdirSync(dir).toSorted()).toEqual(['index.js', 'worker.js'])
 
     const worker = fs.readFileSync(path.join(dir, 'worker.js'), 'utf8')
-    // The worker imports the user's src, runs it with its `service` declaration
+    // The worker imports the user's src, runs it with its `worker` declaration
     // and `bus`, and listens for the host's terminate message.
-    expect(worker).toContain('import service from "../../../../src/service.ts"')
-    expect(worker).toContain('service.run({ bus, service: SERVICE })')
+    expect(worker).toContain('import worker from "../../../../src/worker.ts"')
+    expect(worker).toContain('worker({ bus, worker: WORKER })')
     expect(worker).toContain('workbench.worker.terminate')
 
     const loader = fs.readFileSync(path.join(dir, 'index.js'), 'utf8')

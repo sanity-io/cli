@@ -5,7 +5,7 @@ import {fileURLToPath} from 'node:url'
 import {type Plugin} from 'vite'
 
 import {type GeneratedArtifact} from '../../artifact.js'
-import {WORKER_BUS_ENTRY} from '../../services/artifact.js'
+import {WORKER_BUS_ENTRY} from '../../webWorkers/artifact.js'
 import {RUNTIME_DIR} from '../constants.js'
 import {getFederationApi} from './plugin-module-federation.js'
 
@@ -41,7 +41,7 @@ function writeArtifacts({
 }
 
 /**
- * Writes the federation runtime artifacts (view render-contract modules, service
+ * Writes the federation runtime artifacts (view render-contract modules, web worker
  * worker bundles + loaders) into `RUNTIME_DIR`, resolving each artifact's import
  * paths relative to where it lands on disk. The set is expanded once by
  * `workbenchArtifacts` and handed in — this plugin only writes it.

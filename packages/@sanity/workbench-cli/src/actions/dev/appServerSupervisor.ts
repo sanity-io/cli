@@ -27,7 +27,7 @@ export interface AppServerSupervisor {
 /**
  * Own the app/studio dev server's lifecycle behind the dev-server registry seam.
  *
- * Adding or removing a view/service rebuilds the federation remote: its
+ * Adding or removing a view/web worker rebuilds the federation remote: its
  * module-federation `exposes` map and codegen artifacts are computed once at
  * server start, so a newly-declared interface has no expose until the server is
  * recreated — `server.restart()` can't do it (it reuses the inline config).
@@ -66,7 +66,7 @@ export async function startAppServerSupervisor(options: {
     const result = await start(freshConfig)
     if (!result.started) {
       // The server already reported why (e.g. organizationId was removed).
-      throw new Error('Dev server did not restart after the view/service change')
+      throw new Error('Dev server did not restart after the view/web worker change')
     }
     server = result.server
     closeCurrent = result.close

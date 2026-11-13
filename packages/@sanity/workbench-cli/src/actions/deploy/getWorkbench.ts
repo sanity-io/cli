@@ -10,7 +10,7 @@ import {buildViewDeploymentPayload, type ViewDeploymentPayload} from './viewDepl
 
 export interface DeployableWorkbenchApp extends ResolvedWorkbenchApp {
   /**
-   * Throws when the app exposes nothing (no entry, view, or service) — the
+   * Throws when the app exposes nothing (no entry, view, or web worker) — the
    * remote would have nothing to load. Gated before any prompt or API call.
    */
   assertDeployable(): void
@@ -19,7 +19,7 @@ export interface DeployableWorkbenchApp extends ResolvedWorkbenchApp {
    * Throws when a view declaration is malformed.
    */
   buildViewDeploymentPayload(applicationId: string): ViewDeploymentPayload
-  /** Declares something to host as an application — an entry, view, or service. */
+  /** Declares something to host as an application — an entry, view, or web worker. */
   hasInterfaces: boolean
 }
 
