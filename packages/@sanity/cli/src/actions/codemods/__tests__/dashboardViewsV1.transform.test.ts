@@ -47,30 +47,24 @@ function InboxTitle({ view }: PanelViewProps) {
 
 export default unstable_defineView("panel", { title: InboxTitle, panel: Inbox });`),
     ).toMatchInlineSnapshot(`
-      "import { Text, Box, Button, Flex, ThemeProvider } from "@sanity/ui";
+      "import { Text, Box, Button, Flex } from "@sanity/ui";
       import { usePanel } from "sanity/dashboard";
 
       import { Inbox } from "./Inbox";
 
-      import { buildTheme } from "@sanity/ui/theme";
       import { CloseIcon } from "@sanity/icons/Close";
-      import { SanityApp } from "@sanity/sdk-react";
-      import { useTopic } from "@sanity/sdk-react/dashboard";
 
       function InboxTitle() {
         const { view } = usePanel();
         return <Text size={1} weight="semibold">{view.title}</Text>;
       }
 
-      const theme = buildTheme();
-
-      function PanelFrame() {
+      export default function Panel() {
         const { onClose } = usePanel();
-        const scheme = useTopic("preferences.color-scheme");
 
         return (
-          <ThemeProvider scheme={scheme} theme={theme}>
-            <Flex direction="column" height="fill" paddingY={2}>
+          <>
+            <Flex direction="column" height="fill">
               <Flex align="center" gap={2} justify="space-between" paddingX={3} paddingY={2}>
                 <InboxTitle />
                 <Button
@@ -86,20 +80,88 @@ export default unstable_defineView("panel", { title: InboxTitle, panel: Inbox })
                 <Inbox />
               </Box>
             </Flex>
-          </ThemeProvider>
-        );
-      }
-
-      export default function Panel() {
-        return (
-          <SanityApp fallback={null}>
-            <PanelFrame />
-          </SanityApp>
+          </>
         );
       }"
     `)
     expect(report).toHaveBeenCalledWith(
       '`Inbox` no longer receives props. Read them with `usePanel()` instead.',
+    )
+  })
+
+  test('keeps a local props type on the asset source hook result', () => {
+    expect(
+      migrate(`import { type ViewComponentsBySurface, unstable_defineView } from "@sanity/cli/runtime";
+
+type AssetSourceComponentProps = Parameters<ViewComponentsBySurface["asset_source"]["asset_source"]>[0];
+type PickerProps = AssetSourceComponentProps & { libraryId?: string };
+
+function PickerView(props: PickerProps) {
+  return <Picker libraryId={props.libraryId} onClose={props.onClose} />;
+}
+
+export default unstable_defineView("asset_source", { asset_source: PickerView });`),
+    ).toMatchInlineSnapshot(`
+      "import { type ViewComponentsBySurface } from "@sanity/cli/runtime";
+
+      import { useAssetSource } from "sanity/dashboard";
+
+      type AssetSourceComponentProps = Parameters<ViewComponentsBySurface["asset_source"]["asset_source"]>[0];
+      type PickerProps = AssetSourceComponentProps & { libraryId?: string };
+
+      function PickerView() {
+        const props: PickerProps = useAssetSource();
+        return <Picker libraryId={props.libraryId} onClose={props.onClose} />;
+      }
+
+      export default PickerView;"
+    `)
+  })
+
+  test('migrates a cast panel with an imported title component', () => {
+    expect(
+      migrate(`import { unstable_defineView } from "sanity/workbench";
+
+import SidePanelEntry, { titleComponent } from "./entry";
+
+export default unstable_defineView("panel", {
+  title: titleComponent,
+  panel: () => <SidePanelEntry />,
+}) as ReturnType<typeof unstable_defineView<"panel">>;`),
+    ).toMatchInlineSnapshot(`
+      "import SidePanelEntry, { titleComponent } from "./entry";
+
+      import { Box, Button, Flex } from "@sanity/ui";
+      import { CloseIcon } from "@sanity/icons/Close";
+      import { usePanel } from "sanity/dashboard";
+      const Title = titleComponent;
+      export default function Panel() {
+        const { onClose } = usePanel();
+
+        return (
+          <>
+            <Flex direction="column" height="fill">
+              <Flex align="center" gap={2} justify="space-between" paddingX={3} paddingY={2}>
+                <Title />
+                <Button
+                  aria-label="Close panel"
+                  fontSize={1}
+                  icon={CloseIcon}
+                  mode="bleed"
+                  onClick={onClose}
+                  padding={2}
+                />
+              </Flex>
+              <Box flex={1} overflow="auto" paddingX={3}>
+                <SidePanelEntry />
+              </Box>
+            </Flex>
+          </>
+        );
+      }"
+    `)
+    expect(report).toHaveBeenCalledWith(
+      '`titleComponent` no longer receives props. Read them with `usePanel()` instead.',
     )
   })
 
@@ -153,20 +215,14 @@ export default unstable_defineView("panel", {
       import { PanelProvider } from "./shell/PanelProvider";
       import { PanelTitle } from "./shell/PanelTitle";
 
-      import { Box, Button, Flex, ThemeProvider } from "@sanity/ui";
-      import { buildTheme } from "@sanity/ui/theme";
+      import { Box, Button, Flex } from "@sanity/ui";
       import { CloseIcon } from "@sanity/icons/Close";
-      import { SanityApp } from "@sanity/sdk-react";
-      import { useTopic } from "@sanity/sdk-react/dashboard";
-      const theme = buildTheme();
-
-      function PanelFrame() {
+      export default function Panel() {
         const { onClose } = usePanel();
-        const scheme = useTopic("preferences.color-scheme");
 
         return (
-          <ThemeProvider scheme={scheme} theme={theme}>
-            <Flex direction="column" height="fill" paddingY={2}>
+          <PanelProvider>
+            <Flex direction="column" height="fill">
               <Flex align="center" gap={2} justify="space-between" paddingX={3} paddingY={2}>
                 <PanelProvider>
                   <PanelTitle />
@@ -181,20 +237,10 @@ export default unstable_defineView("panel", {
                 />
               </Flex>
               <Box flex={1} overflow="auto" paddingX={3}>
-                <PanelProvider>
-                  <PanelBody />
-                </PanelProvider>
+                <PanelBody />
               </Box>
             </Flex>
-          </ThemeProvider>
-        );
-      }
-
-      export default function Panel() {
-        return (
-          <SanityApp fallback={null}>
-            <PanelFrame />
-          </SanityApp>
+          </PanelProvider>
         );
       }"
     `)
@@ -212,24 +258,18 @@ export default unstable_defineView("panel", {
   title: ({ view }) => <Text size={2}>{view.title}</Text>,
 });`),
     ).toMatchInlineSnapshot(`
-      "import { Text, Box, Button, Flex, ThemeProvider } from "@sanity/ui";
+      "import { Text, Box, Button, Flex } from "@sanity/ui";
 
       import { NotificationsPanel } from "../notifications/NotificationsPanel";
 
-      import { buildTheme } from "@sanity/ui/theme";
       import { CloseIcon } from "@sanity/icons/Close";
-      import { SanityApp } from "@sanity/sdk-react";
-      import { useTopic } from "@sanity/sdk-react/dashboard";
       import { usePanel } from "sanity/dashboard";
-      const theme = buildTheme();
-
-      function PanelFrame() {
+      export default function Panel() {
         const { onClose, view } = usePanel();
-        const scheme = useTopic("preferences.color-scheme");
 
         return (
-          <ThemeProvider scheme={scheme} theme={theme}>
-            <Flex direction="column" height="fill" paddingY={2}>
+          <>
+            <Flex direction="column" height="fill">
               <Flex align="center" gap={2} justify="space-between" paddingX={3} paddingY={2}>
                 <Text size={2}>{view.title}</Text>
                 <Button
@@ -245,15 +285,7 @@ export default unstable_defineView("panel", {
                 <NotificationsPanel />
               </Box>
             </Flex>
-          </ThemeProvider>
-        );
-      }
-
-      export default function Panel() {
-        return (
-          <SanityApp fallback={null}>
-            <PanelFrame />
-          </SanityApp>
+          </>
         );
       }"
     `)
@@ -275,26 +307,20 @@ export default unstable_defineView("panel", {
       "import { usePanel } from "sanity/dashboard";
       import { Box } from "ui5";
 
-      import { Box as Box2, Button, Flex, ThemeProvider } from "@sanity/ui";
-      import { buildTheme } from "@sanity/ui/theme";
+      import { Box as Box2, Button, Flex } from "@sanity/ui";
       import { CloseIcon } from "@sanity/icons/Close";
-      import { SanityApp } from "@sanity/sdk-react";
-      import { useTopic } from "@sanity/sdk-react/dashboard";
 
       const Title = () => {
         const label = "Title";
         return <Box>{label}</Box>;
       };
 
-      const theme = buildTheme();
-
-      function PanelFrame() {
+      export default function Panel() {
         const { onClose } = usePanel();
-        const scheme = useTopic("preferences.color-scheme");
 
         return (
-          <ThemeProvider scheme={scheme} theme={theme}>
-            <Flex direction="column" height="fill" paddingY={2}>
+          <Box>
+            <Flex direction="column" height="fill">
               <Flex align="center" gap={2} justify="space-between" paddingX={3} paddingY={2}>
                 <Title />
                 <Button
@@ -307,18 +333,10 @@ export default unstable_defineView("panel", {
                 />
               </Flex>
               <Box2 flex={1} overflow="auto" paddingX={3}>
-                <Box>Body</Box>
+                Body
               </Box2>
             </Flex>
-          </ThemeProvider>
-        );
-      }
-
-      export default function Panel() {
-        return (
-          <SanityApp fallback={null}>
-            <PanelFrame />
-          </SanityApp>
+          </Box>
         );
       }"
     `)

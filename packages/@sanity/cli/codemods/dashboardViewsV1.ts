@@ -24,6 +24,7 @@ type Component = FunctionExpression | ObjectProperty['value'] | Property['value'
 
 interface DefineCall {
   callPath: ASTPath<CallExpression>
+  expressionPath: ASTPath
   statementPath: ASTPath<Statement>
 }
 
@@ -103,10 +104,18 @@ function findDefineCalls(
     )
     .paths()
     .map((callPath) => {
+      let expressionPath: ASTPath = callPath
+      while (
+        j.TSAsExpression.check(expressionPath.parent?.node) ||
+        j.TSSatisfiesExpression.check(expressionPath.parent?.node)
+      ) {
+        expressionPath = expressionPath.parent
+      }
+
       let statementPath: ASTPath<Statement> = callPath.parent
       while (!j.Program.check(statementPath.parent?.node)) statementPath = statementPath.parent
 
-      return {callPath, statementPath}
+      return {callPath, expressionPath, statementPath}
     })
 }
 
@@ -158,7 +167,24 @@ function readsProps(
   return names.some((name) => j(fn.body).find(j.Identifier, {name}).size() > 0)
 }
 
-function readPropsFromHook(j: JSCodeshift, fn: ComponentFunction, hook: string): boolean {
+function localType(j: JSCodeshift, root: Collection, pattern: Identifier | ObjectPattern): string {
+  const reference = pattern.typeAnnotation?.typeAnnotation
+  if (!j.TSTypeReference.check(reference) || !j.Identifier.check(reference.typeName)) return ''
+
+  const name = reference.typeName.name
+  const isLocal =
+    root.find(j.TSTypeAliasDeclaration, {id: {name}}).size() > 0 ||
+    root.find(j.TSInterfaceDeclaration, {id: {name}}).size() > 0
+
+  return isLocal ? `: ${j(reference).toSource()}` : ''
+}
+
+function readPropsFromHook(
+  j: JSCodeshift,
+  root: Collection,
+  fn: ComponentFunction,
+  hook: string,
+): boolean {
   if (fn.params.length === 0) return true
   if (fn.params.length > 1) return false
 
@@ -171,7 +197,7 @@ function readPropsFromHook(j: JSCodeshift, fn: ComponentFunction, hook: string):
   const props = j.Identifier.check(pattern)
     ? pattern.name
     : `{ ${pattern.properties.map((property) => j(property).toSource()).join(', ')} }`
-  const hookCall = declaration(j, `const ${props} = ${hook}();`)
+  const hookCall = declaration(j, `const ${props}${localType(j, root, pattern)} = ${hook}();`)
   if (!hookCall) return false
 
   fn.body = j.BlockStatement.check(fn.body)
@@ -313,7 +339,7 @@ function hoistComponent(
 function inlineSlot(
   j: JSCodeshift,
   component: unknown,
-): {element: string; properties: string[]} | undefined {
+): {element: string; node: unknown; properties: string[]} | undefined {
   if (!j.ArrowFunctionExpression.check(component) && !j.FunctionExpression.check(component)) {
     return undefined
   }
@@ -336,6 +362,7 @@ function inlineSlot(
 
   return {
     element: isJSX ? source.replace(/^\(([\s\S]*)\)$/, '$1') : `{${source}}`,
+    node: statement.argument,
     properties:
       param && readsProps(j, component, param)
         ? param.properties.map((property) => j(property).toSource())
@@ -362,11 +389,38 @@ function prepareSlot(
   hook: string,
 ): void {
   const fn = findFunction(j, root, component)
-  const isMigrated = fn ? readPropsFromHook(j, fn, hook) : false
+  const isMigrated = fn ? readPropsFromHook(j, root, fn, hook) : false
   if (isMigrated) return
 
   const name = j.Identifier.check(component) ? `\`${component.name}\`` : 'A component'
   api.report(`${name} no longer receives props. Read them with \`${hook}()\` instead.`)
+}
+
+function wrapperOf(
+  j: JSCodeshift,
+  node: unknown,
+): {children: string; close: string; open: string} | undefined {
+  if (!j.JSXElement.check(node) || !node.closingElement || !node.children?.length) return undefined
+
+  const {name} = node.openingElement
+  if (j.JSXIdentifier.check(name) && /^[a-z]/.test(name.name)) return undefined
+
+  const [first = '', ...rest] = node.children
+    .map((child) => j(child).toSource())
+    .join('')
+    .trim()
+    .split('\n')
+  const indent = Math.min(
+    ...rest.filter((line) => line.trim()).map((line) => line.length - line.trimStart().length),
+  )
+
+  return {
+    children: [first, ...rest.map((line) => line.slice(Number.isFinite(indent) ? indent : 0))].join(
+      '\n',
+    ),
+    close: j(node.closingElement).toSource(),
+    open: j(node.openingElement).toSource(),
+  }
 }
 
 function migratePanel(
@@ -380,52 +434,53 @@ function migratePanel(
     ['@sanity/ui', 'Box'],
     ['@sanity/ui', 'Button'],
     ['@sanity/ui', 'Flex'],
-    ['@sanity/ui', 'ThemeProvider'],
-    ['@sanity/ui/theme', 'buildTheme'],
     ['@sanity/icons/Close', 'CloseIcon'],
-    ['@sanity/sdk-react', 'SanityApp'],
-    ['@sanity/sdk-react/dashboard', 'useTopic'],
     [SANITY_DASHBOARD, 'usePanel'],
   ] as const
   const locals = imports.map(([source, name]) => localName(j, root, source, name))
-  const [box, button, flex, themeProvider, buildTheme, closeIcon, sanityApp, useTopic, usePanel] =
-    locals
+  const [box, button, flex, closeIcon, usePanel] = locals
   const properties = new Set(['onClose'])
   const [title, body] = [
     ['title', 'Title'],
     ['panel', 'Body'],
   ].map(([name, base]) => {
     const component = slotComponent(j, components, name)
-    if (!component) return ''
+    if (!component) return {element: '', wrapper: undefined}
 
     const inlined = inlineSlot(j, component)
     if (!inlined) {
       prepareSlot(j, root, api, component, usePanel)
+      const {name: hoisted} = hoistComponent(j, root, define, component, base)
+      if (/^[A-Z]/.test(hoisted)) return {element: `<${hoisted} />`, wrapper: undefined}
 
-      return `<${hoistComponent(j, root, define, component, base).name} />`
+      const alias = uniqueName(j, root, base)
+      const aliasDeclaration = declaration(j, `const ${alias} = ${hoisted};`)
+      if (aliasDeclaration) define.statementPath.insertBefore(aliasDeclaration)
+
+      return {element: `<${alias} />`, wrapper: undefined}
     }
 
     for (const property of inlined.properties) properties.add(property)
 
-    return inlined.element.replaceAll('\n', '\n          ')
+    return {element: inlined.element, wrapper: wrapperOf(j, inlined.node)}
   })
-  const theme = uniqueName(j, root, 'theme')
+  const wrapper = body.wrapper ?? {children: body.element, close: '</>', open: '<>'}
+  if (!body.wrapper) {
+    api.report(
+      'The migrated panel renders its header outside your views wrappers. Make sure a @sanity/ui ThemeProvider is above it.',
+    )
+  }
+
   const panel = uniqueName(j, root, 'Panel')
-  const frame = uniqueName(j, root, 'PanelFrame')
-  const scheme = uniqueName(j, root, 'scheme')
-
-  const [themeDeclaration, frameDeclaration, panelExport] =
-    j(`const ${theme} = ${buildTheme}();
-
-function ${frame}() {
+  const [panelExport] =
+    j(`export default function ${panel}() {
   const { ${[...properties].join(', ')} } = ${usePanel}();
-  const ${scheme} = ${useTopic}("preferences.color-scheme");
 
   return (
-    <${themeProvider} scheme={${scheme}} theme={${theme}}>
-      <${flex} direction="column" height="fill" paddingY={2}>
+    ${wrapper.open}
+      <${flex} direction="column" height="fill">
         <${flex} align="center" gap={2} justify="space-between" paddingX={3} paddingY={2}>
-          ${title}
+          ${title.element.replaceAll('\n', '\n          ')}
           <${button}
             aria-label="Close panel"
             fontSize={1}
@@ -436,39 +491,27 @@ function ${frame}() {
           />
         </${flex}>
         <${box} flex={1} overflow="auto" paddingX={3}>
-          ${body}
+          ${wrapper.children.replaceAll('\n', '\n          ')}
         </${box}>
       </${flex}>
-    </${themeProvider}>
-  );
-}
-
-export default function ${panel}() {
-  return (
-    <${sanityApp} fallback={null}>
-      <${frame} />
-    </${sanityApp}>
+    ${wrapper.close}
   );
 }`)
       .find(j.Program)
       .nodes()[0]?.body ?? []
   if (
-    !themeDeclaration ||
-    !frameDeclaration ||
     !j.ExportDefaultDeclaration.check(panelExport) ||
     !j.FunctionDeclaration.check(panelExport.declaration)
   ) {
     return
   }
 
-  if (j.ExportDefaultDeclaration.check(define.callPath.parent?.node)) {
-    themeDeclaration.comments = define.statementPath.node.comments
-    define.statementPath.replace(themeDeclaration, frameDeclaration, panelExport)
+  if (j.ExportDefaultDeclaration.check(define.expressionPath.parent?.node)) {
+    panelExport.comments = define.statementPath.node.comments
+    define.statementPath.replace(panelExport)
   } else {
-    define.statementPath.insertBefore(themeDeclaration)
-    define.statementPath.insertBefore(frameDeclaration)
     define.statementPath.insertBefore(panelExport.declaration)
-    define.callPath.replace(j.identifier(panel))
+    define.expressionPath.replace(j.identifier(panel))
   }
 
   for (const [index, [source, name]] of imports.entries()) {
@@ -516,7 +559,7 @@ function migrateView(j: JSCodeshift, root: Collection, api: API, define: DefineC
   const hook = localName(j, root, SANITY_DASHBOARD, view.hook)
   prepareSlot(j, root, api, component, hook)
   const {declaration, name} = hoistComponent(j, root, define, component, view.name)
-  define.callPath.replace(j.identifier(name))
+  define.expressionPath.replace(j.identifier(name))
 
   if (declaration) {
     declaration.comments = define.statementPath.node.comments
@@ -626,7 +669,7 @@ function migrateWebWorker(
     addImport(j, root, SANITY_DASHBOARD, 'WebWorkerProps', props, 'type')
   }
 
-  define.callPath.replace(run)
+  define.expressionPath.replace(run)
 
   return true
 }
