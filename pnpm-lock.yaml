@@ -345,13 +345,13 @@ importers:
         specifier: ^2.31.1
         version: 2.31.1(@types/node@22.20.5)
       '@commitlint/cli':
-        specifier: ^20.4.2
+        specifier: ^20.5.3
         version: 20.5.3(@types/node@22.20.5)(conventional-commits-parser@6.4.0)(typescript@6.0.3)
       '@commitlint/config-conventional':
-        specifier: ^20.4.2
+        specifier: ^20.5.3
         version: 20.5.3
       '@commitlint/types':
-        specifier: ^20.4.0
+        specifier: ^20.5.0
         version: 20.5.0
       '@eslint/compat':
         specifier: 'catalog:'
