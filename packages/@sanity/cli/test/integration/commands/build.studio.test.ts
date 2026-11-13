@@ -1,4 +1,4 @@
-import {readdir, readFile, writeFile} from 'node:fs/promises'
+import {mkdir, readdir, readFile, writeFile} from 'node:fs/promises'
 import {platform} from 'node:os'
 import {join, relative, sep} from 'node:path'
 
@@ -66,6 +66,7 @@ describe('#build studio', {timeout: (platform() === 'win32' ? 120 : 60) * 1000},
   test('should build the "basic-studio" example with auto-updates', async () => {
     const cwd = await testFixture('basic-studio')
     process.chdir(cwd)
+    await addManifestAssets(cwd)
 
     const {error, stderr, stdout} = await testCommand(BuildCommand, ['--yes'], {
       config: {root: cwd},
@@ -81,6 +82,7 @@ describe('#build studio', {timeout: (platform() === 'win32' ? 120 : 60) * 1000},
     expect(files).toContain('index.html')
     expect(files).toContain('static')
     await expectAutoUpdatingPage(outputFolder)
+    await expectBuildManifest(outputFolder)
 
     // The resource-bindings module is emitted only for Blueprints builds (via
     // `@sanity/runtime-cli`), so a plain `sanity build` never produces it.
@@ -294,6 +296,50 @@ describe('#build studio', {timeout: (platform() === 'win32' ? 120 : 60) * 1000},
 })
 
 const CSS_MARKER = 'sanity-css-code-split-marker'
+const CUSTOMER_STATIC_FILE = 'customer-deadbeef.js'
+
+async function addManifestAssets(cwd: string): Promise<void> {
+  await writeFile(join(cwd, 'studio-font.woff2'), Buffer.alloc(5000, 'font'))
+  await writeFile(
+    join(cwd, 'studio.css'),
+    `@font-face { font-family: StudioTest; src: url('./studio-font.woff2') format('woff2'); }\n`,
+  )
+  const configPath = join(cwd, 'sanity.config.ts')
+  const config = await readFile(configPath, 'utf8')
+  await writeFile(configPath, `import './studio.css'\n${config}`)
+  await mkdir(join(cwd, 'static'))
+  await writeFile(join(cwd, 'static', CUSTOMER_STATIC_FILE), 'customer content')
+}
+
+async function expectBuildManifest(dist: string): Promise<void> {
+  const manifest = JSON.parse(
+    await readFile(join(dist, '.vite', 'manifest.json'), 'utf8'),
+  ) as Record<string, {assets?: string[]; css?: string[]; file: string; isEntry?: boolean}>
+  const records = Object.values(manifest)
+  const listedFiles = new Set(
+    records.flatMap(({assets = [], css = [], file}) => [file, ...assets, ...css]),
+  )
+  const outputFiles = (await walkFiles(dist)).map((file) =>
+    relative(dist, file).split(sep).join('/'),
+  )
+
+  expect(records.some(({file, isEntry}) => isEntry && /^static\/sanity-.+\.js$/.test(file))).toBe(
+    true,
+  )
+
+  const generatedFiles = outputFiles.filter(
+    (file) =>
+      (file !== `static/${CUSTOMER_STATIC_FILE}` && /^static\/.+-.+\.js$/.test(file)) ||
+      file.endsWith('.css') ||
+      file.endsWith('.woff2'),
+  )
+  expect(generatedFiles).not.toHaveLength(0)
+  expect(generatedFiles.filter((file) => !listedFiles.has(file))).toEqual([])
+  expect(generatedFiles.some((file) => file.endsWith('.css'))).toBe(true)
+  expect(generatedFiles.some((file) => file.endsWith('.woff2'))).toBe(true)
+  expect([...listedFiles].some((file) => /^vendor\/.+\.mjs$/.test(file))).toBe(true)
+  expect(listedFiles).not.toContain(`static/${CUSTOMER_STATIC_FILE}`)
+}
 
 async function expectAutoUpdatingPage(dist: string) {
   const html = await readFile(join(dist, 'index.html'), 'utf8')
