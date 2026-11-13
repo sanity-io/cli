@@ -25,9 +25,7 @@ describe('workbenchOptimizeDeps', () => {
       views: [
         {name: 'favorites', src: './src/FavoritesPanel.tsx', surface: 'panel', title: 'Favorites'},
       ],
-      webWorkers: [
-        {name: 'reminders', src: './src/service.ts', title: 'reminders', type: 'worker'},
-      ],
+      webWorkers: [{name: 'reminders', src: './src/worker.ts', title: 'reminders', type: 'worker'}],
     }
 
     const {entries} = workbenchOptimizeDeps({
@@ -39,7 +37,7 @@ describe('workbenchOptimizeDeps', () => {
     expect(entries).toEqual([
       'src/App.tsx',
       'src/FavoritesPanel.tsx',
-      'src/service.ts',
+      'src/worker.ts',
       'src/fields/credit.ts',
     ])
   })
@@ -118,19 +116,19 @@ describe('workbenchOptimizeDeps', () => {
     })
 
     test('resolves an extensionless interface source to its on-disk file', () => {
-      fs.writeFileSync(path.join(projectDir, 'src', 'service.ts'), 'export default {}')
+      fs.writeFileSync(path.join(projectDir, 'src', 'worker.ts'), 'export default {}')
 
       const {entries} = workbenchOptimizeDeps({
         appSources: [],
         cwd: projectDir,
         exposes: {
           webWorkers: [
-            {name: 'reminders', src: './src/service', title: 'reminders', type: 'worker'},
+            {name: 'reminders', src: './src/worker', title: 'reminders', type: 'worker'},
           ],
         },
       })
 
-      expect(entries).toEqual(['src/service.ts'])
+      expect(entries).toEqual(['src/worker.ts'])
     })
 
     test('leaves an already-extensioned source untouched', () => {

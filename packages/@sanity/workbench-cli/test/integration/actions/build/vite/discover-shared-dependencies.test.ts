@@ -376,11 +376,11 @@ describe('an app whose view is only exposed to remotes', () => {
       "import './view.css'; import styled from 'styled-components'; export default {components: styled.div`color: blue;`, version: '1.0'}",
     )
     await app.write('view.css', '.remote-only-view {color: fuchsia}')
-    await app.write('service.js', "export default {run() {self.postMessage('worker-marker')}}")
+    await app.write('worker.js', "export default () => {self.postMessage('worker-marker')}")
     build = await app.build({
       exposes: {
         ...tileView,
-        webWorkers: [{name: 'background', src: './service.js', type: 'worker'}],
+        webWorkers: [{name: 'background', src: './worker.js', type: 'worker'}],
       },
       plugins: [
         {

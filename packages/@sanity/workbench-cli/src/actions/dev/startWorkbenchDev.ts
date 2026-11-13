@@ -40,7 +40,7 @@ export interface StartWorkbenchDevOptions {
 /**
  * Orchestrate the dev servers a workbench project needs: a singleton workbench
  * Vite server plus the app/studio dev server it renders, wired to the dev-server
- * registry so view/service edits re-sync live.
+ * registry so view/web worker edits re-sync live.
  *
  * A running workbench claims the configured port, so the app server binds the
  * next one. If the workbench can't start (package or port unavailable), the app

@@ -23,7 +23,7 @@ const HMR_REMOUNT = `if (import.meta.hot) {
 
 /**
  * - `app`: omit when the preamble imports `App` itself (the SDK-app entry).
- * - `version`: lets the host check view/service contract compatibility.
+ * - `version`: lets the host check view/web worker contract compatibility.
  */
 export function renderRemote({
   app,
