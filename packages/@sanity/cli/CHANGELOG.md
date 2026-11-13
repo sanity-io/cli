@@ -1,5 +1,34 @@
 # Change Log
 
+## 8.29.0
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-v8.28.2...cli-v8.29.0)
+
+_2026-11-13_
+
+### Features
+
+- **build:** add `unstable_documentComponent` option to opt out of `_document` components ([#2180](https://github.com/sanity-io/cli/pull/2180)) ([721f9e3](https://github.com/sanity-io/cli/commit/721f9e34e5794a4029087515bdeb53a33407af5b))
+- **workbench-cli:** build web workers from plain function exports ([#2177](https://github.com/sanity-io/cli/pull/2177)) ([e8b2f05](https://github.com/sanity-io/cli/commit/e8b2f05f6b2596b5873d0b5c1408d80a189010df))
+
+### Bug Fixes
+
+- **deps:** update vite and oxc dependencies ([#2160](https://github.com/sanity-io/cli/pull/2160)) ([b624cab](https://github.com/sanity-io/cli/commit/b624cab924f7e17d34eea2fbff6d50553a1f4521))
+- **deploy:** explain when the deployment service is unavailable or unreachable ([#2145](https://github.com/sanity-io/cli/pull/2145)) ([0c16d20](https://github.com/sanity-io/cli/commit/0c16d20e6cf250284fbd92c313d41ec1dab68967))
+- **deps:** update dependency picomatch to ^4.0.7 ([#2153](https://github.com/sanity-io/cli/pull/2153)) ([92c3a7f](https://github.com/sanity-io/cli/commit/92c3a7ff49402264b13e707a2a4806d459e12fb6))
+- **deps:** update dependency console-table-printer to ^2.16.1 ([#2166](https://github.com/sanity-io/cli/pull/2166)) ([ac71848](https://github.com/sanity-io/cli/commit/ac718489fa6dc3a83b92b8dcf97a742b20694521))
+- **deps:** update dependency eventsource to ^5.1.5 ([#2167](https://github.com/sanity-io/cli/pull/2167)) ([31e04e1](https://github.com/sanity-io/cli/commit/31e04e18eae25e00cd9128f0dfcebe8f7a16764b))
+- **deps:** update dependency open to ^11.0.4 ([#2168](https://github.com/sanity-io/cli/pull/2168)) ([49ce43c](https://github.com/sanity-io/cli/commit/49ce43c708c908ed92df5089e9328910046809b2))
+- **cli:** use @sanity/validation for document validation ([#2105](https://github.com/sanity-io/cli/pull/2105)) ([8ef6226](https://github.com/sanity-io/cli/commit/8ef6226d44a7c8b17396a69b339b5dd933d8271d))
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/cli-build bumped to 7.2.0
+    - @sanity/cli-core bumped to 3.15.0
+    - @sanity/workbench-cli bumped to 2.16.0
+
 ## 8.28.2
 
 [Compare changes](https://github.com/sanity-io/cli/compare/cli-v8.28.1...cli-v8.28.2)
