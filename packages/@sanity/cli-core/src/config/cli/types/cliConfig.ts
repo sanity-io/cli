@@ -263,6 +263,18 @@ export interface CliConfig {
    */
   unstable_bundledDev?: boolean
 
+  /**
+   * Whether `sanity dev` and `sanity build` render a custom HTML document component from
+   * `_document.js` or `_document.tsx` in the project root. Defaults to `true`.
+   *
+   * Set to `false` to skip the lookup and always render the default document. Custom document
+   * components are being phased out: customize the HTML with a Vite plugin in the `vite`
+   * option instead.
+   *
+   * Unstable: will be removed once custom document components are no longer supported.
+   */
+  unstable_documentComponent?: boolean
+
   /** Exposes the default Vite configuration for custom apps and the Studio so it can be changed and extended. */
   vite?: UserViteConfig
 }

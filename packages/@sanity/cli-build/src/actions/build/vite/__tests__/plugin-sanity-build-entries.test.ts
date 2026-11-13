@@ -73,12 +73,14 @@ async function renderBundle(options: {
   bridge?: boolean
   bundle: Bundle
   cssCodeSplit?: boolean
+  documentComponent?: boolean
   isApp?: boolean
 }): Promise<{css: string[]; html: string}> {
   const plugin = sanityBuildEntries({
     basePath: '/',
     bridge: options.bridge,
     cwd: '/project',
+    documentComponent: options.documentComponent,
     isApp: options.isApp,
   })
   if (options.cssCodeSplit !== undefined) {
@@ -169,6 +171,14 @@ describe('sanityBuildEntries index.html', () => {
     expect(mockGetLocalPackageVersion).not.toHaveBeenCalled()
     expect(html).not.toContain('__SANITY_AUTH_HASH_PARAMS__')
   })
+
+  test.each([undefined, true, false])(
+    'forwards documentComponent=%s to the document renderer',
+    async (documentComponent) => {
+      await renderBundle({bundle: {'static/sanity-abc.js': entryChunk()}, documentComponent})
+      expect(vi.mocked(renderDocument).mock.calls.at(-1)?.[0]).toMatchObject({documentComponent})
+    },
+  )
 })
 
 describe('sanityBuildEntries stylesheets', () => {

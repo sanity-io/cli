@@ -115,6 +115,17 @@ describe('startDevServer', () => {
     ])
   })
 
+  test.each([undefined, true, false])(
+    'forwards documentComponent=%s to the runtime writer',
+    async (documentComponent) => {
+      await startDevServer(baseOptions({documentComponent}))
+
+      expect(mockWriteSanityRuntime).toHaveBeenCalledWith(
+        expect.objectContaining({documentComponent, watch: true}),
+      )
+    },
+  )
+
   test('does not touch experimental or build options when bundledDev is off', async () => {
     await startDevServer(baseOptions({bundledDev: false}))
 

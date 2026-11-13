@@ -107,6 +107,30 @@ describe('writeSanityRuntime', () => {
     expect(watcher).toBeUndefined()
   })
 
+  test('loads custom document components by default', async () => {
+    await writeSanityRuntime({cwd, isApp: true, reactStrictMode: false, watch: false})
+
+    expect(mockRenderDocument).toHaveBeenCalledWith(
+      expect.objectContaining({documentComponent: true}),
+    )
+  })
+
+  test('skips custom document components and their watcher when documentComponent is false', async () => {
+    const {watcher} = await writeSanityRuntime({
+      cwd,
+      documentComponent: false,
+      isApp: true,
+      reactStrictMode: false,
+      watch: true,
+    })
+
+    expect(mockRenderDocument).toHaveBeenCalledWith(
+      expect.objectContaining({documentComponent: false}),
+    )
+    expect(mockWatch).not.toHaveBeenCalled()
+    expect(watcher).toBeUndefined()
+  })
+
   test('injects the auth hash script first in head for studios', async () => {
     mockGetLocalPackageVersion.mockResolvedValue(MIN_SANITY_VERSION_READING_AUTH_HASH_STASH)
     await writeSanityRuntime({cwd, isApp: false, reactStrictMode: false, watch: false})
