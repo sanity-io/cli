@@ -106,18 +106,68 @@ describe('setupMCP', () => {
     expect(mockOutput.log).not.toHaveBeenCalledWith(expect.stringContaining('Sign in to Sanity'))
   })
 
-  test('replaces configs that still hold a saved login token', async () => {
+  test('offers to replace configs holding a token when prompting', async () => {
     defaultMocks()
     const legacy = editor({configured: true, hasLegacyToken: true, name: 'Gemini CLI'})
     const current = editor({configured: true, name: 'Cursor'})
     mockDetectAvailableEditors.mockResolvedValue([legacy, current])
+    mockPromptForMCPSetup.mockResolvedValue([{action: 'mcp-only', editor: legacy}])
 
-    const result = await setupMCP({mode: 'auto', output: mockOutput})
+    const result = await setupMCP({mode: 'prompt', output: mockOutput})
 
+    expect(mockPromptForMCPSetup).toHaveBeenCalledWith(
+      expect.objectContaining({choices: [{action: 'mcp-only', editor: legacy}]}),
+    )
     expect(mockWriteMCPConfig).toHaveBeenCalledTimes(1)
     expect(mockWriteMCPConfig).toHaveBeenCalledWith(legacy)
     expect(result.configuredEditors).toEqual(['Gemini CLI'])
     expect(result.alreadyConfiguredEditors).toEqual(['Cursor'])
+  })
+
+  test('leaves configs holding a token alone without a prompt and says so', async () => {
+    defaultMocks()
+    const legacy = editor({configured: true, hasLegacyToken: true, name: 'Gemini CLI'})
+    mockDetectAvailableEditors.mockResolvedValue([legacy, editor({name: 'Zed'})])
+
+    const result = await setupMCP({mode: 'auto', output: mockOutput})
+
+    expect(mockWriteMCPConfig).toHaveBeenCalledTimes(1)
+    expect(mockWriteMCPConfig).not.toHaveBeenCalledWith(legacy)
+    expect(result.configuredEditors).toEqual(['Zed'])
+    expect(result.alreadyConfiguredEditors).toEqual([])
+    expect(mockOutput.log).toHaveBeenCalledWith(
+      expect.stringContaining(
+        'Kept the existing Sanity MCP config with a saved token for Gemini CLI. To switch to OAuth, run `sanity mcp configure` in a terminal.',
+      ),
+    )
+  })
+
+  test('reports kept token configs instead of "already configured" when nothing else to do', async () => {
+    defaultMocks()
+    mockDetectAvailableEditors.mockResolvedValue([
+      editor({configured: true, hasLegacyToken: true, name: 'Zed'}),
+    ])
+
+    const result = await setupMCP({explicit: true, mode: 'auto', output: mockOutput})
+
+    expect(mockWriteMCPConfig).not.toHaveBeenCalled()
+    expect(result.skipped).toBe(true)
+    expect(mockOutput.log).toHaveBeenCalledWith(expect.stringContaining('Kept the existing'))
+    expect(mockOutput.log).not.toHaveBeenCalledWith(
+      expect.stringContaining('All detected editors are already configured'),
+    )
+  })
+
+  test('still installs skills for a kept token config in auto mode', async () => {
+    defaultMocks()
+    mockDetectAvailableEditors.mockResolvedValue([
+      editor({configured: true, hasLegacyToken: true, name: 'Gemini CLI'}),
+    ])
+
+    const result = await setupMCP({mode: 'auto', output: mockOutput, skillsMode: 'auto'})
+
+    expect(mockWriteMCPConfig).not.toHaveBeenCalled()
+    expect(result.skillsToInstall).toEqual(['gemini-cli'])
   })
 
   test('reports a write failure and keeps configuring the remaining editors', async () => {

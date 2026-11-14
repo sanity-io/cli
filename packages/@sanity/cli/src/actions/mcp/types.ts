@@ -7,8 +7,9 @@ export interface Editor {
   name: EditorName
 
   /**
-   * Whether the existing Sanity MCP config still holds a login token written by
-   * an older CLI version. Such configs are replaced with the OAuth config.
+   * Whether the existing Sanity MCP config holds a token: a login token saved
+   * by an older CLI version, or an API token the user added by hand. Such
+   * configs are replaced with the OAuth config only when the user is asked.
    */
   hasLegacyToken?: boolean
 }

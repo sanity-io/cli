@@ -44,7 +44,7 @@ describe('promptForMCPSetup', () => {
     )
   })
 
-  test('labels editors with a saved login token as switching to OAuth', async () => {
+  test('labels editors with a saved token as replacing it with OAuth', async () => {
     mockCheckbox.mockResolvedValue(['Zed'])
 
     const editor = makeEditor({configured: true, hasLegacyToken: true, name: 'Zed'})
@@ -52,9 +52,7 @@ describe('promptForMCPSetup', () => {
 
     expect(mockCheckbox).toHaveBeenCalledWith(
       expect.objectContaining({
-        choices: [
-          {checked: true, name: 'Zed (switch from saved login token to OAuth)', value: 'Zed'},
-        ],
+        choices: [{checked: true, name: 'Zed (replace saved token with OAuth)', value: 'Zed'}],
       }),
     )
   })

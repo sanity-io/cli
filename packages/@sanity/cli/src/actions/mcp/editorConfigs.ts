@@ -194,10 +194,10 @@ async function detectMCPorter(ctx: DetectionEnv): Promise<string | null> {
 // -- Legacy token detection --
 
 /**
- * Whether a Sanity server config still holds a login token. Older CLI versions
- * created a session token for MCP and wrote it as `Authorization: Bearer <token>`
- * into `headers` (or `http_headers` for Codex CLI). Such entries are replaced
- * with the OAuth config.
+ * Whether a Sanity server config holds a token in `headers` (or `http_headers`
+ * for Codex CLI). Older CLI versions saved a login token there as
+ * `Authorization: Bearer <token>`, and users may have added an API token the
+ * same way. The two can't be told apart, so both are treated alike.
  */
 export function hasLegacyToken(serverConfig: Record<string, unknown>): boolean {
   return [serverConfig.headers, serverConfig.http_headers].some(

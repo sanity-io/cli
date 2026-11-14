@@ -80,13 +80,18 @@ interface ClassifiedEditor {
  * `skillCandidateNames` is the set of editor names that still want a skills
  * install (have a skills-CLI mapping AND aren't already installed), derived
  * once via the shared `getSkillCandidates` primitive.
+ *
+ * `replaceTokens` decides whether a config holding a token needs MCP setup.
+ * The token may be one the user added on purpose, so it is only replaced when
+ * the user is asked first.
  */
 function classifyEditors(
   editors: Editor[],
   skillCandidateNames: Set<EditorName>,
+  replaceTokens: boolean,
 ): ClassifiedEditor[] {
   return editors.map((editor) => {
-    const needsMCP = !editor.configured || Boolean(editor.hasLegacyToken)
+    const needsMCP = !editor.configured || (Boolean(editor.hasLegacyToken) && replaceTokens)
     const hasSkillMapping = Boolean(getSkillsCliAgent(editor.name))
 
     if (needsMCP) {
@@ -201,9 +206,19 @@ export async function setupMCP(options: MCPSetupOptions): Promise<MCPSetupResult
     }
   }
 
-  // 4. Classify + mask
-  const classified = classifyEditors(editors, skillCandidateNames)
+  // 4. Classify + mask. Configs holding a token are only replaced when the
+  // user is prompted; without a prompt they are left alone and reported.
+  const replaceTokens = mcpMode === 'prompt'
+  const classified = classifyEditors(editors, skillCandidateNames, replaceTokens)
   const actionable = applyMasking(classified, mcpMode, skillsMode)
+
+  const keptTokenEditors =
+    mcpMode === 'auto' ? editors.filter((e) => e.hasLegacyToken).map((e) => e.name) : []
+  if (keptTokenEditors.length > 0) {
+    output.log(
+      `${logSymbols.info} Kept the existing Sanity MCP config with a saved token for ${keptTokenEditors.join(', ')}. To switch to OAuth, run \`sanity mcp configure\` in a terminal.`,
+    )
+  }
 
   // "Already configured" surfaces editors whose MCP setup is valid (skill
   // state doesn't matter for this signal — that's what skillsToInstall is for).
@@ -214,7 +229,7 @@ export async function setupMCP(options: MCPSetupOptions): Promise<MCPSetupResult
 
   if (actionable.length === 0) {
     mcpDebug('Nothing actionable after classification + masking')
-    if (explicit) {
+    if (explicit && keptTokenEditors.length === 0) {
       output.log(`${logSymbols.success} All detected editors are already configured`)
     }
     return {

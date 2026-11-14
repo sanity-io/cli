@@ -16,7 +16,7 @@ function getEditorLabel(choice: EditorChoice): string {
     return `${editor.name} (skills only — MCP already configured)`
   }
   if (editor.hasLegacyToken) {
-    return `${editor.name} (switch from saved login token to OAuth)`
+    return `${editor.name} (replace saved token with OAuth)`
   }
   return editor.name
 }

@@ -375,6 +375,7 @@ describe('#mcp:configure', {concurrent: false}, () => {
     vi.spyOn(ConfigureMcpCommand.prototype, 'resolveIsInteractive').mockImplementation(
       mockIsInteractive,
     )
+    mockIsInteractive.mockReturnValue(true)
     mockExistsSync.mockReturnValue(false)
     mockReadFile.mockResolvedValue('{}')
     mockWriteFile.mockResolvedValue()
@@ -456,7 +457,7 @@ describe('#mcp:configure', {concurrent: false}, () => {
   // Existing configs
   // -------------------------------------------------------------------------
 
-  test('replaces a config that still holds a saved login token', async () => {
+  test('replaces a config that holds a token when the user agrees', async () => {
     mockExistsSync.mockImplementation((path: PathLike) => {
       return String(path).replaceAll('\\', '/').endsWith('/.gemini/settings.json')
     })
@@ -482,7 +483,7 @@ describe('#mcp:configure', {concurrent: false}, () => {
       choices: [
         {
           checked: true,
-          name: 'Gemini CLI (switch from saved login token to OAuth)',
+          name: 'Gemini CLI (replace saved token with OAuth)',
           value: 'Gemini CLI',
         },
       ],
@@ -496,6 +497,34 @@ describe('#mcp:configure', {concurrent: false}, () => {
     expect(writtenContent).toContain('https://example.com/mcp')
     expect(stdout).toContain('MCP configured for Gemini CLI')
     expect(stdout).toContain('Sign in to Sanity from your agent')
+  })
+
+  test('leaves a config that holds a token alone when not interactive', async () => {
+    mockIsInteractive.mockReturnValue(false)
+    mockExistsSync.mockImplementation((path: PathLike) => {
+      return String(path).replaceAll('\\', '/').endsWith('/.gemini/settings.json')
+    })
+
+    mockReadFile.mockResolvedValue(
+      JSON.stringify({
+        mcpServers: {
+          Sanity: {
+            headers: {Authorization: 'Bearer sk-hand-added-api-token'},
+            type: 'http',
+            url: 'https://mcp.sanity.io',
+          },
+        },
+      }),
+    )
+
+    const {stdout} = await testCommand(ConfigureMcpCommand, [])
+
+    expect(mockCheckbox).not.toHaveBeenCalled()
+    expect(mockWriteFile).not.toHaveBeenCalled()
+    expect(stdout).toContain(
+      'Kept the existing Sanity MCP config with a saved token for Gemini CLI. To switch to OAuth, run `sanity mcp configure` in a terminal.',
+    )
+    expect(stdout).not.toContain('All detected editors are already configured')
   })
 
   test('skips prompt when the editor already has the OAuth config', async () => {
@@ -627,7 +656,6 @@ describe('#mcp:configure', {concurrent: false}, () => {
   })
 
   test('exits with an error when setup fails unexpectedly', async () => {
-    mockIsInteractive.mockReturnValue(true)
     mockExistsSync.mockImplementation((path: PathLike) => {
       return String(path).includes('.cursor')
     })
