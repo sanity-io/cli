@@ -1,5 +1,23 @@
 # Change Log
 
+## 8.29.1
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-v8.29.0...cli-v8.29.1)
+
+_2026-11-14_
+
+### Bug Fixes
+
+- **cli-core:** make the CLI config file readable by its owner only ([#2183](https://github.com/sanity-io/cli/pull/2183)) ([687c6e4](https://github.com/sanity-io/cli/commit/687c6e4d3c66df1224926cc5bd7ec8d8f20eb6ef))
+
+  Since 6.0.0, the file that stores your CLI login (`~/.config/sanity/config.json`) could be created readable by other users on the same computer. The CLI now creates it readable only by you, and fixes an existing file the next time you run a command. If you use the CLI on a computer shared with other people, you can replace your login token by running `sanity logout` and then `sanity login`.
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/cli-core bumped to 3.15.1
+
 ## 8.29.0
 
 [Compare changes](https://github.com/sanity-io/cli/compare/cli-v8.28.2...cli-v8.29.0)

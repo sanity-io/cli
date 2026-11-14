@@ -1,6 +1,6 @@
 {
   "name": "@sanity/cli-core",
-  "version": "3.15.0",
+  "version": "3.15.1",
   "description": "Sanity CLI core package",
   "keywords": [
     "cli",
