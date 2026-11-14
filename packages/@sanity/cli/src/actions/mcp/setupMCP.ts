@@ -1,18 +1,19 @@
 import {type Output, subdebug} from '@sanity/cli-core'
 import {logSymbols} from '@sanity/cli-core/ux'
 
-import {createMCPToken, MCP_SERVER_URL} from '../../services/mcp.js'
+import {MCP_SERVER_URL} from '../../services/mcp.js'
 import {getSkillCandidates} from '../skills/skillCandidates.js'
 import {detectAvailableEditors} from './detectAvailableEditors.js'
-import {EDITOR_CONFIGS, type EditorName, getSkillsCliAgent} from './editorConfigs.js'
+import {type EditorName, getSkillsCliAgent} from './editorConfigs.js'
 import {type EditorAction, type EditorChoice, promptForMCPSetup} from './promptForMCPSetup.js'
 import {type Editor} from './types.js'
-import {validateEditorTokens} from './validateEditorTokens.js'
 import {writeMCPConfig} from './writeMCPConfig.js'
 
 const mcpDebug = subdebug('mcp:setup')
 
 const NO_EDITORS_DETECTED_MESSAGE = `Couldn't auto-configure Sanity MCP server for your editor. Visit ${MCP_SERVER_URL} for setup instructions.`
+const SIGN_IN_HINT =
+  'Sign in to Sanity from your agent the first time it connects to the MCP server.'
 
 type Mode = 'auto' | 'prompt' | 'skip'
 
@@ -56,7 +57,7 @@ interface MCPSetupOptions {
 }
 
 interface MCPSetupResult {
-  /** Editors that were already configured with valid credentials (nothing to do) */
+  /** Editors that already have the OAuth MCP config (nothing to do) */
   alreadyConfiguredEditors: EditorName[]
   configuredEditors: EditorName[]
   detectedEditors: EditorName[]
@@ -85,7 +86,7 @@ function classifyEditors(
   skillCandidateNames: Set<EditorName>,
 ): ClassifiedEditor[] {
   return editors.map((editor) => {
-    const needsMCP = !editor.configured || editor.authStatus !== 'valid'
+    const needsMCP = !editor.configured || Boolean(editor.hasLegacyToken)
     const hasSkillMapping = Boolean(getSkillsCliAgent(editor.name))
 
     if (needsMCP) {
@@ -190,10 +191,7 @@ export async function setupMCP(options: MCPSetupOptions): Promise<MCPSetupResult
     }
   }
 
-  // 3. Validate existing tokens against the Sanity API
-  await validateEditorTokens(editors)
-
-  // 4. Read skill state when skills are in scope so classification can dedup
+  // 3. Read skill state when skills are in scope so classification can dedup
   const skillCandidateNames = new Set<EditorName>()
   if (skillsMode !== 'skip') {
     const candidates = await getSkillCandidates(editors)
@@ -203,7 +201,7 @@ export async function setupMCP(options: MCPSetupOptions): Promise<MCPSetupResult
     }
   }
 
-  // 5. Classify + mask
+  // 4. Classify + mask
   const classified = classifyEditors(editors, skillCandidateNames)
   const actionable = applyMasking(classified, mcpMode, skillsMode)
 
@@ -211,7 +209,7 @@ export async function setupMCP(options: MCPSetupOptions): Promise<MCPSetupResult
   // state doesn't matter for this signal — that's what skillsToInstall is for).
   const actionableNames = new Set(actionable.map((c) => c.editor.name))
   const alreadyConfiguredEditors = editors
-    .filter((e) => e.configured && e.authStatus === 'valid' && !actionableNames.has(e.name))
+    .filter((e) => e.configured && !e.hasLegacyToken && !actionableNames.has(e.name))
     .map((e) => e.name)
 
   if (actionable.length === 0) {
@@ -228,7 +226,7 @@ export async function setupMCP(options: MCPSetupOptions): Promise<MCPSetupResult
     }
   }
 
-  // 6. Select editors to configure — prompt interactively or auto-select all.
+  // 5. Select editors to configure — prompt interactively or auto-select all.
   // We only auto when neither side wants a prompt: MCP auto, or (MCP skip
   // + skills auto). Anything that asks `mode: 'prompt'` for MCP wins the
   // prompt even when skills would have auto-installed.
@@ -251,57 +249,33 @@ export async function setupMCP(options: MCPSetupOptions): Promise<MCPSetupResult
     }
   }
 
-  // 7. MCP write phase — only for choices that need MCP
+  // 6. MCP write phase — only for choices that need MCP
   const mcpSelected = selected.filter(
     (c) => c.action === 'mcp-only' || c.action === 'mcp-and-skill',
   )
 
-  let token: string | undefined
   const configuredEditors: EditorName[] = []
   let mcpError: Error | undefined
 
-  if (mcpSelected.length > 0) {
-    const validEditor = editors.find((e) => e.authStatus === 'valid' && e.existingToken)
-    if (validEditor?.existingToken) {
-      mcpDebug('Reusing valid token from %s', validEditor.name)
-      token = validEditor.existingToken
-    }
-
-    const allOAuth = mcpSelected.every((c) => EDITOR_CONFIGS[c.editor.name].oauthOnly)
-
-    if (!token && !allOAuth) {
-      try {
-        token = await createMCPToken()
-      } catch (error) {
-        const err = error instanceof Error ? error : new Error(String(error))
-        mcpDebug('Error creating MCP token', error)
-        output.warn(`Could not configure MCP: ${err.message}`)
-        output.warn('You can set up MCP manually later using https://mcp.sanity.io')
-        mcpError = err
-      }
-    }
-
-    if (!mcpError) {
-      for (const choice of mcpSelected) {
-        try {
-          await writeMCPConfig(choice.editor, token)
-          configuredEditors.push(choice.editor.name)
-        } catch (error) {
-          const err = error instanceof Error ? error : new Error(String(error))
-          mcpDebug('Error writing MCP config for %s: %O', choice.editor.name, error)
-          output.warn(`Could not configure MCP for ${choice.editor.name}: ${err.message}`)
-          output.warn('You can set up MCP manually later using https://mcp.sanity.io')
-          mcpError = err
-        }
-      }
-    }
-
-    if (configuredEditors.length > 0) {
-      output.log(`${logSymbols.success} MCP configured for ${configuredEditors.join(', ')}`)
+  for (const choice of mcpSelected) {
+    try {
+      await writeMCPConfig(choice.editor)
+      configuredEditors.push(choice.editor.name)
+    } catch (error) {
+      const err = error instanceof Error ? error : new Error(String(error))
+      mcpDebug('Error writing MCP config for %s: %O', choice.editor.name, error)
+      output.warn(`Could not configure MCP for ${choice.editor.name}: ${err.message}`)
+      output.warn(`You can set up MCP manually later using ${MCP_SERVER_URL}`)
+      mcpError = err
     }
   }
 
-  // 8. Build skillsToInstall — only for choices the user kept, only when the
+  if (configuredEditors.length > 0) {
+    output.log(`${logSymbols.success} MCP configured for ${configuredEditors.join(', ')}`)
+    output.log(SIGN_IN_HINT)
+  }
+
+  // 7. Build skillsToInstall — only for choices the user kept, only when the
   // associated MCP write succeeded (or wasn't needed).
   const skillsToInstall: string[] = []
   if (skillsMode !== 'skip') {

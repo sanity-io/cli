@@ -5,8 +5,6 @@ import {type Editor} from '../types.js'
 
 const mockDetectAvailableEditors = vi.hoisted(() => vi.fn())
 const mockPromptForMCPSetup = vi.hoisted(() => vi.fn())
-const mockValidateEditorTokens = vi.hoisted(() => vi.fn())
-const mockCreateMCPToken = vi.hoisted(() => vi.fn())
 const mockWriteMCPConfig = vi.hoisted(() => vi.fn())
 const mockReadSkillState = vi.hoisted(() => vi.fn())
 
@@ -18,12 +16,7 @@ vi.mock('../promptForMCPSetup.js', () => ({
   promptForMCPSetup: mockPromptForMCPSetup,
 }))
 
-vi.mock('../validateEditorTokens.js', () => ({
-  validateEditorTokens: mockValidateEditorTokens,
-}))
-
 vi.mock('../../../services/mcp.js', () => ({
-  createMCPToken: mockCreateMCPToken,
   MCP_SERVER_URL: 'https://mcp.sanity.io',
 }))
 
@@ -52,8 +45,6 @@ function editor(overrides: Partial<Editor> & Pick<Editor, 'name'>): Editor {
 }
 
 function defaultMocks() {
-  mockValidateEditorTokens.mockResolvedValue(undefined)
-  mockCreateMCPToken.mockResolvedValue('test-token')
   mockWriteMCPConfig.mockResolvedValue(undefined)
   mockReadSkillState.mockResolvedValue({installedAgentDisplayNames: new Set()})
 }
@@ -95,6 +86,54 @@ describe('setupMCP', () => {
     )
   })
 
+  test('tells the user to sign in from their agent after configuring', async () => {
+    defaultMocks()
+    mockDetectAvailableEditors.mockResolvedValue([editor({name: 'Zed'})])
+
+    await setupMCP({mode: 'auto', output: mockOutput})
+
+    expect(mockOutput.log).toHaveBeenCalledWith(
+      'Sign in to Sanity from your agent the first time it connects to the MCP server.',
+    )
+  })
+
+  test('does not print the sign-in hint when nothing was configured', async () => {
+    defaultMocks()
+    mockDetectAvailableEditors.mockResolvedValue([editor({configured: true, name: 'Zed'})])
+
+    await setupMCP({explicit: true, mode: 'auto', output: mockOutput})
+
+    expect(mockOutput.log).not.toHaveBeenCalledWith(expect.stringContaining('Sign in to Sanity'))
+  })
+
+  test('replaces configs that still hold a saved login token', async () => {
+    defaultMocks()
+    const legacy = editor({configured: true, hasLegacyToken: true, name: 'Gemini CLI'})
+    const current = editor({configured: true, name: 'Cursor'})
+    mockDetectAvailableEditors.mockResolvedValue([legacy, current])
+
+    const result = await setupMCP({mode: 'auto', output: mockOutput})
+
+    expect(mockWriteMCPConfig).toHaveBeenCalledTimes(1)
+    expect(mockWriteMCPConfig).toHaveBeenCalledWith(legacy)
+    expect(result.configuredEditors).toEqual(['Gemini CLI'])
+    expect(result.alreadyConfiguredEditors).toEqual(['Cursor'])
+  })
+
+  test('reports a write failure and keeps configuring the remaining editors', async () => {
+    defaultMocks()
+    mockWriteMCPConfig.mockRejectedValueOnce(new Error('EACCES: permission denied'))
+    mockDetectAvailableEditors.mockResolvedValue([editor({name: 'Zed'}), editor({name: 'Cursor'})])
+
+    const result = await setupMCP({mode: 'auto', output: mockOutput})
+
+    expect(mockOutput.warn).toHaveBeenCalledWith(
+      'Could not configure MCP for Zed: EACCES: permission denied',
+    )
+    expect(result.configuredEditors).toEqual(['Cursor'])
+    expect(result.error?.message).toBe('EACCES: permission denied')
+  })
+
   test('mcpMode: prompt with skillsMode skip uses today’s message', async () => {
     defaultMocks()
     const editors = [editor({name: 'Cursor'})]
@@ -121,9 +160,7 @@ describe('setupMCP', () => {
 
   test('returns skipped when all detected editors are already configured', async () => {
     defaultMocks()
-    const editors = [
-      editor({authStatus: 'valid', configured: true, existingToken: 'tok', name: 'Cursor'}),
-    ]
+    const editors = [editor({configured: true, name: 'Cursor'})]
     mockDetectAvailableEditors.mockResolvedValue(editors)
 
     const result = await setupMCP({mode: 'auto', output: mockOutput})
@@ -164,9 +201,7 @@ describe('setupMCP', () => {
 
   test('skill-only: MCP already valid, skill missing', async () => {
     defaultMocks()
-    mockDetectAvailableEditors.mockResolvedValue([
-      editor({authStatus: 'valid', configured: true, existingToken: 'tok', name: 'Cursor'}),
-    ])
+    mockDetectAvailableEditors.mockResolvedValue([editor({configured: true, name: 'Cursor'})])
 
     const result = await setupMCP({mode: 'auto', output: mockOutput, skillsMode: 'auto'})
 
@@ -188,9 +223,7 @@ describe('setupMCP', () => {
   test('none: MCP valid + skill installed → already configured', async () => {
     defaultMocks()
     mockReadSkillState.mockResolvedValue({installedAgentDisplayNames: new Set(['Cursor'])})
-    mockDetectAvailableEditors.mockResolvedValue([
-      editor({authStatus: 'valid', configured: true, existingToken: 'tok', name: 'Cursor'}),
-    ])
+    mockDetectAvailableEditors.mockResolvedValue([editor({configured: true, name: 'Cursor'})])
 
     const result = await setupMCP({mode: 'auto', output: mockOutput, skillsMode: 'auto'})
 
@@ -201,9 +234,7 @@ describe('setupMCP', () => {
 
   test('none: MCP valid for editor without skill mapping (Zed)', async () => {
     defaultMocks()
-    mockDetectAvailableEditors.mockResolvedValue([
-      editor({authStatus: 'valid', configured: true, existingToken: 'tok', name: 'Zed'}),
-    ])
+    mockDetectAvailableEditors.mockResolvedValue([editor({configured: true, name: 'Zed'})])
 
     const result = await setupMCP({mode: 'auto', output: mockOutput, skillsMode: 'auto'})
 
@@ -232,12 +263,7 @@ describe('setupMCP', () => {
     defaultMocks()
     mockDetectAvailableEditors.mockResolvedValue([
       editor({name: 'Cursor'}),
-      editor({
-        authStatus: 'valid',
-        configured: true,
-        existingToken: 'tok',
-        name: 'Claude Code',
-      }),
+      editor({configured: true, name: 'Claude Code'}),
     ])
 
     const result = await setupMCP({mode: 'auto', output: mockOutput, skillsMode: 'skip'})
@@ -257,7 +283,7 @@ describe('setupMCP', () => {
 
     expect(result.skipped).toBe(true)
     expect(result.skillsToInstall).toEqual([])
-    expect(mockValidateEditorTokens).not.toHaveBeenCalled()
+    expect(mockWriteMCPConfig).not.toHaveBeenCalled()
   })
 
   // -------------------------------------------------------------------------
@@ -294,9 +320,7 @@ describe('setupMCP', () => {
 
   test('mcpMode skip + skillsMode auto auto-selects skill-only without prompting', async () => {
     defaultMocks()
-    mockDetectAvailableEditors.mockResolvedValue([
-      editor({authStatus: 'valid', configured: true, existingToken: 'tok', name: 'Cursor'}),
-    ])
+    mockDetectAvailableEditors.mockResolvedValue([editor({configured: true, name: 'Cursor'})])
 
     const result = await setupMCP({mode: 'skip', output: mockOutput, skillsMode: 'auto'})
 
@@ -306,9 +330,7 @@ describe('setupMCP', () => {
 
   test('skill-only prompt message used when mcpMode is skip + skillsMode is prompt', async () => {
     defaultMocks()
-    const editors = [
-      editor({authStatus: 'valid', configured: true, existingToken: 'tok', name: 'Cursor'}),
-    ]
+    const editors = [editor({configured: true, name: 'Cursor'})]
     mockDetectAvailableEditors.mockResolvedValue(editors)
     mockPromptForMCPSetup.mockResolvedValue([{action: 'skill-only', editor: editors[0]}])
 
@@ -357,9 +379,7 @@ describe('setupMCP', () => {
   test('skill state probe failure → over-install (treat all as not installed)', async () => {
     defaultMocks()
     mockReadSkillState.mockResolvedValue({installedAgentDisplayNames: new Set()})
-    mockDetectAvailableEditors.mockResolvedValue([
-      editor({authStatus: 'valid', configured: true, existingToken: 'tok', name: 'Cursor'}),
-    ])
+    mockDetectAvailableEditors.mockResolvedValue([editor({configured: true, name: 'Cursor'})])
 
     const result = await setupMCP({mode: 'auto', output: mockOutput, skillsMode: 'auto'})
 

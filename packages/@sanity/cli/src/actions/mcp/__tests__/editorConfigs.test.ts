@@ -2,7 +2,13 @@ import path from 'node:path'
 
 import {describe, expect, test} from 'vitest'
 
-import {type DetectionEnv, EDITOR_CONFIGS, getVSCodeUserDir} from '../editorConfigs.js'
+import {
+  type DetectionEnv,
+  EDITOR_CONFIGS,
+  type EditorName,
+  getVSCodeUserDir,
+  hasLegacyToken,
+} from '../editorConfigs.js'
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -37,176 +43,95 @@ function existsForSuffixes(...suffixes: string[]): (p: string) => boolean {
 }
 
 // ---------------------------------------------------------------------------
-// readToken (existing tests, kept as-is)
+// buildServerConfig
 // ---------------------------------------------------------------------------
 
 describe('buildServerConfig', () => {
-  const testToken = 'test-auth-token-123'
+  const expectedConfigs: Record<EditorName, Record<string, unknown>> = {
+    Antigravity: {serverUrl: 'https://mcp.sanity.io'},
+    'Claude Code': {type: 'http', url: 'https://mcp.sanity.io'},
+    Cline: {disabled: false, type: 'streamableHttp', url: 'https://mcp.sanity.io'},
+    'Codex CLI': {type: 'http', url: 'https://mcp.sanity.io'},
+    Cursor: {type: 'http', url: 'https://mcp.sanity.io'},
+    'Gemini CLI': {oauth: {enabled: true}, type: 'http', url: 'https://mcp.sanity.io'},
+    'GitHub Copilot CLI': {tools: ['*'], type: 'http', url: 'https://mcp.sanity.io'},
+    MCPorter: {auth: 'oauth', type: 'http', url: 'https://mcp.sanity.io'},
+    OpenCode: {type: 'remote', url: 'https://mcp.sanity.io'},
+    'VS Code': {type: 'http', url: 'https://mcp.sanity.io'},
+    'VS Code Insiders': {type: 'http', url: 'https://mcp.sanity.io'},
+    Zed: {enabled: true, url: 'https://mcp.sanity.io'},
+  }
 
-  test('Cursor config uses OAuth (no Authorization header)', () => {
-    const config = EDITOR_CONFIGS.Cursor.buildServerConfig()
+  test.each(Object.entries(expectedConfigs))(
+    '%s config points at the OAuth server',
+    (name, expected) => {
+      expect(EDITOR_CONFIGS[name as EditorName].buildServerConfig()).toStrictEqual(expected)
+    },
+  )
 
-    expect(config).toStrictEqual({
-      type: 'http',
-      url: 'https://mcp.sanity.io',
-    })
-  })
-
-  test('Claude Code config uses OAuth (no Authorization header)', () => {
-    const config = EDITOR_CONFIGS['Claude Code'].buildServerConfig()
-
-    expect(config).toStrictEqual({
-      type: 'http',
-      url: 'https://mcp.sanity.io',
-    })
-  })
-
-  test('VS Code config uses OAuth (no Authorization header)', () => {
-    const config = EDITOR_CONFIGS['VS Code'].buildServerConfig()
-
-    expect(config).toStrictEqual({
-      type: 'http',
-      url: 'https://mcp.sanity.io',
-    })
-  })
-
-  test('VS Code Insiders config uses OAuth (no Authorization header)', () => {
-    const config = EDITOR_CONFIGS['VS Code Insiders'].buildServerConfig()
-
-    expect(config).toStrictEqual({
-      type: 'http',
-      url: 'https://mcp.sanity.io',
-    })
-  })
-
-  test('Codex CLI config uses OAuth (no http_headers)', () => {
-    const config = EDITOR_CONFIGS['Codex CLI'].buildServerConfig()
-
-    expect(config).toStrictEqual({
-      type: 'http',
-      url: 'https://mcp.sanity.io',
-    })
-  })
-
-  test('Codex CLI uses http_headers instead of headers when given a token', () => {
-    const config = EDITOR_CONFIGS['Codex CLI'].buildServerConfig(testToken)
-
-    expect(config).toStrictEqual({
-      http_headers: {Authorization: `Bearer ${testToken}`},
-      type: 'http',
-      url: 'https://mcp.sanity.io',
-    })
-  })
-
-  test('OpenCode config uses OAuth (no Authorization header)', () => {
-    const config = EDITOR_CONFIGS.OpenCode.buildServerConfig()
-
-    expect(config).toStrictEqual({
-      type: 'remote',
-      url: 'https://mcp.sanity.io',
-    })
-  })
-
-  test('all editors except OAuth-only ones include auth credentials', () => {
-    const editorsWithToken = [
-      'Antigravity',
-      'Cline',
-      'Cline CLI',
-      'Gemini CLI',
-      'GitHub Copilot CLI',
-      'MCPorter',
-      'Zed',
-    ] as const
-
-    for (const name of editorsWithToken) {
-      const config = EDITOR_CONFIGS[name].buildServerConfig(testToken)
-      const hasAuth =
-        (config.headers as Record<string, string> | undefined)?.Authorization?.includes(
-          testToken,
-        ) ||
-        (config.http_headers as Record<string, string> | undefined)?.Authorization?.includes(
-          testToken,
-        )
-      expect(hasAuth, `${name} should include auth token`).toBe(true)
+  test('no editor config contains credentials', () => {
+    for (const name of Object.keys(EDITOR_CONFIGS) as EditorName[]) {
+      const config = EDITOR_CONFIGS[name].buildServerConfig()
+      expect(hasLegacyToken(config), `${name} config should not contain a token`).toBe(false)
+      expect(JSON.stringify(config), `${name} config should not mention Bearer`).not.toContain(
+        'Bearer',
+      )
     }
   })
 })
 
-describe('readToken', () => {
-  const validServerConfig = {
-    headers: {Authorization: 'Bearer my-secret-token'},
-    type: 'http',
-    url: 'https://mcp.sanity.io',
-  }
+// ---------------------------------------------------------------------------
+// hasLegacyToken
+// ---------------------------------------------------------------------------
 
-  test('extracts Bearer token from headers.Authorization', () => {
-    const token = EDITOR_CONFIGS['Claude Code'].readToken(validServerConfig)
-    expect(token).toBe('my-secret-token')
+describe('hasLegacyToken', () => {
+  test('detects a Bearer token in headers', () => {
+    expect(
+      hasLegacyToken({
+        headers: {Authorization: 'Bearer my-secret-token'},
+        type: 'http',
+        url: 'https://mcp.sanity.io',
+      }),
+    ).toBe(true)
   })
 
-  test('extracts Bearer token from http_headers.Authorization (Codex CLI)', () => {
-    const codexConfig = {
-      http_headers: {Authorization: 'Bearer codex-token-123'},
-      type: 'http',
-      url: 'https://mcp.sanity.io',
-    }
-    const token = EDITOR_CONFIGS['Codex CLI'].readToken(codexConfig)
-    expect(token).toBe('codex-token-123')
+  test('detects a Bearer token in http_headers (Codex CLI)', () => {
+    expect(
+      hasLegacyToken({
+        http_headers: {Authorization: 'Bearer codex-token-123'},
+        type: 'http',
+        url: 'https://mcp.sanity.io',
+      }),
+    ).toBe(true)
   })
 
-  test('returns undefined when headers is missing', () => {
-    const config = {type: 'http', url: 'https://mcp.sanity.io'}
-    const token = EDITOR_CONFIGS.Cursor.readToken(config)
-    expect(token).toBeUndefined()
+  test('detects other Authorization schemes too', () => {
+    expect(hasLegacyToken({headers: {Authorization: 'Basic dXNlcjpwYXNz'}})).toBe(true)
   })
 
-  test('returns undefined when Authorization header is missing', () => {
-    const config = {headers: {}, type: 'http', url: 'https://mcp.sanity.io'}
-    const token = EDITOR_CONFIGS.Cursor.readToken(config)
-    expect(token).toBeUndefined()
+  test('returns false when headers is missing', () => {
+    expect(hasLegacyToken({type: 'http', url: 'https://mcp.sanity.io'})).toBe(false)
   })
 
-  test('returns undefined for non-Bearer auth schemes', () => {
-    const config = {
-      headers: {Authorization: 'Basic dXNlcjpwYXNz'},
-      type: 'http',
-      url: 'https://mcp.sanity.io',
-    }
-    const token = EDITOR_CONFIGS['Claude Code'].readToken(config)
-    expect(token).toBeUndefined()
+  test('returns false when the Authorization header is missing', () => {
+    expect(hasLegacyToken({headers: {}, type: 'http'})).toBe(false)
   })
 
-  test('returns undefined when headers is not an object', () => {
-    const config = {headers: 'not-an-object', type: 'http'}
-    const token = EDITOR_CONFIGS['VS Code'].readToken(config)
-    expect(token).toBeUndefined()
+  test('returns false when headers is not an object', () => {
+    expect(hasLegacyToken({headers: 'not-an-object', type: 'http'})).toBe(false)
+    expect(hasLegacyToken({headers: null, type: 'http'})).toBe(false)
   })
 
-  test('all editors with headers-based auth extract tokens consistently', () => {
-    const headersEditors = [
-      'Antigravity',
-      'Claude Code',
-      'Cline',
-      'Cline CLI',
-      'Cursor',
-      'Gemini CLI',
-      'GitHub Copilot CLI',
-      'MCPorter',
-      'OpenCode',
-      'VS Code',
-      'VS Code Insiders',
-      'Zed',
-    ] as const
-
-    for (const name of headersEditors) {
-      const token = EDITOR_CONFIGS[name].readToken(validServerConfig)
-      expect(token, `${name} should extract token from headers`).toBe('my-secret-token')
-    }
-  })
-
-  test('Codex CLI does NOT extract from headers (uses http_headers)', () => {
-    const token = EDITOR_CONFIGS['Codex CLI'].readToken(validServerConfig)
-    expect(token).toBeUndefined()
+  test('ignores OAuth state stored by the client', () => {
+    // Cline keeps its OAuth tokens inside the server entry under `oauth`
+    expect(
+      hasLegacyToken({
+        disabled: false,
+        oauth: {accessToken: 'client-managed'},
+        type: 'streamableHttp',
+        url: 'https://mcp.sanity.io',
+      }),
+    ).toBe(false)
   })
 })
 
@@ -276,10 +201,15 @@ describe('detect', () => {
   })
 
   describe('Antigravity', () => {
-    test('returns config path when .gemini/antigravity dir exists', async () => {
-      const ctx = createMockEnv({existsSync: existsForSuffixes('.gemini/antigravity')})
+    test('returns config path when .gemini/config dir exists', async () => {
+      const ctx = createMockEnv({existsSync: existsForSuffixes('.gemini/config')})
       const result = await EDITOR_CONFIGS.Antigravity.detect(ctx)
-      expectPath(result, '.gemini/antigravity/mcp_config.json')
+      expectPath(result, '.gemini/config/mcp_config.json')
+    })
+
+    test('ignores the legacy .gemini/antigravity dir', async () => {
+      const ctx = createMockEnv({existsSync: existsForSuffixes('.gemini/antigravity')})
+      expect(await EDITOR_CONFIGS.Antigravity.detect(ctx)).toBeNull()
     })
 
     test('returns null when dir does not exist', async () => {
@@ -302,6 +232,11 @@ describe('detect', () => {
 
     test('does NOT detect when only antigravity subdir exists', async () => {
       const ctx = createMockEnv({existsSync: existsForSuffixes('.gemini/antigravity')})
+      expect(await EDITOR_CONFIGS['Gemini CLI'].detect(ctx)).toBeNull()
+    })
+
+    test('does NOT detect when only the Antigravity config dir exists', async () => {
+      const ctx = createMockEnv({existsSync: existsForSuffixes('.gemini/config')})
       expect(await EDITOR_CONFIGS['Gemini CLI'].detect(ctx)).toBeNull()
     })
   })
@@ -387,40 +322,12 @@ describe('detect', () => {
     })
   })
 
-  // -- Cline (VS Code extension) — the key isolation test --
+  // -- Cline (VS Code extension and CLI share one settings file) --
 
   describe('Cline', () => {
-    test('returns config path when Cline extension dir exists inside VS Code', async () => {
-      const ctx = createMockEnv({
-        existsSync: existsForSuffixes('globalStorage/saoudrizwan.claude-dev/settings'),
-        platform: 'darwin',
-      })
-      const result = await EDITOR_CONFIGS.Cline.detect(ctx)
-      expectPath(result, 'cline_mcp_settings.json')
-    })
-
-    test('returns null when only VS Code dir exists (Cline not installed)', async () => {
-      // This is the exact collision case that previously broke the integration test.
-      // Only the VS Code User dir exists, not the nested Cline extension dir.
-      const ctx = createMockEnv({
-        existsSync: existsForSuffixes('Code/User'),
-        platform: 'darwin',
-      })
-      expect(await EDITOR_CONFIGS.Cline.detect(ctx)).toBeNull()
-    })
-
-    test('returns null on Windows without APPDATA', async () => {
-      const ctx = createMockEnv({platform: 'win32'})
-      expect(await EDITOR_CONFIGS.Cline.detect(ctx)).toBeNull()
-    })
-  })
-
-  // -- Cline CLI --
-
-  describe('Cline CLI', () => {
     test('returns config path when .cline dir exists', async () => {
       const ctx = createMockEnv({existsSync: existsForSuffixes('.cline')})
-      const result = await EDITOR_CONFIGS['Cline CLI'].detect(ctx)
+      const result = await EDITOR_CONFIGS.Cline.detect(ctx)
       expectPath(result, '.cline/data/settings/cline_mcp_settings.json')
     })
 
@@ -429,13 +336,21 @@ describe('detect', () => {
         env: {CLINE_DIR: '/custom/cline'},
         existsSync: existsForSuffixes('/custom/cline'),
       })
-      const result = await EDITOR_CONFIGS['Cline CLI'].detect(ctx)
+      const result = await EDITOR_CONFIGS.Cline.detect(ctx)
       expectPath(result, 'custom/cline/data/settings/cline_mcp_settings.json')
+    })
+
+    test('ignores the legacy VS Code extension storage dir', async () => {
+      const ctx = createMockEnv({
+        existsSync: existsForSuffixes('globalStorage/saoudrizwan.claude-dev/settings', 'Code/User'),
+        platform: 'darwin',
+      })
+      expect(await EDITOR_CONFIGS.Cline.detect(ctx)).toBeNull()
     })
 
     test('returns null when .cline dir does not exist', async () => {
       const ctx = createMockEnv()
-      expect(await EDITOR_CONFIGS['Cline CLI'].detect(ctx)).toBeNull()
+      expect(await EDITOR_CONFIGS.Cline.detect(ctx)).toBeNull()
     })
   })
 

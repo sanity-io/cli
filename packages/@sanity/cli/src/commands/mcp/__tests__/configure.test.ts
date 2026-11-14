@@ -2,35 +2,14 @@ import {existsSync, type PathLike} from 'node:fs'
 import fs from 'node:fs/promises'
 
 import {checkbox} from '@sanity/cli-core/ux'
-import {convertToSystemPath, createTestToken, testCommand} from '@sanity/cli-test'
+import {convertToSystemPath, testCommand} from '@sanity/cli-test'
 import {execa} from 'execa'
 import {cleanAll, pendingMocks} from 'nock'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
 import {ConfigureMcpCommand} from '../configure.js'
 
-const mockCreateMCPToken = vi.hoisted(() => vi.fn())
-const mockEnsureAuthenticated = vi.hoisted(() => vi.fn())
 const mockIsInteractive = vi.hoisted(() => vi.fn().mockReturnValue(true))
-const mockValidateMCPToken = vi.hoisted(() => vi.fn())
-
-vi.mock('../../../actions/auth/ensureAuthenticated.js', async (importOriginal) => {
-  const actual =
-    await importOriginal<typeof import('../../../actions/auth/ensureAuthenticated.js')>()
-  return {
-    ...actual,
-    ensureAuthenticated: mockEnsureAuthenticated,
-  }
-})
-
-vi.mock('../../../services/mcp.js', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('../../../services/mcp.js')>()
-  return {
-    ...actual,
-    createMCPToken: mockCreateMCPToken,
-    validateMCPToken: mockValidateMCPToken,
-  }
-})
 
 vi.mock('@sanity/cli-core/ux', async () => {
   const actual = await vi.importActual<typeof import('@sanity/cli-core/ux')>('@sanity/cli-core/ux')
@@ -66,10 +45,6 @@ const mockReadFile = vi.mocked(fs.readFile)
 const mockWriteFile = vi.mocked(fs.writeFile)
 const mockExeca = vi.mocked(execa)
 
-function mockMCPTokenCreation(token: string): void {
-  mockCreateMCPToken.mockResolvedValueOnce(token)
-}
-
 // ---------------------------------------------------------------------------
 // Helpers for table-driven per-editor tests
 // ---------------------------------------------------------------------------
@@ -91,10 +66,8 @@ interface EditorTestCase {
   /** Editor name as it appears in EDITOR_CONFIGS */
   name: string
 
-  /** Extra substrings the written content must contain (beyond the token) */
+  /** Extra substrings the written content must contain */
   expectedContentChecks?: string[]
-  /** If true, this editor uses OAuth natively and does not need an embedded API token */
-  oauthOnly?: boolean
   /** Only run on this platform (skipped otherwise) */
   platform?: NodeJS.Platform
 }
@@ -146,24 +119,20 @@ async function runEditorTest(tc: EditorTestCase): Promise<void> {
 
     mockCheckbox.mockResolvedValue([tc.name])
 
-    const token = `test-token-${tc.name.toLowerCase().replaceAll(/\s+/g, '-')}`
-
-    if (!tc.oauthOnly) {
-      mockMCPTokenCreation(token)
-    }
-
     const {stdout} = await testCommand(ConfigureMcpCommand, [])
 
-    // Assert config was written to the expected path with the token
+    // Assert config was written to the expected path, pointing at the server without credentials
     expect(mockWriteFile).toHaveBeenCalledWith(
       expect.stringContaining(convertToSystemPath(tc.expectedConfigPath)),
-      tc.oauthOnly ? expect.not.stringContaining(token) : expect.stringContaining(token),
+      expect.stringContaining('https://mcp.sanity.io'),
       'utf8',
     )
+    const writtenContent = mockWriteFile.mock.calls[0]?.[1] as string
+    expect(writtenContent).not.toContain('Authorization')
+    expect(writtenContent).not.toContain('Bearer')
 
     // Assert extra content checks
     if (tc.expectedContentChecks) {
-      const writtenContent = mockWriteFile.mock.calls[0]?.[1] as string
       for (const check of tc.expectedContentChecks) {
         expect(writtenContent, `written content should contain "${check}"`).toContain(check)
       }
@@ -195,7 +164,6 @@ const editorTestCases: EditorTestCase[] = [
     detect: {existsSync: (p) => p.endsWith('.cursor')},
     expectedConfigPath: '.cursor/mcp.json',
     name: 'Cursor',
-    oauthOnly: true,
   },
   {
     detect: {
@@ -204,7 +172,6 @@ const editorTestCases: EditorTestCase[] = [
     },
     expectedConfigPath: 'Code/User/mcp.json',
     name: 'VS Code',
-    oauthOnly: true,
     platform: 'darwin',
   },
   {
@@ -215,7 +182,6 @@ const editorTestCases: EditorTestCase[] = [
     },
     expectedConfigPath: String.raw`AppData\Roaming\Code\User\mcp.json`,
     name: 'VS Code',
-    oauthOnly: true,
     platform: 'win32',
   },
   {
@@ -225,7 +191,6 @@ const editorTestCases: EditorTestCase[] = [
     },
     expectedConfigPath: 'Code - Insiders/User/mcp.json',
     name: 'VS Code Insiders',
-    oauthOnly: true,
     platform: 'darwin',
   },
   {
@@ -236,23 +201,21 @@ const editorTestCases: EditorTestCase[] = [
     },
     expectedConfigPath: String.raw`AppData\Roaming\Code - Insiders\User\mcp.json`,
     name: 'VS Code Insiders',
-    oauthOnly: true,
     platform: 'win32',
   },
   {
     detect: {cliCommands: ['claude']},
     expectedConfigPath: '.claude.json',
     name: 'Claude Code',
-    oauthOnly: true,
   },
   {
     detect: {
       existsSync: (p) => {
         const n = p.replaceAll('\\', '/')
-        return n.endsWith('/.gemini/antigravity')
+        return n.endsWith('/.gemini/config')
       },
     },
-    expectedConfigPath: '.gemini/antigravity/mcp_config.json',
+    expectedConfigPath: '.gemini/config/mcp_config.json',
     expectedContentChecks: ['serverUrl'],
     name: 'Antigravity',
   },
@@ -260,11 +223,11 @@ const editorTestCases: EditorTestCase[] = [
     detect: {
       existsSync: (p) => {
         const n = p.replaceAll('\\', '/')
-        return n.endsWith('/Code/User/globalStorage/saoudrizwan.claude-dev/settings')
+        return n.endsWith('/.cline')
       },
     },
-    expectedConfigPath:
-      'Code/User/globalStorage/saoudrizwan.claude-dev/settings/cline_mcp_settings.json',
+    expectedConfigPath: '.cline/data/settings/cline_mcp_settings.json',
+    expectedContentChecks: ['streamableHttp'],
     name: 'Cline',
   },
   {
@@ -283,7 +246,7 @@ const editorTestCases: EditorTestCase[] = [
     expectedConfigPath: convertToSystemPath(
       '/tmp/custom-cline-home/data/settings/cline_mcp_settings.json',
     ),
-    name: 'Cline CLI',
+    name: 'Cline',
   },
   {
     detect: {
@@ -293,6 +256,7 @@ const editorTestCases: EditorTestCase[] = [
       },
     },
     expectedConfigPath: '.gemini/settings.json',
+    expectedContentChecks: ['"oauth"', '"enabled": true'],
     name: 'Gemini CLI',
   },
   {
@@ -319,7 +283,6 @@ const editorTestCases: EditorTestCase[] = [
     detect: {cliCommands: ['opencode'], overridePlatform: 'darwin'},
     expectedConfigPath: '.config/opencode/opencode.json',
     name: 'OpenCode',
-    oauthOnly: true,
     platform: 'darwin',
   },
   {
@@ -327,7 +290,6 @@ const editorTestCases: EditorTestCase[] = [
     expectedConfigPath: '.codex/config.toml',
     expectedContentChecks: ['[mcp_servers.Sanity]'],
     name: 'Codex CLI',
-    oauthOnly: true,
   },
   {
     detect: {
@@ -341,7 +303,6 @@ const editorTestCases: EditorTestCase[] = [
     },
     expectedConfigPath: convertToSystemPath('/tmp/custom-codex-home/config.toml'),
     name: 'Codex CLI',
-    oauthOnly: true,
   },
   {
     detect: {
@@ -414,19 +375,10 @@ describe('#mcp:configure', {concurrent: false}, () => {
     vi.spyOn(ConfigureMcpCommand.prototype, 'resolveIsInteractive').mockImplementation(
       mockIsInteractive,
     )
-    mockEnsureAuthenticated.mockResolvedValue({
-      email: 'test@example.com',
-      id: 'user-123',
-      name: 'Test User',
-      provider: 'github',
-    })
     mockExistsSync.mockReturnValue(false)
     mockReadFile.mockResolvedValue('{}')
     mockWriteFile.mockResolvedValue()
     mockExeca.mockRejectedValue(new Error('Not installed'))
-    mockCreateMCPToken.mockReset()
-    mockValidateMCPToken.mockReset()
-    createTestToken('eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ1c2VyLTEyMyJ9.signature')
   })
 
   afterEach(() => {
@@ -455,6 +407,7 @@ describe('#mcp:configure', {concurrent: false}, () => {
         runEditorTest({
           detect: {existsSync: mc.existsSync},
           expectedConfigPath: mc.expectedConfigPath,
+          expectedContentChecks: ['"auth": "oauth"'],
           name: 'MCPorter',
         }))
     }
@@ -500,21 +453,20 @@ describe('#mcp:configure', {concurrent: false}, () => {
   })
 
   // -------------------------------------------------------------------------
-  // Token lifecycle
+  // Existing configs
   // -------------------------------------------------------------------------
 
-  test('skips prompt when all configured editors have valid auth', async () => {
+  test('replaces a config that still holds a saved login token', async () => {
     mockExistsSync.mockImplementation((path: PathLike) => {
-      return String(path).includes('.cursor')
+      return String(path).replaceAll('\\', '/').endsWith('/.gemini/settings.json')
     })
 
     mockReadFile.mockResolvedValue(
       JSON.stringify({
         mcpServers: {
+          Other: {url: 'https://example.com/mcp'},
           Sanity: {
-            headers: {
-              Authorization: 'Bearer existing-token',
-            },
+            headers: {Authorization: 'Bearer old-session-token'},
             type: 'http',
             url: 'https://mcp.sanity.io',
           },
@@ -522,119 +474,77 @@ describe('#mcp:configure', {concurrent: false}, () => {
       }),
     )
 
-    mockValidateMCPToken.mockResolvedValueOnce(true)
+    mockCheckbox.mockResolvedValue(['Gemini CLI'])
 
     const {stdout} = await testCommand(ConfigureMcpCommand, [])
-
-    // Should NOT prompt the user — everything is already configured
-    expect(mockCheckbox).not.toHaveBeenCalled()
-    expect(stdout).toContain('All detected editors are already configured')
-  })
-
-  test('skips prompt for oauthOnly editor configured without a bearer token', async () => {
-    mockExistsSync.mockImplementation((path: PathLike) => {
-      return String(path).includes('.cursor')
-    })
-
-    // Cursor config has Sanity entry but no Authorization header (pure OAuth)
-    mockReadFile.mockResolvedValue(
-      JSON.stringify({
-        mcpServers: {
-          Sanity: {
-            type: 'http',
-            url: 'https://mcp.sanity.io',
-          },
-        },
-      }),
-    )
-
-    // No /users/me mock — oauthOnly editors with no token skip validation entirely
-
-    const {stdout} = await testCommand(ConfigureMcpCommand, [])
-
-    expect(mockCheckbox).not.toHaveBeenCalled()
-    expect(stdout).toContain('All detected editors are already configured')
-  })
-
-  test('shows auth expired annotation when configured token is invalid', async () => {
-    mockExistsSync.mockImplementation((path: PathLike) => {
-      return String(path).includes('.cursor')
-    })
-
-    mockReadFile.mockResolvedValue(
-      JSON.stringify({
-        mcpServers: {
-          Sanity: {
-            headers: {
-              Authorization: 'Bearer expired-token',
-            },
-            type: 'http',
-            url: 'https://mcp.sanity.io',
-          },
-        },
-      }),
-    )
-
-    mockValidateMCPToken.mockResolvedValueOnce(false)
-
-    mockCheckbox.mockResolvedValue(['Cursor'])
-
-    // Cursor is oauthOnly so no new token is created — config is rewritten without a token
-
-    await testCommand(ConfigureMcpCommand, [])
 
     expect(mockCheckbox).toHaveBeenCalledWith({
       choices: [
         {
           checked: true,
-          name: 'Cursor (auth expired)',
-          value: 'Cursor',
+          name: 'Gemini CLI (switch from saved login token to OAuth)',
+          value: 'Gemini CLI',
         },
       ],
       message: 'Configure Sanity MCP server?',
     })
+
+    const writtenContent = mockWriteFile.mock.calls[0]?.[1] as string
+    expect(writtenContent).not.toContain('old-session-token')
+    expect(writtenContent).not.toContain('Authorization')
+    expect(writtenContent).toContain('"enabled": true')
+    expect(writtenContent).toContain('https://example.com/mcp')
+    expect(stdout).toContain('MCP configured for Gemini CLI')
+    expect(stdout).toContain('Sign in to Sanity from your agent')
   })
 
-  test('reuses valid token from another editor instead of creating new one', async () => {
-    // Detect both Cursor (configured with valid token) and Gemini (unconfigured)
+  test('skips prompt when the editor already has the OAuth config', async () => {
     mockExistsSync.mockImplementation((path: PathLike) => {
-      const normalized = String(path).replaceAll('\\', '/')
-      return normalized.includes('/.cursor') || normalized.endsWith('/.gemini/settings.json')
+      return String(path).includes('.cursor')
     })
 
-    // Cursor has existing config with valid token, Gemini has empty config
-    mockReadFile.mockImplementation(async (filePath: unknown) => {
-      if (String(filePath).includes('.cursor')) {
-        return JSON.stringify({
-          mcpServers: {
-            Sanity: {
-              headers: {Authorization: 'Bearer valid-reusable-token'},
-              type: 'http',
-              url: 'https://mcp.sanity.io',
-            },
+    mockReadFile.mockResolvedValue(
+      JSON.stringify({
+        mcpServers: {
+          Sanity: {
+            type: 'http',
+            url: 'https://mcp.sanity.io',
           },
-        })
-      }
-      return '{}'
-    })
-
-    mockValidateMCPToken.mockResolvedValueOnce(true)
-
-    // User selects only the unconfigured editor (Gemini CLI)
-    mockCheckbox.mockResolvedValue(['Gemini CLI'])
-
-    // NO /auth/session/create or /auth/fetch mocks — token should be reused
+        },
+      }),
+    )
 
     const {stdout} = await testCommand(ConfigureMcpCommand, [])
 
-    // Should write config with the reused token
-    expect(mockWriteFile).toHaveBeenCalledWith(
-      expect.stringContaining(convertToSystemPath('.gemini/settings.json')),
-      expect.stringContaining('valid-reusable-token'),
-      'utf8',
+    expect(mockCheckbox).not.toHaveBeenCalled()
+    expect(mockWriteFile).not.toHaveBeenCalled()
+    expect(stdout).toContain('All detected editors are already configured')
+  })
+
+  test('keeps OAuth state a client stored in the Sanity entry', async () => {
+    // Cline stores its OAuth tokens inside the server entry; re-running configure must not wipe them
+    mockExistsSync.mockImplementation((path: PathLike) => {
+      const normalized = String(path).replaceAll('\\', '/')
+      return normalized.endsWith('/.cline') || normalized.endsWith('/cline_mcp_settings.json')
+    })
+
+    mockReadFile.mockResolvedValue(
+      JSON.stringify({
+        mcpServers: {
+          Sanity: {
+            disabled: false,
+            oauth: {accessToken: 'client-managed'},
+            type: 'streamableHttp',
+            url: 'https://mcp.sanity.io',
+          },
+        },
+      }),
     )
 
-    expect(stdout).toContain('MCP configured for Gemini CLI')
+    const {stdout} = await testCommand(ConfigureMcpCommand, [])
+
+    expect(mockWriteFile).not.toHaveBeenCalled()
+    expect(stdout).toContain('All detected editors are already configured')
   })
 
   // -------------------------------------------------------------------------
@@ -665,12 +575,12 @@ describe('#mcp:configure', {concurrent: false}, () => {
 
     expect(mockWriteFile).toHaveBeenCalledWith(
       expect.stringContaining(convertToSystemPath('.cursor/mcp.json')),
-      expect.not.stringContaining('multi-token-123'),
+      expect.not.stringContaining('Bearer'),
       'utf8',
     )
     expect(mockWriteFile).toHaveBeenCalledWith(
       expect.stringContaining(convertToSystemPath('Code/User/mcp.json')),
-      expect.not.stringContaining('multi-token-123'),
+      expect.not.stringContaining('Bearer'),
       'utf8',
     )
 
@@ -690,7 +600,7 @@ describe('#mcp:configure', {concurrent: false}, () => {
     expect(mockCheckbox).not.toHaveBeenCalled()
     expect(mockWriteFile).toHaveBeenCalledWith(
       expect.stringContaining(convertToSystemPath('.config/opencode/opencode.json')),
-      expect.not.stringContaining('test-token-ci'),
+      expect.not.stringContaining('Bearer'),
       'utf8',
     )
     expect(stdout).toContain('MCP configured for OpenCode')
@@ -699,23 +609,6 @@ describe('#mcp:configure', {concurrent: false}, () => {
   // -------------------------------------------------------------------------
   // Error handling
   // -------------------------------------------------------------------------
-
-  test('handles token creation error gracefully', async () => {
-    mockExistsSync.mockImplementation((path: PathLike) => {
-      const normalized = String(path).replaceAll('\\', '/')
-      return normalized.endsWith('/.gemini/settings.json')
-    })
-
-    mockCheckbox.mockResolvedValue(['Gemini CLI'])
-
-    mockCreateMCPToken.mockRejectedValueOnce(new Error('Not authenticated'))
-
-    const {stderr} = await testCommand(ConfigureMcpCommand, [])
-
-    expect(stderr).toContain('Could not configure MCP')
-    expect(stderr).toContain('https://mcp.sanity.io')
-    expect(mockWriteFile).not.toHaveBeenCalled()
-  })
 
   test('handles file write error gracefully', async () => {
     mockExeca.mockImplementation((async (command: string | URL) => {
@@ -733,26 +626,16 @@ describe('#mcp:configure', {concurrent: false}, () => {
     expect(stderr).toContain('https://mcp.sanity.io')
   })
 
-  test('suggests login when login fails', async () => {
-    const {LoginError} = await import('../../../errors/LoginError.js')
-    mockEnsureAuthenticated.mockRejectedValue(new LoginError('No authentication providers found'))
+  test('exits with an error when setup fails unexpectedly', async () => {
+    mockIsInteractive.mockReturnValue(true)
+    mockExistsSync.mockImplementation((path: PathLike) => {
+      return String(path).includes('.cursor')
+    })
+    mockCheckbox.mockRejectedValue(new Error('prompt failed'))
 
     const {error} = await testCommand(ConfigureMcpCommand, [])
 
-    expect(error).toBeInstanceOf(Error)
-    expect(error?.message).toContain('No authentication providers found')
-    expect(error?.message).toContain('Try running `sanity login`')
-    expect(error?.oclif?.exit).toBe(1)
-  })
-
-  test('shows raw error for network failures without suggesting login', async () => {
-    mockEnsureAuthenticated.mockRejectedValue(new Error('request timed out'))
-
-    const {error} = await testCommand(ConfigureMcpCommand, [])
-
-    expect(error).toBeInstanceOf(Error)
-    expect(error?.message).toContain('request timed out')
-    expect(error?.message).not.toContain('sanity login')
+    expect(error?.message).toContain('prompt failed')
     expect(error?.oclif?.exit).toBe(1)
   })
 

@@ -8,7 +8,7 @@ const debug = subdebug('skills:install')
 
 export class InstallSkillsCommand extends SanityCommand<typeof InstallSkillsCommand> {
   static override description =
-    'Install Sanity agent skills for detected AI editors (Antigravity, Claude Code, Cline, Cline CLI, Codex CLI, Cursor, Gemini CLI, GitHub Copilot CLI, OpenCode, VS Code, VS Code Insiders)'
+    'Install Sanity agent skills for detected AI editors (Antigravity, Claude Code, Cline, Codex CLI, Cursor, Gemini CLI, GitHub Copilot CLI, OpenCode, VS Code, VS Code Insiders)'
 
   static override examples = [
     {
