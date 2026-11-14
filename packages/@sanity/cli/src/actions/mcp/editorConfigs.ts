@@ -33,17 +33,16 @@ export function createDetectionEnv(): DetectionEnv {
 }
 
 interface EditorConfig {
-  /** Builds the server config with API token. If oauthOnly is true, the token is not used */
-  buildServerConfig: (token: string) => Record<string, unknown>
+  /**
+   * Builds the Sanity server config. It never contains credentials: every
+   * supported editor signs in to the MCP server itself, using OAuth.
+   */
+  buildServerConfig: () => Record<string, unknown>
   configKey: string
   /** Returns the config file path if editor is detected, null otherwise */
   detect: (env: DetectionEnv) => Promise<string | null>
   format: 'jsonc' | 'toml'
-  /** Extracts the auth token from a parsed Sanity server config block */
-  readToken: (serverConfig: Record<string, unknown>) => string | undefined
 
-  /** If true, this editor uses OAuth natively and does not need an embedded API token */
-  oauthOnly?: boolean
   /**
    * Corresponding `--agent` value for the `skills` CLI (https://github.com/vercel-labs/skills).
    * Omit when the editor has no skills CLI equivalent.
@@ -55,22 +54,11 @@ interface EditorConfig {
   skillsDir?: string
 }
 
-/**
- * The Sanity MCP server uses OAuth by default
- * If a token is provided, the server will not use OAuth instead tool calls will use the API token
- */
-const defaultHttpConfig = (token?: string) => {
-  const defaultConfig: Record<string, unknown> = {
-    type: 'http',
-    url: MCP_SERVER_URL,
-  }
-
-  if (token) {
-    defaultConfig.headers = {Authorization: `Bearer ${token}`}
-  }
-
-  return defaultConfig
-}
+/** The Sanity MCP server uses OAuth, so a config only needs to point at it */
+const defaultHttpConfig = () => ({
+  type: 'http',
+  url: MCP_SERVER_URL,
+})
 
 // -- Detect functions --
 
@@ -84,8 +72,10 @@ async function detectClaudeCode(ctx: DetectionEnv): Promise<string | null> {
 }
 
 async function detectAntigravity(ctx: DetectionEnv): Promise<string | null> {
-  const antigravityDir = path.join(ctx.homedir, '.gemini/antigravity')
-  return ctx.existsSync(antigravityDir) ? path.join(antigravityDir, 'mcp_config.json') : null
+  // Shared by the Antigravity app and CLI. The older `~/.gemini/antigravity`
+  // location is no longer read.
+  const configDir = path.join(ctx.homedir, '.gemini/config')
+  return ctx.existsSync(configDir) ? path.join(configDir, 'mcp_config.json') : null
 }
 
 export function getVSCodeUserDir(
@@ -118,15 +108,8 @@ export function getVSCodeUserDir(
 }
 
 async function detectCline(ctx: DetectionEnv): Promise<string | null> {
-  const vscodeUserDir = getVSCodeUserDir(ctx)
-  if (!vscodeUserDir) return null
-  const clineConfigDir = path.join(vscodeUserDir, 'globalStorage/saoudrizwan.claude-dev/settings')
-  return ctx.existsSync(clineConfigDir)
-    ? path.join(clineConfigDir, 'cline_mcp_settings.json')
-    : null
-}
-
-async function detectClineCli(ctx: DetectionEnv): Promise<string | null> {
+  // Shared by the Cline VS Code extension (4.1+) and Cline CLI. The extension's
+  // older `globalStorage/saoudrizwan.claude-dev` file is no longer read.
   const clineHome = ctx.env.CLINE_DIR || path.join(ctx.homedir, '.cline')
   if (!ctx.existsSync(clineHome)) return null
   return path.join(clineHome, 'data/settings/cline_mcp_settings.json')
@@ -208,26 +191,21 @@ async function detectMCPorter(ctx: DetectionEnv): Promise<string | null> {
   return jsonPath
 }
 
-// -- Read token helpers --
+// -- Legacy token detection --
 
 /**
- * Extract a Bearer token from a headers-like object.
- * Looks for `Authorization: "Bearer <token>"` and returns the token portion.
+ * Whether a Sanity server config holds a token in `headers` (or `http_headers`
+ * for Codex CLI). Older CLI versions saved a login token there as
+ * `Authorization: Bearer <token>`, and users may have added an API token the
+ * same way. The two can't be told apart, so both are treated alike.
  */
-function extractBearerToken(headers: unknown): string | undefined {
-  if (typeof headers !== 'object' || headers === null) return undefined
-  const auth = (headers as Record<string, unknown>).Authorization
-  if (typeof auth !== 'string') return undefined
-  const match = auth.match(/^Bearer\s+(.+)$/)
-  return match?.[1]
-}
-
-function readTokenFromHeaders(serverConfig: Record<string, unknown>): string | undefined {
-  return extractBearerToken(serverConfig.headers)
-}
-
-function readTokenFromHttpHeaders(serverConfig: Record<string, unknown>): string | undefined {
-  return extractBearerToken(serverConfig.http_headers)
+export function hasLegacyToken(serverConfig: Record<string, unknown>): boolean {
+  return [serverConfig.headers, serverConfig.http_headers].some(
+    (headers) =>
+      typeof headers === 'object' &&
+      headers !== null &&
+      typeof (headers as Record<string, unknown>).Authorization === 'string',
+  )
 }
 
 // -- Defaults & build server config functions --
@@ -238,66 +216,56 @@ const EDITOR_DEFAULTS = {
   buildServerConfig: defaultHttpConfig,
   configKey: 'mcpServers',
   format: 'jsonc' as const,
-  oauthOnly: false,
-  readToken: readTokenFromHeaders,
   skillsDir: UNIVERSAL_SKILLS_DIR,
 }
 
-function buildAntigravityServerConfig(token: string): Record<string, unknown> {
-  return {
-    headers: {Authorization: `Bearer ${token}`},
-    serverUrl: MCP_SERVER_URL,
-  }
+function buildAntigravityServerConfig(): Record<string, unknown> {
+  return {serverUrl: MCP_SERVER_URL}
 }
 
-function buildClineServerConfig(token: string): Record<string, unknown> {
+function buildClineServerConfig(): Record<string, unknown> {
   return {
     disabled: false,
-    headers: {Authorization: `Bearer ${token}`},
     type: 'streamableHttp',
     url: MCP_SERVER_URL,
   }
 }
 
-function buildCodexCliServerConfig(token?: string): Record<string, unknown> {
-  const config: Record<string, unknown> = {
+function buildGeminiCliServerConfig(): Record<string, unknown> {
+  // Without `oauth.enabled`, Gemini CLI waits for the user to run `/mcp auth`
+  return {
+    oauth: {enabled: true},
     type: 'http',
     url: MCP_SERVER_URL,
   }
-
-  if (token) {
-    config.http_headers = {Authorization: `Bearer ${token}`}
-  }
-
-  return config
 }
 
-function buildGitHubCopilotCliServerConfig(token: string): Record<string, unknown> {
+function buildGitHubCopilotCliServerConfig(): Record<string, unknown> {
   return {
-    headers: {Authorization: `Bearer ${token}`},
     tools: ['*'],
     type: 'http',
     url: MCP_SERVER_URL,
   }
 }
 
-function buildOpenCodeServerConfig(token?: string): Record<string, unknown> {
-  const config: Record<string, unknown> = {
+function buildMCPorterServerConfig(): Record<string, unknown> {
+  return {
+    auth: 'oauth',
+    type: 'http',
+    url: MCP_SERVER_URL,
+  }
+}
+
+function buildOpenCodeServerConfig(): Record<string, unknown> {
+  return {
     type: 'remote',
     url: MCP_SERVER_URL,
   }
-
-  if (token) {
-    config.headers = {Authorization: `Bearer ${token}`}
-  }
-
-  return config
 }
 
-function buildZedServerConfig(token: string): Record<string, unknown> {
+function buildZedServerConfig(): Record<string, unknown> {
   return {
     enabled: true,
-    headers: {Authorization: `Bearer ${token}`},
     url: MCP_SERVER_URL,
   }
 }
@@ -311,7 +279,8 @@ function buildZedServerConfig(token: string): Record<string, unknown> {
  * documentation first.
  */
 export const EDITOR_CONFIGS = {
-  // Doc: https://support.google.com/gemini/answer/16255176 (Antigravity / Project Mariner)
+  // Doc: https://antigravity.google/docs/mcp
+  // Path: ~/.gemini/config/mcp_config.json  Key: mcpServers
   Antigravity: {
     ...EDITOR_DEFAULTS,
     buildServerConfig: buildAntigravityServerConfig,
@@ -323,36 +292,24 @@ export const EDITOR_CONFIGS = {
   'Claude Code': {
     ...EDITOR_DEFAULTS,
     detect: detectClaudeCode,
-    oauthOnly: true,
     skillsCliAgent: 'claude-code',
     skillsDir: '.claude/skills',
   },
-  // Doc: https://github.com/cline/cline — VS Code extension (saoudrizwan.claude-dev)
-  // Path: <VS Code User>/globalStorage/saoudrizwan.claude-dev/settings/cline_mcp_settings.json
+  // Doc: https://github.com/cline/cline — VS Code extension and CLI share one file
+  // Path: $CLINE_DIR || ~/.cline/data/settings/cline_mcp_settings.json
   Cline: {
     ...EDITOR_DEFAULTS,
     buildServerConfig: buildClineServerConfig,
     detect: detectCline,
     skillsCliAgent: 'cline',
   },
-  // Doc: https://github.com/cline/cline — standalone CLI mode
-  // Path: $CLINE_DIR || ~/.cline/data/settings/cline_mcp_settings.json
-  'Cline CLI': {
-    ...EDITOR_DEFAULTS,
-    buildServerConfig: buildClineServerConfig,
-    detect: detectClineCli,
-    skillsCliAgent: 'cline',
-  },
   // Doc: https://platform.openai.com/docs/guides/tools-remote-mcp#codex-cli
   // Path: $CODEX_HOME || ~/.codex/config.toml  Key: mcp_servers  Format: TOML
   'Codex CLI': {
     ...EDITOR_DEFAULTS,
-    buildServerConfig: buildCodexCliServerConfig,
     configKey: 'mcp_servers',
     detect: detectCodexCli,
     format: 'toml' as const,
-    oauthOnly: true,
-    readToken: readTokenFromHttpHeaders,
     skillsCliAgent: 'codex',
   },
   // Doc: https://docs.cursor.com/context/model-context-protocol
@@ -360,12 +317,16 @@ export const EDITOR_CONFIGS = {
   Cursor: {
     ...EDITOR_DEFAULTS,
     detect: detectCursor,
-    oauthOnly: true,
     skillsCliAgent: 'cursor',
   },
   // Doc: https://googlegemini.wiki/gemini-cli/mcp-servers
   // Path: ~/.gemini/settings.json  Key: mcpServers
-  'Gemini CLI': {...EDITOR_DEFAULTS, detect: detectGeminiCli, skillsCliAgent: 'gemini-cli'},
+  'Gemini CLI': {
+    ...EDITOR_DEFAULTS,
+    buildServerConfig: buildGeminiCliServerConfig,
+    detect: detectGeminiCli,
+    skillsCliAgent: 'gemini-cli',
+  },
   // Doc: https://docs.github.com/en/copilot/customizing-copilot/extending-copilot-coding-agent-with-mcp
   // Path: ~/.copilot/mcp-config.json (or $XDG_CONFIG_HOME/copilot on Linux)  Key: mcpServers
   'GitHub Copilot CLI': {
@@ -376,7 +337,11 @@ export const EDITOR_CONFIGS = {
   },
   // Doc: https://github.com/nicobailon/mcporter
   // Path: ~/.mcporter/mcporter.{json,jsonc}  Key: mcpServers
-  MCPorter: {...EDITOR_DEFAULTS, detect: detectMCPorter},
+  MCPorter: {
+    ...EDITOR_DEFAULTS,
+    buildServerConfig: buildMCPorterServerConfig,
+    detect: detectMCPorter,
+  },
   // Doc: https://opencode.ai/docs/config
   // Path: ~/.config/opencode/opencode.json  Key: mcp
   OpenCode: {
@@ -384,7 +349,6 @@ export const EDITOR_CONFIGS = {
     buildServerConfig: buildOpenCodeServerConfig,
     configKey: 'mcp',
     detect: detectOpenCode,
-    oauthOnly: true,
     skillsCliAgent: 'opencode',
   },
   // Doc: https://code.visualstudio.com/docs/copilot/chat/mcp-servers
@@ -395,7 +359,6 @@ export const EDITOR_CONFIGS = {
     ...EDITOR_DEFAULTS,
     configKey: 'servers',
     detect: detectVSCode,
-    oauthOnly: true,
     skillsCliAgent: 'github-copilot',
   },
   // Doc: https://code.visualstudio.com/docs/copilot/chat/mcp-servers
@@ -404,7 +367,6 @@ export const EDITOR_CONFIGS = {
     ...EDITOR_DEFAULTS,
     configKey: 'servers',
     detect: detectVSCodeInsiders,
-    oauthOnly: true,
     skillsCliAgent: 'github-copilot',
   },
   // Doc: https://zed.dev/docs/assistant/model-context-protocol

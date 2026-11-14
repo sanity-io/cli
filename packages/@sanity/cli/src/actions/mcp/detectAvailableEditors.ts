@@ -10,6 +10,7 @@ import {
   type DetectionEnv,
   EDITOR_CONFIGS,
   type EditorName,
+  hasLegacyToken,
 } from './editorConfigs.js'
 import {type Editor} from './types.js'
 
@@ -54,11 +55,10 @@ function parseConfig(content: string, format: 'jsonc' | 'toml'): MCPConfig | nul
 
 /**
  * Check if an editor's config is usable and whether Sanity MCP is already configured.
- * If configured, extracts the existing auth token.
  * Returns null only if config exists but can't be parsed (to avoid data loss).
  */
 async function checkEditorConfig(name: EditorName, configPath: string): Promise<Editor | null> {
-  const {configKey, format, readToken} = EDITOR_CONFIGS[name]
+  const {configKey, format} = EDITOR_CONFIGS[name]
 
   // Config file doesn't exist - can create it
   if (!existsSync(configPath)) {
@@ -75,22 +75,18 @@ async function checkEditorConfig(name: EditorName, configPath: string): Promise<
       return null // Can't parse - skip this editor
     }
 
-    // Check if Sanity MCP is already configured
+    // Check if Sanity MCP is already configured, and whether it still holds a token
     const sanityConfig = config[configKey]?.Sanity
     const configured = Boolean(sanityConfig)
-
-    // Extract existing token if configured
-    let existingToken: string | undefined
-    if (configured && typeof sanityConfig === 'object' && sanityConfig !== null) {
-      existingToken = readToken(sanityConfig as Record<string, unknown>)
+    if (
+      typeof sanityConfig === 'object' &&
+      sanityConfig !== null &&
+      hasLegacyToken(sanityConfig as Record<string, unknown>)
+    ) {
+      return {configPath, configured, hasLegacyToken: true, name}
     }
 
-    const {oauthOnly} = EDITOR_CONFIGS[name]
-    if (configured && !existingToken && oauthOnly) {
-      return {authStatus: 'valid', configPath, configured, name}
-    }
-
-    return {configPath, configured, existingToken, name}
+    return {configPath, configured, name}
   } catch (err) {
     debug('Skipping %s: could not read %s: %s', name, configPath, err)
     return null

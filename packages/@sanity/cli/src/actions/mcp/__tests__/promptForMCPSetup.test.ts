@@ -44,33 +44,15 @@ describe('promptForMCPSetup', () => {
     )
   })
 
-  test('labels editors with expired auth as "(auth expired)"', async () => {
-    mockCheckbox.mockResolvedValue(['Cursor'])
+  test('labels editors with a saved token as replacing it with OAuth', async () => {
+    mockCheckbox.mockResolvedValue(['Zed'])
 
-    const editor = makeEditor({
-      authStatus: 'unauthorized',
-      configured: true,
-      existingToken: 'old',
-      name: 'Cursor',
-    })
-    await promptForMCPSetup({choices: [choice(editor, 'mcp-and-skill')], message: 'q?'})
+    const editor = makeEditor({configured: true, hasLegacyToken: true, name: 'Zed'})
+    await promptForMCPSetup({choices: [choice(editor, 'mcp-only')], message: 'q?'})
 
     expect(mockCheckbox).toHaveBeenCalledWith(
       expect.objectContaining({
-        choices: [{checked: true, name: 'Cursor (auth expired)', value: 'Cursor'}],
-      }),
-    )
-  })
-
-  test('labels configured editors without token as "(missing credentials)"', async () => {
-    mockCheckbox.mockResolvedValue(['Cursor'])
-
-    const editor = makeEditor({configured: true, name: 'Cursor'})
-    await promptForMCPSetup({choices: [choice(editor, 'mcp-and-skill')], message: 'q?'})
-
-    expect(mockCheckbox).toHaveBeenCalledWith(
-      expect.objectContaining({
-        choices: [{checked: true, name: 'Cursor (missing credentials)', value: 'Cursor'}],
+        choices: [{checked: true, name: 'Zed (replace saved token with OAuth)', value: 'Zed'}],
       }),
     )
   })
@@ -78,12 +60,7 @@ describe('promptForMCPSetup', () => {
   test('labels skill-only action distinctly', async () => {
     mockCheckbox.mockResolvedValue(['Cursor'])
 
-    const editor = makeEditor({
-      authStatus: 'valid',
-      configured: true,
-      existingToken: 'tok',
-      name: 'Cursor',
-    })
+    const editor = makeEditor({configured: true, name: 'Cursor'})
     await promptForMCPSetup({choices: [choice(editor, 'skill-only')], message: 'q?'})
 
     expect(mockCheckbox).toHaveBeenCalledWith(
