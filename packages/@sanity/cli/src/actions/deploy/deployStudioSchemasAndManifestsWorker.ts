@@ -3,6 +3,7 @@ import {
   workerBuildStudioSchemasAndManifests,
 } from '@sanity/cli-build/_internal/extract'
 import {subdebug} from '@sanity/cli-core'
+import {flattenErrorCauses} from '@sanity/cli-core/errors'
 
 import {updateWorkspacesSchemas} from '../schema/updateWorkspaceSchema.js'
 import {
@@ -55,6 +56,9 @@ export async function deployStudioSchemasAndManifestsWorker(
     debug('Error deploying studio schemas and manifests', error)
     const validation = await extractValidationFromSchemaError(error, options.workDir)
     port.postMessage({
+      // The Error itself can't cross the worker boundary — serialize its cause
+      // chain so transport detail (e.g. ETIMEDOUT) survives alongside the message.
+      causes: flattenErrorCauses(error),
       error: error instanceof Error ? error.message : String(error),
       type: 'error',
       validation,

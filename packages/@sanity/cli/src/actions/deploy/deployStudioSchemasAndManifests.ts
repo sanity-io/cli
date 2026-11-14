@@ -2,6 +2,7 @@ import {styleText} from 'node:util'
 
 import {SchemaDeploy, SchemaExtractionError} from '@sanity/cli-build/_internal/extract'
 import {getCliTelemetry, type Output, studioWorkerTask, subdebug} from '@sanity/cli-core'
+import {rebuildErrorCauseChain} from '@sanity/cli-core/errors'
 import {type StudioManifest} from 'sanity'
 
 import {
@@ -67,7 +68,8 @@ export async function deployStudioSchemasAndManifests(
 
     // If the schema is required, we throw an error
     if (result.type === 'error') {
-      throw new SchemaExtractionError(result.error, result.validation)
+      const cause = rebuildErrorCauseChain(result.causes ?? [])
+      throw new SchemaExtractionError(result.error, result.validation, cause ? {cause} : undefined)
     }
 
     trace.complete()
