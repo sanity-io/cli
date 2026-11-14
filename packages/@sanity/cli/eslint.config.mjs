@@ -88,6 +88,14 @@ export default [
     },
   },
   {
+    files: ['codemods/**/*.ts'],
+    rules: {
+      'n/no-unpublished-import': 'off',
+      'unicorn/no-array-callback-reference': 'off',
+      'unicorn/no-array-method-this-argument': 'off',
+    },
+  },
+  {
     // Fixtures stand in for packages outside this one, so they import as
     // their real counterparts would rather than as this package's own source.
     files: ['test/__fixtures__/**/*.{ts,js}'],
