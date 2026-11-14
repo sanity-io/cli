@@ -3,7 +3,10 @@ import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
 import {type CreateWorkspaceManifest, type WorkspaceSchemaInput} from '../../manifest/types.js'
 import {workerBuildStudioSchemasAndManifests} from '../buildStudioSchemasAndManifestsWorker.js'
-import {type BuildStudioSchemasAndManifestsWorkerData} from '../types.js'
+import {
+  type GlobalBuildStudioSchemasAndManifestsWorkerData,
+  type ProjectBuildStudioSchemasAndManifestsWorkerData,
+} from '../types.js'
 
 // Mutable so individual tests can flip which thread the module under test believes it is on
 const mockIsMainThread = vi.hoisted(() => ({value: false}))
@@ -84,15 +87,38 @@ const studioManifest: StudioManifest = {
   workspaces: [],
 }
 
+const listeners = {
+  onGenerateManifestDone: vi.fn(),
+  onGenerateManifestFail: vi.fn(),
+  onGenerateManifestStart: vi.fn(),
+}
+
 function createOptions(
-  overrides: Partial<BuildStudioSchemasAndManifestsWorkerData> = {},
-): BuildStudioSchemasAndManifestsWorkerData {
+  overrides: Partial<ProjectBuildStudioSchemasAndManifestsWorkerData> = {},
+): ProjectBuildStudioSchemasAndManifestsWorkerData {
   return {
     configPath: '/studio/sanity.config.ts',
     isExternal: false,
     outPath: 'dist/static',
     projectId: 'proj-123',
     schemaRequired: false,
+    scope: 'project',
+    verbose: false,
+    workDir: '/studio',
+    ...overrides,
+  }
+}
+
+function createGlobalOptions(
+  overrides: Partial<GlobalBuildStudioSchemasAndManifestsWorkerData> = {},
+): GlobalBuildStudioSchemasAndManifestsWorkerData {
+  return {
+    configPath: '/studio/sanity.config.ts',
+    descriptorClaimType: 'temporary',
+    isExternal: false,
+    outPath: 'dist/static',
+    schemaRequired: false,
+    scope: 'global',
     verbose: false,
     workDir: '/studio',
     ...overrides,
@@ -115,7 +141,7 @@ describe('buildStudioSchemasAndManifestsWorker', () => {
   test('throws when called from the main thread', async () => {
     mockIsMainThread.value = true
 
-    await expect(workerBuildStudioSchemasAndManifests(createOptions())).rejects.toThrow(
+    await expect(workerBuildStudioSchemasAndManifests(createOptions(), listeners)).rejects.toThrow(
       'workerBuildStudioSchemasAndManifests should only be called from a worker thread',
     )
 
@@ -126,7 +152,7 @@ describe('buildStudioSchemasAndManifestsWorker', () => {
   test('throws when the studio config resolves no workspaces', async () => {
     mockGetStudioWorkspaces.mockResolvedValue([])
 
-    await expect(workerBuildStudioSchemasAndManifests(createOptions())).rejects.toThrow(
+    await expect(workerBuildStudioSchemasAndManifests(createOptions(), listeners)).rejects.toThrow(
       'No workspaces found',
     )
 
@@ -139,7 +165,7 @@ describe('buildStudioSchemasAndManifestsWorker', () => {
   test('propagates failures from workspace resolution', async () => {
     mockGetStudioWorkspaces.mockRejectedValue(new Error('Invalid studio config'))
 
-    await expect(workerBuildStudioSchemasAndManifests(createOptions())).rejects.toThrow(
+    await expect(workerBuildStudioSchemasAndManifests(createOptions(), listeners)).rejects.toThrow(
       'Invalid studio config',
     )
 
@@ -149,7 +175,7 @@ describe('buildStudioSchemasAndManifestsWorker', () => {
   test('propagates failures from manifest extraction', async () => {
     mockExtractWorkspaceManifest.mockRejectedValue(new Error('Unserializable schema type'))
 
-    await expect(workerBuildStudioSchemasAndManifests(createOptions())).rejects.toThrow(
+    await expect(workerBuildStudioSchemasAndManifests(createOptions(), listeners)).rejects.toThrow(
       'Unserializable schema type',
     )
 
@@ -157,14 +183,50 @@ describe('buildStudioSchemasAndManifestsWorker', () => {
     expect(mockWriteManifestFile).not.toHaveBeenCalled()
   })
 
+  describe('upload scope', () => {
+    test('uploads through the project scope with the project ID', async () => {
+      await workerBuildStudioSchemasAndManifests(createOptions({verbose: true}), listeners)
+
+      expect(mockUploadSchemaToLexicon).toHaveBeenCalledWith({
+        ...listeners,
+        projectId: 'proj-123',
+        scope: 'project',
+        verbose: true,
+        workDir: '/studio',
+        workspaces,
+      })
+    })
+
+    test('uploads through the global scope without a project ID', async () => {
+      const result = await workerBuildStudioSchemasAndManifests(
+        createGlobalOptions({verbose: true}),
+        listeners,
+      )
+
+      expect(result.studioManifest).toBe(studioManifest)
+      expect(mockUploadSchemaToLexicon).toHaveBeenCalledWith({
+        ...listeners,
+        claimType: 'temporary',
+        scope: 'global',
+        verbose: true,
+        workDir: '/studio',
+        workspaces,
+      })
+      expect(mockUploadSchemaToLexicon.mock.calls[0][0]).not.toHaveProperty('projectId')
+    })
+  })
+
   describe('internal studio', () => {
     test('writes the manifest file, uploads the schema and returns the result', async () => {
       const workspaceSchemaHandler = vi.fn().mockResolvedValue(undefined)
 
-      const result = await workerBuildStudioSchemasAndManifests({
-        ...createOptions({isExternal: false, verbose: true}),
-        workspaceSchemaHandler,
-      })
+      const result = await workerBuildStudioSchemasAndManifests(
+        {
+          ...createOptions({isExternal: false, verbose: true}),
+          workspaceSchemaHandler,
+        },
+        listeners,
+      )
 
       expect(result).toEqual({
         schemaInputs,
@@ -174,7 +236,9 @@ describe('buildStudioSchemasAndManifestsWorker', () => {
 
       expect(mockExtractWorkspaceManifest).toHaveBeenCalledWith(workspaces, '/studio')
       expect(mockUploadSchemaToLexicon).toHaveBeenCalledWith({
+        ...listeners,
         projectId: 'proj-123',
+        scope: 'project',
         verbose: true,
         workDir: '/studio',
         workspaces,
@@ -188,7 +252,10 @@ describe('buildStudioSchemasAndManifestsWorker', () => {
     })
 
     test('skips the handler when none is provided', async () => {
-      const result = await workerBuildStudioSchemasAndManifests(createOptions({isExternal: false}))
+      const result = await workerBuildStudioSchemasAndManifests(
+        createOptions({isExternal: false}),
+        listeners,
+      )
 
       expect(result.type).toBe('success')
       expect(result.schemaInputs).toEqual(schemaInputs)
@@ -199,7 +266,10 @@ describe('buildStudioSchemasAndManifestsWorker', () => {
     test('returns a null studio manifest when nothing was uploaded', async () => {
       mockUploadSchemaToLexicon.mockResolvedValue(null)
 
-      const result = await workerBuildStudioSchemasAndManifests(createOptions({isExternal: false}))
+      const result = await workerBuildStudioSchemasAndManifests(
+        createOptions({isExternal: false}),
+        listeners,
+      )
 
       expect(result).toEqual({
         schemaInputs,
@@ -212,7 +282,7 @@ describe('buildStudioSchemasAndManifestsWorker', () => {
       mockWriteManifestFile.mockRejectedValue(new Error('EACCES: permission denied'))
 
       await expect(
-        workerBuildStudioSchemasAndManifests(createOptions({isExternal: false})),
+        workerBuildStudioSchemasAndManifests(createOptions({isExternal: false}), listeners),
       ).rejects.toThrow('EACCES: permission denied')
     })
 
@@ -220,7 +290,7 @@ describe('buildStudioSchemasAndManifestsWorker', () => {
       mockUploadSchemaToLexicon.mockRejectedValue(new Error('Failed to upload schema'))
 
       await expect(
-        workerBuildStudioSchemasAndManifests(createOptions({isExternal: false})),
+        workerBuildStudioSchemasAndManifests(createOptions({isExternal: false}), listeners),
       ).rejects.toThrow('Failed to upload schema')
     })
 
@@ -228,10 +298,13 @@ describe('buildStudioSchemasAndManifestsWorker', () => {
       const workspaceSchemaHandler = vi.fn().mockRejectedValue(new Error('Handler exploded'))
 
       await expect(
-        workerBuildStudioSchemasAndManifests({
-          ...createOptions({isExternal: false}),
-          workspaceSchemaHandler,
-        }),
+        workerBuildStudioSchemasAndManifests(
+          {
+            ...createOptions({isExternal: false}),
+            workspaceSchemaHandler,
+          },
+          listeners,
+        ),
       ).rejects.toThrow('Handler exploded')
     })
   })
@@ -240,10 +313,13 @@ describe('buildStudioSchemasAndManifestsWorker', () => {
     test('uploads the schema and skips the handler when the schema is not required', async () => {
       const workspaceSchemaHandler = vi.fn().mockResolvedValue(undefined)
 
-      const result = await workerBuildStudioSchemasAndManifests({
-        ...createOptions({isExternal: true, schemaRequired: false, verbose: true}),
-        workspaceSchemaHandler,
-      })
+      const result = await workerBuildStudioSchemasAndManifests(
+        {
+          ...createOptions({isExternal: true, schemaRequired: false, verbose: true}),
+          workspaceSchemaHandler,
+        },
+        listeners,
+      )
 
       expect(result).toEqual({
         schemaInputs: null,
@@ -252,7 +328,9 @@ describe('buildStudioSchemasAndManifestsWorker', () => {
       })
 
       expect(mockUploadSchemaToLexicon).toHaveBeenCalledWith({
+        ...listeners,
         projectId: 'proj-123',
+        scope: 'project',
         verbose: true,
         workDir: '/studio',
         workspaces,
@@ -264,10 +342,13 @@ describe('buildStudioSchemasAndManifestsWorker', () => {
     test('builds schema inputs and calls the handler when the schema is required', async () => {
       const workspaceSchemaHandler = vi.fn().mockResolvedValue(undefined)
 
-      const result = await workerBuildStudioSchemasAndManifests({
-        ...createOptions({isExternal: true, schemaRequired: true}),
-        workspaceSchemaHandler,
-      })
+      const result = await workerBuildStudioSchemasAndManifests(
+        {
+          ...createOptions({isExternal: true, schemaRequired: true}),
+          workspaceSchemaHandler,
+        },
+        listeners,
+      )
 
       expect(result).toEqual({
         schemaInputs,
@@ -282,6 +363,7 @@ describe('buildStudioSchemasAndManifestsWorker', () => {
     test('returns schema inputs when the schema is required and no handler is provided', async () => {
       const result = await workerBuildStudioSchemasAndManifests(
         createOptions({isExternal: true, schemaRequired: true}),
+        listeners,
       )
 
       expect(result.schemaInputs).toEqual(schemaInputs)
@@ -289,7 +371,10 @@ describe('buildStudioSchemasAndManifestsWorker', () => {
     })
 
     test('skips the handler when none is provided', async () => {
-      const result = await workerBuildStudioSchemasAndManifests(createOptions({isExternal: true}))
+      const result = await workerBuildStudioSchemasAndManifests(
+        createOptions({isExternal: true}),
+        listeners,
+      )
 
       expect(result.type).toBe('success')
       expect(mockUploadSchemaToLexicon).toHaveBeenCalledTimes(1)
@@ -299,7 +384,10 @@ describe('buildStudioSchemasAndManifestsWorker', () => {
     test('returns a null studio manifest when nothing was uploaded', async () => {
       mockUploadSchemaToLexicon.mockResolvedValue(null)
 
-      const result = await workerBuildStudioSchemasAndManifests(createOptions({isExternal: true}))
+      const result = await workerBuildStudioSchemasAndManifests(
+        createOptions({isExternal: true}),
+        listeners,
+      )
 
       expect(result.studioManifest).toBeNull()
     })
@@ -308,7 +396,7 @@ describe('buildStudioSchemasAndManifestsWorker', () => {
       mockUploadSchemaToLexicon.mockRejectedValue(new Error('Failed to upload schema'))
 
       await expect(
-        workerBuildStudioSchemasAndManifests(createOptions({isExternal: true})),
+        workerBuildStudioSchemasAndManifests(createOptions({isExternal: true}), listeners),
       ).rejects.toThrow('Failed to upload schema')
     })
 
@@ -316,10 +404,13 @@ describe('buildStudioSchemasAndManifestsWorker', () => {
       const workspaceSchemaHandler = vi.fn().mockRejectedValue(new Error('Handler exploded'))
 
       await expect(
-        workerBuildStudioSchemasAndManifests({
-          ...createOptions({isExternal: true, schemaRequired: true}),
-          workspaceSchemaHandler,
-        }),
+        workerBuildStudioSchemasAndManifests(
+          {
+            ...createOptions({isExternal: true, schemaRequired: true}),
+            workspaceSchemaHandler,
+          },
+          listeners,
+        ),
       ).rejects.toThrow('Handler exploded')
     })
   })
