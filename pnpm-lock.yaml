@@ -237,8 +237,8 @@ catalogs:
       specifier: ^1.0.0
       version: 1.0.0
     empathic:
-      specifier: ^2.0.1
-      version: 2.0.1
+      specifier: ^2.1.0
+      version: 2.1.0
     eslint:
       specifier: ^10.7.0
       version: 10.9.1
@@ -1058,7 +1058,7 @@ importers:
         version: 3.4.17
       empathic:
         specifier: 'catalog:'
-        version: 2.0.1
+        version: 2.1.0
       jsdom:
         specifier: 'catalog:'
         version: 29.1.1(@noble/hashes@2.4.0)
@@ -1194,7 +1194,7 @@ importers:
         version: 8.0.1
       empathic:
         specifier: 'catalog:'
-        version: 2.0.1
+        version: 2.1.0
       get-it:
         specifier: 'catalog:'
         version: 9.6.1(vitest@5.1.0)
@@ -7384,10 +7384,6 @@ packages:
 
   emoji-regex@8.0.0:
     resolution: {integrity: sha512-MSjYzcWNOA0ewAHpz0MxpYFvwg6yjy1NG3xteoqz644VCo/RPgnr1/GGt+ic3iJTzQ8Eu3TdM14SawnVUmGE6A==}
-
-  empathic@2.0.1:
-    resolution: {integrity: sha512-YGRs8knHhKHVShLkFET/rWAU8kmHbOV5LwN938RHI0pljAJ1Gf6SzXsSmRaEzcXTtOOmVqJ5+WtQPL5uigY50Q==}
-    engines: {node: '>=14'}
 
   empathic@2.1.0:
     resolution: {integrity: sha512-AnfC1ATldl49/cvZdLPDjBfrRNwbDO05aibiOtzQu3qtlbJtomNLhF30HEtn/7iBz50dlMECqATo3fG0LrdEgw==}
@@ -14802,7 +14798,7 @@ snapshots:
       cac: 7.0.0
       chalk: 6.0.0
       chokidar: 5.0.0
-      empathic: 2.0.1
+      empathic: 2.1.0
       find-config: 1.0.0
       get-latest-version: 6.0.1
       globby: 16.2.4
@@ -14853,7 +14849,7 @@ snapshots:
       cac: 7.0.0
       chalk: 6.0.0
       chokidar: 5.0.0
-      empathic: 2.0.1
+      empathic: 2.1.0
       find-config: 1.0.0
       get-latest-version: 6.0.1
       globby: 16.2.4
@@ -17468,8 +17464,6 @@ snapshots:
   emoji-regex@10.6.0: {}
 
   emoji-regex@8.0.0: {}
-
-  empathic@2.0.1: {}
 
   empathic@2.1.0: {}
 
@@ -20690,7 +20684,7 @@ snapshots:
       ansis: 4.3.1
       cac: 7.0.0
       defu: 6.1.7
-      empathic: 2.0.1
+      empathic: 2.1.0
       hookable: 6.1.1
       import-without-cache: 0.4.0
       obug: 2.1.4
