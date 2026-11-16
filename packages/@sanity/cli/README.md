@@ -4505,15 +4505,15 @@ EXAMPLES
 
 ## `sanity mcp configure`
 
-Configure Sanity MCP server for AI editors (Antigravity, Claude Code, Cline, Cline CLI, Codex CLI, Cursor, Gemini CLI, GitHub Copilot CLI, MCPorter, OpenCode, VS Code, VS Code Insiders, Zed)
+Configure Sanity MCP server for AI editors (Antigravity, Claude Code, Cline, Codex CLI, Cursor, Gemini CLI, GitHub Copilot CLI, MCPorter, OpenCode, VS Code, VS Code Insiders, Zed)
 
 ```
 USAGE
   $ sanity mcp configure
 
 DESCRIPTION
-  Configure Sanity MCP server for AI editors (Antigravity, Claude Code, Cline, Cline CLI, Codex CLI, Cursor, Gemini CLI,
-  GitHub Copilot CLI, MCPorter, OpenCode, VS Code, VS Code Insiders, Zed)
+  Configure Sanity MCP server for AI editors (Antigravity, Claude Code, Cline, Codex CLI, Cursor, Gemini CLI, GitHub
+  Copilot CLI, MCPorter, OpenCode, VS Code, VS Code Insiders, Zed)
 
 EXAMPLES
   Configure Sanity MCP server for detected AI editors
@@ -5340,15 +5340,15 @@ EXAMPLES
 
 ## `sanity skills install`
 
-Install Sanity agent skills for detected AI editors (Antigravity, Claude Code, Cline, Cline CLI, Codex CLI, Cursor, Gemini CLI, GitHub Copilot CLI, OpenCode, VS Code, VS Code Insiders)
+Install Sanity agent skills for detected AI editors (Antigravity, Claude Code, Cline, Codex CLI, Cursor, Gemini CLI, GitHub Copilot CLI, OpenCode, VS Code, VS Code Insiders)
 
 ```
 USAGE
   $ sanity skills install
 
 DESCRIPTION
-  Install Sanity agent skills for detected AI editors (Antigravity, Claude Code, Cline, Cline CLI, Codex CLI, Cursor,
-  Gemini CLI, GitHub Copilot CLI, OpenCode, VS Code, VS Code Insiders)
+  Install Sanity agent skills for detected AI editors (Antigravity, Claude Code, Cline, Codex CLI, Cursor, Gemini CLI,
+  GitHub Copilot CLI, OpenCode, VS Code, VS Code Insiders)
 
 EXAMPLES
   Install Sanity agent skills for detected AI editors
