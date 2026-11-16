@@ -6,9 +6,6 @@ importers:
   .:
     configDependencies: {}
     packageManagerDependencies:
-      '@pnpm/exe':
-        specifier: 12.18.0
-        version: 12.18.0
       pnpm:
         specifier: 12.18.0
         version: 12.18.0
@@ -92,11 +89,6 @@ packages:
     cpu: [x64]
     os: [win32]
 
-  '@pnpm/exe@12.18.0':
-    resolution: {integrity: sha512-3t/p83vw9SXsJML6suMBThCtwCl4lUGp/ILcxECU1In+G+NmFwMV9D+2TcvU7kX8tbrHRoYhs3eOPepEVdD7tQ==}
-    engines: {node: '>=18'}
-    hasBin: true
-
   pnpm@12.18.0:
     resolution: {integrity: sha512-nXiC1dyCFH7PxOBiqjSDTgrQKWcQoYN6ERWuASEn02txCeMhrBWYod0KZVl2gbHpmRfhLtDXSerpEYeUM2O+sw==}
     engines: {node: '>=18'}
@@ -145,23 +137,6 @@ snapshots:
 
   '@pnpm/exe.win32-x64@12.18.0':
     optional: true
-
-  '@pnpm/exe@12.18.0':
-    optionalDependencies:
-      '@pnpm/exe.android-arm64': 12.18.0
-      '@pnpm/exe.android-x64': 12.18.0
-      '@pnpm/exe.darwin-arm64': 12.18.0
-      '@pnpm/exe.darwin-x64': 12.18.0
-      '@pnpm/exe.freebsd-x64': 12.18.0
-      '@pnpm/exe.linux-arm64': 12.18.0
-      '@pnpm/exe.linux-arm64-musl': 12.18.0
-      '@pnpm/exe.linux-ppc64': 12.18.0
-      '@pnpm/exe.linux-riscv64': 12.18.0
-      '@pnpm/exe.linux-s390x': 12.18.0
-      '@pnpm/exe.linux-x64': 12.18.0
-      '@pnpm/exe.linux-x64-musl': 12.18.0
-      '@pnpm/exe.win32-arm64': 12.18.0
-      '@pnpm/exe.win32-x64': 12.18.0
 
   pnpm@12.18.0:
     optionalDependencies:
@@ -829,11 +804,11 @@ importers:
         specifier: ^2.0.0
         version: 2.0.0
       '@sanity/workflows':
-        specifier: 0.0.0-pr-744-20261109125055
-        version: 0.0.0-pr-744-20261109125055(@types/react@19.3.0)(react@19.3.0)(supports-color@8.1.1)(typescript@6.0.3)(vitest@5.1.0)
+        specifier: '>=0.39.0 <1.0.0'
+        version: 0.39.0(@types/react@19.3.0)(react@19.3.0)(supports-color@8.1.1)(typescript@6.0.3)(vitest@5.1.0)
       '@sanity/workflows-cli':
-        specifier: 0.0.0-pr-744-20261109125055
-        version: 0.0.0-pr-744-20261109125055(@sanity/cli-core@packages+@sanity+cli-core)(@sanity/workflows@0.0.0-pr-744-20261109125055(@types/react@19.3.0)(react@19.3.0)(supports-color@8.1.1)(typescript@6.0.3)(vitest@5.1.0))(react@19.3.0)(vitest@5.1.0)
+        specifier: '>=0.39.0 <1.0.0'
+        version: 0.39.0(@sanity/cli-core@packages+@sanity+cli-core)(@sanity/workflows@0.39.0(@types/react@19.3.0)(react@19.3.0)(supports-color@8.1.1)(typescript@6.0.3)(vitest@5.1.0))(react@19.3.0)(vitest@5.1.0)
       '@vercel/frameworks':
         specifier: 3.29.0
         version: 3.29.0
@@ -5609,16 +5584,16 @@ packages:
     resolution: {integrity: sha512-mC+8yPQuw2rHXdHigFPU9thNa6vTaPmh7jFR6RvloE8s+6dmnk9bHdPXRbrrUqafxzK3L9aH2E170ubXyxcAIA==}
     engines: {node: '>=20.19.1 <22 || >=22.12'}
 
-  '@sanity/workflows-cli@0.0.0-pr-744-20261109125055':
-    resolution: {integrity: sha512-hoQcRw9PjUgZzuehXiz0LVGtoSpfOLe62cDZzeiiWdocX/+G42bpInbcVCN8hS7lXP67FidXonH1erAyXiMk5Q==}
+  '@sanity/workflows-cli@0.39.0':
+    resolution: {integrity: sha512-Re4rMHgdWvwNFHz19qN7i3tJ5IVKJkfL+1odS/793nFf4l9I6X18yC6glv2/ZdNHJcrRmxBvGRc3t7S/V+zamw==}
     engines: {node: '>=20.12'}
     hasBin: true
     peerDependencies:
       '@sanity/cli-core': ^3.6.0
-      '@sanity/workflows': 0.0.0-pr-744-20261109125055
+      '@sanity/workflows': 0.39.0
 
-  '@sanity/workflows@0.0.0-pr-744-20261109125055':
-    resolution: {integrity: sha512-Vt2y/AYnPLRaeNF2slIMAoEq6jxRiURmDG2HMVdyFMo8YU0nie6aQFw2Fo4RbdgoCPyS4Qjp1i9RWfodJYUAnA==}
+  '@sanity/workflows@0.39.0':
+    resolution: {integrity: sha512-vL2zg00yhVVIxCdAAOj0xAgX0XExDnIvfWmb80xxxwTOhi8VmZluJQK6pSwdz18H0yHFDFFbCCZt98axHednoQ==}
     engines: {node: '>=20'}
 
   '@sec-ant/readable-stream@0.4.1':
@@ -15812,14 +15787,14 @@ snapshots:
 
   '@sanity/worker-channels@2.0.0': {}
 
-  '@sanity/workflows-cli@0.0.0-pr-744-20261109125055(@sanity/cli-core@packages+@sanity+cli-core)(@sanity/workflows@0.0.0-pr-744-20261109125055(@types/react@19.3.0)(react@19.3.0)(supports-color@8.1.1)(typescript@6.0.3)(vitest@5.1.0))(react@19.3.0)(vitest@5.1.0)':
+  '@sanity/workflows-cli@0.39.0(@sanity/cli-core@packages+@sanity+cli-core)(@sanity/workflows@0.39.0(@types/react@19.3.0)(react@19.3.0)(supports-color@8.1.1)(typescript@6.0.3)(vitest@5.1.0))(react@19.3.0)(vitest@5.1.0)':
     dependencies:
       '@oclif/core': 4.14.0
       '@oclif/plugin-help': 6.3.0
       '@sanity/cli-core': link:packages/@sanity/cli-core
       '@sanity/client': 8.15.0(vitest@5.1.0)
       '@sanity/telemetry': 1.1.0(react@19.3.0)
-      '@sanity/workflows': 0.0.0-pr-744-20261109125055(@types/react@19.3.0)(react@19.3.0)(supports-color@8.1.1)(typescript@6.0.3)(vitest@5.1.0)
+      '@sanity/workflows': 0.39.0(@types/react@19.3.0)(react@19.3.0)(supports-color@8.1.1)(typescript@6.0.3)(vitest@5.1.0)
       boxen: 8.0.1
       diff: 9.0.0
       empathic: 2.1.0
@@ -15832,7 +15807,7 @@ snapshots:
       - react
       - vitest
 
-  '@sanity/workflows@0.0.0-pr-744-20261109125055(@types/react@19.3.0)(react@19.3.0)(supports-color@8.1.1)(typescript@6.0.3)(vitest@5.1.0)':
+  '@sanity/workflows@0.39.0(@types/react@19.3.0)(react@19.3.0)(supports-color@8.1.1)(typescript@6.0.3)(vitest@5.1.0)':
     dependencies:
       '@sanity/client': 8.15.0(vitest@5.1.0)
       '@sanity/id-utils': 1.1.0
