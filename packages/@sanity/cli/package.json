@@ -120,7 +120,7 @@
     "groq-js": "catalog:",
     "gunzip-maybe": "^1.4.2",
     "import-meta-resolve": "catalog:",
-    "is-installed-globally": "^1.0.0",
+    "is-installed-globally": "^1.0.1",
     "json5": "^2.2.3",
     "jsonc-parser": "^3.3.1",
     "lodash-es": "catalog:",
