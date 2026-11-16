@@ -1,4 +1,6 @@
 linkWorkspacePackages: true
+lockfile:
+  format: v13
 overrides:
   '@sanity/cli': 'workspace:*'
   '@types/node': 'catalog:'
