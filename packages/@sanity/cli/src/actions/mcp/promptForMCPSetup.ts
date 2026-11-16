@@ -15,11 +15,8 @@ function getEditorLabel(choice: EditorChoice): string {
   if (action === 'skill-only') {
     return `${editor.name} (skills only — MCP already configured)`
   }
-  if (editor.configured && editor.authStatus === 'unauthorized') {
-    return `${editor.name} (auth expired)`
-  }
-  if (editor.configured && !editor.existingToken) {
-    return `${editor.name} (missing credentials)`
+  if (editor.hasLegacyToken) {
+    return `${editor.name} (replace saved token with OAuth)`
   }
   return editor.name
 }
