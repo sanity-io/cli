@@ -249,8 +249,8 @@ catalogs:
       specifier: ^4.0.5
       version: 4.0.6
     get-it:
-      specifier: ^9.5.4
-      version: 9.6.1
+      specifier: ^9.7.0
+      version: 9.7.0
     get-tsconfig:
       specifier: ^4.14.3
       version: 4.14.3
@@ -986,7 +986,7 @@ importers:
         version: 10.9.1(jiti@2.7.0)(supports-color@8.1.1)
       get-it:
         specifier: 'catalog:'
-        version: 9.6.1(vitest@5.1.0)
+        version: 9.7.0(vitest@5.1.0)
       jsdom:
         specifier: 'catalog:'
         version: 29.1.1(@noble/hashes@2.4.0)
@@ -1197,7 +1197,7 @@ importers:
         version: 2.1.0
       get-it:
         specifier: 'catalog:'
-        version: 9.6.1(vitest@5.1.0)
+        version: 9.7.0(vitest@5.1.0)
       get-tsconfig:
         specifier: 'catalog:'
         version: 4.14.3
@@ -1348,7 +1348,7 @@ importers:
         version: 0.28.2
       get-it:
         specifier: 'catalog:'
-        version: 9.6.1(vitest@5.1.0)
+        version: 9.7.0(vitest@5.1.0)
       nock:
         specifier: 'catalog:'
         version: 14.0.17
@@ -7873,17 +7873,8 @@ packages:
     resolution: {integrity: sha512-IfkbWqOGO2kd2Ccgiz/NIzk3bcwjtVqBm3RNa3j/veHg2q7c1DgS3EXrCrvIWH0jbNTbhkdblnxBP7Dm8CiH+A==}
     engines: {node: '>=14.0.0'}
 
-  get-it@9.6.1:
-    resolution: {integrity: sha512-uxMgcolbhJTz8f/cOHLcgde3A0gwqv5p6m8OJ2WJqn7NBi79krofZdp95FD0+7N9UUpmAe76vIEX3kDFijRahg==}
-    engines: {node: '>=22.12.0'}
-    peerDependencies:
-      vitest: '>=2.0.0'
-    peerDependenciesMeta:
-      vitest:
-        optional: true
-
-  get-it@9.6.2:
-    resolution: {integrity: sha512-eAg+xPVjPXbmFL/ahF08LKmuVVC+ixXCSrb0gtaWOZ9aIsMoa0QATttbtoSoqnVSBV6nh9jCdsOk5pLhN2qUOA==}
+  get-it@9.7.0:
+    resolution: {integrity: sha512-kUpzj2TuBNzPMddmW/FdTwuBl3DQRTfF3TPt/r/9C0XnulD+EDoGOkAhyvlh6hOKJdddxSYhnLWe5c0RQrQByw==}
     engines: {node: '>=22.12.0'}
     peerDependencies:
       vitest: '>=2.0.0'
@@ -10338,10 +10329,6 @@ packages:
 
   undici@7.29.1:
     resolution: {integrity: sha512-RYONW2MeafgYlkVOKYKkA/Ag7BmXqgIWCa8t1m0JcxrQg9pI9lEqRhAOruOBCbAohOa/gkCF+iPi9hrgvTzu6Q==}
-    engines: {node: '>=20.18.1'}
-
-  undici@7.30.0:
-    resolution: {integrity: sha512-dkrQXeHSaoamnItlYbmzG0wFYrM0ZwDxCIg0A7aKjTyyhh9svRzCNFEzV+Vm05/yehjCzjDZ31KXfGEjYSztDQ==}
     engines: {node: '>=20.18.1'}
 
   undici@7.30.1:
@@ -14417,7 +14404,7 @@ snapshots:
       '@sanity/client': 8.15.0(vitest@5.1.0)
       boxen: 8.0.1
       empathic: 2.1.0
-      get-it: 9.6.1(vitest@5.1.0)
+      get-it: 9.7.0(vitest@5.1.0)
       get-tsconfig: 4.14.3
       import-meta-resolve: 4.2.0
       jiti: 2.7.0
@@ -14459,7 +14446,7 @@ snapshots:
   '@sanity/client@8.15.0(vitest@5.1.0)':
     dependencies:
       eventsource: 5.1.5
-      get-it: 9.6.2(vitest@5.1.0)
+      get-it: 9.7.0(vitest@5.1.0)
       obug: 3.0.0
       rxjs: 7.8.2
     transitivePeerDependencies:
@@ -14572,7 +14559,7 @@ snapshots:
 
   '@sanity/export@7.1.0(vitest@5.1.0)':
     dependencies:
-      get-it: 9.6.1(vitest@5.1.0)
+      get-it: 9.7.0(vitest@5.1.0)
       modern-tar: 0.8.5
       obug: 3.0.0
       p-queue: 9.3.3
@@ -14632,7 +14619,7 @@ snapshots:
       '@sanity/client': 8.15.0(vitest@5.1.0)
       '@sanity/generate-help-url': 4.0.0
       '@sanity/mutator': 6.17.0(@types/react@19.3.0)(vitest@5.1.0)
-      get-it: 9.6.1(vitest@5.1.0)
+      get-it: 9.7.0(vitest@5.1.0)
       modern-tar: 0.8.5
       obug: 3.0.0
       p-map: 7.0.7
@@ -14686,7 +14673,7 @@ snapshots:
       '@sanity/types': 6.22.0(@types/react@19.3.0)(vitest@5.1.0)
       '@sanity/util': 6.22.0(@types/react@19.3.0)(vitest@5.1.0)
       arrify: 3.0.0
-      get-it: 9.6.1(vitest@5.1.0)
+      get-it: 9.7.0(vitest@5.1.0)
       groq-js: 2.0.1
       modern-tar: 0.8.5
       obug: 3.0.0
@@ -14703,7 +14690,7 @@ snapshots:
       '@sanity/types': 6.22.0(@types/react@19.3.0)(vitest@5.1.0)
       '@sanity/util': 6.22.0(@types/react@19.3.0)(vitest@5.1.0)
       arrify: 3.0.0
-      get-it: 9.6.1(vitest@5.1.0)
+      get-it: 9.7.0(vitest@5.1.0)
       groq-js: 2.0.1
       modern-tar: 0.8.5
       obug: 3.0.0
@@ -14986,7 +14973,7 @@ snapshots:
       '@sanity/types': 6.17.0(@types/react@19.3.0)(vitest@5.1.0)
       arrify: 3.0.0
       dequal: 2.0.3
-      get-it: 9.6.1(vitest@5.1.0)
+      get-it: 9.7.0(vitest@5.1.0)
       groq-js: 2.0.1
       humanize-list: 1.0.1
       leven: 4.1.0
@@ -15002,7 +14989,7 @@ snapshots:
       '@sanity/types': 6.22.0(@types/react@19.3.0)(vitest@5.1.0)
       arrify: 3.0.0
       dequal: 2.0.3
-      get-it: 9.6.2(vitest@5.1.0)
+      get-it: 9.7.0(vitest@5.1.0)
       groq-js: 2.0.1
       humanize-list: 1.0.1
       leven: 4.1.0
@@ -15018,7 +15005,7 @@ snapshots:
       '@sanity/types': 6.23.0(@types/react@19.3.0)(vitest@5.1.0)
       arrify: 3.0.0
       dequal: 2.0.3
-      get-it: 9.6.2(vitest@5.1.0)
+      get-it: 9.7.0(vitest@5.1.0)
       groq-js: 2.0.1
       humanize-list: 1.0.1
       leven: 4.1.0
@@ -15400,7 +15387,7 @@ snapshots:
       '@sanity/client': 8.15.0(vitest@5.1.0)
       '@sanity/types': 6.17.0(@types/react@19.3.0)(vitest@5.1.0)
       date-fns: 4.4.0
-      get-it: 9.6.1(vitest@5.1.0)
+      get-it: 9.7.0(vitest@5.1.0)
       rxjs: 7.8.2
     transitivePeerDependencies:
       - '@types/react'
@@ -15413,7 +15400,7 @@ snapshots:
       '@sanity/client': 8.15.0(vitest@5.1.0)
       '@sanity/types': 6.22.0(@types/react@19.3.0)(vitest@5.1.0)
       date-fns: 4.4.0
-      get-it: 9.6.2(vitest@5.1.0)
+      get-it: 9.7.0(vitest@5.1.0)
       rxjs: 7.8.2
     transitivePeerDependencies:
       - '@types/react'
@@ -15426,7 +15413,7 @@ snapshots:
       '@sanity/client': 8.15.0(vitest@5.1.0)
       '@sanity/types': 6.23.0(@types/react@19.3.0)(vitest@5.1.0)
       date-fns: 4.4.0
-      get-it: 9.6.2(vitest@5.1.0)
+      get-it: 9.7.0(vitest@5.1.0)
       rxjs: 7.8.2
     transitivePeerDependencies:
       - '@types/react'
@@ -18039,13 +18026,7 @@ snapshots:
       through2: 4.0.2
       tunnel-agent: 0.6.0
 
-  get-it@9.6.1(vitest@5.1.0):
-    dependencies:
-      undici: 7.30.0
-    optionalDependencies:
-      vitest: 5.1.0(@types/node@22.20.5)(@vitest/coverage-istanbul@5.1.0)(jsdom@29.1.1(@noble/hashes@2.4.0))(vite@8.3.8(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.13)(yaml@2.9.0))
-
-  get-it@9.6.2(vitest@5.1.0):
+  get-it@9.7.0(vitest@5.1.0):
     dependencies:
       undici: 7.30.1
     optionalDependencies:
@@ -20773,8 +20754,6 @@ snapshots:
   undici-types@7.29.0: {}
 
   undici@7.29.1: {}
-
-  undici@7.30.0: {}
 
   undici@7.30.1: {}
 
