@@ -58,9 +58,9 @@ catalog:
   strip-ansi: ^7.1.0
 
   # CLI Framework
-  '@oclif/core': ^4.11.14
-  '@oclif/plugin-help': ^6.2.53
-  '@oclif/plugin-not-found': ^3.2.88
+  '@oclif/core': ^4.14.0
+  '@oclif/plugin-help': ^6.3.0
+  '@oclif/plugin-not-found': ^3.3.0
 
   # Utilities
   get-it: ^9.5.4
