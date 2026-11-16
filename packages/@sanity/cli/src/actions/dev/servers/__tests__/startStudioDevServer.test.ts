@@ -119,6 +119,22 @@ describe('startStudioDevServer', () => {
     expect(result.server).toBeDefined()
   })
 
+  test.each([
+    {https: undefined, protocol: 'http'},
+    {https: {}, protocol: 'https'},
+  ])('announces $protocol from the resolved server configuration', async ({https, protocol}) => {
+    const started = createMockDevServer({port: 4443})
+    Object.assign(started.server.config.server, {https})
+    mockStartDevServer.mockResolvedValueOnce(started)
+    mockGetDevServerConfig.mockReturnValueOnce({...DEV_SERVER_CONFIG, basePath: '/studio'})
+
+    await startStudioDevServer(createDevOptions())
+
+    expect(started.server.config.logger.info).toHaveBeenCalledWith(
+      expect.stringContaining(`${protocol}://localhost:4443/studio`),
+    )
+  })
+
   describe('unclaimed sign-in URL', () => {
     const unclaimedOptions = createDevOptions({
       cliConfig: {api: {projectId: 'abc123'}} as CliConfig,
