@@ -297,7 +297,7 @@ export function registerDevServer(
   manifest: Omit<DevServerManifest, 'pid' | 'startedAt' | 'version'>,
 ): DevServerRegistration {
   const registryDir = getRegistryDir()
-  mkdirSync(registryDir, {recursive: true})
+  mkdirSync(registryDir, {mode: 0o700, recursive: true})
 
   let current: DevServerManifest = {
     ...manifest,
@@ -307,7 +307,7 @@ export function registerDevServer(
   }
 
   const filePath = join(registryDir, `${process.pid}.json`)
-  writeFileSync(filePath, JSON.stringify(current, null, 2))
+  writeFileSync(filePath, JSON.stringify(current, null, 2), {mode: 0o600})
 
   // Guard against late updates from background tasks (e.g. the initial
   // manifest extraction) landing after `release()` has deleted the file —
@@ -330,7 +330,7 @@ export function registerDevServer(
     update(patch) {
       if (released) return
       current = {...current, ...patch}
-      writeFileSync(filePath, JSON.stringify(current, null, 2))
+      writeFileSync(filePath, JSON.stringify(current, null, 2), {mode: 0o600})
     },
   }
 }
@@ -388,7 +388,7 @@ interface RegistryWatcher {
  */
 export function watchRegistry(callback: (servers: DevServerManifest[]) => void): RegistryWatcher {
   const registryDir = getRegistryDir()
-  mkdirSync(registryDir, {recursive: true})
+  mkdirSync(registryDir, {mode: 0o700, recursive: true})
 
   // Canonicalize to the real long path so `fs.watch` doesn't abort on Windows
   // short-path dirs. See `canonicalizeWatchDir`.
@@ -542,7 +542,7 @@ export function acquireWorkbenchLock(
   retries = 1,
 ): WorkbenchLock | undefined {
   const registryDir = getRegistryDir()
-  mkdirSync(registryDir, {recursive: true})
+  mkdirSync(registryDir, {mode: 0o700, recursive: true})
 
   const lockPath = getLockPath(info.organizationId)
   const startedAt = ownStartedAt()
@@ -558,7 +558,7 @@ export function acquireWorkbenchLock(
   devDebug('Acquiring workbench lock at %s', lockPath)
 
   try {
-    writeFileSync(lockPath, JSON.stringify(lockData), {flag: 'wx'})
+    writeFileSync(lockPath, JSON.stringify(lockData), {flag: 'wx', mode: 0o600})
     devDebug('Workbench lock acquired')
 
     let released = false
@@ -581,7 +581,7 @@ export function acquireWorkbenchLock(
         }
       },
       updatePort(port: number) {
-        writeFileSync(lockPath, JSON.stringify({...lockData, port, ready: true}))
+        writeFileSync(lockPath, JSON.stringify({...lockData, port, ready: true}), {mode: 0o600})
       },
     }
   } catch (err: unknown) {
