@@ -216,7 +216,10 @@ describe('startStudioDevServer', () => {
   })
 
   describe('load-in-dashboard', () => {
-    test('resolves the org and logs the dashboard URL for non-workbench studios', async () => {
+    test.each([undefined, {}])('passes resolved HTTPS=%j to the dashboard', async (https) => {
+      const started = createMockDevServer()
+      Object.assign(started.server.config.server, {https})
+      mockStartDevServer.mockResolvedValue(started)
       mockGetProjectCliClient.mockResolvedValue({
         projects: {
           getById: vi.fn().mockResolvedValue({organizationId: 'org-x'}),
@@ -235,6 +238,7 @@ describe('startStudioDevServer', () => {
       expect(mockGetDashboardAppURL).toHaveBeenCalledWith({
         httpHost: 'localhost',
         httpPort: 3333,
+        https: Boolean(https),
         organizationId: 'org-x',
       })
       expect(output.log).toHaveBeenCalledWith('Dev server started on port 3333')

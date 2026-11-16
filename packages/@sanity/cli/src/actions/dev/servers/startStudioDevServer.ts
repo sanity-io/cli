@@ -152,6 +152,7 @@ export async function startStudioDevServer(
           await getDashboardAppURL({
             httpHost,
             httpPort: port,
+            https: Boolean(https),
             organizationId: organizationId!,
           }),
         ),

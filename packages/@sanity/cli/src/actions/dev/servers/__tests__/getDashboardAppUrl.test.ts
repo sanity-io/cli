@@ -6,6 +6,16 @@ import {getDashboardAppURL} from '../getDashboardAppUrl.js'
 describe('#getDashboardAppUrl', () => {
   const mockFetch = setupFetchStub()
 
+  test.each([false, true])('uses the resolved protocol for HTTPS=%s', async (https) => {
+    mockFetch.mockResolvedValue({ok: false, statusText: 'Unavailable'})
+
+    const result = await getDashboardAppURL({https, organizationId: 'org-123'})
+    const url = `${https ? 'https' : 'http'}://localhost:3333`
+
+    expect(new URL(mockFetch.mock.calls[0][0]).searchParams.get('url')).toBe(url)
+    expect(new URL(result).searchParams.get('dev')).toBe(url)
+  })
+
   test('should send default dashboard app url if fetch timesout', async () => {
     mockFetch.mockImplementation(
       (_url, {signal}) =>
