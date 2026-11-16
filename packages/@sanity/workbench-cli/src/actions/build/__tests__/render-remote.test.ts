@@ -23,6 +23,7 @@ describe('renderRemote', () => {
     const source = renderRemote({
       app: 'view.components["panel"]',
       preamble: 'import view from "./view.js"',
+      version: '1',
     })
     expect(source).toContain('const App = view.components["panel"]')
     expect(source).toContain('export function render(rootElement, props, renderOptions)')
@@ -158,8 +159,8 @@ describe('renderRemote', () => {
 
   // The studio/app entry: the preamble imports `App` directly, so no `App`
   // binding, no `version` export, and no HMR boundary are emitted.
-  test('assembles a minimal module — no App binding, version, or HMR', () => {
-    const source = renderRemote({preamble: 'import App from "./app.js"'})
+  test('assembles a minimal module — no App binding or HMR', () => {
+    const source = renderRemote({preamble: 'import App from "./app.js"', version: '1'})
     expect(source).toMatchInlineSnapshot(`
       "// This file is auto-generated on 'sanity build' / 'sanity dev'
       // Modifications to this file are automatically discarded
@@ -167,6 +168,8 @@ describe('renderRemote', () => {
       import { createRoot } from 'react-dom/client'
       const StyleSheetManager = undefined
       import App from "./app.js"
+
+      export const version = 1
 
       // The SDK reads this slot via getDashboardRootContext(), so its symbol, key and value are a
       // contract. Keyed by createContext, not the React namespace: Vite dev pre-bundling can give two
@@ -286,7 +289,7 @@ let moduleCount = 0
 const ROOT_PROBE = 'globalThis.__RENDER_REMOTE_ROOT_PROBE__'
 
 async function loadHarness(app = 'globalThis.__RENDER_REMOTE_PROBE__'): Promise<Harness> {
-  const source = renderRemote({app, preamble: ''})
+  const source = renderRemote({app, preamble: '', version: '1'})
 
   const file = path.join(TMP_DIR, `harness-${moduleCount++}.js`)
   fs.writeFileSync(file, source)
@@ -479,7 +482,7 @@ async function buildIsolatedHarness(plugins: Plugin[]): Promise<Harness> {
   const root = fs.mkdtempSync(path.join(TMP_DIR, 'isolated-'))
   fs.writeFileSync(
     path.join(root, 'entry.js'),
-    renderRemote({app: '() => null', isolateStyles: true, preamble: ''}),
+    renderRemote({app: '() => null', isolateStyles: true, preamble: '', version: '1'}),
   )
   fs.writeFileSync(
     path.join(root, 'styled-components.js'),

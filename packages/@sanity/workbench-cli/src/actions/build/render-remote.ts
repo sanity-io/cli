@@ -23,7 +23,7 @@ const HMR_REMOUNT = `if (import.meta.hot) {
 
 /**
  * - `app`: omit when the preamble imports `App` itself (the SDK-app entry).
- * - `version`: lets the host check view/web worker contract compatibility.
+ * - `version`: the contract version the host checks before rendering.
  */
 export function renderRemote({
   app,
@@ -37,7 +37,7 @@ export function renderRemote({
   hmr?: boolean
   isolateStyles?: boolean
   preamble: string
-  version?: string
+  version: string
   viewType?: string
 }): string {
   // Keep apps without styled-components buildable; the unused branch is removed from their bundle.
@@ -52,7 +52,9 @@ import * as React from 'react'
 import { createRoot } from 'react-dom/client'
 ${stylesheetImport}
 ${preamble}
-${app ? `\nconst App = ${app}\n` : ''}${version ? `\nexport const version = ${version}\n` : ''}
+${app ? `\nconst App = ${app}\n` : ''}
+export const version = ${version}
+
 // The SDK reads this slot via getDashboardRootContext(), so its symbol, key and value are a
 // contract. Keyed by createContext, not the React namespace: Vite dev pre-bundling can give two
 // importers of one React copy different namespaces.

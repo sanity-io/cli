@@ -225,7 +225,7 @@ describe('deployWorkbenchApp', () => {
     })
     const fields = appendedFields()
     expect(fields).toContainEqual(['version', '1.0.0'])
-    // The app's interfaces, stamped with the deployment version and stripped of
+    // The app's interfaces, each with its own contract version and stripped of
     // what Brett owns: the local id and `src`. The app view titles itself after the app.
     expect(JSON.parse(String(fields.find(([name]) => name === 'interfaces')?.[1]))).toEqual([
       {
@@ -234,7 +234,7 @@ describe('deployWorkbenchApp', () => {
         name: 'unread',
         title: 'unread',
         type: 'worker',
-        version: '1.0.0',
+        version: '1',
       },
       {
         metadata: null,
@@ -242,7 +242,7 @@ describe('deployWorkbenchApp', () => {
         name: 'drop-desk',
         title: 'Drop Desk',
         type: 'app',
-        version: '1.0.0',
+        version: '1',
       },
     ])
     expect(JSON.parse(String(fields.find(([name]) => name === 'mfManifest')?.[1]))).toEqual(
@@ -292,7 +292,7 @@ describe('deployWorkbenchApp', () => {
       name: 'agent',
       title: 'Agent',
       type: 'tile',
-      version: '1.0.0',
+      version: '2',
     })
   })
 
@@ -340,7 +340,7 @@ describe('deployWorkbenchApp', () => {
         name: 'feed',
         title: 'Feed',
         type: 'panel',
-        version: '1.0.0',
+        version: '2',
       },
       {
         metadata: {dock: {group: 'system', order: 100}},
@@ -348,7 +348,7 @@ describe('deployWorkbenchApp', () => {
         name: 'settings',
         title: 'Settings',
         type: 'app',
-        version: '1.0.0',
+        version: '1',
       },
       {
         metadata: {dock: {group: 'applications', order: 100}},
@@ -356,7 +356,7 @@ describe('deployWorkbenchApp', () => {
         name: 'drop-desk',
         title: 'Drop Desk',
         type: 'app',
-        version: '1.0.0',
+        version: '1',
       },
     ])
   })

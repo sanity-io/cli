@@ -398,6 +398,7 @@ describe('startDevServerRegistration', () => {
           src: './src/App.tsx',
           surface: 'window',
           title: 'Test App',
+          version: '1',
         },
       ]),
     )
