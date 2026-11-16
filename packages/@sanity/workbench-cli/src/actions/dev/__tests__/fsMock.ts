@@ -20,6 +20,7 @@ export function createFsMock() {
     dirs,
     files,
     module: {
+      chmodSync: vi.fn(),
       // `path.join` yields backslash separators on Windows, so match on either.
       existsSync: (p: string) =>
         files.has(p) ||
@@ -36,6 +37,9 @@ export function createFsMock() {
         return files.get(p)
       },
       realpathSync: {native: (p: string) => p},
+      statSync: () => {
+        throw Object.assign(new Error('ENOENT'), {code: 'ENOENT'})
+      },
       unlinkSync: (p: string) => {
         if (!files.has(p)) throw Object.assign(new Error('ENOENT'), {code: 'ENOENT'})
         files.delete(p)
