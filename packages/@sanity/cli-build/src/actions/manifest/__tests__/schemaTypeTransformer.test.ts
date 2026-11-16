@@ -984,7 +984,8 @@ describe('schemaTypeTransformer', () => {
       ])
 
       const items = findType(types, 'article').fields?.find((field) => field.name === 'items')
-      expect(items?.of?.[0].preview).toEqual({select: {title: 'tittel'}})
+      expect(items).not.toHaveProperty('of')
+      expect(findType(types, 'facts').of?.[0].preview).toEqual({select: {title: 'tittel'}})
     })
 
     test('keeps preview.select of an annotation that renames a referenced type', () => {
