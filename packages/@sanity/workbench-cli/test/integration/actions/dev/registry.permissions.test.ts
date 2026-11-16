@@ -60,4 +60,11 @@ describe.skipIf(process.platform === 'win32')('registry permissions', () => {
     expect(mode(join(dataDir, 'dev-servers'))).toBe(0o700)
     watcher.close()
   })
+
+  test('creates a private registry directory when acquiring a lock first', () => {
+    const lock = acquireWorkbenchLock({host: 'localhost', organizationId: 'org', port: 3333})!
+
+    expect(mode(join(dataDir, 'dev-servers'))).toBe(0o700)
+    lock.release()
+  })
 })
