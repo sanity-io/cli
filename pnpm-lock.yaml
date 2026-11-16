@@ -168,13 +168,13 @@ catalogs:
       specifier: ^2.1.0
       version: 2.1.0
     '@oclif/core':
-      specifier: ^4.11.14
+      specifier: ^4.14.0
       version: 4.14.0
     '@oclif/plugin-help':
-      specifier: ^6.2.53
+      specifier: ^6.3.0
       version: 6.3.0
     '@oclif/plugin-not-found':
-      specifier: ^3.2.88
+      specifier: ^3.3.0
       version: 3.3.0
     '@sanity/client':
       specifier: ^8.15.0
@@ -994,7 +994,7 @@ importers:
         specifier: 'catalog:'
         version: 14.0.17
       oclif:
-        specifier: ^4.23.27
+        specifier: ^4.24.0
         version: 4.24.0(@types/node@22.20.5)(supports-color@8.1.1)
       oxc-transform-react:
         specifier: 'catalog:'
