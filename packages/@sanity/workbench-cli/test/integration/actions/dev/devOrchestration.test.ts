@@ -166,6 +166,7 @@ describe('dev orchestration chain', () => {
               src: './src/App.tsx',
               title: 'Test App',
               type: 'app',
+              version: '1',
             },
           ],
           manifest: undefined,

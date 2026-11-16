@@ -129,7 +129,10 @@ const rootElement = (target: object = {}) => ({
 })
 
 const loadIsolated = () =>
-  loadWrapper(renderRemote({app: APP, isolateStyles: true, preamble: ''}), makeReact())
+  loadWrapper(
+    renderRemote({app: APP, isolateStyles: true, preamble: '', version: '1'}),
+    makeReact(),
+  )
 
 afterEach(() => {
   // Each test owns the slot; drop it so a fresh WeakMap is created next run.
@@ -143,7 +146,7 @@ describe('renderRemote root context', () => {
     const target = {remove: () => events.push('remove stylesheet')}
     const root = {ownerDocument: {createElement: () => target, head: {appendChild: () => {}}}}
     const mod = loadWrapper(
-      renderRemote({app: APP, isolateStyles: true, preamble: ''}),
+      renderRemote({app: APP, isolateStyles: true, preamble: '', version: '1'}),
       makeReact(),
       {
         onUnmount: () => events.push('unmount React'),
@@ -179,7 +182,7 @@ describe('renderRemote root context', () => {
 
   test('sources RootContext from the symbol-keyed WeakMap<createContext, Context>', () => {
     const React = makeReact()
-    loadWrapper(renderRemote({app: APP, preamble: ''}), React).render({}, {}, {})
+    loadWrapper(renderRemote({app: APP, preamble: '', version: '1'}), React).render({}, {}, {})
 
     const slot = (globalThis as Record<symbol, unknown>)[ROOT_SLOT] as WeakMap<object, Ctx>
     expect(slot).toBeInstanceOf(WeakMap)
@@ -193,8 +196,12 @@ describe('renderRemote root context', () => {
     const React = makeReact()
     // What esbuild's __toESM interop produces: a fresh wrapper object per importer.
     const interopCopy = {...React}
-    loadWrapper(renderRemote({app: APP, preamble: ''}), React).render({}, {}, {})
-    loadWrapper(renderRemote({app: APP, preamble: ''}), interopCopy).render({}, {}, {})
+    loadWrapper(renderRemote({app: APP, preamble: '', version: '1'}), React).render({}, {}, {})
+    loadWrapper(renderRemote({app: APP, preamble: '', version: '1'}), interopCopy).render(
+      {},
+      {},
+      {},
+    )
 
     const slot = (globalThis as Record<symbol, unknown>)[ROOT_SLOT] as WeakMap<object, Ctx>
     expect(slot.get(React.createContext)).toBe(slot.get(interopCopy.createContext))
@@ -202,8 +209,8 @@ describe('renderRemote root context', () => {
 
   test('a second wrapper on the same React copy resolves the same context object', () => {
     const React = makeReact()
-    const first = loadWrapper(renderRemote({app: APP, preamble: ''}), React)
-    const second = loadWrapper(renderRemote({app: APP, preamble: ''}), React)
+    const first = loadWrapper(renderRemote({app: APP, preamble: '', version: '1'}), React)
+    const second = loadWrapper(renderRemote({app: APP, preamble: '', version: '1'}), React)
 
     const root = {}
     first.render(root, {}, {moduleId: 'favorites/App'})
@@ -218,8 +225,8 @@ describe('renderRemote root context', () => {
   test('a different React copy gets its own context (no cross-copy leak)', () => {
     const reactA = makeReact()
     const reactB = makeReact()
-    loadWrapper(renderRemote({app: APP, preamble: ''}), reactA).render({}, {}, {})
-    loadWrapper(renderRemote({app: APP, preamble: ''}), reactB).render({}, {}, {})
+    loadWrapper(renderRemote({app: APP, preamble: '', version: '1'}), reactA).render({}, {}, {})
+    loadWrapper(renderRemote({app: APP, preamble: '', version: '1'}), reactB).render({}, {}, {})
 
     const slot = (globalThis as Record<symbol, unknown>)[ROOT_SLOT] as WeakMap<object, Ctx>
     expect(slot.get(reactA.createContext)).not.toBe(slot.get(reactB.createContext))
@@ -227,7 +234,7 @@ describe('renderRemote root context', () => {
 
   test('passes renderOptions.moduleId, parentKey and props in the root context, and props to App', () => {
     const React = makeReact()
-    const mod = loadWrapper(renderRemote({app: APP, preamble: ''}), React)
+    const mod = loadWrapper(renderRemote({app: APP, preamble: '', version: '1'}), React)
     mod.render(
       {},
       {greeting: 'hi'},
@@ -245,7 +252,7 @@ describe('renderRemote root context', () => {
 
   test('a two-argument render(element, props) call renders with no module id or parent key', () => {
     const React = makeReact()
-    const mod = loadWrapper(renderRemote({app: APP, preamble: ''}), React)
+    const mod = loadWrapper(renderRemote({app: APP, preamble: '', version: '1'}), React)
     // No renderOptions argument at all.
     mod.render({}, {})
 
@@ -259,7 +266,7 @@ describe('renderRemote root context', () => {
 
   test('updates the props in the root context when the host re-renders with new props', () => {
     const React = makeReact()
-    const mod = loadWrapper(renderRemote({app: APP, preamble: ''}), React)
+    const mod = loadWrapper(renderRemote({app: APP, preamble: '', version: '1'}), React)
     const root = {}
     mod.render(root, {size: 'small'}, {moduleId: 'favorites/views/inbox/tile'})
     const first = rootValueOf(mod.rendered[0], React)
@@ -275,7 +282,7 @@ describe('renderRemote root context', () => {
 
   test('keeps the root context value when the lifecycle changes', () => {
     const React = makeReact()
-    const mod = loadWrapper(renderRemote({app: APP, preamble: ''}), React)
+    const mod = loadWrapper(renderRemote({app: APP, preamble: '', version: '1'}), React)
     const controller = mod.render({}, {size: 'small'})
     const first = rootValueOf(mod.rendered[0], React)
 
@@ -285,7 +292,7 @@ describe('renderRemote root context', () => {
 
   test('keeps the module id and parent key of the render that created the root', () => {
     const React = makeReact()
-    const mod = loadWrapper(renderRemote({app: APP, preamble: ''}), React)
+    const mod = loadWrapper(renderRemote({app: APP, preamble: '', version: '1'}), React)
     const root = {}
     mod.render(root, {}, {moduleId: 'favorites/App', parentKey: 'home-key'})
     mod.render(root, {}, {moduleId: 'other/App', parentKey: 'other-key'})
@@ -297,7 +304,7 @@ describe('renderRemote root context', () => {
   })
 
   test('forwards renderOptions.rootOptions to createRoot, only on root creation', () => {
-    const mod = loadWrapper(renderRemote({app: APP, preamble: ''}), makeReact())
+    const mod = loadWrapper(renderRemote({app: APP, preamble: '', version: '1'}), makeReact())
 
     // First render on a fresh element: rootOptions reach createRoot as the 2nd arg.
     const first = {}
@@ -324,7 +331,11 @@ describe('renderRemote root context', () => {
         this.accepted = cb
       },
     }
-    const mod = loadWrapper(renderRemote({app: APP, hmr: true, preamble: ''}), makeReact(), {hot})
+    const mod = loadWrapper(
+      renderRemote({app: APP, hmr: true, preamble: '', version: '1'}),
+      makeReact(),
+      {hot},
+    )
 
     const root = {}
     mod.render(root, {greeting: 'hi'}, {moduleId: 'favorites/App'}).setLifecycle('background')
@@ -353,7 +364,11 @@ describe('renderRemote root context', () => {
       },
     }
     const React = makeReact()
-    const mod = loadWrapper(renderRemote({app: APP, hmr: true, preamble: ''}), React, {hot})
+    const mod = loadWrapper(
+      renderRemote({app: APP, hmr: true, preamble: '', version: '1'}),
+      React,
+      {hot},
+    )
     mod.render({})
     const {signal} = rootValueOf(mod.rendered[0], React)!
 
@@ -370,7 +385,11 @@ describe('renderRemote root context', () => {
         this.accepted = cb
       },
     }
-    const mod = loadWrapper(renderRemote({app: APP, hmr: true, preamble: ''}), makeReact(), {hot})
+    const mod = loadWrapper(
+      renderRemote({app: APP, hmr: true, preamble: '', version: '1'}),
+      makeReact(),
+      {hot},
+    )
     const controller = mod.render({})
 
     const calls: string[] = []

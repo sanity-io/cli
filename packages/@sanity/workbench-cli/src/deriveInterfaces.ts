@@ -24,7 +24,7 @@ interface DerivedInterfaceBase {
   src: string
   title: string
 
-  version?: string
+  version: string
 }
 
 /** @internal */
