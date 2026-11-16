@@ -1,5 +1,28 @@
 # Changelog
 
+## 7.2.0
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-build-v7.1.2...cli-build-v7.2.0)
+
+_2026-11-13_
+
+### Features
+
+- **build:** add `unstable_documentComponent` option to opt out of `_document` components ([#2180](https://github.com/sanity-io/cli/pull/2180)) ([721f9e3](https://github.com/sanity-io/cli/commit/721f9e34e5794a4029087515bdeb53a33407af5b))
+
+### Bug Fixes
+
+- **deps:** update vite and oxc dependencies ([#2160](https://github.com/sanity-io/cli/pull/2160)) ([b624cab](https://github.com/sanity-io/cli/commit/b624cab924f7e17d34eea2fbff6d50553a1f4521))
+- **deps:** update dependency picomatch to ^4.0.7 ([#2153](https://github.com/sanity-io/cli/pull/2153)) ([92c3a7f](https://github.com/sanity-io/cli/commit/92c3a7ff49402264b13e707a2a4806d459e12fb6))
+- **manifest:** include preview.select in the deployed schema manifest ([#2181](https://github.com/sanity-io/cli/pull/2181)) ([db5dfa5](https://github.com/sanity-io/cli/commit/db5dfa5aeda016b388440b27a6228291093fb788))
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/cli-core bumped to 3.15.0
+    - @sanity/workbench-cli bumped to 2.16.0
+
 ## 7.1.2
 
 [Compare changes](https://github.com/sanity-io/cli/compare/cli-build-v7.1.1...cli-build-v7.1.2)

@@ -62,6 +62,7 @@ export function getDevServerConfig({
   return {
     ...baseConfig,
     bundledDev,
+    documentComponent: cliConfig?.unstable_documentComponent,
     // The app's navigable entry. A branded app that omits `entry` has no app
     // view: the runtime/federation skip the `./App` render path entirely.
     entry: resolveAppEntry(app),

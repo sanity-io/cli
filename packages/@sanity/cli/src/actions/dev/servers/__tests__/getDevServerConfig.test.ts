@@ -278,4 +278,18 @@ describe('getDevServerConfig', () => {
       expect(output.log).not.toHaveBeenCalled()
     })
   })
+
+  test.each([undefined, true, false])(
+    'forwards unstable_documentComponent=%s as documentComponent',
+    (unstable_documentComponent) => {
+      const config = getDevServerConfig({
+        cliConfig: {unstable_documentComponent},
+        flags: FLAGS,
+        output: createMockOutput(),
+        workDir: '/tmp',
+      })
+
+      expect(config.documentComponent).toBe(unstable_documentComponent)
+    },
+  )
 })

@@ -242,7 +242,7 @@ describe('startWorkbenchDev', () => {
       const {close} = await run()
 
       await expect(passedRebuild()()).rejects.toThrow(
-        'Dev server did not restart after the view/service change',
+        'Dev server did not restart after the view/web worker change',
       )
       await expect(close()).resolves.toBeUndefined()
       expect(first.close).toHaveBeenCalledTimes(1)

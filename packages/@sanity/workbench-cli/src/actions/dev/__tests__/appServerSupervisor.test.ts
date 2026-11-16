@@ -81,7 +81,7 @@ describe('startAppServerSupervisor', () => {
     const supervisor = await startSupervisor(start)
 
     await expect(supervisor.rebuild()).rejects.toThrow(
-      'Dev server did not restart after the view/service change',
+      'Dev server did not restart after the view/web worker change',
     )
   })
 

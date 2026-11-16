@@ -1,7 +1,7 @@
 import {z} from 'zod/mini'
 
 import {APP_SLUG_PATTERN} from './appSlug.js'
-import {DockSchema, InterfaceDeclarationSchema, ServiceDeclarationSchema} from './contract.js'
+import {DockSchema, InterfaceDeclarationSchema, WebWorkerDeclarationSchema} from './contract.js'
 
 /**
  * Dashboard visibility values. Mirrors `APP_VISIBILITIES` in `@sanity/cli-core`
@@ -79,7 +79,7 @@ export const DefineAppInputSchema = z
     /** Dashboard visibility of the app. Defaults to `default` when omitted. */
     visibility: z.optional(z.enum(APP_VISIBILITIES)),
     /** Background web workers the app runs. */
-    webWorkers: z.optional(z.array(ServiceDeclarationSchema, 'must be an array of web workers')),
+    webWorkers: z.optional(z.array(WebWorkerDeclarationSchema, 'must be an array of web workers')),
   })
   .check(
     z.refine((input) => {

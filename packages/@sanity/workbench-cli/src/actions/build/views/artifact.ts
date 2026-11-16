@@ -1,4 +1,4 @@
-import {VIEW_COMPONENTS, type ViewSurface} from '../../../contract.js'
+import {VIEW_COMPONENTS, VIEW_CONTRACT_VERSION, type ViewSurface} from '../../../contract.js'
 import {type GeneratedArtifact} from '../artifact.js'
 import {renderRemote} from '../render-remote.js'
 
@@ -7,7 +7,7 @@ const VIEWS_DIR_NAME = 'views'
 
 /**
  * An interface to generate render artifacts for. The `src` file default-exports
- * an `unstable_defineView(...)` result; the build emits one render-contract
+ * a view component or an `unstable_defineView(...)` result; the build emits one render-contract
  * artifact per component the view surface exposes.
  * @internal
  */
@@ -26,8 +26,8 @@ export interface InterfaceArtifact {
  * module-federation expose, so the host renders each as an independent island.
  *
  * Each artifact binds its component as the `App` the render contract renders —
- * a single-component view exports a bare function, a multi-component one keys by
- * name — behind an HMR boundary so view edits re-render through the new module.
+ * a plain component renders without props, an `unstable_defineView` result keys
+ * by name — behind an HMR boundary so view edits re-render through the new module.
  */
 export function viewArtifacts(views: readonly InterfaceArtifact[]): GeneratedArtifact[] {
   const artifacts: GeneratedArtifact[] = []
@@ -38,11 +38,13 @@ export function viewArtifacts(views: readonly InterfaceArtifact[]): GeneratedArt
         path: `${VIEWS_DIR_NAME}/${view.name}/${component}.js`,
         source: ({isolateStyles, resolveImport}) =>
           renderRemote({
-            app: `typeof view.components === 'function' ? view.components : view.components[${JSON.stringify(component)}]`,
+            // Backwards compatibility: an `unstable_defineView` result is a v1 view that renders its slot with host props. Remove in SDK-3210.
+            app: `view.components ? view.components[${JSON.stringify(component)}] : () => React.createElement(view)`,
             hmr: true,
             isolateStyles,
             preamble: `import view from ${JSON.stringify(resolveImport(view.src))}`,
-            version: `view.version`,
+            version: `view.components ? view.version : ${VIEW_CONTRACT_VERSION}`,
+            viewType: view.surface,
           }),
       })
     }

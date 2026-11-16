@@ -1,4 +1,4 @@
-// Runs inside the service's Web Worker, bundled by Vite from the generated
+// Runs inside the web worker's Web Worker, bundled by Vite from the generated
 // `worker.js`. Keep it free of Node and of runtime imports: `@sanity/sdk` is
 // only ever imported for types.
 import {
@@ -8,7 +8,7 @@ import {
   type MessageBusMeta,
 } from '@sanity/sdk/dashboard'
 
-import {type ServiceBus} from '../../../defineService.js'
+import {type WebWorkerBus} from '../../../webWorker.js'
 
 const DEFAULT_TIMEOUT_MS = 5000
 
@@ -67,10 +67,10 @@ const busError = (code: MessageBusErrorCode, message?: string, details?: Refusal
  */
 export function createWorkerBus(): {
   /**
-   * The service author's API. The host owns the connection, opening it and ending it when
+   * The web worker author's API. The host owns the connection, opening it and ending it when
    * it terminates the worker, so the worker cannot end it.
    */
-  bus: ServiceBus
+  bus: WebWorkerBus
   /**
    * The generated entry's terminate hook, not the author's. It sends nothing to
    * the host, which has already disconnected; it only marks the client closed so
@@ -214,7 +214,7 @@ export function createWorkerBus(): {
 
   return {
     // The topic generics only exist at the call site; the wire carries plain strings.
-    bus: bus as unknown as ServiceBus,
+    bus: bus as unknown as WebWorkerBus,
     close: () => {
       closed = true
       subscriptions.clear()

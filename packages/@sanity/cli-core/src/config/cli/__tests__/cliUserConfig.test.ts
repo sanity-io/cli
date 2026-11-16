@@ -262,13 +262,13 @@ describe('cliUserConfig', () => {
     test('sets valid authToken', () => {
       setCliUserConfig('authToken', 'new-token')
 
-      expect(mkdirSync).toHaveBeenCalledWith(expect.any(String), {recursive: true})
+      expect(mkdirSync).toHaveBeenCalledWith(expect.any(String), {mode: 0o700, recursive: true})
       expect(writeJsonFileSync).toHaveBeenCalledWith(
         expect.any(String),
         expect.objectContaining({
           authToken: 'new-token',
         }),
-        expect.any(Object),
+        {mode: 0o600, pretty: true},
       )
     })
 
@@ -290,7 +290,7 @@ describe('cliUserConfig', () => {
           authToken: 'new-token',
           someOtherKey: 'preserved',
         }),
-        expect.any(Object),
+        {mode: 0o600, pretty: true},
       )
     })
 
@@ -305,7 +305,7 @@ describe('cliUserConfig', () => {
       expect(writeJsonFileSync).toHaveBeenCalledWith(
         expect.any(String),
         {someOtherKey: 'preserved'},
-        expect.any(Object),
+        {mode: 0o600, pretty: true},
       )
     })
 
@@ -365,11 +365,11 @@ describe('cliUserConfig', () => {
       const store = getUserConfig()
       store.set('newKey', 'newValue')
 
-      expect(mkdirSync).toHaveBeenCalledWith(expect.any(String), {recursive: true})
+      expect(mkdirSync).toHaveBeenCalledWith(expect.any(String), {mode: 0o700, recursive: true})
       expect(writeJsonFileSync).toHaveBeenCalledWith(
         expect.any(String),
         {existing: 'value', newKey: 'newValue'},
-        {pretty: true},
+        {mode: 0o600, pretty: true},
       )
     })
 
@@ -384,7 +384,7 @@ describe('cliUserConfig', () => {
       expect(writeJsonFileSync).toHaveBeenCalledWith(
         expect.any(String),
         {myKey: 'updatedValue'},
-        {pretty: true},
+        {mode: 0o600, pretty: true},
       )
     })
 
@@ -410,7 +410,7 @@ describe('cliUserConfig', () => {
       expect(writeJsonFileSync).toHaveBeenCalledWith(
         expect.any(String),
         {telemetryConsent: complexValue},
-        {pretty: true},
+        {mode: 0o600, pretty: true},
       )
     })
 
@@ -427,7 +427,7 @@ describe('cliUserConfig', () => {
       expect(writeJsonFileSync).toHaveBeenCalledWith(
         expect.any(String),
         {keepMe: 'yes'},
-        {pretty: true},
+        {mode: 0o600, pretty: true},
       )
     })
 

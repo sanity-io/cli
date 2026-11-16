@@ -9,7 +9,12 @@ import {isRecord, isString, isType} from './schemaTypeHelpers.js'
 import {type Context, ensureString} from './transformerUtils.js'
 import {type ManifestSchemaType, type ManifestTitledValue} from './types.js'
 
-type TransformTypeFn = (type: SchemaType, context: Context) => ManifestSchemaType
+type TransformTypeFn = (type: SchemaType, context: Context, rawDef?: unknown) => ManifestSchemaType
+
+interface RawBlockPreviewSources {
+  annotations: unknown[]
+  inlineTypes: unknown[]
+}
 
 /**
  * Transforms a block schema type (Portable Text) to its manifest representation
@@ -18,6 +23,7 @@ export function transformBlockType(
   blockType: SchemaType,
   context: Context,
   transformType: TransformTypeFn,
+  rawSources?: RawBlockPreviewSources,
 ): Pick<ManifestSchemaType, 'lists' | 'marks' | 'of' | 'styles'> | Record<string, never> {
   if (blockType.jsonType !== 'object' || !isType(blockType, 'block')) {
     return {}
@@ -46,12 +52,20 @@ export function transformBlockType(
   return {
     lists: resolveEnabledListItems(blockType),
     marks: {
-      annotations: (spanType as SpanSchemaType).annotations.map((t) => transformType(t, context)),
+      annotations: (spanType as SpanSchemaType).annotations.map((annotation) =>
+        transformType(annotation, context, rawAnnotation(rawSources, annotation.name)),
+      ),
       decorators: resolveEnabledDecorators(spanType),
     },
-    of: inlineObjectTypes.map((t) => transformType(t, context)),
+    of: inlineObjectTypes.map((member, index) =>
+      transformType(member, context, rawSources?.inlineTypes[index]),
+    ),
     styles: resolveEnabledStyles(blockType),
   }
+}
+
+function rawAnnotation(rawSources: RawBlockPreviewSources | undefined, name: string): unknown {
+  return rawSources?.annotations.find((candidate) => isRecord(candidate) && candidate.name === name)
 }
 
 /**

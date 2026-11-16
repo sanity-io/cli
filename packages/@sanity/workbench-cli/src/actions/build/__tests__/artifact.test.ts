@@ -22,7 +22,7 @@ describe('artifactExposes', () => {
 })
 
 describe('workbenchArtifacts', () => {
-  test('composes view, service, and config artifacts in that order', () => {
+  test('composes view, web worker, and config artifacts in that order', () => {
     const artifacts = workbenchArtifacts({
       config: {
         appType: 'media-library',

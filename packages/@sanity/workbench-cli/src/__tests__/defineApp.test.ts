@@ -386,7 +386,7 @@ describe('DefineAppInputSchema (build-time validation)', () => {
     expect(
       DefineAppInputSchema.safeParse(
         validInput({
-          webWorkers: [{name: 'unread', src: './src/service.ts', title: 'unread', type: 'worker'}],
+          webWorkers: [{name: 'unread', src: './src/worker.ts', title: 'unread', type: 'worker'}],
         }),
       ).success,
     ).toBe(true)

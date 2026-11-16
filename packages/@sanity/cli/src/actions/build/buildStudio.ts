@@ -53,6 +53,7 @@ export async function buildStudio(
     },
     compareDependencyVersions: (packages) => compareDependencyVersions(packages, workDir, {appId}),
     determineBasePath: () => determineBasePath(cliConfig, 'studio', output),
+    documentComponent: cliConfig.unstable_documentComponent,
     exposes,
     isApp: determineIsApp(cliConfig),
     isWorkbenchApp: !!workbench,

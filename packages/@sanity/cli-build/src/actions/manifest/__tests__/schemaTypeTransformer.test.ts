@@ -65,7 +65,7 @@ describe('schemaTypeTransformer', () => {
       expect(neitherField.readOnly).toBeUndefined()
     })
 
-    test('should omit non-serializable props like icon, groups, orderings, preview, components', () => {
+    test('should omit non-serializable props like icon, groups, orderings, components', () => {
       const types = extractTypes([
         {
           components: {input: () => null},
@@ -74,10 +74,6 @@ describe('schemaTypeTransformer', () => {
           icon: () => null,
           name: 'testDoc',
           orderings: [{by: [{direction: 'asc', field: 'title'}], name: 'titleAsc', title: 'Title'}],
-          preview: {
-            prepare: ({title}: {title: string}) => ({title}),
-            select: {title: 'title'},
-          },
           type: 'document',
         },
       ])
@@ -87,7 +83,6 @@ describe('schemaTypeTransformer', () => {
       expect((doc as unknown as Record<string, unknown>).icon).toBeUndefined()
       expect((doc as unknown as Record<string, unknown>).groups).toBeUndefined()
       expect((doc as unknown as Record<string, unknown>).orderings).toBeUndefined()
-      expect((doc as unknown as Record<string, unknown>).preview).toBeUndefined()
       expect((doc as unknown as Record<string, unknown>).components).toBeUndefined()
     })
 
@@ -449,6 +444,7 @@ describe('schemaTypeTransformer', () => {
       expect(blockMember!.marks!.annotations).toBeDefined()
       expect(blockMember!.marks!.annotations!.length).toBe(1)
       expect(blockMember!.marks!.annotations![0].name).toBe('link')
+      expect(blockMember!.marks!.annotations![0]).not.toHaveProperty('preview')
 
       // Inline objects
       const calloutMember = bodyField.of!.find((m) => m.type === 'object')
@@ -512,6 +508,7 @@ describe('schemaTypeTransformer', () => {
       const book = findType(types, 'book')
       const authorField = book.fields!.find((f) => f.name === 'author')!
       expect(authorField.type).toBe('reference')
+      expect(authorField).not.toHaveProperty('preview')
       expect(authorField.to).toBeDefined()
       expect(authorField.to!.length).toBe(1)
       expect(authorField.to![0].type).toBe('author')
@@ -544,6 +541,7 @@ describe('schemaTypeTransformer', () => {
       expect(externalRef.to).toBeDefined()
       expect(externalRef.to!.length).toBe(1)
       expect(externalRef.to![0].type).toBe('person')
+      expect(externalRef.to![0].preview).toEqual({select: {title: 'name'}})
     })
 
     test('should handle reference arrays', () => {
@@ -734,6 +732,309 @@ describe('schemaTypeTransformer', () => {
       const roleField = doc.fields!.find((f) => f.name === 'role')!
       expect(roleField.options).toBeDefined()
       expect(roleField.options!.list).toBeDefined()
+    })
+  })
+
+  describe('preview.select', () => {
+    test('serializes preview.select of a user type and drops prepare and component', () => {
+      const types = extractTypes([
+        {
+          fields: [
+            {name: 'tittel', type: 'string'},
+            {name: 'category', type: 'string'},
+          ],
+          name: 'article',
+          preview: {
+            component: () => null,
+            prepare: ({title}: {title: string}) => ({title: title.toUpperCase()}),
+            select: {media: '', subtitle: 'category', title: 'tittel'},
+          },
+          type: 'document',
+        },
+      ])
+
+      const article = findType(types, 'article')
+      expect(article.preview).toEqual({select: {subtitle: 'category', title: 'tittel'}})
+    })
+
+    test('serializes the legacy array form of select as a record', () => {
+      const types = extractTypes([
+        {
+          fields: [{name: 'tittel', type: 'string'}],
+          name: 'article',
+          preview: {select: ['tittel']},
+          type: 'document',
+        },
+      ])
+
+      expect(findType(types, 'article').preview).toEqual({select: {tittel: 'tittel'}})
+    })
+
+    test('serializes a declared select that matches the compiler guess', () => {
+      const types = extractTypes([
+        {
+          fields: [{name: 'title', type: 'string'}],
+          name: 'article',
+          preview: {select: {title: 'title'}},
+          type: 'document',
+        },
+      ])
+
+      expect(findType(types, 'article').preview).toEqual({select: {title: 'title'}})
+    })
+
+    test('serializes preview.select of nested object fields, array members, and annotations', () => {
+      const types = extractTypes([
+        {
+          fields: [{name: 'navn', type: 'string'}],
+          name: 'author',
+          preview: {select: {title: 'navn'}},
+          type: 'object',
+        },
+        {
+          fields: [
+            {
+              fields: [{name: 'navn', type: 'string'}],
+              name: 'inlineAuthor',
+              preview: {select: {title: 'navn'}},
+              type: 'object',
+            },
+            {name: 'author', type: 'author'},
+            {name: 'bilde', preview: {select: {media: 'asset'}}, type: 'image'},
+            {
+              name: 'facts',
+              of: [
+                {
+                  fields: [{name: 'tittel', type: 'string'}],
+                  name: 'fact',
+                  preview: {select: {title: 'tittel'}},
+                  type: 'object',
+                },
+              ],
+              type: 'array',
+            },
+            {
+              name: 'body',
+              of: [
+                {
+                  marks: {
+                    annotations: [
+                      {
+                        fields: [{name: 'href', type: 'url'}],
+                        name: 'link',
+                        preview: {select: {title: 'href'}},
+                        type: 'object',
+                      },
+                    ],
+                  },
+                  of: [
+                    {
+                      fields: [{name: 'tittel', type: 'string'}],
+                      name: 'callout',
+                      preview: {select: {title: 'tittel'}},
+                      type: 'object',
+                    },
+                  ],
+                  type: 'block',
+                },
+              ],
+              type: 'array',
+            },
+          ],
+          name: 'article',
+          type: 'document',
+        },
+      ])
+
+      const article = findType(types, 'article')
+      expect(article.fields?.find((field) => field.name === 'inlineAuthor')?.preview).toEqual({
+        select: {title: 'navn'},
+      })
+      expect(article.fields?.find((field) => field.name === 'author')?.preview).toEqual({
+        select: {title: 'navn'},
+      })
+      expect(article.fields?.find((field) => field.name === 'bilde')?.preview).toEqual({
+        select: {media: 'asset'},
+      })
+      expect(findType(types, 'author').preview).toEqual({select: {title: 'navn'}})
+      expect(article.fields?.find((field) => field.name === 'facts')?.of?.[0].preview).toEqual({
+        select: {title: 'tittel'},
+      })
+
+      const body = article.fields?.find((field) => field.name === 'body')
+      const block = body?.of?.find((member) => member.type === 'block')
+      expect(block?.marks?.annotations?.[0].preview).toEqual({select: {title: 'href'}})
+      expect(block?.of?.[0].preview).toEqual({select: {title: 'tittel'}})
+    })
+
+    test('serializes the deprecated options.preview form', () => {
+      const types = extractTypes([
+        {
+          fields: [{name: 'tittel', type: 'string'}],
+          name: 'article',
+          options: {preview: {select: {title: 'tittel'}}},
+          type: 'document',
+        },
+      ])
+
+      expect(findType(types, 'article').preview).toEqual({select: {title: 'tittel'}})
+    })
+
+    test('omits preview when the type does not declare one', () => {
+      const types = extractTypes([
+        {
+          fields: [
+            {name: 'category', type: 'string'},
+            {name: 'cover', type: 'image'},
+            {fields: [{name: 'note', type: 'string'}], name: 'details', type: 'object'},
+          ],
+          name: 'article',
+          type: 'document',
+        },
+      ])
+
+      const article = findType(types, 'article')
+      expect(article).not.toHaveProperty('preview')
+      for (const field of article.fields ?? []) {
+        expect(field).not.toHaveProperty('preview')
+      }
+    })
+
+    test('does not copy preview onto an inline member that only shares a name with a named type', () => {
+      const types = extractTypes([
+        {
+          fields: [{name: 'navn', type: 'string'}],
+          name: 'author',
+          preview: {select: {title: 'navn'}},
+          type: 'object',
+        },
+        {
+          fields: [
+            {
+              name: 'authors',
+              of: [{fields: [{name: 'navn', type: 'string'}], name: 'author', type: 'object'}],
+              type: 'array',
+            },
+          ],
+          name: 'article',
+          type: 'document',
+        },
+      ])
+
+      const authors = findType(types, 'article').fields?.find((field) => field.name === 'authors')
+      expect(authors?.of?.[0]).not.toHaveProperty('preview')
+    })
+
+    test('serializes preview.select of annotations and inline objects of a named block referenced by a block member', () => {
+      const types = extractTypes([
+        {
+          fields: [{name: 'body', of: [{type: 'myBlock'}], type: 'array'}],
+          name: 'article',
+          type: 'document',
+        },
+        {
+          marks: {
+            annotations: [
+              {
+                fields: [{name: 'href', type: 'url'}],
+                name: 'link',
+                preview: {select: {title: 'href'}},
+                type: 'object',
+              },
+            ],
+          },
+          name: 'myBlock',
+          of: [
+            {
+              fields: [{name: 'tittel', type: 'string'}],
+              name: 'callout',
+              preview: {select: {title: 'tittel'}},
+              type: 'object',
+            },
+          ],
+          type: 'block',
+        },
+      ])
+
+      const body = findType(types, 'article').fields?.find((field) => field.name === 'body')
+      const block = body?.of?.[0]
+      expect(block?.marks?.annotations?.[0].preview).toEqual({select: {title: 'href'}})
+      expect(block?.of?.[0].preview).toEqual({select: {title: 'tittel'}})
+    })
+
+    test('serializes preview.select of inline members of a named array type', () => {
+      const types = extractTypes([
+        {
+          fields: [{name: 'items', type: 'facts'}],
+          name: 'article',
+          type: 'document',
+        },
+        {
+          name: 'facts',
+          of: [
+            {
+              fields: [{name: 'tittel', type: 'string'}],
+              name: 'fact',
+              preview: {select: {title: 'tittel'}},
+              type: 'object',
+            },
+          ],
+          type: 'array',
+        },
+      ])
+
+      const items = findType(types, 'article').fields?.find((field) => field.name === 'items')
+      expect(items?.of?.[0].preview).toEqual({select: {title: 'tittel'}})
+    })
+
+    test('keeps preview.select of an annotation that renames a referenced type', () => {
+      const types = extractTypes([
+        {
+          fields: [{name: 'href', type: 'url'}],
+          name: 'link',
+          type: 'object',
+        },
+        {
+          fields: [
+            {
+              name: 'body',
+              of: [
+                {
+                  marks: {
+                    annotations: [
+                      {
+                        name: 'internalLink',
+                        preview: {select: {title: 'href'}},
+                        type: 'link',
+                      },
+                    ],
+                  },
+                  type: 'block',
+                },
+              ],
+              type: 'array',
+            },
+          ],
+          name: 'article',
+          type: 'document',
+        },
+      ])
+
+      const body = findType(types, 'article').fields?.find((field) => field.name === 'body')
+      expect(body?.of?.[0].marks?.annotations?.[0].preview).toEqual({select: {title: 'href'}})
+    })
+
+    test('omits preview when it has no select', () => {
+      const types = extractTypes([
+        {
+          fields: [{name: 'tittel', type: 'string'}],
+          name: 'article',
+          preview: {prepare: () => ({title: 'static'})},
+          type: 'document',
+        },
+      ])
+
+      expect(findType(types, 'article')).not.toHaveProperty('preview')
     })
   })
 })

@@ -1,6 +1,9 @@
+import {memo} from 'react'
 import {afterEach, describe, expect, test} from 'vitest'
 
+import {unstable_defineView} from '../../defineView.js'
 import {renderRemote} from './render-remote.js'
+import {viewArtifacts} from './views/artifact.js'
 
 const ROOT_SLOT = Symbol.for('sanity.os.root')
 const STYLIS_PLUGIN_COUNT = Symbol.for('sanity.os.stylisPluginCount')
@@ -32,7 +35,13 @@ function find(element: Element, matches: (node: Element) => boolean): Element | 
   return node
 }
 
-type RootValue = {moduleId?: string; parentKey?: string; signal: AbortSignal}
+type RootValue = {
+  moduleId?: string
+  parentKey?: string
+  props?: unknown
+  signal: AbortSignal
+  viewType?: string
+}
 
 /** The value of the root context the wrapper stored for this React copy. */
 function rootValueOf(element: Element, React: ReactStub): RootValue | undefined {
@@ -64,7 +73,7 @@ type HotStub = {accept: (cb: (next: unknown) => void) => void; accepted?: (next:
 function loadWrapper(
   source: string,
   React: ReactStub,
-  {hot, onUnmount = () => {}}: {hot?: HotStub; onUnmount?: () => void} = {},
+  {hot, onUnmount = () => {}, view}: {hot?: HotStub; onUnmount?: () => void; view?: unknown} = {},
 ): {
   createRootCalls: unknown[]
   render: (
@@ -73,6 +82,7 @@ function loadWrapper(
     renderOptions?: unknown,
   ) => {dispose: () => void; setLifecycle: (state: string) => void}
   rendered: Element[]
+  version: unknown
 } {
   const rendered: Element[] = []
   const createRootCalls: unknown[] = []
@@ -95,14 +105,19 @@ function loadWrapper(
     // plain module scope. `render` is still captured via the returned reference.
     .replaceAll(/^export /gm, '')
     .replaceAll('import.meta.hot', 'deps.hot')
+    .replace(/^import view from .*$/m, 'const view = deps.view')
   // The federation entries also import a preamble; none is passed in these tests.
-  const factory = new Function('deps', `${body}\nreturn {render}`)
-  const mod = factory({createRoot, hot, React}) as {
+  const factory = new Function(
+    'deps',
+    `${body}\nreturn {render, version: typeof version === 'undefined' ? undefined : version}`,
+  )
+  const mod = factory({createRoot, hot, React, view}) as {
     render: (
       rootElement: object,
       props?: unknown,
       renderOptions?: unknown,
     ) => {dispose: () => void; setLifecycle: (state: string) => void}
+    version: unknown
   }
   return {createRootCalls, rendered, ...mod}
 }
@@ -210,7 +225,7 @@ describe('renderRemote root context', () => {
     expect(slot.get(reactA.createContext)).not.toBe(slot.get(reactB.createContext))
   })
 
-  test('passes renderOptions.moduleId and parentKey in the root context, and props to App', () => {
+  test('passes renderOptions.moduleId, parentKey and props in the root context, and props to App', () => {
     const React = makeReact()
     const mod = loadWrapper(renderRemote({app: APP, preamble: ''}), React)
     mod.render(
@@ -222,6 +237,7 @@ describe('renderRemote root context', () => {
     expect(rootValueOf(mod.rendered[0], React)).toEqual({
       moduleId: 'favorites/views/inbox/tile',
       parentKey: 'home-key',
+      props: {greeting: 'hi'},
       signal: expect.any(AbortSignal),
     })
     expect(appOf(mod.rendered[0])?.props).toEqual({greeting: 'hi'})
@@ -236,8 +252,35 @@ describe('renderRemote root context', () => {
     expect(rootValueOf(mod.rendered[0], React)).toEqual({
       moduleId: undefined,
       parentKey: undefined,
+      props: {},
       signal: expect.any(AbortSignal),
     })
+  })
+
+  test('updates the props in the root context when the host re-renders with new props', () => {
+    const React = makeReact()
+    const mod = loadWrapper(renderRemote({app: APP, preamble: ''}), React)
+    const root = {}
+    mod.render(root, {size: 'small'}, {moduleId: 'favorites/views/inbox/tile'})
+    const first = rootValueOf(mod.rendered[0], React)
+
+    mod.render(root, {size: 'large'})
+    expect(rootValueOf(mod.rendered[1], React)).toEqual({
+      moduleId: 'favorites/views/inbox/tile',
+      parentKey: undefined,
+      props: {size: 'large'},
+      signal: first!.signal,
+    })
+  })
+
+  test('keeps the root context value when the lifecycle changes', () => {
+    const React = makeReact()
+    const mod = loadWrapper(renderRemote({app: APP, preamble: ''}), React)
+    const controller = mod.render({}, {size: 'small'})
+    const first = rootValueOf(mod.rendered[0], React)
+
+    controller.setLifecycle('background')
+    expect(rootValueOf(mod.rendered[1], React)).toBe(first)
   })
 
   test('keeps the module id and parent key of the render that created the root', () => {
@@ -346,5 +389,70 @@ describe('renderRemote root context', () => {
     // The old module no longer owns the node, so it must not create a second root on it.
     expect(mod.createRootCalls).toHaveLength(1)
     expect(calls).toEqual(['background', 'dispose'])
+  })
+})
+
+const Panel = () => 'panel'
+
+describe('viewArtifacts', () => {
+  const [, panelArtifact] = viewArtifacts([{name: 'feed', src: './feed.tsx', surface: 'panel'}])
+  const panelSource = panelArtifact.source({resolveImport: (src) => src})
+  const props = {view: {name: 'feed'}}
+
+  test.each([
+    ['a function component', Panel],
+    ['a memo component', memo(Panel)],
+  ])('renders %s as contract v2, with the host props only in the root context', (_, view) => {
+    const React = makeReact()
+    const mod = loadWrapper(panelSource, React, {view})
+    mod.render({}, props)
+
+    expect(mod.version).toBe(2)
+    expect(rootValueOf(mod.rendered[0], React)).toMatchObject({props, viewType: 'panel'})
+    const app = appOf(mod.rendered[0])!
+    expect((app.type as (props: unknown) => Element)(app.props)).toEqual({
+      children: [],
+      props: undefined,
+      type: view,
+    })
+  })
+
+  test('puts the asset source props in the root context of a plain asset source', () => {
+    const [assetSourceArtifact] = viewArtifacts([
+      {name: 'library', src: './library.tsx', surface: 'asset_source'},
+    ])
+    const React = makeReact()
+    const mod = loadWrapper(assetSourceArtifact.source({resolveImport: (src) => src}), React, {
+      view: Panel,
+    })
+    const assetSourceProps = {
+      assetSource: {name: 'library'},
+      onClose: () => {},
+      onSelect: () => {},
+      view: {name: 'library'},
+    }
+    mod.render({}, assetSourceProps)
+
+    expect(rootValueOf(mod.rendered[0], React)).toMatchObject({
+      props: assetSourceProps,
+      viewType: 'asset_source',
+    })
+    const app = appOf(mod.rendered[0])!
+    expect((app.type as (props: unknown) => Element)(app.props)).toEqual({
+      children: [],
+      props: undefined,
+      type: Panel,
+    })
+  })
+
+  test('renders an unstable_defineView slot as contract v1, with the host props', () => {
+    const React = makeReact()
+    const mod = loadWrapper(panelSource, React, {
+      view: unstable_defineView('panel', {panel: Panel, title: () => 'title'}),
+    })
+    mod.render({}, props)
+
+    expect(mod.version).toBe(1)
+    expect(appOf(mod.rendered[0])).toEqual({children: [], props, type: Panel})
   })
 })

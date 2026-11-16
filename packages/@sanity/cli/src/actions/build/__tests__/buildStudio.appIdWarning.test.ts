@@ -107,3 +107,29 @@ describe('buildStudio appId warning', () => {
     expect(mockWarnAboutMissingAppId).not.toHaveBeenCalled()
   })
 })
+
+describe('buildStudio unstable_documentComponent', () => {
+  afterEach(() => {
+    vi.clearAllMocks()
+  })
+
+  test.each([undefined, true, false])(
+    'forwards unstable_documentComponent=%s as documentComponent',
+    async (unstable_documentComponent) => {
+      mockGetAppId.mockReturnValue('my-app-id')
+
+      await buildStudio({
+        autoUpdatesEnabled: false,
+        cliConfig: {unstable_documentComponent},
+        flags: FLAGS,
+        outDir: '/tmp/dist',
+        output: createMockOutput(),
+        workDir: '/tmp',
+      })
+
+      expect(mockBuildStudio).toHaveBeenCalledWith(
+        expect.objectContaining({documentComponent: unstable_documentComponent}),
+      )
+    },
+  )
+})

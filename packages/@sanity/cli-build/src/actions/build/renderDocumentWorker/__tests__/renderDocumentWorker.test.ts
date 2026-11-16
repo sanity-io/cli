@@ -8,6 +8,8 @@ import {getTempPath} from '@sanity/cli-test'
 import {type ReactElement, type ReactNode} from 'react'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
+import {BasicDocument} from '../components/BasicDocument.js'
+import {DefaultDocument} from '../components/DefaultDocument.js'
 import {renderDocumentWorker, type RenderDocumentWorkerOptions} from '../renderDocumentWorker.js'
 import {type DocumentProps} from '../types.js'
 
@@ -274,6 +276,47 @@ describe('#renderDocumentWorker', () => {
           type: 'warning',
         }),
       )
+      expect(mockParent.postMessage).toHaveBeenCalledWith({
+        html: expect.stringContaining('<!DOCTYPE html>'),
+        type: 'result',
+      })
+    })
+  })
+
+  describe('with documentComponent disabled', () => {
+    test.each([
+      {expected: DefaultDocument, isApp: false},
+      {expected: BasicDocument, isApp: true},
+    ])(
+      'renders the default document (isApp=$isApp) instead of a valid _document.js',
+      async ({expected, isApp}) => {
+        await createTestDocumentComponent(validDocumentComponent)
+
+        await renderDocumentWorker(mockParent, {
+          documentComponent: false,
+          isApp,
+          studioRootPath: testStudioPath,
+        })
+
+        expect(mockRenderToStaticMarkup).toHaveBeenCalledWith(
+          expect.objectContaining({type: expected}),
+        )
+        expect(mockParent.postMessage).toHaveBeenCalledTimes(1)
+        expect(mockParent.postMessage).toHaveBeenCalledWith({
+          html: expect.stringContaining('<!DOCTYPE html>'),
+          type: 'result',
+        })
+      },
+    )
+
+    test('does not import _document.tsx, so a broken file cannot fail the render', async () => {
+      await createTestDocumentComponent('invalid javascript syntax!@#$', '_document.tsx')
+
+      await renderDocumentWorker(mockParent, {
+        documentComponent: false,
+        studioRootPath: testStudioPath,
+      })
+
       expect(mockParent.postMessage).toHaveBeenCalledWith({
         html: expect.stringContaining('<!DOCTYPE html>'),
         type: 'result',

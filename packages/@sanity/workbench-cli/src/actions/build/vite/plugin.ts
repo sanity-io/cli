@@ -112,9 +112,9 @@ export const federation = (options: FederationPluginOptions): PluginOption => {
     )
   }
 
-  // Each view component (`./views/<view>/<component>`) and each service loader
+  // Each view component (`./views/<view>/<component>`) and each web worker loader
   // (`./services/<name>`) is exposed straight to the host, pointing at the file
-  // the extension-artifacts plugin generates under RUNTIME_DIR. A service's
+  // the extension-artifacts plugin generates under RUNTIME_DIR. A web worker's
   // worker bundle carries no expose — the host reaches it through its loader.
   const artifacts = workbenchArtifacts(exposes ?? {}, {islandRuntime})
   const artifactModuleExposes = artifactExposes(artifacts, (artifactPath) =>

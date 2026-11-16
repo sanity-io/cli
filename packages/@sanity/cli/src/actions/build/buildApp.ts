@@ -54,6 +54,7 @@ export async function buildApp(
     },
     compareDependencyVersions: (packages) => compareDependencyVersions(packages, workDir, {appId}),
     determineBasePath: () => determineBasePath(cliConfig, 'app', output),
+    documentComponent: cliConfig.unstable_documentComponent,
     entry: resolveAppEntry(app),
     exposes,
     isWorkbenchApp: isWorkbench,

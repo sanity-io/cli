@@ -12,7 +12,7 @@ interface ExposeSet {
 
 /**
  * Order-independent id of an app's exposed-module set. Keys each interface by
- * its surface or service type, name, and source file, and each config by its module
+ * its surface or web worker type, name, and source file, and each config by its module
  * identity plus one key per entry (a named source file), so the id changes on
  * any rebuild-worthy edit — add, remove, rename, repoint, or gaining/losing the
  * config module — while reordering and HMR content edits keep it stable.

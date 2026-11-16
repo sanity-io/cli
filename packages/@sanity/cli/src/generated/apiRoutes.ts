@@ -449,6 +449,18 @@ export const apiRoutes: ApiRouteEntry[] = [
     title: 'Scheduling API reference'
   },
   {
+    defaultApiVersion: 'v2026-09-01',
+    host: 'global',
+    pathPatterns: [
+      'usage/{resourceType}/{resourceId}/history',
+      'usage/{resourceType}/{resourceId}/snapshot',
+      'usage/{resourceType}/{resourceId}/{scope}/history',
+      'usage/{resourceType}/{resourceId}/{scope}/snapshot'
+    ],
+    slug: 'usage-api',
+    title: 'Usage API reference'
+  },
+  {
     defaultApiVersion: 'v2026-04-27',
     host: 'global',
     pathPatterns: [

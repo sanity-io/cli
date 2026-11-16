@@ -2,7 +2,6 @@ import {type AssetSourceComponentProps} from '@sanity/types'
 
 import {
   type TileSize,
-  VIEW_CONTRACT_VERSION,
   type ViewComponent,
   type ViewComponentBaseProps,
   type ViewSurface,
@@ -114,7 +113,7 @@ export interface DefinedView<TSurface extends ViewSurface = ViewSurface> {
   readonly components: ViewComponentsBySurface[TSurface]
   readonly surface: TSurface
   /** @internal */
-  readonly version: typeof VIEW_CONTRACT_VERSION
+  readonly version: 1
 }
 
 /**
@@ -125,11 +124,12 @@ export interface DefinedView<TSurface extends ViewSurface = ViewSurface> {
  * Returns the component(s) tagged with their surface and contract version, for
  * the CLI build to generate render artifacts from. Used as the default export of
  * a view's `src` file.
+ * @deprecated Default-export a plain React component from the view's `src` file instead.
  * @public
  */
 export function unstable_defineView<TSurface extends ViewSurface>(
   surface: TSurface,
   components: ViewComponentsBySurface[TSurface],
 ): DefinedView<TSurface> {
-  return {components, surface, version: VIEW_CONTRACT_VERSION}
+  return {components, surface, version: 1}
 }

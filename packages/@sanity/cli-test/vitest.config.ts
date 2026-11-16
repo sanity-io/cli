@@ -19,6 +19,7 @@ export default defineConfig({
     environment: 'node',
     exclude: ['**/node_modules/**', '**/dist/**'],
     globals: false,
+    name: '@sanity/cli-test/unit',
     setupFiles: ['../../../test/vitest/setup.ts'],
   },
 })

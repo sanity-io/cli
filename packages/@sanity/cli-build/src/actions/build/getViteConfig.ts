@@ -76,6 +76,12 @@ interface ViteOptions {
    */
   basePath?: string
 
+  /**
+   * Whether the emitted `index.html` renders a custom `_document.js`/`_document.tsx`
+   * component from the project root. Defaults to `true`.
+   */
+  documentComponent?: boolean
+
   exposes?: WorkbenchExposes
 
   isApp?: boolean
@@ -136,6 +142,7 @@ export async function getViteConfig(options: ViteOptions): Promise<InlineConfig>
     autoUpdates,
     basePath: rawBasePath = '/',
     cwd,
+    documentComponent,
     entries,
     exposes,
     isApp,
@@ -236,7 +243,14 @@ export async function getViteConfig(options: ViteOptions): Promise<InlineConfig>
               isBlueprints,
             }),
             {
-              ...sanityBuildEntries({autoUpdates, basePath, bridge: false, cwd, isApp}),
+              ...sanityBuildEntries({
+                autoUpdates,
+                basePath,
+                bridge: false,
+                cwd,
+                documentComponent,
+                isApp,
+              }),
               applyToEnvironment: (env) => env.name === 'client',
             } satisfies Plugin,
             ...(autoUpdates ? [sanityVendorChunks(autoUpdates)] : []),
@@ -249,7 +263,7 @@ export async function getViteConfig(options: ViteOptions): Promise<InlineConfig>
               staticUrlPath: staticPath,
             }),
             sanityRuntimeRewritePlugin(),
-            sanityBuildEntries({autoUpdates, basePath, cwd, isApp}),
+            sanityBuildEntries({autoUpdates, basePath, cwd, documentComponent, isApp}),
           ]),
       // Caller-provided plugins (e.g. typegen in dev) aren't client-specific,
       // so they apply to federation builds too.

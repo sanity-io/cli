@@ -92,6 +92,8 @@ export const cliConfigSchema = z.object({
 
   unstable_bundledDev: z.optional(z.boolean()),
 
+  unstable_documentComponent: z.optional(z.boolean()),
+
   vite: z.optional(z.custom<UserViteConfig>()),
 
   typegen: z.optional(z.custom<NonNullable<CliConfig['typegen']>>()),
