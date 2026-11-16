@@ -1,10 +1,8 @@
 import {
-  chmodSync,
   existsSync,
   mkdirSync,
   readdirSync,
   readFileSync,
-  statSync,
   unlinkSync,
   watch,
   writeFileSync,
@@ -234,20 +232,7 @@ export function dashboardPath(
  * config directory to stay consistent with other CLI paths.
  */
 function getRegistryDir(): string {
-  const dir = join(getSanityDataDir(), 'dev-servers')
-  restrictPermissions(dir)
-  return dir
-}
-
-function restrictPermissions(path: string): void {
-  if (typeof process.getuid !== 'function') return
-
-  try {
-    const {mode, uid} = statSync(path)
-    if (uid === process.getuid() && (mode & 0o077) !== 0) chmodSync(path, mode & 0o700)
-  } catch (err: unknown) {
-    devDebug('Could not restrict permissions of %s: %s', path, String(err))
-  }
+  return join(getSanityDataDir(), 'dev-servers')
 }
 
 // One shared `exit` listener drives every registered cleanup, so N locks/entries
@@ -322,7 +307,6 @@ export function registerDevServer(
   }
 
   const filePath = join(registryDir, `${process.pid}.json`)
-  restrictPermissions(filePath)
   writeFileSync(filePath, JSON.stringify(current, null, 2), {mode: 0o600})
 
   // Guard against late updates from background tasks (e.g. the initial
@@ -346,7 +330,6 @@ export function registerDevServer(
     update(patch) {
       if (released) return
       current = {...current, ...patch}
-      restrictPermissions(filePath)
       writeFileSync(filePath, JSON.stringify(current, null, 2), {mode: 0o600})
     },
   }
@@ -368,7 +351,6 @@ export function getRegisteredServers(): DevServerManifest[] {
 
   for (const file of files) {
     const filePath = join(registryDir, file)
-    restrictPermissions(filePath)
     let raw: unknown
     try {
       raw = JSON.parse(readFileSync(filePath, 'utf8'))
@@ -512,9 +494,7 @@ function readLockFile(
 ): {data: z.infer<typeof workbenchLockSchema> | undefined} | undefined {
   let contents: string
   try {
-    const lockPath = getLockPath(organizationId)
-    restrictPermissions(lockPath)
-    contents = readFileSync(lockPath, 'utf8')
+    contents = readFileSync(getLockPath(organizationId), 'utf8')
   } catch {
     return undefined
   }
@@ -601,7 +581,6 @@ export function acquireWorkbenchLock(
         }
       },
       updatePort(port: number) {
-        restrictPermissions(lockPath)
         writeFileSync(lockPath, JSON.stringify({...lockData, port, ready: true}), {mode: 0o600})
       },
     }
