@@ -1,4 +1,6 @@
 linkWorkspacePackages: true
+lockfile:
+  format: v13
 overrides:
   '@sanity/cli': 'workspace:*'
   '@types/node': 'catalog:'
@@ -48,7 +50,7 @@ catalog:
   typescript: ^6.0.3
   vite: ^8.3.8
   '@vitejs/plugin-react': ^6.3.0
-  tsx: ^4.23.12
+  tsx: ^4.23.15
 
   # Testing
   vitest: ^5.1.0
@@ -58,19 +60,19 @@ catalog:
   strip-ansi: ^7.1.0
 
   # CLI Framework
-  '@oclif/core': ^4.11.14
-  '@oclif/plugin-help': ^6.2.53
-  '@oclif/plugin-not-found': ^3.2.88
+  '@oclif/core': ^4.14.0
+  '@oclif/plugin-help': ^6.3.0
+  '@oclif/plugin-not-found': ^3.3.0
 
   # Utilities
-  get-it: ^9.5.4
+  get-it: ^9.7.0
   obug: ^3.0.0
   jsdom: ^29.1.1
   zod: ^4.6.7
   'get-tsconfig': ^4.14.3
   'import-meta-resolve': ^4.2.0
   execa: ^10.0.1
-  empathic: ^2.0.1
+  empathic: ^2.1.0
   ora: ^9.0.0
   rxjs: ^7.8.2
   tinyglobby: ^0.2.17
@@ -79,7 +81,7 @@ catalog:
   semver: ^7.8.6
   '@types/semver': ^7.8.0
   yaml: ^2.9.0
-  form-data: ^4.0.5
+  form-data: ^4.0.6
   tar: ^7.5.22
 
   # Build Tools
