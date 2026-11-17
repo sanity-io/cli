@@ -109,13 +109,16 @@ describe('startDevServerRegistration', () => {
   })
 
   test.each([
-    [undefined, false],
-    [{}, true],
-  ])('registers https: %s when the Vite server.https is %j', async (https, expected) => {
-    await register({server: mockServer({https}) as any})
+    {expected: false, https: undefined},
+    {expected: true, https: {}},
+  ])(
+    'registers https: $expected when the Vite server.https is $https',
+    async ({expected, https}) => {
+      await register({server: mockServer({https}) as any})
 
-    expect(readManifest()).toMatchObject({https: expected})
-  })
+      expect(readManifest()).toMatchObject({https: expected})
+    },
+  )
 
   test('registers an app as a coreApp', async () => {
     await register({
