@@ -366,8 +366,8 @@ snapshots:
 					"version": "7.2.0",
 				},
 				"tar": {
-					"specifier": "^7.5.22",
-					"version": "7.5.22",
+					"specifier": "^7.5.23",
+					"version": "7.5.23",
 				},
 				"tinyglobby": {
 					"specifier": "^0.2.17",
@@ -10892,7 +10892,7 @@ snapshots:
 				"form-data": "4.0.6",
 				"rxjs": "7.8.2",
 				"semver": "7.8.6",
-				"tar": "7.5.22",
+				"tar": "7.5.23",
 				"vite": "8.3.8",
 				"zod": "4.6.7",
 			},
@@ -19988,7 +19988,7 @@ snapshots:
 			"hasBin": true,
 			"dependencies": {
 				"nostics": "1.3.0",
-				"tar": "7.5.22",
+				"tar": "7.5.23",
 				"yaml": "2.9.0",
 			},
 		},
@@ -20425,8 +20425,8 @@ snapshots:
 			},
 		},
 
-		"tar@7.5.22": {
-			"integrity": "sha512-MFO/QzvtAOmJbkhOaCTvbGcFN9L9b+JunIsDwaKljSOdcLMea3NJ1k9Usz/rjdfSXTq4dfzfeS7W4p4YOAAHeA==",
+		"tar@7.5.23": {
+			"integrity": "sha512-lkukzdoGngZHJZXxW4S/E4Fp9ghTDlyZXrQGRNoJ/LXvDKcXUTq2sg5yQe74po7Voea6n/IN09+wE/QvJMiifA==",
 			"engines": {"node": ">=18"},
 			"dependencies": {
 				"@isaacs/fs-minipass": "4.0.1",
