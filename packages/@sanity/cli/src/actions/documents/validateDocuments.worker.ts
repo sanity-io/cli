@@ -241,6 +241,8 @@ async function main() {
     let validatedCount = 0
 
     const validate = async (document: SanityDocument) => {
+      if (!shouldIncludeDocument(document)) return
+
       let markers: ValidationMarker[]
 
       try {

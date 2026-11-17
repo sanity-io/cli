@@ -12,6 +12,7 @@ const mocks = vi.hoisted(() => ({
   customValidation: vi.fn<(value: unknown, context: ValidationContext) => Promise<string | true>>(),
   emit: vi.fn(),
   end: vi.fn(),
+  exportFinished: vi.fn(),
   getProjectCliClient: vi.fn(),
   getStudioWorkspaces: vi.fn(),
   workerData: {
@@ -85,7 +86,7 @@ vi.mock('@sanity/worker-channels', () => ({
   WorkerChannelReporter: {
     from: () => ({
       event: {
-        exportFinished: vi.fn(),
+        exportFinished: mocks.exportFinished,
         loadedDocumentCount: vi.fn(),
         loadedReferenceIntegrity: vi.fn(),
         loadedWorkspace: vi.fn(),
@@ -264,6 +265,33 @@ describe('document validation worker', () => {
         ]),
       }),
     )
+  })
+
+  test('excludes managed documents from file validation and progress counts', async () => {
+    documents = [
+      ...documents,
+      {
+        _id: 'sanity-preview-url-secret.share-access',
+        _rev: 'rev1',
+        _type: 'sanity.previewUrlShareAccess',
+      },
+      {_id: 'image-asset', _rev: 'rev1', _type: 'sanity.imageAsset'},
+      {_id: 'system-group', _rev: 'rev1', _type: 'system.group'},
+    ]
+    mocks.workerData.level = 'error'
+
+    await import('../../../../src/actions/documents/validateDocuments.worker.js')
+
+    expect(mocks.exportFinished).toHaveBeenCalledWith({
+      totalDocumentsToValidate: baseDocuments.length,
+    })
+    expect(mocks.emit.mock.calls.map(([result]) => result.documentId).toSorted()).toEqual(
+      baseDocuments.map((document) => document._id).toSorted(),
+    )
+    expect(mocks.emit.mock.calls.map(([result]) => result.validatedCount)).toEqual(
+      baseDocuments.map((_, index) => index + 1),
+    )
+    expect(mocks.end).toHaveBeenCalledOnce()
   })
 
   test('reports incomplete validation even when warnings are filtered out', async () => {
