@@ -82,7 +82,7 @@
     "oneline": "^2.0.0",
     "picomatch": "^4.0.7",
     "react": "catalog:",
-    "react-is": "^19.3.0",
+    "react-is": "^19.3.1",
     "semver": "catalog:",
     "vite": "catalog:",
     "zod": "catalog:"
