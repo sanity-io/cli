@@ -1,5 +1,22 @@
 # Changelog
 
+## 7.2.2
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-build-v7.2.1...cli-build-v7.2.2)
+
+_2026-11-17_
+
+### Bug Fixes
+
+- **deps:** update react monorepo to ^19.3.1 ([#2192](https://github.com/sanity-io/cli/pull/2192)) ([2cb7c7a](https://github.com/sanity-io/cli/commit/2cb7c7af9f23d931c6480bfa67ed4432ed1e76f5))
+- **deps:** update dependency cjs-module-lexer to ^2.3.0 ([#2204](https://github.com/sanity-io/cli/pull/2204)) ([54525db](https://github.com/sanity-io/cli/commit/54525db4d770b0200dd70c7e45158d970063d9eb))
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/workbench-cli bumped to 2.17.0
+
 ## 7.2.1
 
 [Compare changes](https://github.com/sanity-io/cli/compare/cli-build-v7.2.0...cli-build-v7.2.1)
