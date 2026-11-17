@@ -22,7 +22,8 @@ export interface DevActionOptions {
    */
   httpPort?: number
 
-  rebuild?: boolean
+  /** Workbench is restarting this server after a view or web worker change; skip one-time startup checks and notices. */
+  isRestarting?: boolean
 }
 
 /**

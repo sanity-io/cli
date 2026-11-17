@@ -396,13 +396,13 @@ describe('startStudioDevServer', () => {
       )
     })
 
-    test('skips the startup checks and notices when the workbench rebuilds the server', async () => {
+    test('skips the startup checks and notices when the workbench restarts the server', async () => {
       mockShouldAutoUpdate.mockReturnValue(true)
       mockIsInteractive.mockReturnValue(true)
       const options = createDevOptions({
         announceUrl: false,
         cliConfig: {schemaExtraction: {enabled: true}} as CliConfig,
-        rebuild: true,
+        isRestarting: true,
       })
 
       const result = await startStudioDevServer(options)

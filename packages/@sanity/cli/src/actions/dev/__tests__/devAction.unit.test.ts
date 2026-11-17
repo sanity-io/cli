@@ -151,14 +151,19 @@ describe('devAction', () => {
 
       const {startAppServer} = mockStartWorkbenchDev.mock.calls[0][0]
       const config = workbenchCliConfig()
-      await startAppServer({announceUrl: false, cliConfig: config, httpPort: 3334, rebuild: true})
+      await startAppServer({
+        announceUrl: false,
+        cliConfig: config,
+        httpPort: 3334,
+        isRestarting: true,
+      })
 
       expect(mockStartStudioDevServer).toHaveBeenCalledWith(
         expect.objectContaining({
           announceUrl: false,
           cliConfig: config,
           httpPort: 3334,
-          rebuild: true,
+          isRestarting: true,
         }),
       )
     })

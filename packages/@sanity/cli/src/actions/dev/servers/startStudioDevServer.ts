@@ -28,7 +28,7 @@ import {getDevServerConfig} from './getDevServerConfig.js'
 export async function startStudioDevServer(
   options: DevActionOptions,
 ): Promise<StartDevServerResult> {
-  const {announceUrl = true, cliConfig, flags, httpPort, output, rebuild, workDir} = options
+  const {announceUrl = true, cliConfig, flags, httpPort, isRestarting, output, workDir} = options
   const projectId = cliConfig?.api?.projectId
   let organizationId: string | undefined
 
@@ -36,14 +36,14 @@ export async function startStudioDevServer(
   // meaning for them and is ignored.
   const loadInDashboard = flags['load-in-dashboard'] && !isWorkbenchApp(cliConfig?.app)
 
-  if (!rebuild) await checkStudioDependencyVersions(workDir, output)
+  if (!isRestarting) await checkStudioDependencyVersions(workDir, output)
 
   const {installedSanityVersion} = await checkRequiredDependencies({
     ...options,
     ...checkDependenciesEventListenerFactory(output),
   })
 
-  if (!rebuild && shouldAutoUpdate({cliConfig, flags, output})) {
+  if (!isRestarting && shouldAutoUpdate({cliConfig, flags, output})) {
     // Get the clean version without build metadata: https://semver.org/#spec-item-10
     const cleanSanityVersion = semverParse(installedSanityVersion)?.version
     if (!cleanSanityVersion) {
@@ -108,7 +108,7 @@ export async function startStudioDevServer(
     }
   }
 
-  if (!rebuild && cliConfig?.schemaExtraction?.enabled) {
+  if (!isRestarting && cliConfig?.schemaExtraction?.enabled) {
     output.log(`${logSymbols.info} Running dev server with schema extraction enabled`)
   }
 
