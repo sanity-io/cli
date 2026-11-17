@@ -612,6 +612,30 @@ describe('startWorkbenchDevServer', () => {
       })
     })
 
+    test('broadcasts https on applications and an https remoteURL on configs for an HTTPS dev server', async () => {
+      const mockServer = createMockViteServer()
+      mockCreateServer.mockResolvedValue(mockServer)
+
+      await startWorkbenchDevServer(createDevOptions({cliConfig: federationConfig}))
+
+      const watchCallback = mockWatchRegistry.mock.calls[0][0]
+      watchCallback([
+        aDevServerManifest({
+          configs: [{appType: 'media-library', fields: [], id: 'cfg-hash', version: '1'}],
+          https: true,
+          id: 'app-1',
+          interfaces: [panel('home')],
+          organizationId: 'org-test',
+          port: 3337,
+        }),
+      ])
+
+      expect(mockServer.ws.send).toHaveBeenCalledWith('sanity:workbench:local-applications', {
+        applications: [expect.objectContaining({https: true, id: 'app-1'})],
+        configs: [expect.objectContaining({remoteURL: 'https://localhost:3337'})],
+      })
+    })
+
     test('routes interfaces through toWireInterface — surface dropped, keyed on type', async () => {
       // The full per-surface → type matrix is owned by toWireInterface.test.ts;
       // here we only prove the orchestrator runs each interface through that
