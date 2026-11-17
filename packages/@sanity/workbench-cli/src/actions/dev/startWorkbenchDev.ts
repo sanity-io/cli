@@ -6,7 +6,7 @@ import {isWorkbenchApp} from '../../defineApp.js'
 import {createServerLifecycle, toDisplayHost} from '../../util/serverOrchestration.js'
 import {type AppServerResult, startAppServerSupervisor} from './appServerSupervisor.js'
 import {bindDevShortcuts} from './bindDevShortcuts.js'
-import {fetchDevServerDetails, waitForDevServerDetails} from './devServerSummary.js'
+import {fetchDevSummaryDetails, waitForDevServerDetails} from './devServerSummary.js'
 import {type DevServerManifest} from './registry.js'
 import {startDevServerRegistration} from './startDevServerRegistration.js'
 import {
@@ -93,7 +93,7 @@ export async function startWorkbenchDev(
   // the app server, and the supervisor waits out an in-flight rebuild.
   const {close, closers, installSignalHandlers} = createServerLifecycle()
   const startedAt = Date.now()
-  const details = fetchDevServerDetails(cliConfig)
+  const details = fetchDevSummaryDetails(cliConfig)
 
   const workbench = await startWorkbenchDevServer({
     cacheDir,
@@ -160,29 +160,34 @@ export async function startWorkbenchDev(
 
   if (workbench.workbenchAvailable) {
     const url = `http://${toDisplayHost(workbench.httpHost)}:${workbench.workbenchPort}${dashboardAppPath ?? ''}`
-    let deploymentStatus: string | undefined
+    let version = ''
+
     if (deployment) {
       const date = new Date(deployment.createdAt).toLocaleDateString('en-US', {
         day: 'numeric',
         month: 'short',
         year: 'numeric',
       })
-      deploymentStatus = `deployed ${date}${deployment.deployedBy ? ` by ${deployment.deployedBy}` : ''}`
+      const by = deployment.deployedBy ? ` by ${deployment.deployedBy}` : ''
+      version = `local preview ${styleText('dim', `· deployed ${date}${by}`)}`
     } else if (deployment === null) {
-      deploymentStatus = 'not deployed'
+      version = `local preview ${styleText('dim', '· not deployed')}`
     }
 
+    const seconds = (durationMs / 1000).toFixed(1)
     const organization = organizationName ?? cliConfig.app?.organizationId
     const title = isWorkbenchApp(cliConfig.app) ? cliConfig.app.title : undefined
-    const lines = ['', `  Sanity Dashboard ready in ${(durationMs / 1000).toFixed(1)}s`, '']
-    if (organization) lines.push(`    Organization  ${organization}`)
-    if (title) lines.push(`    ${(isApp ? 'App' : 'Studio').padEnd(12)}  ${title}`)
-    lines.push(`    URL           ${styleText(['blue', 'underline'], url)}`)
-    if (deploymentStatus) {
-      lines.push(`    Version       local preview ${styleText('dim', `· ${deploymentStatus}`)}`)
-    }
+    const titleRow = title ? `\n    ${(isApp ? 'App' : 'Studio').padEnd(12)}  ${title}` : ''
+    const link = styleText(['blue', 'underline'], url)
+    const versionRow = version ? `\n    Version       ${version}` : ''
 
-    output.log(`${lines.join('\n')}\n`)
+    output.log(`
+  Sanity Dashboard ready in ${seconds}s
+
+    Organization  ${organization}${titleRow}
+    URL           ${link}${versionRow}
+`)
+
     const quit = () => void close().then(() => process.exit(0))
     closers.push(bindDevShortcuts({output, quit, url}))
   }

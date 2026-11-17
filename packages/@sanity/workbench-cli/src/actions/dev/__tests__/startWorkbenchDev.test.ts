@@ -14,7 +14,7 @@ import {
 const mockStartWorkbenchDevServer = vi.hoisted(() => vi.fn())
 const mockStartDevServerRegistration = vi.hoisted(() => vi.fn())
 const mockGetCliConfigUncached = vi.hoisted(() => vi.fn())
-const mockFetchDevServerDetails = vi.hoisted(() => vi.fn())
+const mockFetchDevSummaryDetails = vi.hoisted(() => vi.fn())
 
 vi.mock('@sanity/cli-core', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@sanity/cli-core')>()),
@@ -25,7 +25,7 @@ vi.mock('../startWorkbenchDevServer.js', () => ({
 }))
 vi.mock('../devServerSummary.js', async (importOriginal) => ({
   ...(await importOriginal<typeof import('../devServerSummary.js')>()),
-  fetchDevServerDetails: mockFetchDevServerDetails,
+  fetchDevSummaryDetails: mockFetchDevSummaryDetails,
 }))
 vi.mock('../startDevServerRegistration.js', () => ({
   startDevServerRegistration: mockStartDevServerRegistration,
@@ -77,7 +77,7 @@ describe('startWorkbenchDev', () => {
     mockStartDevServerRegistration.mockResolvedValue({close: vi.fn().mockResolvedValue(undefined)})
     mockStartAppServer.mockResolvedValue(mockAppServer({port: 3334}))
     mockGetCliConfigUncached.mockResolvedValue(workbenchCliConfig())
-    mockFetchDevServerDetails.mockResolvedValue({
+    mockFetchDevSummaryDetails.mockResolvedValue({
       deployment: {createdAt: '2026-05-12T10:00:00.000Z', deployedBy: 'Jules'},
       organizationName: 'Acme',
     })
@@ -147,7 +147,7 @@ describe('startWorkbenchDev', () => {
 
       await run({output})
 
-      expect(mockFetchDevServerDetails.mock.invocationCallOrder[0]).toBeLessThan(
+      expect(mockFetchDevSummaryDetails.mock.invocationCallOrder[0]).toBeLessThan(
         mockStartWorkbenchDevServer.mock.invocationCallOrder[0],
       )
       expect(output.log).toHaveBeenCalledWith(expect.stringContaining('Organization  Acme'))
@@ -160,7 +160,7 @@ describe('startWorkbenchDev', () => {
     })
 
     test('shows the deploy date alone when the deployer is unknown', async () => {
-      mockFetchDevServerDetails.mockResolvedValue({
+      mockFetchDevSummaryDetails.mockResolvedValue({
         deployment: {createdAt: '2026-05-12T10:00:00.000Z', deployedBy: null},
       })
       const output = createMockOutput()
@@ -175,7 +175,7 @@ describe('startWorkbenchDev', () => {
     })
 
     test('shows "not deployed" for an app without an active deployment', async () => {
-      mockFetchDevServerDetails.mockResolvedValue({deployment: null})
+      mockFetchDevSummaryDetails.mockResolvedValue({deployment: null})
       const output = createMockOutput()
 
       await run({output})
@@ -188,7 +188,7 @@ describe('startWorkbenchDev', () => {
     })
 
     test('lists the organization id when its name is unavailable', async () => {
-      mockFetchDevServerDetails.mockResolvedValue({})
+      mockFetchDevSummaryDetails.mockResolvedValue({})
       const output = createMockOutput()
 
       await run({output})

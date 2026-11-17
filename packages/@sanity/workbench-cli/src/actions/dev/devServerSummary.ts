@@ -15,40 +15,40 @@ export interface DevServerDetails {
   organizationName?: string | null
 }
 
-export async function fetchDevServerDetails(cliConfig: CliConfig): Promise<DevServerDetails> {
+export async function fetchDevSummaryDetails(cliConfig: CliConfig): Promise<DevServerDetails> {
   const organizationId = cliConfig.app?.organizationId
+
   if (!organizationId) return {}
 
-  const idOrSlug = isWorkbenchApp(cliConfig.app)
-    ? (cliConfig.deployment?.appId ?? cliConfig.app.slug)
-    : undefined
   const signal = AbortSignal.timeout(DETAILS_TIMEOUT_MS)
+  const organizationName = getOrganization(organizationId, signal)
+    .then((org) => org.name)
+    .catch(() => null)
 
-  const [organizationName, deployment] = await Promise.all([
-    getOrganization(organizationId, signal).then(
-      (org) => org.name,
-      () => null,
-    ),
-    idOrSlug
-      ? getOrganizationApplication(organizationId, idOrSlug, signal).then(
-          async (application) => {
-            const active = application?.activeDeployment
-            if (!active) return null
+  if (!isWorkbenchApp(cliConfig.app)) {
+    return {organizationName: await organizationName}
+  }
 
-            const deployedBy = await getUser(active.deployedBy, signal).then(
-              (user) => user.displayName,
-              () => null,
-            )
+  const idOrSlug = cliConfig.deployment?.appId ?? cliConfig.app.slug
+  let deployment: DevServerDetails['deployment']
 
-            return {createdAt: active.createdAt, deployedBy}
-          },
-          // eslint-disable-next-line unicorn/no-useless-undefined
-          () => undefined,
-        )
-      : undefined,
-  ])
+  try {
+    const application = await getOrganizationApplication(organizationId, idOrSlug, signal)
+    const active = application?.activeDeployment
 
-  return {deployment, organizationName}
+    if (active) {
+      const deployedBy = await getUser(active.deployedBy, signal)
+        .then((user) => user.displayName)
+        .catch(() => null)
+      deployment = {createdAt: active.createdAt, deployedBy}
+    } else {
+      deployment = null
+    }
+  } catch {
+    // Left undefined: a failed lookup must not read as "not deployed".
+  }
+
+  return {deployment, organizationName: await organizationName}
 }
 
 export async function waitForDevServerDetails(
@@ -58,6 +58,7 @@ export async function waitForDevServerDetails(
     details,
     new Promise<typeof PENDING>((resolve) => setImmediate(resolve, PENDING)),
   ])
+
   if (settled !== PENDING) return settled
 
   const spin = spinner('Loading organization and deployment details').start()

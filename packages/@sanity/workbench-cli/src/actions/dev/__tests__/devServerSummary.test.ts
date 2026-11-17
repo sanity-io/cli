@@ -4,7 +4,7 @@ import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
 import {
   type DevServerDetails,
-  fetchDevServerDetails,
+  fetchDevSummaryDetails,
   waitForDevServerDetails,
 } from '../devServerSummary.js'
 import {mediaLibraryCliConfig, workbenchApp, workbenchCliConfig} from './devTestHelpers.js'
@@ -59,16 +59,16 @@ afterEach(() => {
   vi.restoreAllMocks()
 })
 
-describe('fetchDevServerDetails', () => {
+describe('fetchDevSummaryDetails', () => {
   test('resolves the organization name and the deployer of the active deployment', async () => {
-    await expect(fetchDevServerDetails(workbenchCliConfig())).resolves.toEqual({
+    await expect(fetchDevSummaryDetails(workbenchCliConfig())).resolves.toEqual({
       deployment: {createdAt: '2026-05-12T10:00:00.000Z', deployedBy: 'Jules'},
       organizationName: 'Acme',
     })
   })
 
   test('looks the app up by deployment.appId over its slug', async () => {
-    await fetchDevServerDetails(workbenchCliConfig({deployment: {appId: 'app-id'}}))
+    await fetchDevSummaryDetails(workbenchCliConfig({deployment: {appId: 'app-id'}}))
 
     expect(mockRequest).toHaveBeenCalledWith({
       query: {include: 'activeDeployment'},
@@ -82,13 +82,13 @@ describe('fetchDevServerDetails', () => {
       activeDeployment: null,
     }
 
-    const details = await fetchDevServerDetails(workbenchCliConfig())
+    const details = await fetchDevSummaryDetails(workbenchCliConfig())
 
     expect(details.deployment).toBeNull()
   })
 
   test('reports an app that was never created as not deployed', async () => {
-    const details = await fetchDevServerDetails(
+    const details = await fetchDevSummaryDetails(
       workbenchCliConfig({app: workbenchApp({slug: 'new-app'})}),
     )
 
@@ -98,7 +98,7 @@ describe('fetchDevServerDetails', () => {
   test('keeps the deployment without a deployer when the user lookup fails', async () => {
     responses['/users/user-1'] = httpError(403)
 
-    const details = await fetchDevServerDetails(workbenchCliConfig())
+    const details = await fetchDevSummaryDetails(workbenchCliConfig())
 
     expect(details.deployment).toEqual({createdAt: '2026-05-12T10:00:00.000Z', deployedBy: null})
   })
@@ -107,7 +107,7 @@ describe('fetchDevServerDetails', () => {
     responses['/organizations/org-123/applications/test-app?include=activeDeployment'] =
       httpError(500)
 
-    await expect(fetchDevServerDetails(workbenchCliConfig())).resolves.toEqual({
+    await expect(fetchDevSummaryDetails(workbenchCliConfig())).resolves.toEqual({
       deployment: undefined,
       organizationName: 'Acme',
     })
@@ -133,7 +133,7 @@ describe('fetchDevServerDetails', () => {
       vi.spyOn(AbortSignal, 'timeout').mockReturnValue(deadline.signal)
       responses[key] = HANG
 
-      const details = fetchDevServerDetails(workbenchCliConfig())
+      const details = fetchDevSummaryDetails(workbenchCliConfig())
       await vi.waitFor(() =>
         expect(mockRequest).toHaveBeenCalledWith(expect.objectContaining({url: key.split('?')[0]})),
       )
@@ -147,14 +147,14 @@ describe('fetchDevServerDetails', () => {
   test('resolves no details when the client cannot be created', async () => {
     vi.mocked(getGlobalCliClient).mockRejectedValue(new Error('You must login first'))
 
-    await expect(fetchDevServerDetails(workbenchCliConfig())).resolves.toEqual({
+    await expect(fetchDevSummaryDetails(workbenchCliConfig())).resolves.toEqual({
       deployment: undefined,
       organizationName: null,
     })
   })
 
   test('skips the deployment lookup for a media library config', async () => {
-    const details = await fetchDevServerDetails(mediaLibraryCliConfig())
+    const details = await fetchDevSummaryDetails(mediaLibraryCliConfig())
 
     expect(details).toEqual({deployment: undefined, organizationName: 'Acme'})
     expect(mockRequest).toHaveBeenCalledTimes(1)
