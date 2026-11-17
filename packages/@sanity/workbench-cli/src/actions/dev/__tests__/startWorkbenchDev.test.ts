@@ -1,3 +1,4 @@
+import {PassThrough} from 'node:stream'
 import {styleText} from 'node:util'
 
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
@@ -6,6 +7,7 @@ import {startWorkbenchDev, type StartWorkbenchDevOptions} from '../startWorkbenc
 import {
   createMockOutput,
   createMockViteServer,
+  mediaLibraryCliConfig,
   mockWorkbenchServer,
   workbenchCliConfig,
 } from './devTestHelpers.js'
@@ -13,6 +15,7 @@ import {
 const mockStartWorkbenchDevServer = vi.hoisted(() => vi.fn())
 const mockStartDevServerRegistration = vi.hoisted(() => vi.fn())
 const mockGetCliConfigUncached = vi.hoisted(() => vi.fn())
+const mockFetchDevSummaryDetails = vi.hoisted(() => vi.fn())
 
 vi.mock('@sanity/cli-core', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@sanity/cli-core')>()),
@@ -20,6 +23,10 @@ vi.mock('@sanity/cli-core', async (importOriginal) => ({
 }))
 vi.mock('../startWorkbenchDevServer.js', () => ({
   startWorkbenchDevServer: mockStartWorkbenchDevServer,
+}))
+vi.mock('../devSummary.js', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../devSummary.js')>()),
+  fetchDevSummaryDetails: mockFetchDevSummaryDetails,
 }))
 vi.mock('../startDevServerRegistration.js', () => ({
   startDevServerRegistration: mockStartDevServerRegistration,
@@ -71,6 +78,10 @@ describe('startWorkbenchDev', () => {
     mockStartDevServerRegistration.mockResolvedValue({close: vi.fn().mockResolvedValue(undefined)})
     mockStartAppServer.mockResolvedValue(mockAppServer({port: 3334}))
     mockGetCliConfigUncached.mockResolvedValue(workbenchCliConfig())
+    mockFetchDevSummaryDetails.mockResolvedValue({
+      deployment: {createdAt: '2026-05-12T10:00:00.000Z', deployedBy: 'Jules'},
+      organizationName: 'Acme',
+    })
   })
 
   afterEach(() => {
@@ -82,7 +93,7 @@ describe('startWorkbenchDev', () => {
       await run()
 
       expect(mockStartAppServer).toHaveBeenCalledWith(
-        expect.objectContaining({announceUrl: false, httpPort: 3334}),
+        expect.objectContaining({httpPort: 3334, quiet: true}),
       )
     })
 
@@ -102,7 +113,7 @@ describe('startWorkbenchDev', () => {
       await run()
 
       expect(mockStartAppServer).toHaveBeenCalledWith(
-        expect.objectContaining({announceUrl: true, httpPort: 3333}),
+        expect.objectContaining({httpPort: 3333, quiet: false}),
       )
     })
 
@@ -116,7 +127,9 @@ describe('startWorkbenchDev', () => {
       await run({output})
 
       expect(output.log).toHaveBeenCalledWith(
-        `Dashboard dev server started at ${styleText(['blue', 'underline'], 'http://localhost:3333/applications/my-app')}`,
+        expect.stringContaining(
+          styleText(['blue', 'underline'], 'http://localhost:3333/applications/my-app'),
+        ),
       )
     })
 
@@ -126,8 +139,77 @@ describe('startWorkbenchDev', () => {
       await run({output})
 
       expect(output.log).toHaveBeenCalledWith(
-        `Dashboard dev server started at ${styleText(['blue', 'underline'], 'http://localhost:3333')}`,
+        expect.stringContaining(`${styleText(['blue', 'underline'], 'http://localhost:3333')}\n`),
       )
+    })
+
+    test('starts fetching details before the servers and prints them in the summary', async () => {
+      const output = createMockOutput()
+
+      await run({output})
+
+      expect(mockFetchDevSummaryDetails.mock.invocationCallOrder[0]).toBeLessThan(
+        mockStartWorkbenchDevServer.mock.invocationCallOrder[0],
+      )
+      expect(output.log).toHaveBeenCalledWith(expect.stringContaining('Organization  Acme'))
+      expect(output.log).toHaveBeenCalledWith(expect.stringContaining('App           Test App'))
+      expect(output.log).toHaveBeenCalledWith(
+        expect.stringContaining(
+          `Version       local preview ${styleText('dim', '· deployed May 12, 2026 by Jules')}`,
+        ),
+      )
+    })
+
+    test('shows the deploy date alone when the deployer is unknown', async () => {
+      mockFetchDevSummaryDetails.mockResolvedValue({
+        deployment: {createdAt: '2026-05-12T10:00:00.000Z', deployedBy: null},
+      })
+      const output = createMockOutput()
+
+      await run({output})
+
+      expect(output.log).toHaveBeenCalledWith(
+        expect.stringContaining(
+          `Version       local preview ${styleText('dim', '· deployed May 12, 2026')}\n`,
+        ),
+      )
+    })
+
+    test('shows "not deployed" for an app without an active deployment', async () => {
+      mockFetchDevSummaryDetails.mockResolvedValue({deployment: null})
+      const output = createMockOutput()
+
+      await run({output})
+
+      expect(output.log).toHaveBeenCalledWith(
+        expect.stringContaining(
+          `Version       local preview ${styleText('dim', '· not deployed')}`,
+        ),
+      )
+    })
+
+    test.each([
+      ['by its slug', workbenchCliConfig(), 'test-app'],
+      [
+        'by deployment.appId over its slug',
+        workbenchCliConfig({deployment: {appId: 'app-id'}}),
+        'app-id',
+      ],
+      ['for a media library config, without an app id or slug', mediaLibraryCliConfig(), undefined],
+    ])('looks the deployment up %s', async (_, cliConfig, idOrSlug) => {
+      await run({cliConfig})
+
+      expect(mockFetchDevSummaryDetails).toHaveBeenCalledWith({idOrSlug, organizationId: 'org-123'})
+    })
+
+    test('lists the organization id when its name is unavailable', async () => {
+      mockFetchDevSummaryDetails.mockResolvedValue({})
+      const output = createMockOutput()
+
+      await run({output})
+
+      expect(output.log).toHaveBeenCalledWith(expect.stringContaining('Organization  org-123'))
+      expect(output.log).not.toHaveBeenCalledWith(expect.stringContaining('Version'))
     })
 
     test('shows the existing lock host in the URL, not the caller host', async () => {
@@ -218,7 +300,7 @@ describe('startWorkbenchDev', () => {
       expect(first.close).toHaveBeenCalledTimes(1)
       expect(mockStartAppServer).toHaveBeenCalledTimes(2)
       expect(mockStartAppServer).toHaveBeenLastCalledWith(
-        expect.objectContaining({cliConfig: freshConfig}),
+        expect.objectContaining({cliConfig: freshConfig, isRestarting: true}),
       )
     })
 
@@ -304,6 +386,27 @@ describe('startWorkbenchDev', () => {
 
       expect(process.listenerCount('SIGINT')).toBe(sigintBefore)
       expect(process.listenerCount('SIGTERM')).toBe(sigtermBefore)
+    })
+
+    test('q tears down, restores the terminal, and exits cleanly', async () => {
+      const exitSpy = vi.spyOn(process, 'exit').mockReturnValue(undefined as never)
+      const realStdin = process.stdin
+      const stdin = Object.assign(new PassThrough(), {isTTY: true, setRawMode: vi.fn()})
+      Object.defineProperty(process, 'stdin', {configurable: true, value: stdin})
+      try {
+        const appClose = vi.fn().mockResolvedValue(undefined)
+        mockStartAppServer.mockResolvedValue({...mockAppServer({port: 3334}), close: appClose})
+
+        await run()
+        stdin.write('q')
+        await vi.waitFor(() => expect(exitSpy).toHaveBeenCalledWith(0))
+
+        expect(appClose).toHaveBeenCalled()
+        expect(stdin.setRawMode).toHaveBeenLastCalledWith(false)
+      } finally {
+        Object.defineProperty(process, 'stdin', {configurable: true, value: realStdin})
+        exitSpy.mockRestore()
+      }
     })
 
     test('re-raises the signal once teardown settles so the default exit runs', async () => {

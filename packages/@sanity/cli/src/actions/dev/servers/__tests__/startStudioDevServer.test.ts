@@ -1,4 +1,5 @@
 import {type CliConfig, exitCodes} from '@sanity/cli-core'
+import {spinner} from '@sanity/cli-core/ux'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
 import {
@@ -113,6 +114,7 @@ describe('startStudioDevServer', () => {
     )
     expect(mockCheckRequiredDependencies).toHaveBeenCalled()
     expect(mockStartDevServer).toHaveBeenCalled()
+    expect(spinner).toHaveBeenCalledWith({isSilent: false, text: 'Starting dev server'})
     expect(result.started).toBe(true)
     if (!result.started) throw new Error('expected the server to start')
     expect(result.close).toBeDefined()
@@ -133,6 +135,17 @@ describe('startStudioDevServer', () => {
     expect(started.server.config.logger.info).toHaveBeenCalledWith(
       expect.stringContaining(`${protocol}://localhost:4443/studio`),
     )
+  })
+
+  test('prints no ready line when quiet', async () => {
+    const started = createMockDevServer()
+    mockStartDevServer.mockResolvedValueOnce(started)
+
+    const result = await startStudioDevServer(createDevOptions({quiet: true}))
+
+    expect(result.started).toBe(true)
+    expect(spinner).toHaveBeenCalledWith(expect.objectContaining({isSilent: true}))
+    expect(started.server.config.logger.info).not.toHaveBeenCalled()
   })
 
   describe('unclaimed sign-in URL', () => {
@@ -381,6 +394,26 @@ describe('startStudioDevServer', () => {
           packages: [['sanity', '3.50.0']],
         }),
         expect.anything(),
+      )
+    })
+
+    test('skips the startup checks and notices when the workbench restarts the server', async () => {
+      mockShouldAutoUpdate.mockReturnValue(true)
+      mockIsInteractive.mockReturnValue(true)
+      const options = createDevOptions({
+        cliConfig: {schemaExtraction: {enabled: true}} as CliConfig,
+        isRestarting: true,
+        quiet: true,
+      })
+
+      const result = await startStudioDevServer(options)
+
+      expect(result.started).toBe(true)
+      expect(mockShouldAutoUpdate).not.toHaveBeenCalled()
+      expect(mockCompareDependencyVersions).not.toHaveBeenCalled()
+      expect(mockCheckStudioDependencyVersions).not.toHaveBeenCalled()
+      expect(options.output.log).not.toHaveBeenCalledWith(
+        expect.stringContaining('schema extraction'),
       )
     })
 
