@@ -1361,7 +1361,7 @@ snapshots:
 			"name": "@sanity/workbench-cli",
 			"dependencies": {
 				"@module-federation/runtime": "2.9.3",
-				"@module-federation/vite": "1.23.11",
+				"@module-federation/vite": "1.24.0",
 				"@sanity/cli-core": "workspace:^",
 				"@sanity/sdk": "catalog:",
 				"@sanity/types": "catalog:",
@@ -6019,26 +6019,6 @@ snapshots:
 			"integrity": "sha512-jUWFWa5l7j2jb3JU9bfGHZ5luv6XAogMsvJ/yG59AZmhpliPozkyxYRjnbtik85IipZF4Cb06PW9qv5qRRf6OQ==",
 		},
 
-		"@module-federation/vite@1.23.11": {
-			"integrity": "sha512-OmYS7CpluphhnJLSS7y0wCa8SoBGyDmqElNVWb3LyCEpyDdp6d/Xl4an+rHfgG0B4N9Rzr/Xf7W0J/cSij39Ig==",
-			"engines": {"node": "^20.19.0 || >=22.12.0"},
-			"peerDependencies": {
-				"typescript": {
-					"version": "6.0.3",
-					"below": true,
-				},
-				"vite": {
-					"specifier": "^5.1.0 || ^6.0.0 || ^7.0.0 || ^8.0.0",
-					"version": "8.3.8",
-				},
-			},
-			"dependencies": {
-				"@module-federation/dts-plugin": "2.9.3",
-				"@module-federation/runtime": "2.9.3",
-				"@module-federation/sdk": "2.9.3",
-			},
-		},
-
 		"@module-federation/vite@1.23.5": {
 			"integrity": "sha512-pZ4gwP3SyuNG9JnYAWFIOJyFz1Kl37hnJyKjajMpPqQwTQkCjY7gn58qEmVwTyBv8VqOA5XxEXe1ZMF3AsOmnw==",
 			"engines": {"node": "^20.19.0 || >=22.12.0"},
@@ -6056,6 +6036,26 @@ snapshots:
 				"@module-federation/dts-plugin": "2.9.2",
 				"@module-federation/runtime": "2.9.2",
 				"@module-federation/sdk": "2.9.2",
+			},
+		},
+
+		"@module-federation/vite@1.24.0": {
+			"integrity": "sha512-59h1pQARXDbNAHLhxLXJ6mJlRCqEIni04ZOlHJuJGlrlaMfTPt7ahwdhejXe/rb59f4nJptcJ5MK9ZakzadP1w==",
+			"engines": {"node": "^20.19.0 || >=22.12.0"},
+			"peerDependencies": {
+				"typescript": {
+					"version": "6.0.3",
+					"below": true,
+				},
+				"vite": {
+					"specifier": "^5.1.0 || ^6.0.0 || ^7.0.0 || ^8.0.0",
+					"version": "8.3.8",
+				},
+			},
+			"dependencies": {
+				"@module-federation/dts-plugin": "2.9.3",
+				"@module-federation/runtime": "2.9.3",
+				"@module-federation/sdk": "2.9.3",
 			},
 		},
 
