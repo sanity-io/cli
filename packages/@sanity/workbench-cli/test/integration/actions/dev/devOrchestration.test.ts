@@ -144,6 +144,7 @@ describe('dev orchestration chain', () => {
       applications: [
         {
           host: 'localhost',
+          https: false,
           id: 'test-app',
           interfaces: [
             // `surface: 'panel'` → `type: 'panel'`, `surface` never crosses the wire.
