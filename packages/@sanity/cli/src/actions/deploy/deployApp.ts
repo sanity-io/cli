@@ -17,6 +17,8 @@ import {
   createCoreApp,
   deployConfig,
   deployWorkbenchApp,
+  fetchDeploySummaryDetails,
+  formatDeploySummary,
   getApplicationUrl,
   getWorkbench,
   getWorkbenchUrl,
@@ -185,6 +187,12 @@ async function runAppDeployment(
   // Read up front so a bad icon path fails before we create or build.
   const appIcon =
     !dryRun && workbench?.icon ? await readIconFromPath(workDir, workbench.icon) : undefined
+
+  const startedAt = Date.now()
+  const summaryDetails =
+    workbench && organizationId && !flags.json
+      ? fetchDeploySummaryDetails(organizationId)
+      : undefined
 
   // Create the app before the build so the bundle carries its real id. A
   // redeploy already has it from `deployment.appId`; a dry run skips creation.
@@ -415,15 +423,20 @@ async function runAppDeployment(
             type: 'coreApp',
           })
         : getWorkbenchUrl(organizationId)
-      logAppDeployed({
-        applicationId,
-        cliConfig,
-        created: applicationCreated,
-        organizationId,
-        output,
-        title: appTitle,
-        url,
-      })
+      const durationMs = Date.now() - startedAt
+      output.log(
+        formatDeploySummary({
+          ...(await summaryDetails),
+          applicationId,
+          created: applicationCreated,
+          durationMs,
+          isApp: true,
+          organizationId,
+          showAppIdHint: !appId,
+          title: appTitle,
+          url,
+        }),
+      )
       return {
         action: applicationCreated ? 'create' : 'update',
         application: workbenchApp ?? null,
@@ -669,7 +682,6 @@ export function logAppDeployed({
   organizationId,
   output,
   title,
-  url = getCoreAppUrl(organizationId, applicationId),
 }: {
   applicationId: string
   cliConfig: DeployAppOptions['cliConfig']
@@ -678,8 +690,8 @@ export function logAppDeployed({
   organizationId: string
   output: DeployAppOptions['output']
   title: string | null
-  url?: string
 }): void {
+  const url = getCoreAppUrl(organizationId, applicationId)
   const named = title ? ` — "${title}"` : ''
   output.log(`\nSuccess! Application deployed to ${styleText('cyan', url)}${named}`)
   output.log(created ? 'Created a new application.' : 'Updated the existing application.')

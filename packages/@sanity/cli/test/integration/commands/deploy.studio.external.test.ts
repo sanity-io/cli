@@ -862,6 +862,11 @@ describe('#deploy studio (external)', () => {
   })
 
   describe('defineApplication', () => {
+    beforeEach(() => {
+      mockApi({uri: '/organizations/org-1'}).reply(200, {name: 'Acme'})
+      mockApi({uri: '/users/me'}).reply(200, {name: 'Sam'})
+    })
+
     test('registers a defineApplication studio at the --url origin', async () => {
       const cwd = await testFixture('basic-studio')
       process.cwd = () => cwd
@@ -886,7 +891,7 @@ describe('#deploy studio (external)', () => {
       const mfManifest = {id: 'built'}
       mockBuildStudio.mockResolvedValueOnce({mfManifest})
 
-      const {error} = await testCommand(
+      const {error, stdout} = await testCommand(
         DeployCommand,
         ['--external', '--url', 'https://studio.example.com'],
         {
@@ -903,6 +908,11 @@ describe('#deploy studio (external)', () => {
         expect.objectContaining({isExternal: true, mfManifest}),
       )
       expect(mockReadBuiltManifest).not.toHaveBeenCalled()
+      expect(stdout).toMatch(/Organization {2}Acme\n/)
+      expect(stdout).toMatch(/Studio {8}Test Studio\n/)
+      expect(stdout).toMatch(/Version {7}just now by Sam\n/)
+      expect(stdout).toContain('Created Test Studio as a new studio.')
+      expect(stdout).toContain('deployment.appId: "studio_new"')
     })
 
     test('an interactive deploy without an appId redeploys the picked studio without --url', async () => {
@@ -933,7 +943,7 @@ describe('#deploy studio (external)', () => {
       mockSelect.mockResolvedValue('studio_existing')
       mockBuildStudio.mockResolvedValueOnce({mfManifest: {id: 'built'}})
 
-      const {error} = await testCommand(DeployCommand, ['--external'], {
+      const {error, stdout} = await testCommand(DeployCommand, ['--external'], {
         config: {root: cwd},
         mocks: {
           cliConfig: {api: {projectId: 'test-project-id'}, app} as CliConfig,
@@ -949,6 +959,8 @@ describe('#deploy studio (external)', () => {
       expect(mockDeployWorkbenchApp).toHaveBeenCalledWith(
         expect.objectContaining({applicationId: 'studio_existing', isExternal: true}),
       )
+      expect(stdout).toContain('Updated Test Studio.')
+      expect(stdout).toContain('deployment.appId: "studio_existing"')
     })
   })
 })

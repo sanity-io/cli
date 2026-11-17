@@ -112,6 +112,12 @@ describe('#deploy app', () => {
     mockListApplications.mockResolvedValue([])
     // Default to empty manifest for app deployments
     mockExtractCoreAppManifest.mockResolvedValue(undefined)
+    // Optional: --json and dry runs skip the deploy summary requests.
+    mockApi({uri: `/organizations/${organizationId}`})
+      .optionally()
+      .reply(200, {name: 'Acme'})
+      .persist()
+    mockApi({uri: '/users/me'}).optionally().reply(200, {name: 'Sam'}).persist()
   })
 
   afterEach(() => {
@@ -744,8 +750,11 @@ describe('#deploy app', () => {
     expect(mockDeployWorkbenchApp).toHaveBeenCalledWith(
       expect.objectContaining({applicationId: 'app_existing'}),
     )
-    expect(stdout).toContain(
-      `Success! Application deployed to https://${organizationId}.sanity.run/applications/drop-desk-host`,
+    expect(stdout).toContain('Workbench App deployed in')
+    expect(stdout).toContain('Updated Workbench App.')
+    expect(stdout).not.toContain('deployment.appId')
+    expect(stdout).toMatch(
+      new RegExp(`URL\\s+https://${organizationId}\\.sanity\\.run/applications/drop-desk-host\n`),
     )
   })
 
@@ -807,7 +816,8 @@ describe('#deploy app', () => {
       expect(mockDeployWorkbenchApp).toHaveBeenCalledWith(
         expect.objectContaining({applicationId: 'app_taken'}),
       )
-      expect(stdout).toContain(`deployment: {\n  appId: 'app_taken',`)
+      expect(stdout).toContain('Updated Workbench App.')
+      expect(stdout).toContain('deployment.appId: "app_taken"')
     })
 
     test('picking a new deployment creates the app at the configured slug', async () => {
@@ -819,7 +829,7 @@ describe('#deploy app', () => {
         application: {...takenApp, id: 'app_new'},
       })
 
-      const {error} = await testCommand(DeployCommand, [], {
+      const {error, stdout} = await testCommand(DeployCommand, [], {
         config: {root: cwd},
         mocks: {cliConfig: {app}, isInteractive: true},
       })
@@ -831,6 +841,11 @@ describe('#deploy app', () => {
       expect(mockDeployWorkbenchApp).toHaveBeenCalledWith(
         expect.objectContaining({applicationId: 'app_new'}),
       )
+      expect(stdout).toMatch(/Organization {2}Acme\n/)
+      expect(stdout).toMatch(/App {11}Workbench App\n/)
+      expect(stdout).toMatch(/Version {7}just now by Sam\n/)
+      expect(stdout).toContain('Created Workbench App as a new application.')
+      expect(stdout).toContain('deployment.appId: "app_new"')
     })
 
     test('an interactive deploy without apps of its type creates without prompting', async () => {
@@ -920,9 +935,7 @@ describe('#deploy app', () => {
 
     const human = await deploy([])
     if (human.error) throw human.error
-    expect(human.stdout).toContain(
-      `Success! Application deployed to https://${organizationId}.sanity.run —`,
-    )
+    expect(human.stdout).toMatch(new RegExp(`URL\\s+https://${organizationId}\\.sanity\\.run\n`))
 
     const json = await deploy(['--json'])
     if (json.error) throw json.error
