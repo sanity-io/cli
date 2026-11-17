@@ -1,8 +1,9 @@
+import {styleText} from 'node:util'
+
 import {type CliConfig, type Output} from '@sanity/cli-core'
 
 import {isWorkbenchApp} from '../../defineApp.js'
 import {createServerLifecycle, toDisplayHost} from '../../util/serverOrchestration.js'
-import {formatDashboardSummary} from '../dashboardSummary.js'
 import {type AppServerResult, startAppServerSupervisor} from './appServerSupervisor.js'
 import {bindDevShortcuts} from './bindDevShortcuts.js'
 import {fetchDevServerDetails, waitForDevServerDetails} from './devServerSummary.js'
@@ -151,23 +152,37 @@ export async function startWorkbenchDev(
   }
 
   const durationMs = Date.now() - startedAt
-  const resolvedDetails = workbench.workbenchAvailable ? await waitForDevServerDetails(details) : {}
+  const {deployment, organizationName} = workbench.workbenchAvailable
+    ? await waitForDevServerDetails(details)
+    : {}
 
   installSignalHandlers()
 
   if (workbench.workbenchAvailable) {
     const url = `http://${toDisplayHost(workbench.httpHost)}:${workbench.workbenchPort}${dashboardAppPath ?? ''}`
-    output.log(
-      formatDashboardSummary({
-        ...resolvedDetails,
-        durationMs,
-        heading: 'Sanity Dashboard ready',
-        isApp,
-        organizationId: cliConfig.app?.organizationId,
-        title: isWorkbenchApp(cliConfig.app) ? cliConfig.app.title : undefined,
-        url,
-      }),
-    )
+    let deploymentStatus: string | undefined
+    if (deployment) {
+      const date = new Date(deployment.createdAt).toLocaleDateString('en-US', {
+        day: 'numeric',
+        month: 'short',
+        year: 'numeric',
+      })
+      deploymentStatus = `deployed ${date}${deployment.deployedBy ? ` by ${deployment.deployedBy}` : ''}`
+    } else if (deployment === null) {
+      deploymentStatus = 'not deployed'
+    }
+
+    const organization = organizationName ?? cliConfig.app?.organizationId
+    const title = isWorkbenchApp(cliConfig.app) ? cliConfig.app.title : undefined
+    const lines = ['', `  Sanity Dashboard ready in ${(durationMs / 1000).toFixed(1)}s`, '']
+    if (organization) lines.push(`    Organization  ${organization}`)
+    if (title) lines.push(`    ${(isApp ? 'App' : 'Studio').padEnd(12)}  ${title}`)
+    lines.push(`    URL           ${styleText(['blue', 'underline'], url)}`)
+    if (deploymentStatus) {
+      lines.push(`    Version       local preview ${styleText('dim', `· ${deploymentStatus}`)}`)
+    }
+
+    output.log(`${lines.join('\n')}\n`)
     const quit = () => void close().then(() => process.exit(0))
     closers.push(bindDevShortcuts({output, quit, url}))
   }

@@ -92,6 +92,7 @@ export async function getApplication(applicationId: string): Promise<Application
 export async function getOrganizationApplication(
   organizationId: string,
   idOrSlug: string,
+  signal?: AbortSignal,
 ): Promise<
   (Application & {activeDeployment: {createdAt: string; deployedBy: string} | null}) | null
 > {
@@ -103,6 +104,7 @@ export async function getOrganizationApplication(
   try {
     return await client.request({
       query: {include: 'activeDeployment'},
+      signal,
       url: `/organizations/${organizationId}/applications/${idOrSlug}`,
     })
   } catch (err) {

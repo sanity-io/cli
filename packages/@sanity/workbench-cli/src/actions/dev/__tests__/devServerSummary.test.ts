@@ -1,8 +1,6 @@
-import {styleText} from 'node:util'
-
 import {getGlobalCliClient} from '@sanity/cli-core'
 import {spinner} from '@sanity/cli-core/ux'
-import {afterEach, beforeEach, describe, expect, onTestFinished, test, vi} from 'vitest'
+import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
 import {
   type DevServerDetails,
@@ -30,16 +28,25 @@ const defaultResponses: Record<string, unknown> = {
   '/users/user-1': {displayName: 'Jules'},
 }
 let responses: Record<string, unknown>
+const HANG = Symbol('hang')
 
 const httpError = (statusCode: number) => Object.assign(new Error('Failed'), {statusCode})
 
-const mockRequest = vi.fn(async ({query, url}: {query?: {include?: string}; url: string}) => {
-  const key = query?.include ? `${url}?include=${query.include}` : url
-  const response = key in responses ? responses[key] : httpError(404)
-  if (response instanceof Error) throw response
+const mockRequest = vi.fn(
+  async ({query, signal, url}: {query?: {include?: string}; signal?: AbortSignal; url: string}) => {
+    const key = query?.include ? `${url}?include=${query.include}` : url
+    const response = key in responses ? responses[key] : httpError(404)
+    if (response instanceof Error) throw response
+    if (response === HANG) {
+      return new Promise((_, reject) => {
+        signal?.throwIfAborted()
+        signal?.addEventListener('abort', () => reject(signal.reason))
+      })
+    }
 
-  return response
-})
+    return response
+  },
+)
 
 beforeEach(() => {
   responses = {...defaultResponses}
@@ -49,13 +56,14 @@ beforeEach(() => {
 
 afterEach(() => {
   vi.clearAllMocks()
+  vi.restoreAllMocks()
 })
 
 describe('fetchDevServerDetails', () => {
   test('resolves the organization name and the deployer of the active deployment', async () => {
     await expect(fetchDevServerDetails(workbenchCliConfig())).resolves.toEqual({
+      deployment: {createdAt: '2026-05-12T10:00:00.000Z', deployedBy: 'Jules'},
       organizationName: 'Acme',
-      version: `local preview ${styleText('dim', '· deployed May 12, 2026 by Jules')}`,
     })
   })
 
@@ -64,6 +72,7 @@ describe('fetchDevServerDetails', () => {
 
     expect(mockRequest).toHaveBeenCalledWith({
       query: {include: 'activeDeployment'},
+      signal: expect.anything(),
       url: '/organizations/org-123/applications/app-id',
     })
   })
@@ -75,7 +84,7 @@ describe('fetchDevServerDetails', () => {
 
     const details = await fetchDevServerDetails(workbenchCliConfig())
 
-    expect(details.version).toBe(`local preview ${styleText('dim', '· not deployed')}`)
+    expect(details.deployment).toBeNull()
   })
 
   test('reports an app that was never created as not deployed', async () => {
@@ -83,57 +92,71 @@ describe('fetchDevServerDetails', () => {
       workbenchCliConfig({app: workbenchApp({slug: 'new-app'})}),
     )
 
-    expect(details.version).toBe(`local preview ${styleText('dim', '· not deployed')}`)
+    expect(details.deployment).toBeNull()
   })
 
-  test('shows the deploy date alone when the deployer cannot be looked up', async () => {
+  test('keeps the deployment without a deployer when the user lookup fails', async () => {
     responses['/users/user-1'] = httpError(403)
 
     const details = await fetchDevServerDetails(workbenchCliConfig())
 
-    expect(details.version).toBe(`local preview ${styleText('dim', '· deployed May 12, 2026')}`)
+    expect(details.deployment).toEqual({createdAt: '2026-05-12T10:00:00.000Z', deployedBy: null})
   })
 
-  test('drops the version row, not marks it undeployed, when the app lookup fails', async () => {
+  test('leaves the deployment unknown, not undeployed, when the app lookup fails', async () => {
     responses['/organizations/org-123/applications/test-app?include=activeDeployment'] =
       httpError(500)
 
     await expect(fetchDevServerDetails(workbenchCliConfig())).resolves.toEqual({
+      deployment: undefined,
       organizationName: 'Acme',
-      version: null,
     })
   })
 
-  test('keeps the organization name when the app lookup outlasts the timeout', async () => {
-    vi.useFakeTimers({toFake: ['setTimeout']})
-    onTestFinished(() => {
-      vi.useRealTimers()
+  describe('when a lookup outlasts the 3s deadline', () => {
+    const deployment = {createdAt: '2026-05-12T10:00:00.000Z', deployedBy: 'Jules'}
+
+    test.each([
+      ['the organization', '/organizations/org-123', {deployment, organizationName: null}],
+      [
+        'the app',
+        '/organizations/org-123/applications/test-app?include=activeDeployment',
+        {deployment: undefined, organizationName: 'Acme'},
+      ],
+      [
+        'the deployer',
+        '/users/user-1',
+        {deployment: {...deployment, deployedBy: null}, organizationName: 'Acme'},
+      ],
+    ])('drops only %s', async (_, key, expected) => {
+      const deadline = new AbortController()
+      vi.spyOn(AbortSignal, 'timeout').mockReturnValue(deadline.signal)
+      responses[key] = HANG
+
+      const details = fetchDevServerDetails(workbenchCliConfig())
+      await vi.waitFor(() =>
+        expect(mockRequest).toHaveBeenCalledWith(expect.objectContaining({url: key.split('?')[0]})),
+      )
+      deadline.abort()
+
+      await expect(details).resolves.toEqual(expected)
+      expect(AbortSignal.timeout).toHaveBeenCalledWith(3000)
     })
-    mockRequest.mockImplementation(async ({query, url}) => {
-      if (query?.include) return new Promise(() => {})
-
-      return responses[url]
-    })
-
-    const details = fetchDevServerDetails(workbenchCliConfig())
-    await vi.advanceTimersByTimeAsync(3000)
-
-    await expect(details).resolves.toEqual({organizationName: 'Acme', version: null})
   })
 
   test('resolves no details when the client cannot be created', async () => {
     vi.mocked(getGlobalCliClient).mockRejectedValue(new Error('You must login first'))
 
     await expect(fetchDevServerDetails(workbenchCliConfig())).resolves.toEqual({
+      deployment: undefined,
       organizationName: null,
-      version: null,
     })
   })
 
   test('skips the deployment lookup for a media library config', async () => {
     const details = await fetchDevServerDetails(mediaLibraryCliConfig())
 
-    expect(details).toEqual({organizationName: 'Acme', version: undefined})
+    expect(details).toEqual({deployment: undefined, organizationName: 'Acme'})
     expect(mockRequest).toHaveBeenCalledTimes(1)
   })
 })
@@ -158,18 +181,5 @@ describe('waitForDevServerDetails', () => {
 
     await expect(waiting).resolves.toEqual({organizationName: 'Acme'})
     expect(mockSpin.stop).toHaveBeenCalled()
-  })
-
-  test('gives up on details that never arrive', async () => {
-    vi.useFakeTimers({toFake: ['setTimeout', 'setImmediate']})
-    try {
-      const waiting = waitForDevServerDetails(new Promise(() => {}))
-      await vi.runAllTimersAsync()
-
-      await expect(waiting).resolves.toEqual({})
-      expect(mockSpin.stop).toHaveBeenCalled()
-    } finally {
-      vi.useRealTimers()
-    }
   })
 })

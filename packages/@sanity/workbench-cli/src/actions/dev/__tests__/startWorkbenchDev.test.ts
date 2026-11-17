@@ -78,8 +78,8 @@ describe('startWorkbenchDev', () => {
     mockStartAppServer.mockResolvedValue(mockAppServer({port: 3334}))
     mockGetCliConfigUncached.mockResolvedValue(workbenchCliConfig())
     mockFetchDevServerDetails.mockResolvedValue({
+      deployment: {createdAt: '2026-05-12T10:00:00.000Z', deployedBy: 'Jules'},
       organizationName: 'Acme',
-      version: 'local preview',
     })
   })
 
@@ -153,7 +153,37 @@ describe('startWorkbenchDev', () => {
       expect(output.log).toHaveBeenCalledWith(expect.stringContaining('Organization  Acme'))
       expect(output.log).toHaveBeenCalledWith(expect.stringContaining('App           Test App'))
       expect(output.log).toHaveBeenCalledWith(
-        expect.stringContaining('Version       local preview'),
+        expect.stringContaining(
+          `Version       local preview ${styleText('dim', '· deployed May 12, 2026 by Jules')}`,
+        ),
+      )
+    })
+
+    test('shows the deploy date alone when the deployer is unknown', async () => {
+      mockFetchDevServerDetails.mockResolvedValue({
+        deployment: {createdAt: '2026-05-12T10:00:00.000Z', deployedBy: null},
+      })
+      const output = createMockOutput()
+
+      await run({output})
+
+      expect(output.log).toHaveBeenCalledWith(
+        expect.stringContaining(
+          `Version       local preview ${styleText('dim', '· deployed May 12, 2026')}\n`,
+        ),
+      )
+    })
+
+    test('shows "not deployed" for an app without an active deployment', async () => {
+      mockFetchDevServerDetails.mockResolvedValue({deployment: null})
+      const output = createMockOutput()
+
+      await run({output})
+
+      expect(output.log).toHaveBeenCalledWith(
+        expect.stringContaining(
+          `Version       local preview ${styleText('dim', '· not deployed')}`,
+        ),
       )
     })
 
@@ -164,6 +194,7 @@ describe('startWorkbenchDev', () => {
       await run({output})
 
       expect(output.log).toHaveBeenCalledWith(expect.stringContaining('Organization  org-123'))
+      expect(output.log).not.toHaveBeenCalledWith(expect.stringContaining('Version'))
     })
 
     test('shows the existing lock host in the URL, not the caller host', async () => {

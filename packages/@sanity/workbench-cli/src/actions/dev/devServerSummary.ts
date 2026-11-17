@@ -1,18 +1,18 @@
-import {styleText} from 'node:util'
-
 import {type CliConfig} from '@sanity/cli-core'
 import {spinner} from '@sanity/cli-core/ux'
 
 import {isWorkbenchApp} from '../../defineApp.js'
 import {getOrganizationApplication} from '../../services/applications.js'
-import {request} from '../dashboardSummary.js'
+import {getOrganization} from '../../services/organizations.js'
+import {getUser} from '../../services/users.js'
 
 const DETAILS_TIMEOUT_MS = 3000
 const PENDING = Symbol('pending')
 
 export interface DevServerDetails {
+  /** `null` when the app has no active deployment, `undefined` when the lookup failed or was skipped. */
+  deployment?: {createdAt: string; deployedBy: string | null} | null
   organizationName?: string | null
-  version?: string | null
 }
 
 export async function fetchDevServerDetails(cliConfig: CliConfig): Promise<DevServerDetails> {
@@ -22,21 +22,33 @@ export async function fetchDevServerDetails(cliConfig: CliConfig): Promise<DevSe
   const idOrSlug = isWorkbenchApp(cliConfig.app)
     ? (cliConfig.deployment?.appId ?? cliConfig.app.slug)
     : undefined
+  const signal = AbortSignal.timeout(DETAILS_TIMEOUT_MS)
 
-  // Caps the two serial version requests so a slow lookup can't drop the organization name.
-  const versionTimeout = new Promise<null>((resolve) => {
-    setTimeout(resolve, DETAILS_TIMEOUT_MS, null).unref()
-  })
-  const [organizationName, version] = await Promise.all([
-    request<{name: string}>(`/organizations/${organizationId}`)
-      .then((org) => org.name)
-      .catch(() => null),
+  const [organizationName, deployment] = await Promise.all([
+    getOrganization(organizationId, signal).then(
+      (org) => org.name,
+      () => null,
+    ),
     idOrSlug
-      ? Promise.race([fetchVersion(organizationId, idOrSlug).catch(() => null), versionTimeout])
+      ? getOrganizationApplication(organizationId, idOrSlug, signal).then(
+          async (application) => {
+            const active = application?.activeDeployment
+            if (!active) return null
+
+            const deployedBy = await getUser(active.deployedBy, signal).then(
+              (user) => user.displayName,
+              () => null,
+            )
+
+            return {createdAt: active.createdAt, deployedBy}
+          },
+          // eslint-disable-next-line unicorn/no-useless-undefined
+          () => undefined,
+        )
       : undefined,
   ])
 
-  return {organizationName, version}
+  return {deployment, organizationName}
 }
 
 export async function waitForDevServerDetails(
@@ -49,29 +61,8 @@ export async function waitForDevServerDetails(
   if (settled !== PENDING) return settled
 
   const spin = spinner('Loading organization and deployment details').start()
-  const timeout = new Promise<DevServerDetails>((resolve) => {
-    setTimeout(() => resolve({}), DETAILS_TIMEOUT_MS).unref()
-  })
-  const result = await Promise.race([details, timeout])
+  const result = await details
   spin.stop()
 
   return result
-}
-
-async function fetchVersion(organizationId: string, idOrSlug: string): Promise<string> {
-  const application = await getOrganizationApplication(organizationId, idOrSlug)
-  const active = application?.activeDeployment
-  if (!active) return `local preview ${styleText('dim', '· not deployed')}`
-
-  const deployedBy = await request<{displayName: string}>(`/users/${active.deployedBy}`)
-    .then((user) => user.displayName)
-    .catch(() => null)
-  const date = new Date(active.createdAt).toLocaleDateString('en-US', {
-    day: 'numeric',
-    month: 'short',
-    year: 'numeric',
-  })
-  const by = deployedBy ? ` by ${deployedBy}` : ''
-
-  return `local preview ${styleText('dim', `· deployed ${date}${by}`)}`
 }
