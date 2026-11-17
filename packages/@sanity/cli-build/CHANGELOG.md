@@ -1,5 +1,22 @@
 # Changelog
 
+## 7.2.1
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-build-v7.2.0...cli-build-v7.2.1)
+
+_2026-11-17_
+
+### Bug Fixes
+
+- **cli-build:** preserve named array types during serialization ([#2198](https://github.com/sanity-io/cli/pull/2198)) ([04f0fa2](https://github.com/sanity-io/cli/commit/04f0fa2ea878f455be21c0277301076fa5838b71))
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/cli-core bumped to 3.15.1
+    - @sanity/workbench-cli bumped to 2.16.1
+
 ## 7.2.0
 
 [Compare changes](https://github.com/sanity-io/cli/compare/cli-build-v7.1.2...cli-build-v7.2.0)

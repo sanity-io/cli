@@ -1,5 +1,21 @@
 # @sanity/workbench-cli
 
+## 2.16.1
+
+[Compare changes](https://github.com/sanity-io/cli/compare/workbench-cli-v2.16.0...workbench-cli-v2.16.1)
+
+_2026-11-17_
+
+### Bug Fixes
+
+- **workbench:** restrict dev server registry access ([#2193](https://github.com/sanity-io/cli/pull/2193)) ([03dd914](https://github.com/sanity-io/cli/commit/03dd91440b6b0f83ffcf96afdedbe2d643232256))
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/cli-core bumped to 3.15.1
+
 ## 2.16.0
 
 [Compare changes](https://github.com/sanity-io/cli/compare/workbench-cli-v2.15.2...workbench-cli-v2.16.0)
