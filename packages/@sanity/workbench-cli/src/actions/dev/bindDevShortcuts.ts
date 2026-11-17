@@ -1,4 +1,4 @@
-import {emitKeypressEvents} from 'node:readline'
+import {emitKeypressEvents, type Key} from 'node:readline'
 import {styleText} from 'node:util'
 
 import {type Output} from '@sanity/cli-core'
@@ -16,7 +16,7 @@ export function bindDevShortcuts({
   const {stdin} = process
   if (!stdin.isTTY) return async () => {}
 
-  const onKeypress = (_: string | undefined, key: {ctrl?: boolean; name?: string} = {}) => {
+  const onKeypress = (_: string | undefined, key: Key = {}) => {
     const isWindows = process.platform === 'win32'
 
     if (key.ctrl && key.name === 'c' && !isWindows) {
