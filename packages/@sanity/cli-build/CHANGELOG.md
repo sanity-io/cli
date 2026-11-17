@@ -1,5 +1,25 @@
 # Changelog
 
+## 7.3.0
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-build-v7.2.2...cli-build-v7.3.0)
+
+_2026-11-17_
+
+### Features
+
+- **workbench-cli:** show app details on dev ([#2149](https://github.com/sanity-io/cli/pull/2149)) ([d96fbe4](https://github.com/sanity-io/cli/commit/d96fbe4d938ec2985b14097adf6661b36ea2ed0b))
+
+### Bug Fixes
+
+- **cli-build:** replace sanity schema upload with @sanity/schema ([#2207](https://github.com/sanity-io/cli/pull/2207)) ([d02ec30](https://github.com/sanity-io/cli/commit/d02ec30685285f52372ca86d8add28a17d11e35b))
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/workbench-cli bumped to 2.18.0
+
 ## 7.2.2
 
 [Compare changes](https://github.com/sanity-io/cli/compare/cli-build-v7.2.1...cli-build-v7.2.2)
