@@ -477,12 +477,12 @@ snapshots:
 					},
 				},
 				"react": {
-					"specifier": "^19.2.5",
-					"version": "19.3.0",
+					"specifier": "^19.3.1",
+					"version": "19.3.1",
 				},
 				"react-dom": {
-					"specifier": "^19.2.5",
-					"version": "19.3.0",
+					"specifier": "^19.3.1",
+					"version": "19.3.1",
 				},
 				"sanity": "catalog:",
 			},
@@ -510,20 +510,7 @@ snapshots:
 				},
 			},
 			"devDependencies": {
-				"sanity": {
-					"specifier": "catalog:",
-					"with": {
-						"react": "19.3.0",
-						"react-dom": "19.3.1",
-						"styled-components": {
-							"version": "6.5.3",
-							"with": {
-								"react": "19.3.1",
-								"react-dom": "19.3.1",
-							},
-						},
-					},
-				},
+				"sanity": "catalog:",
 			},
 		},
 
@@ -531,12 +518,12 @@ snapshots:
 			"dependencies": {
 				"@sanity/vision": "catalog:",
 				"react": {
-					"specifier": "^19.2.5",
-					"version": "19.3.0",
+					"specifier": "^19.3.1",
+					"version": "19.3.1",
 				},
 				"react-dom": {
-					"specifier": "^19.2.5",
-					"version": "19.3.0",
+					"specifier": "^19.3.1",
+					"version": "19.3.1",
 				},
 				"sanity": "catalog:",
 				"styled-components": {
@@ -559,12 +546,12 @@ snapshots:
 		"fixtures/federated-studio": {
 			"dependencies": {
 				"react": {
-					"specifier": "^19.2.5",
-					"version": "19.3.0",
+					"specifier": "^19.3.1",
+					"version": "19.3.1",
 				},
 				"react-dom": {
-					"specifier": "^19.2.5",
-					"version": "19.3.0",
+					"specifier": "^19.3.1",
+					"version": "19.3.1",
 				},
 				"sanity": {
 					"specifier": "^6.12.0",
@@ -591,12 +578,12 @@ snapshots:
 			"dependencies": {
 				"@sanity/vision": "catalog:",
 				"react": {
-					"specifier": "^19.2.5",
-					"version": "19.3.0",
+					"specifier": "^19.3.1",
+					"version": "19.3.1",
 				},
 				"react-dom": {
-					"specifier": "^19.2.5",
-					"version": "19.3.0",
+					"specifier": "^19.3.1",
+					"version": "19.3.1",
 				},
 				"sanity": "catalog:",
 				"styled-components": {
@@ -620,12 +607,12 @@ snapshots:
 			"dependencies": {
 				"@sanity/cli": "workspace:*",
 				"react": {
-					"specifier": "^19.2.5",
-					"version": "19.3.0",
+					"specifier": "^19.3.1",
+					"version": "19.3.1",
 				},
 				"react-dom": {
-					"specifier": "^19.2.5",
-					"version": "19.3.0",
+					"specifier": "^19.3.1",
+					"version": "19.3.1",
 				},
 				"sanity": "catalog:",
 				"styled-components": {
@@ -642,12 +629,12 @@ snapshots:
 			"dependencies": {
 				"@sanity/vision": "catalog:",
 				"react": {
-					"specifier": "^19.2.5",
-					"version": "19.3.0",
+					"specifier": "^19.3.1",
+					"version": "19.3.1",
 				},
 				"react-dom": {
-					"specifier": "^19.2.5",
-					"version": "19.3.0",
+					"specifier": "^19.3.1",
+					"version": "19.3.1",
 				},
 				"sanity": "catalog:",
 				"styled-components": {
@@ -671,12 +658,12 @@ snapshots:
 			"dependencies": {
 				"next": "16.2.12",
 				"react": {
-					"specifier": "^19.2.5",
-					"version": "19.3.0",
+					"specifier": "^19.3.1",
+					"version": "19.3.1",
 				},
 				"react-dom": {
-					"specifier": "^19.2.5",
-					"version": "19.3.0",
+					"specifier": "^19.3.1",
+					"version": "19.3.1",
 				},
 			},
 			"devDependencies": {
@@ -702,12 +689,12 @@ snapshots:
 					"version": "2.20.2",
 				},
 				"react": {
-					"specifier": "^19.2.5",
-					"version": "19.3.0",
+					"specifier": "^19.3.1",
+					"version": "19.3.1",
 				},
 				"react-dom": {
-					"specifier": "^19.2.5",
-					"version": "19.3.0",
+					"specifier": "^19.3.1",
+					"version": "19.3.1",
 				},
 				"sanity": "catalog:",
 			},
@@ -726,12 +713,12 @@ snapshots:
 		"fixtures/prebuilt-studio": {
 			"dependencies": {
 				"react": {
-					"specifier": "^19.2.5",
-					"version": "19.3.0",
+					"specifier": "^19.3.1",
+					"version": "19.3.1",
 				},
 				"react-dom": {
-					"specifier": "^19.2.5",
-					"version": "19.3.0",
+					"specifier": "^19.3.1",
+					"version": "19.3.1",
 				},
 				"sanity": "catalog:",
 				"styled-components": {
@@ -759,12 +746,12 @@ snapshots:
 				},
 				"@sanity/vision": "catalog:",
 				"react": {
-					"specifier": "^19.2.5",
-					"version": "19.3.0",
+					"specifier": "^19.3.1",
+					"version": "19.3.1",
 				},
 				"react-dom": {
-					"specifier": "^19.2.5",
-					"version": "19.3.0",
+					"specifier": "^19.3.1",
+					"version": "19.3.1",
 				},
 				"sanity": "catalog:",
 				"sanity-plugin-media": {
@@ -1076,20 +1063,7 @@ snapshots:
 				"oxc-transform-react": "catalog:",
 				"publint": "catalog:",
 				"rimraf": "catalog:",
-				"sanity": {
-					"specifier": "catalog:",
-					"with": {
-						"react": "19.3.0",
-						"react-dom": "19.3.1",
-						"styled-components": {
-							"version": "6.5.3",
-							"with": {
-								"react": "19.3.1",
-								"react-dom": "19.3.1",
-							},
-						},
-					},
-				},
+				"sanity": "catalog:",
 				"tsx": "catalog:",
 				"typescript": "catalog:",
 				"vitest": "catalog:",
@@ -1265,20 +1239,7 @@ snapshots:
 				"eslint": "catalog:",
 				"oxc-transform-react": "catalog:",
 				"publint": "catalog:",
-				"sanity": {
-					"specifier": "catalog:",
-					"with": {
-						"react": "19.3.0",
-						"react-dom": "19.3.1",
-						"styled-components": {
-							"version": "6.5.3",
-							"with": {
-								"react": "19.3.1",
-								"react-dom": "19.3.1",
-							},
-						},
-					},
-				},
+				"sanity": "catalog:",
 				"typescript": "catalog:",
 				"vitest": "catalog:",
 			},
@@ -4239,210 +4200,82 @@ snapshots:
 		"@dnd-kit/accessibility@3.1.1": {
 			"integrity": "sha512-2P+YgaXF+gRsIihwwY1gCsQSYnu9Zyj2py8kY5fFvUM1qm2WA2u639R6YNVfU4GWr+ZM5mqEsfHZZLoRONbemw==",
 			"peerDependencies": {
-				"react": ">=16.8.0",
+				"react": {
+					"specifier": ">=16.8.0",
+					"version": "19.3.1",
+				},
 			},
 			"dependencies": {
 				"tslib": "2.8.1",
 			},
-			"snapshots": [
-				{
-					"peerDependencies": {
-						"react": {
-							"version": "19.3.0",
-						},
-					},
-				},
-				{
-					"peerDependencies": {
-						"react": {
-							"version": "19.3.1",
-						},
-					},
-				},
-			],
 		},
 
 		"@dnd-kit/core@6.3.1": {
 			"integrity": "sha512-xkGBRQQab4RLwgXxoqETICr6S5JlogafbhNsidmrkVv2YRs5MLwpjoF2qpiGjQt8S9AoxtIV603s0GIUpY5eYQ==",
 			"peerDependencies": {
-				"react": ">=16.8.0",
-				"react-dom": ">=16.8.0",
+				"react": {
+					"specifier": ">=16.8.0",
+					"version": "19.3.1",
+				},
+				"react-dom": {
+					"specifier": ">=16.8.0",
+					"version": "19.3.1",
+				},
 			},
 			"dependencies": {
 				"@dnd-kit/accessibility": "3.1.1",
 				"@dnd-kit/utilities": "3.2.2",
 				"tslib": "2.8.1",
 			},
-			"snapshots": [
-				{
-					"peerDependencies": {
-						"react": {
-							"version": "19.3.0",
-						},
-						"react-dom": {
-							"version": "19.3.0",
-						},
-					},
-				},
-				{
-					"peerDependencies": {
-						"react": {
-							"version": "19.3.0",
-						},
-						"react-dom": {
-							"version": "19.3.1",
-						},
-					},
-				},
-				{
-					"peerDependencies": {
-						"react": {
-							"version": "19.3.1",
-						},
-						"react-dom": {
-							"version": "19.3.1",
-						},
-					},
-				},
-			],
 		},
 
 		"@dnd-kit/modifiers@9.0.0": {
 			"integrity": "sha512-ybiLc66qRGuZoC20wdSSG6pDXFikui/dCNGthxv4Ndy8ylErY0N3KVxY2bgo7AWwIbxDmXDg3ylAFmnrjcbVvw==",
 			"peerDependencies": {
-				"@dnd-kit/core": "^6.3.0",
-				"react": ">=16.8.0",
+				"@dnd-kit/core": {
+					"specifier": "^6.3.0",
+					"version": "6.3.1",
+				},
+				"react": {
+					"specifier": ">=16.8.0",
+					"version": "19.3.1",
+				},
 			},
 			"dependencies": {
 				"@dnd-kit/utilities": "3.2.2",
 				"tslib": "2.8.1",
 			},
-			"snapshots": [
-				{
-					"peerDependencies": {
-						"@dnd-kit/core": {
-							"version": "6.3.1",
-							"with": {
-								"react": "19.3.0",
-								"react-dom": "19.3.0",
-							},
-						},
-						"react": {
-							"version": "19.3.0",
-						},
-					},
-				},
-				{
-					"peerDependencies": {
-						"@dnd-kit/core": {
-							"version": "6.3.1",
-							"with": {
-								"react": "19.3.0",
-								"react-dom": "19.3.1",
-							},
-						},
-						"react": {
-							"version": "19.3.0",
-						},
-					},
-				},
-				{
-					"peerDependencies": {
-						"@dnd-kit/core": {
-							"version": "6.3.1",
-							"with": {
-								"react": "19.3.1",
-								"react-dom": "19.3.1",
-							},
-						},
-						"react": {
-							"version": "19.3.1",
-						},
-					},
-				},
-			],
 		},
 
 		"@dnd-kit/sortable@10.0.0": {
 			"integrity": "sha512-+xqhmIIzvAYMGfBYYnbKuNicfSsk4RksY2XdmJhT+HAC01nix6fHCztU68jooFiMUB01Ky3F0FyOvhG/BZrWkg==",
 			"peerDependencies": {
-				"@dnd-kit/core": "^6.3.0",
-				"react": ">=16.8.0",
+				"@dnd-kit/core": {
+					"specifier": "^6.3.0",
+					"version": "6.3.1",
+				},
+				"react": {
+					"specifier": ">=16.8.0",
+					"version": "19.3.1",
+				},
 			},
 			"dependencies": {
 				"@dnd-kit/utilities": "3.2.2",
 				"tslib": "2.8.1",
 			},
-			"snapshots": [
-				{
-					"peerDependencies": {
-						"@dnd-kit/core": {
-							"version": "6.3.1",
-							"with": {
-								"react": "19.3.0",
-								"react-dom": "19.3.0",
-							},
-						},
-						"react": {
-							"version": "19.3.0",
-						},
-					},
-				},
-				{
-					"peerDependencies": {
-						"@dnd-kit/core": {
-							"version": "6.3.1",
-							"with": {
-								"react": "19.3.0",
-								"react-dom": "19.3.1",
-							},
-						},
-						"react": {
-							"version": "19.3.0",
-						},
-					},
-				},
-				{
-					"peerDependencies": {
-						"@dnd-kit/core": {
-							"version": "6.3.1",
-							"with": {
-								"react": "19.3.1",
-								"react-dom": "19.3.1",
-							},
-						},
-						"react": {
-							"version": "19.3.1",
-						},
-					},
-				},
-			],
 		},
 
 		"@dnd-kit/utilities@3.2.2": {
 			"integrity": "sha512-+MKAJEOfaBe5SmV6t34p80MMKhjvUz0vRrvVJbPT0WElzaOJ/1xs+D+KDv+tD/NE5ujfrChEcshd4fLn0wpiqg==",
 			"peerDependencies": {
-				"react": ">=16.8.0",
+				"react": {
+					"specifier": ">=16.8.0",
+					"version": "19.3.1",
+				},
 			},
 			"dependencies": {
 				"tslib": "2.8.1",
 			},
-			"snapshots": [
-				{
-					"peerDependencies": {
-						"react": {
-							"version": "19.3.0",
-						},
-					},
-				},
-				{
-					"peerDependencies": {
-						"react": {
-							"version": "19.3.1",
-						},
-					},
-				},
-			],
 		},
 
 		"@emnapi/core@1.10.0": {
@@ -4587,7 +4420,7 @@ snapshots:
 				},
 				"react": {
 					"specifier": ">=16.8.0",
-					"version": "19.3.0",
+					"version": "19.3.1",
 				},
 				"supports-color": {
 					"version": "8.1.1",
@@ -4630,7 +4463,7 @@ snapshots:
 			"peerDependencies": {
 				"react": {
 					"specifier": ">=16.8.0",
-					"version": "19.3.0",
+					"version": "19.3.1",
 				},
 			},
 		},
@@ -4973,44 +4806,18 @@ snapshots:
 		"@floating-ui/react-dom@2.1.9": {
 			"integrity": "sha512-JDjEFGCpImxDCA7JJKviA0M9+RtmJdj0m/NVU5IMgBK+AmZouAQQ7/+2GLH0GXXY0YMw9oXPB8hKdbPYg5QLYg==",
 			"peerDependencies": {
-				"react": ">=16.8.0",
-				"react-dom": ">=16.8.0",
+				"react": {
+					"specifier": ">=16.8.0",
+					"version": "19.3.1",
+				},
+				"react-dom": {
+					"specifier": ">=16.8.0",
+					"version": "19.3.1",
+				},
 			},
 			"dependencies": {
 				"@floating-ui/dom": "1.8.0",
 			},
-			"snapshots": [
-				{
-					"peerDependencies": {
-						"react": {
-							"version": "19.3.0",
-						},
-						"react-dom": {
-							"version": "19.3.0",
-						},
-					},
-				},
-				{
-					"peerDependencies": {
-						"react": {
-							"version": "19.3.0",
-						},
-						"react-dom": {
-							"version": "19.3.1",
-						},
-					},
-				},
-				{
-					"peerDependencies": {
-						"react": {
-							"version": "19.3.1",
-						},
-						"react-dom": {
-							"version": "19.3.1",
-						},
-					},
-				},
-			],
 		},
 
 		"@floating-ui/utils@0.2.12": {
@@ -6287,11 +6094,11 @@ snapshots:
 				},
 				"react": {
 					"specifier": "^17.0.2 || ^17.0.0-0 || ^18 || ^18.0.0-0 || ^19 || ^19.0.0-0",
-					"version": "19.3.0",
+					"version": "19.3.1",
 				},
 				"react-dom": {
 					"specifier": "^17.0.2 || ^17.0.2-0 || ^18 || ^18.0.0-0 || ^19 || ^19.0.0-0",
-					"version": "19.3.0",
+					"version": "19.3.1",
 				},
 			},
 			"dependencies": {
@@ -6314,53 +6121,27 @@ snapshots:
 					"version": "19.3.0",
 					"optional": true,
 				},
-				"react": "^17.0.2 || ^17.0.0-0 || ^18 || ^18.0.0-0 || ^19 || ^19.0.0-0",
-				"react-dom": "^17.0.2 || ^17.0.2-0 || ^18 || ^18.0.0-0 || ^19 || ^19.0.0-0",
+				"react": {
+					"specifier": "^17.0.2 || ^17.0.0-0 || ^18 || ^18.0.0-0 || ^19 || ^19.0.0-0",
+					"version": "19.3.1",
+				},
+				"react-dom": {
+					"specifier": "^17.0.2 || ^17.0.2-0 || ^18 || ^18.0.0-0 || ^19 || ^19.0.0-0",
+					"version": "19.3.1",
+				},
 			},
 			"dependencies": {
 				"@mux/mux-player": "3.14.1",
 				"@mux/playback-core": "0.36.1",
 				"prop-types": "15.8.1",
 			},
-			"snapshots": [
-				{
-					"peerDependencies": {
-						"react": {
-							"version": "19.3.0",
-						},
-						"react-dom": {
-							"version": "19.3.0",
-						},
-					},
-				},
-				{
-					"peerDependencies": {
-						"react": {
-							"version": "19.3.0",
-						},
-						"react-dom": {
-							"version": "19.3.1",
-						},
-					},
-				},
-				{
-					"peerDependencies": {
-						"react": {
-							"version": "19.3.1",
-						},
-						"react-dom": {
-							"version": "19.3.1",
-						},
-					},
-				},
-			],
 		},
 
 		"@mux/mux-player@3.13.4": {
 			"integrity": "sha512-q1N5S4TsMZ57Zzf3REuHaJ+VC9nxzrsnUSKxjSd8ok5EmAA5kWlosBf1Koted9kjD2fwyFxliQL5UpczwHorBg==",
 			"peerDependencies": {
 				"react": {
-					"version": "19.3.0",
+					"version": "19.3.1",
 					"below": true,
 				},
 			},
@@ -6374,30 +6155,18 @@ snapshots:
 
 		"@mux/mux-player@3.14.1": {
 			"integrity": "sha512-kn7xxbLLnVOxmXG0KT+DG05zuYMNL99fw9Mbl3hxo5Ug62pCBDUzw4YvOHYh21ZxQF1kBmdfS8vuc3RfXWNufA==",
+			"peerDependencies": {
+				"react": {
+					"version": "19.3.1",
+					"below": true,
+				},
+			},
 			"dependencies": {
 				"@mux/mux-video": "0.31.6",
 				"@mux/playback-core": "0.36.1",
 				"media-chrome": "4.19.4",
 				"player.style": "0.3.5",
 			},
-			"snapshots": [
-				{
-					"peerDependencies": {
-						"react": {
-							"version": "19.3.0",
-							"below": true,
-						},
-					},
-				},
-				{
-					"peerDependencies": {
-						"react": {
-							"version": "19.3.1",
-							"below": true,
-						},
-					},
-				},
-			],
 		},
 
 		"@mux/mux-video@0.31.4": {
@@ -7658,12 +7427,12 @@ snapshots:
 				},
 				"react": {
 					"specifier": "^18.3.1 || ^19.0.0",
-					"version": "19.3.0",
+					"version": "19.3.1",
 					"optional": true,
 				},
 				"react-dom": {
 					"specifier": "^18.3.1 || ^19.0.0",
-					"version": "19.3.0",
+					"version": "19.3.1",
 					"optional": true,
 				},
 			},
@@ -7702,12 +7471,12 @@ snapshots:
 				},
 				"react": {
 					"specifier": "^18.3.1 || ^19.0.0",
-					"version": "19.3.0",
+					"version": "19.3.1",
 					"optional": true,
 				},
 				"react-dom": {
 					"specifier": "^18.3.1 || ^19.0.0",
-					"version": "19.3.0",
+					"version": "19.3.1",
 					"optional": true,
 				},
 				"shiki": {
@@ -7749,7 +7518,10 @@ snapshots:
 					"version": "19.3.0",
 					"below": true,
 				},
-				"react": "^19.3.1",
+				"react": {
+					"specifier": "^19.3.1",
+					"version": "19.3.1",
+				},
 			},
 			"dependencies": {
 				"@portabletext/html": "2.0.2",
@@ -7764,22 +7536,6 @@ snapshots:
 				"scroll-into-view-if-needed": "3.1.0",
 				"xstate": "5.33.3",
 			},
-			"snapshots": [
-				{
-					"peerDependencies": {
-						"react": {
-							"version": "19.3.0",
-						},
-					},
-				},
-				{
-					"peerDependencies": {
-						"react": {
-							"version": "19.3.1",
-						},
-					},
-				},
-			],
 		},
 
 		"@portabletext/editor@8.2.3": {
@@ -7792,7 +7548,7 @@ snapshots:
 				},
 				"react": {
 					"specifier": "^19.2.8",
-					"version": "19.3.0",
+					"version": "19.3.1",
 				},
 			},
 			"dependencies": {
@@ -7862,7 +7618,7 @@ snapshots:
 				},
 				"react": {
 					"specifier": "^19.2",
-					"version": "19.3.0",
+					"version": "19.3.1",
 				},
 			},
 			"dependencies": {
@@ -7874,44 +7630,22 @@ snapshots:
 			"integrity": "sha512-YmNrVcfkqcJWbHlmNyeQ53zufQuLIG3LVhpFiI+tW3PS3xabQ5mhapVPEHM9vQxfAuXwVsp3yrLg0KsWtLtPlg==",
 			"engines": {"node": ">=22.12"},
 			"peerDependencies": {
-				"@portabletext/editor": "^8.2.11",
+				"@portabletext/editor": {
+					"specifier": "^8.2.11",
+					"version": "8.2.11",
+				},
 				"@types/react": {
 					"version": "19.3.0",
 					"below": true,
 				},
-				"react": "^19.2",
+				"react": {
+					"specifier": "^19.2",
+					"version": "19.3.1",
+				},
 			},
 			"dependencies": {
 				"@portabletext/plugin-input-rule": "7.0.25",
 			},
-			"snapshots": [
-				{
-					"peerDependencies": {
-						"@portabletext/editor": {
-							"version": "8.2.11",
-							"with": {
-								"react": "19.3.0",
-							},
-						},
-						"react": {
-							"version": "19.3.0",
-						},
-					},
-				},
-				{
-					"peerDependencies": {
-						"@portabletext/editor": {
-							"version": "8.2.11",
-							"with": {
-								"react": "19.3.1",
-							},
-						},
-						"react": {
-							"version": "19.3.1",
-						},
-					},
-				},
-			],
 		},
 
 		"@portabletext/plugin-dnd@2.0.18": {
@@ -7924,7 +7658,7 @@ snapshots:
 				},
 				"react": {
 					"specifier": "^19.2",
-					"version": "19.3.0",
+					"version": "19.3.1",
 				},
 			},
 		},
@@ -7933,37 +7667,15 @@ snapshots:
 			"integrity": "sha512-juk7pkx+NZZPJ5vnxGtz3dQ8gzVHEBrFWDXBbH0rXwEfB9mQ+UCRhgQF0I3qhBBzKEWyl1YIfLysjMi/Bktifg==",
 			"engines": {"node": ">=22.12"},
 			"peerDependencies": {
-				"@portabletext/editor": "^8.2.11",
-				"react": "^19.2",
+				"@portabletext/editor": {
+					"specifier": "^8.2.11",
+					"version": "8.2.11",
+				},
+				"react": {
+					"specifier": "^19.2",
+					"version": "19.3.1",
+				},
 			},
-			"snapshots": [
-				{
-					"peerDependencies": {
-						"@portabletext/editor": {
-							"version": "8.2.11",
-							"with": {
-								"react": "19.3.0",
-							},
-						},
-						"react": {
-							"version": "19.3.0",
-						},
-					},
-				},
-				{
-					"peerDependencies": {
-						"@portabletext/editor": {
-							"version": "8.2.11",
-							"with": {
-								"react": "19.3.1",
-							},
-						},
-						"react": {
-							"version": "19.3.1",
-						},
-					},
-				},
-			],
 		},
 
 		"@portabletext/plugin-input-rule@7.0.17": {
@@ -7980,7 +7692,7 @@ snapshots:
 				},
 				"react": {
 					"specifier": "^19.2",
-					"version": "19.3.0",
+					"version": "19.3.1",
 				},
 			},
 			"dependencies": {
@@ -7993,45 +7705,23 @@ snapshots:
 			"integrity": "sha512-yW2ZraiTsuISCYde+Fj04Xe+iz5XlzEf4N0Cy4eAQ4IJtlz6cobMbsPTfv6Rt695mWKglYeaBzxosUK15butKg==",
 			"engines": {"node": ">=22.12"},
 			"peerDependencies": {
-				"@portabletext/editor": "^8.2.11",
+				"@portabletext/editor": {
+					"specifier": "^8.2.11",
+					"version": "8.2.11",
+				},
 				"@types/react": {
 					"version": "19.3.0",
 					"below": true,
 				},
-				"react": "^19.2",
+				"react": {
+					"specifier": "^19.2",
+					"version": "19.3.1",
+				},
 			},
 			"dependencies": {
 				"@xstate/react": "6.1.0",
 				"xstate": "5.33.3",
 			},
-			"snapshots": [
-				{
-					"peerDependencies": {
-						"@portabletext/editor": {
-							"version": "8.2.11",
-							"with": {
-								"react": "19.3.0",
-							},
-						},
-						"react": {
-							"version": "19.3.0",
-						},
-					},
-				},
-				{
-					"peerDependencies": {
-						"@portabletext/editor": {
-							"version": "8.2.11",
-							"with": {
-								"react": "19.3.1",
-							},
-						},
-						"react": {
-							"version": "19.3.1",
-						},
-					},
-				},
-			],
 		},
 
 		"@portabletext/plugin-list-index@2.0.16": {
@@ -8044,7 +7734,7 @@ snapshots:
 				},
 				"react": {
 					"specifier": "^19.2",
-					"version": "19.3.0",
+					"version": "19.3.1",
 				},
 			},
 		},
@@ -8053,37 +7743,15 @@ snapshots:
 			"integrity": "sha512-fRsOl25HgzHBgGO0x2l8B5mhWV+1I7PH22rmzJFYK7S4oE5FDs1JevsiSycymGrx0Tl2HHFNnMSHdPAPMcUJNA==",
 			"engines": {"node": ">=22.12"},
 			"peerDependencies": {
-				"@portabletext/editor": "^8.2.11",
-				"react": "^19.2",
+				"@portabletext/editor": {
+					"specifier": "^8.2.11",
+					"version": "8.2.11",
+				},
+				"react": {
+					"specifier": "^19.2",
+					"version": "19.3.1",
+				},
 			},
-			"snapshots": [
-				{
-					"peerDependencies": {
-						"@portabletext/editor": {
-							"version": "8.2.11",
-							"with": {
-								"react": "19.3.0",
-							},
-						},
-						"react": {
-							"version": "19.3.0",
-						},
-					},
-				},
-				{
-					"peerDependencies": {
-						"@portabletext/editor": {
-							"version": "8.2.11",
-							"with": {
-								"react": "19.3.1",
-							},
-						},
-						"react": {
-							"version": "19.3.1",
-						},
-					},
-				},
-			],
 		},
 
 		"@portabletext/plugin-markdown-shortcuts@9.0.17": {
@@ -8100,7 +7768,7 @@ snapshots:
 				},
 				"react": {
 					"specifier": "^19.2",
-					"version": "19.3.0",
+					"version": "19.3.1",
 				},
 			},
 			"dependencies": {
@@ -8113,45 +7781,23 @@ snapshots:
 			"integrity": "sha512-GLWYKMASM5i6oDnCTKlHoMNAqukbxy5OlJ3TaicTX/lhzoa84qdUFfBFkz2gKNlj4eZkNS88vM96OasdPmZ6Lw==",
 			"engines": {"node": ">=22.12"},
 			"peerDependencies": {
-				"@portabletext/editor": "^8.2.11",
+				"@portabletext/editor": {
+					"specifier": "^8.2.11",
+					"version": "8.2.11",
+				},
 				"@types/react": {
 					"version": "19.3.0",
 					"below": true,
 				},
-				"react": "^19.2",
+				"react": {
+					"specifier": "^19.2",
+					"version": "19.3.1",
+				},
 			},
 			"dependencies": {
 				"@portabletext/plugin-character-pair-decorator": "9.0.25",
 				"@portabletext/plugin-input-rule": "7.0.25",
 			},
-			"snapshots": [
-				{
-					"peerDependencies": {
-						"@portabletext/editor": {
-							"version": "8.2.11",
-							"with": {
-								"react": "19.3.0",
-							},
-						},
-						"react": {
-							"version": "19.3.0",
-						},
-					},
-				},
-				{
-					"peerDependencies": {
-						"@portabletext/editor": {
-							"version": "8.2.11",
-							"with": {
-								"react": "19.3.1",
-							},
-						},
-						"react": {
-							"version": "19.3.1",
-						},
-					},
-				},
-			],
 		},
 
 		"@portabletext/plugin-one-line@8.0.16": {
@@ -8164,7 +7810,7 @@ snapshots:
 				},
 				"react": {
 					"specifier": "^19.2",
-					"version": "19.3.0",
+					"version": "19.3.1",
 				},
 			},
 		},
@@ -8173,37 +7819,15 @@ snapshots:
 			"integrity": "sha512-0A9p6VEzcZBaVTEjA8vwkWdNd7b5lWi7b+NL0LTbKzaGyevH9j43e+tWXIrfdu5AF1rFAFsV6CLld2kaZNK6MQ==",
 			"engines": {"node": ">=22.12"},
 			"peerDependencies": {
-				"@portabletext/editor": "^8.2.11",
-				"react": "^19.2",
+				"@portabletext/editor": {
+					"specifier": "^8.2.11",
+					"version": "8.2.11",
+				},
+				"react": {
+					"specifier": "^19.2",
+					"version": "19.3.1",
+				},
 			},
-			"snapshots": [
-				{
-					"peerDependencies": {
-						"@portabletext/editor": {
-							"version": "8.2.11",
-							"with": {
-								"react": "19.3.0",
-							},
-						},
-						"react": {
-							"version": "19.3.0",
-						},
-					},
-				},
-				{
-					"peerDependencies": {
-						"@portabletext/editor": {
-							"version": "8.2.11",
-							"with": {
-								"react": "19.3.1",
-							},
-						},
-						"react": {
-							"version": "19.3.1",
-						},
-					},
-				},
-			],
 		},
 
 		"@portabletext/plugin-paste-link@5.0.16": {
@@ -8216,7 +7840,7 @@ snapshots:
 				},
 				"react": {
 					"specifier": "^19.2",
-					"version": "19.3.0",
+					"version": "19.3.1",
 				},
 			},
 		},
@@ -8225,37 +7849,15 @@ snapshots:
 			"integrity": "sha512-XCpl+52h70RKHKtIipUmOhCxj7YTgAOr1VCgqSQB5bwrgfsYBhmR29tFN/xFCdpxvaMOAd2TY0Z5YM538ol6JQ==",
 			"engines": {"node": ">=22.12"},
 			"peerDependencies": {
-				"@portabletext/editor": "^8.2.11",
-				"react": "^19.2",
+				"@portabletext/editor": {
+					"specifier": "^8.2.11",
+					"version": "8.2.11",
+				},
+				"react": {
+					"specifier": "^19.2",
+					"version": "19.3.1",
+				},
 			},
-			"snapshots": [
-				{
-					"peerDependencies": {
-						"@portabletext/editor": {
-							"version": "8.2.11",
-							"with": {
-								"react": "19.3.0",
-							},
-						},
-						"react": {
-							"version": "19.3.0",
-						},
-					},
-				},
-				{
-					"peerDependencies": {
-						"@portabletext/editor": {
-							"version": "8.2.11",
-							"with": {
-								"react": "19.3.1",
-							},
-						},
-						"react": {
-							"version": "19.3.1",
-						},
-					},
-				},
-			],
 		},
 
 		"@portabletext/plugin-table@2.0.16": {
@@ -8268,11 +7870,11 @@ snapshots:
 				},
 				"react": {
 					"specifier": "^19.2",
-					"version": "19.3.0",
+					"version": "19.3.1",
 				},
 				"react-dom": {
 					"specifier": "^19.2",
-					"version": "19.3.0",
+					"version": "19.3.1",
 				},
 			},
 			"dependencies": {
@@ -8285,64 +7887,23 @@ snapshots:
 			"integrity": "sha512-1Ww9duvOrM9t+h7/6LOEjO6V6dHssuW7J4IVjWxd5rX/ZkdXGJqbu7czXn2nNED2Nz4+k6nbP6gXIo7mlgBzmQ==",
 			"engines": {"node": ">=22.12"},
 			"peerDependencies": {
-				"@portabletext/editor": "^8.2.11",
-				"react": "^19.2",
-				"react-dom": "^19.2",
+				"@portabletext/editor": {
+					"specifier": "^8.2.11",
+					"version": "8.2.11",
+				},
+				"react": {
+					"specifier": "^19.2",
+					"version": "19.3.1",
+				},
+				"react-dom": {
+					"specifier": "^19.2",
+					"version": "19.3.1",
+				},
 			},
 			"dependencies": {
 				"@floating-ui/dom": "1.8.0",
 				"@portabletext/keyboard-shortcuts": "3.0.0",
 			},
-			"snapshots": [
-				{
-					"peerDependencies": {
-						"@portabletext/editor": {
-							"version": "8.2.11",
-							"with": {
-								"react": "19.3.0",
-							},
-						},
-						"react": {
-							"version": "19.3.0",
-						},
-						"react-dom": {
-							"version": "19.3.0",
-						},
-					},
-				},
-				{
-					"peerDependencies": {
-						"@portabletext/editor": {
-							"version": "8.2.11",
-							"with": {
-								"react": "19.3.0",
-							},
-						},
-						"react": {
-							"version": "19.3.0",
-						},
-						"react-dom": {
-							"version": "19.3.1",
-						},
-					},
-				},
-				{
-					"peerDependencies": {
-						"@portabletext/editor": {
-							"version": "8.2.11",
-							"with": {
-								"react": "19.3.1",
-							},
-						},
-						"react": {
-							"version": "19.3.1",
-						},
-						"react-dom": {
-							"version": "19.3.1",
-						},
-					},
-				},
-			],
 		},
 
 		"@portabletext/plugin-typography@9.0.17": {
@@ -8359,7 +7920,7 @@ snapshots:
 				},
 				"react": {
 					"specifier": "^19.2",
-					"version": "19.3.0",
+					"version": "19.3.1",
 				},
 			},
 			"dependencies": {
@@ -8371,72 +7932,37 @@ snapshots:
 			"integrity": "sha512-xVgE61kJJTdd+UI65XE+bRBYSq3DGklWAYPfIQBBxn7g3myK1ESvOQofz5cnHtu6smeu1t0NM/M0xaD7hMhGrQ==",
 			"engines": {"node": ">=22.12"},
 			"peerDependencies": {
-				"@portabletext/editor": "^8.2.11",
+				"@portabletext/editor": {
+					"specifier": "^8.2.11",
+					"version": "8.2.11",
+				},
 				"@types/react": {
 					"version": "19.3.0",
 					"below": true,
 				},
-				"react": "^19.2",
+				"react": {
+					"specifier": "^19.2",
+					"version": "19.3.1",
+				},
 			},
 			"dependencies": {
 				"@portabletext/plugin-input-rule": "7.0.25",
 			},
-			"snapshots": [
-				{
-					"peerDependencies": {
-						"@portabletext/editor": {
-							"version": "8.2.11",
-							"with": {
-								"react": "19.3.0",
-							},
-						},
-						"react": {
-							"version": "19.3.0",
-						},
-					},
-				},
-				{
-					"peerDependencies": {
-						"@portabletext/editor": {
-							"version": "8.2.11",
-							"with": {
-								"react": "19.3.1",
-							},
-						},
-						"react": {
-							"version": "19.3.1",
-						},
-					},
-				},
-			],
 		},
 
 		"@portabletext/react@8.0.1": {
 			"integrity": "sha512-Fy9UxVhppgEckEvczZytg4bBxiPcZIM49NrJ3sizEoz19aNzJWEYoUj7f3TI94907psEk0yfR145eoOgkedM2A==",
 			"engines": {"node": ">=22.12"},
 			"peerDependencies": {
-				"react": "^19",
+				"react": {
+					"specifier": "^19",
+					"version": "19.3.1",
+				},
 			},
 			"dependencies": {
 				"@portabletext/toolkit": "6.0.0",
 				"@portabletext/types": "4.0.2",
 			},
-			"snapshots": [
-				{
-					"peerDependencies": {
-						"react": {
-							"version": "19.3.0",
-						},
-					},
-				},
-				{
-					"peerDependencies": {
-						"react": {
-							"version": "19.3.1",
-						},
-					},
-				},
-			],
 		},
 
 		"@portabletext/repair@1.0.1": {
@@ -8540,7 +8066,7 @@ snapshots:
 			"peerDependencies": {
 				"react": {
 					"specifier": "^16.9.0 || ^17.0.0 || ^18 || ^19",
-					"version": "19.3.0",
+					"version": "19.3.1",
 					"optional": true,
 				},
 				"react-redux": {
@@ -8562,28 +8088,15 @@ snapshots:
 		"@rexxars/react-json-inspector@9.0.1": {
 			"integrity": "sha512-4uZ4RnrVoOGOShIKKcPoF+qhwDCZJsPPqyoEoW/8HRdzNknN9Q2yhlbEgTX1lMZunF1fv7iHzAs+n1vgIgfg/g==",
 			"peerDependencies": {
-				"react": "^18 || ^19",
+				"react": {
+					"specifier": "^18 || ^19",
+					"version": "19.3.1",
+				},
 			},
 			"dependencies": {
 				"debounce": "1.2.1",
 				"md5-o-matic": "0.1.1",
 			},
-			"snapshots": [
-				{
-					"peerDependencies": {
-						"react": {
-							"version": "19.3.0",
-						},
-					},
-				},
-				{
-					"peerDependencies": {
-						"react": {
-							"version": "19.3.1",
-						},
-					},
-				},
-			],
 		},
 
 		"@rexxars/react-split-pane@1.0.0": {
@@ -8591,11 +8104,11 @@ snapshots:
 			"peerDependencies": {
 				"react": {
 					"specifier": "^18 || ^19",
-					"version": "19.3.0",
+					"version": "19.3.1",
 				},
 				"react-dom": {
 					"specifier": "^18 || ^19",
-					"version": "19.3.0",
+					"version": "19.3.1",
 				},
 			},
 		},
@@ -9040,10 +8553,10 @@ snapshots:
 			"peerDependencies": {
 				"react": {
 					"specifier": "^19.2.2",
-					"version": "19.3.0",
+					"version": "19.3.1",
 				},
 				"react-dom": {
-					"version": "19.3.0",
+					"version": "19.3.1",
 					"below": true,
 				},
 				"styled-components": {
@@ -9067,7 +8580,18 @@ snapshots:
 			"integrity": "sha512-9iNG0ys3CFplL3kh+YkUDTERci6RIFCS/WKk78EtpOWKdCKIGREE6x3QhxwraoxD2Wo9QCwsdkVMZRpVuGvPzw==",
 			"engines": {"node": ">=22.12"},
 			"peerDependencies": {
-				"react": "^19.2.2",
+				"react": {
+					"specifier": "^19.2.2",
+					"version": "19.3.1",
+				},
+				"react-dom": {
+					"version": "19.3.1",
+					"below": true,
+				},
+				"styled-components": {
+					"version": "6.5.3",
+					"below": true,
+				},
 				"vitest": {
 					"version": "5.1.0",
 					"below": true,
@@ -9081,65 +8605,6 @@ snapshots:
 				"rxjs": "7.8.2",
 				"ui5": "@sanity/ui@5.0.0-alpha.19",
 			},
-			"snapshots": [
-				{
-					"peerDependencies": {
-						"react": {
-							"version": "19.3.0",
-						},
-						"react-dom": {
-							"version": "19.3.0",
-							"below": true,
-						},
-						"styled-components": {
-							"version": "6.5.3",
-							"with": {
-								"react": "19.3.0",
-								"react-dom": "19.3.0",
-							},
-							"below": true,
-						},
-					},
-				},
-				{
-					"peerDependencies": {
-						"react": {
-							"version": "19.3.0",
-						},
-						"react-dom": {
-							"version": "19.3.1",
-							"below": true,
-						},
-						"styled-components": {
-							"version": "6.5.3",
-							"with": {
-								"react": "19.3.1",
-								"react-dom": "19.3.1",
-							},
-							"below": true,
-						},
-					},
-				},
-				{
-					"peerDependencies": {
-						"react": {
-							"version": "19.3.1",
-						},
-						"react-dom": {
-							"version": "19.3.1",
-							"below": true,
-						},
-						"styled-components": {
-							"version": "6.5.3",
-							"with": {
-								"react": "19.3.1",
-								"react-dom": "19.3.1",
-							},
-							"below": true,
-						},
-					},
-				},
-			],
 		},
 
 		"@sanity/asset-utils@2.3.0": {
@@ -9291,17 +8756,6 @@ snapshots:
 				"sanity": {
 					"specifier": "^6.17.0",
 					"version": "6.22.0",
-					"with": {
-						"react": "19.3.0",
-						"react-dom": "19.3.1",
-						"styled-components": {
-							"version": "6.5.3",
-							"with": {
-								"react": "19.3.1",
-								"react-dom": "19.3.1",
-							},
-						},
-					},
 					"optional": true,
 				},
 				"tsx": {
@@ -9314,9 +8768,6 @@ snapshots:
 				},
 				"use-sync-external-store": {
 					"version": "1.7.0",
-					"with": {
-						"react": "19.3.1",
-					},
 					"below": true,
 				},
 				"vitest": {
@@ -9480,10 +8931,10 @@ snapshots:
 				},
 				"react": {
 					"specifier": "^19.2",
-					"version": "19.3.0",
+					"version": "19.3.1",
 				},
 				"react-dom": {
-					"version": "19.3.0",
+					"version": "19.3.1",
 					"below": true,
 				},
 				"sanity": {
@@ -9526,7 +8977,7 @@ snapshots:
 					"optional": true,
 				},
 				"react": {
-					"version": "19.3.0",
+					"version": "19.3.1",
 					"below": true,
 				},
 				"supports-color": {
@@ -9715,7 +9166,7 @@ snapshots:
 			"peerDependencies": {
 				"react": {
 					"specifier": "^18.3 || ^19.0.0-0",
-					"version": "19.3.0",
+					"version": "19.3.1",
 				},
 			},
 		},
@@ -9726,7 +9177,7 @@ snapshots:
 			"peerDependencies": {
 				"react": {
 					"specifier": "^18 || ^19",
-					"version": "19.3.0",
+					"version": "19.3.1",
 				},
 			},
 		},
@@ -9737,7 +9188,7 @@ snapshots:
 			"peerDependencies": {
 				"react": {
 					"specifier": "^18 || ^19",
-					"version": "19.3.0",
+					"version": "19.3.1",
 				},
 			},
 		},
@@ -9746,24 +9197,11 @@ snapshots:
 			"integrity": "sha512-10nE7IiuXIPIf6ufSKyNwnOE75wghEollUYzkjPUAX+5oenyE5qDFUrMD5MeC+8gxZ8KS61o8sH1mpmhpWx++w==",
 			"engines": {"node": ">=20.19 <22 || >=22.12"},
 			"peerDependencies": {
-				"react": "^18 || ^19",
+				"react": {
+					"specifier": "^18 || ^19",
+					"version": "19.3.1",
+				},
 			},
-			"snapshots": [
-				{
-					"peerDependencies": {
-						"react": {
-							"version": "19.3.0",
-						},
-					},
-				},
-				{
-					"peerDependencies": {
-						"react": {
-							"version": "19.3.1",
-						},
-					},
-				},
-			],
 		},
 
 		"@sanity/id-utils@1.0.0": {
@@ -9826,11 +9264,11 @@ snapshots:
 			"peerDependencies": {
 				"react": {
 					"specifier": "^16.9 || ^17 || ^18 || ^19",
-					"version": "19.3.0",
+					"version": "19.3.1",
 				},
 				"react-dom": {
 					"specifier": "^16.9 || ^17 || ^18 || ^19",
-					"version": "19.3.0",
+					"version": "19.3.1",
 				},
 			},
 		},
@@ -9854,27 +9292,14 @@ snapshots:
 			"integrity": "sha512-wTkEcfne18DAYvbGclESNjraUCmbFL1fHMHzpIKH7AgdARvJqMHPEg6QoFsgeKP6tmDmME772uoAIsnwCOTWzg==",
 			"engines": {"node": ">=14.0.0"},
 			"peerDependencies": {
-				"react": "^18.3 || ^19.0.0-0",
+				"react": {
+					"specifier": "^18.3 || ^19.0.0-0",
+					"version": "19.3.1",
+				},
 			},
 			"dependencies": {
 				"@sanity/color": "3.0.9",
 			},
-			"snapshots": [
-				{
-					"peerDependencies": {
-						"react": {
-							"version": "19.3.0",
-						},
-					},
-				},
-				{
-					"peerDependencies": {
-						"react": {
-							"version": "19.3.1",
-						},
-					},
-				},
-			],
 		},
 
 		"@sanity/media-library-types@1.7.1": {
@@ -10280,17 +9705,6 @@ snapshots:
 				},
 				"sanity": {
 					"version": "6.22.0",
-					"with": {
-						"react": "19.3.0",
-						"react-dom": "19.3.1",
-						"styled-components": {
-							"version": "6.5.3",
-							"with": {
-								"react": "19.3.1",
-								"react-dom": "19.3.1",
-							},
-						},
-					},
 					"below": true,
 				},
 				"tsx": {
@@ -10303,9 +9717,6 @@ snapshots:
 				},
 				"use-sync-external-store": {
 					"version": "1.7.0",
-					"with": {
-						"react": "19.3.1",
-					},
 					"below": true,
 				},
 				"vitest": {
@@ -10454,11 +9865,11 @@ snapshots:
 				},
 				"react": {
 					"specifier": "^18.0.0 || ^19.0.0",
-					"version": "19.3.0",
+					"version": "19.3.1",
 				},
 				"react-dom": {
 					"specifier": "^18.0.0 || ^19.0.0",
-					"version": "19.3.0",
+					"version": "19.3.1",
 				},
 				"use-sync-external-store": {
 					"version": "1.7.0",
@@ -10496,8 +9907,18 @@ snapshots:
 					"version": "11.1.18",
 					"below": true,
 				},
-				"react": "^19.2.0",
-				"react-dom": "^19.2.0",
+				"react": {
+					"specifier": "^19.2.0",
+					"version": "19.3.1",
+				},
+				"react-dom": {
+					"specifier": "^19.2.0",
+					"version": "19.3.1",
+				},
+				"use-sync-external-store": {
+					"version": "1.7.0",
+					"below": true,
+				},
 				"vitest": {
 					"version": "5.1.0",
 					"below": true,
@@ -10511,105 +9932,12 @@ snapshots:
 				"@module-federation/runtime": "2.9.3",
 				"@sanity/client": "8.15.0",
 				"@sanity/message-protocol": "0.24.0",
+				"@sanity/sdk": "3.12.0",
 				"@sanity/types": "6.22.0",
 				"react-compiler-runtime": "1.0.0",
 				"react-error-boundary": "6.1.6",
 				"rxjs": "7.8.2",
 			},
-			"snapshots": [
-				{
-					"peerDependencies": {
-						"react": {
-							"version": "19.3.0",
-						},
-						"react-dom": {
-							"version": "19.3.0",
-						},
-						"use-sync-external-store": {
-							"version": "1.7.0",
-							"with": {
-								"react": "19.3.0",
-							},
-							"below": true,
-						},
-					},
-					"dependencies": {
-						"@sanity/sdk": "3.12.0",
-					},
-				},
-				{
-					"peerDependencies": {
-						"react": {
-							"version": "19.3.0",
-						},
-						"react-dom": {
-							"version": "19.3.1",
-						},
-						"use-sync-external-store": {
-							"version": "1.7.0",
-							"with": {
-								"react": "19.3.0",
-							},
-							"below": true,
-						},
-					},
-					"dependencies": {
-						"@sanity/sdk": "3.12.0",
-					},
-				},
-				{
-					"peerDependencies": {
-						"react": {
-							"version": "19.3.0",
-						},
-						"react-dom": {
-							"version": "19.3.1",
-						},
-						"use-sync-external-store": {
-							"version": "1.7.0",
-							"with": {
-								"react": "19.3.1",
-							},
-							"below": true,
-						},
-					},
-					"dependencies": {
-						"@sanity/sdk": {
-							"version": "3.12.0",
-							"with": {
-								"react": "19.3.0",
-								"use-sync-external-store": {
-									"version": "1.7.0",
-									"with": {
-										"react": "19.3.1",
-									},
-								},
-								"xstate": "5.33.3",
-							},
-						},
-					},
-				},
-				{
-					"peerDependencies": {
-						"react": {
-							"version": "19.3.1",
-						},
-						"react-dom": {
-							"version": "19.3.1",
-						},
-						"use-sync-external-store": {
-							"version": "1.7.0",
-							"with": {
-								"react": "19.3.1",
-							},
-							"below": true,
-						},
-					},
-					"dependencies": {
-						"@sanity/sdk": "3.12.0",
-					},
-				},
-			],
 		},
 
 		"@sanity/sdk-react@3.9.1": {
@@ -10625,11 +9953,11 @@ snapshots:
 				},
 				"react": {
 					"specifier": "^19.2.0",
-					"version": "19.3.0",
+					"version": "19.3.1",
 				},
 				"react-dom": {
 					"specifier": "^19.2.0",
-					"version": "19.3.0",
+					"version": "19.3.1",
 				},
 				"use-sync-external-store": {
 					"version": "1.7.0",
@@ -10682,7 +10010,7 @@ snapshots:
 					"below": true,
 				},
 				"react": {
-					"version": "19.3.0",
+					"version": "19.3.1",
 					"below": true,
 				},
 				"use-sync-external-store": {
@@ -10730,6 +10058,14 @@ snapshots:
 					"version": "11.1.18",
 					"below": true,
 				},
+				"react": {
+					"version": "19.3.1",
+					"below": true,
+				},
+				"use-sync-external-store": {
+					"version": "1.7.0",
+					"below": true,
+				},
 				"vitest": {
 					"version": "5.1.0",
 					"below": true,
@@ -10752,127 +10088,23 @@ snapshots:
 				"groq-js": "2.0.1",
 				"reselect": "5.3.0",
 				"rxjs": "7.8.2",
+				"zustand": "5.0.16",
 			},
 			"snapshots": [
 				{
 					"peerDependencies": {
-						"react": {
-							"version": "19.3.0",
-							"below": true,
-						},
-						"use-sync-external-store": {
-							"version": "1.7.0",
-							"with": {
-								"react": "19.3.0",
-							},
-							"below": true,
-						},
 						"xstate": {
 							"version": "5.33.2",
 							"below": true,
 						},
 					},
-					"dependencies": {
-						"zustand": "5.0.16",
-					},
 				},
 				{
 					"peerDependencies": {
-						"react": {
-							"version": "19.3.0",
-							"below": true,
-						},
-						"use-sync-external-store": {
-							"version": "1.7.0",
-							"with": {
-								"react": "19.3.0",
-							},
-							"below": true,
-						},
 						"xstate": {
 							"version": "5.33.3",
 							"below": true,
 						},
-					},
-					"dependencies": {
-						"zustand": "5.0.16",
-					},
-				},
-				{
-					"peerDependencies": {
-						"react": {
-							"version": "19.3.0",
-							"below": true,
-						},
-						"use-sync-external-store": {
-							"version": "1.7.0",
-							"with": {
-								"react": "19.3.1",
-							},
-							"below": true,
-						},
-						"xstate": {
-							"version": "5.33.3",
-							"below": true,
-						},
-					},
-					"dependencies": {
-						"zustand": {
-							"version": "5.0.16",
-							"with": {
-								"react": "19.3.0",
-								"use-sync-external-store": {
-									"version": "1.7.0",
-									"with": {
-										"react": "19.3.1",
-									},
-								},
-							},
-						},
-					},
-				},
-				{
-					"peerDependencies": {
-						"react": {
-							"version": "19.3.1",
-							"below": true,
-						},
-						"use-sync-external-store": {
-							"version": "1.7.0",
-							"with": {
-								"react": "19.3.1",
-							},
-							"below": true,
-						},
-						"xstate": {
-							"version": "5.33.2",
-							"below": true,
-						},
-					},
-					"dependencies": {
-						"zustand": "5.0.16",
-					},
-				},
-				{
-					"peerDependencies": {
-						"react": {
-							"version": "19.3.1",
-							"below": true,
-						},
-						"use-sync-external-store": {
-							"version": "1.7.0",
-							"with": {
-								"react": "19.3.1",
-							},
-							"below": true,
-						},
-						"xstate": {
-							"version": "5.33.3",
-							"below": true,
-						},
-					},
-					"dependencies": {
-						"zustand": "5.0.16",
 					},
 				},
 			],
@@ -10890,7 +10122,7 @@ snapshots:
 					"below": true,
 				},
 				"react": {
-					"version": "19.3.0",
+					"version": "19.3.1",
 					"below": true,
 				},
 				"use-sync-external-store": {
@@ -10955,6 +10187,7 @@ snapshots:
 			"peerDependencies": {
 				"react": {
 					"specifier": "^18.2 || ^19.0.0",
+					"version": "19.3.1",
 					"optional": true,
 				},
 			},
@@ -10962,22 +10195,6 @@ snapshots:
 				"rxjs": "7.8.2",
 				"typeid-js": "0.3.0",
 			},
-			"snapshots": [
-				{
-					"peerDependencies": {
-						"react": {
-							"version": "19.3.0",
-						},
-					},
-				},
-				{
-					"peerDependencies": {
-						"react": {
-							"version": "19.3.1",
-						},
-					},
-				},
-			],
 		},
 
 		"@sanity/template-validator@3.1.1": {
@@ -11146,11 +10363,11 @@ snapshots:
 			"peerDependencies": {
 				"react": {
 					"specifier": "^18 || >=19.0.0-0",
-					"version": "19.3.0",
+					"version": "19.3.1",
 				},
 				"react-dom": {
 					"specifier": "^18 || >=19.0.0-0",
-					"version": "19.3.0",
+					"version": "19.3.1",
 				},
 				"styled-components": {
 					"specifier": "^5.2 || ^6",
@@ -11175,9 +10392,18 @@ snapshots:
 			"integrity": "sha512-Dig1n0Aba6MM4pCPH357qEkb3elFQ/YzZ1JBDySIiqmf4+S7AbI0ar5cd0KHr39v8YQV2RAAjh2F6n07SmdKwQ==",
 			"engines": {"node": ">=22.12"},
 			"peerDependencies": {
-				"react": "^19.2",
-				"react-dom": "^19.2",
-				"styled-components": "^6.1 || ^7.0.0-0",
+				"react": {
+					"specifier": "^19.2",
+					"version": "19.3.1",
+				},
+				"react-dom": {
+					"specifier": "^19.2",
+					"version": "19.3.1",
+				},
+				"styled-components": {
+					"specifier": "^6.1 || ^7.0.0-0",
+					"version": "6.5.3",
+				},
 			},
 			"dependencies": {
 				"@floating-ui/react-dom": "2.1.9",
@@ -11190,59 +10416,6 @@ snapshots:
 				"react-refractor": "4.0.0",
 				"use-effect-event": "2.0.4",
 			},
-			"snapshots": [
-				{
-					"peerDependencies": {
-						"react": {
-							"version": "19.3.0",
-						},
-						"react-dom": {
-							"version": "19.3.0",
-						},
-						"styled-components": {
-							"version": "6.5.3",
-							"with": {
-								"react": "19.3.0",
-								"react-dom": "19.3.0",
-							},
-						},
-					},
-				},
-				{
-					"peerDependencies": {
-						"react": {
-							"version": "19.3.0",
-						},
-						"react-dom": {
-							"version": "19.3.1",
-						},
-						"styled-components": {
-							"version": "6.5.3",
-							"with": {
-								"react": "19.3.1",
-								"react-dom": "19.3.1",
-							},
-						},
-					},
-				},
-				{
-					"peerDependencies": {
-						"react": {
-							"version": "19.3.1",
-						},
-						"react-dom": {
-							"version": "19.3.1",
-						},
-						"styled-components": {
-							"version": "6.5.3",
-							"with": {
-								"react": "19.3.1",
-								"react-dom": "19.3.1",
-							},
-						},
-					},
-				},
-			],
 		},
 
 		"@sanity/ui@5.0.0-alpha.11": {
@@ -11252,11 +10425,11 @@ snapshots:
 			"peerDependencies": {
 				"react": {
 					"specifier": "^19.2",
-					"version": "19.3.0",
+					"version": "19.3.1",
 				},
 				"react-dom": {
 					"specifier": "^19.2",
-					"version": "19.3.0",
+					"version": "19.3.1",
 				},
 			},
 			"dependencies": {
@@ -11275,8 +10448,14 @@ snapshots:
 			"engines": {"node": ">=20.19 <22 || >=22.12"},
 			"hasBin": true,
 			"peerDependencies": {
-				"react": "^19.2",
-				"react-dom": "^19.2",
+				"react": {
+					"specifier": "^19.2",
+					"version": "19.3.1",
+				},
+				"react-dom": {
+					"specifier": "^19.2",
+					"version": "19.3.1",
+				},
 			},
 			"dependencies": {
 				"@sanity-labs/design-tokens": "0.0.2-alpha.9",
@@ -11287,38 +10466,6 @@ snapshots:
 				"interestfor": "1.0.8",
 				"react-refractor": "4.0.0",
 			},
-			"snapshots": [
-				{
-					"peerDependencies": {
-						"react": {
-							"version": "19.3.0",
-						},
-						"react-dom": {
-							"version": "19.3.0",
-						},
-					},
-				},
-				{
-					"peerDependencies": {
-						"react": {
-							"version": "19.3.0",
-						},
-						"react-dom": {
-							"version": "19.3.1",
-						},
-					},
-				},
-				{
-					"peerDependencies": {
-						"react": {
-							"version": "19.3.1",
-						},
-						"react-dom": {
-							"version": "19.3.1",
-						},
-					},
-				},
-			],
 		},
 
 		"@sanity/util@6.17.0": {
@@ -11575,10 +10722,10 @@ snapshots:
 				},
 				"react": {
 					"specifier": "^19.2.2",
-					"version": "19.3.0",
+					"version": "19.3.1",
 				},
 				"react-dom": {
-					"version": "19.3.0",
+					"version": "19.3.1",
 					"below": true,
 				},
 				"sanity": {
@@ -11788,7 +10935,7 @@ snapshots:
 					"version": "0.37.0",
 				},
 				"react": {
-					"version": "19.3.0",
+					"version": "19.3.1",
 					"below": true,
 				},
 			},
@@ -11930,7 +11077,7 @@ snapshots:
 			"peerDependencies": {
 				"react": {
 					"specifier": "^16.14.0 || 17.x || 18.x || 19.x",
-					"version": "19.3.0",
+					"version": "19.3.1",
 				},
 			},
 			"dependencies": {
@@ -11944,7 +11091,10 @@ snapshots:
 			"integrity": "sha512-xRa0LTxAu/wW6Q/prOncsfLV4ovmFfwcoLR1xmReWFCTVSYdh9+qbS6fnR3yHGmZUQgGPY9veBsaYGveYoqqQw==",
 			"engines": {"node": ">=20.19.0 <22.0.0 || >=22.12.0 <23.0.0 || >=23.2.0"},
 			"peerDependencies": {
-				"react": "17.x || 18.x || 19.x",
+				"react": {
+					"specifier": "17.x || 18.x || 19.x",
+					"version": "19.3.1",
+				},
 				"react-router": {
 					"specifier": "6.x || 7.x || 8.x",
 					"optional": true,
@@ -11955,22 +11105,6 @@ snapshots:
 				"@sentry/conventions": "0.29.0",
 				"@sentry/core": "11.10.0",
 			},
-			"snapshots": [
-				{
-					"peerDependencies": {
-						"react": {
-							"version": "19.3.0",
-						},
-					},
-				},
-				{
-					"peerDependencies": {
-						"react": {
-							"version": "19.3.1",
-						},
-					},
-				},
-			],
 		},
 
 		"@sentry/replay-canvas@10.76.0": {
@@ -12367,11 +11501,11 @@ snapshots:
 			"peerDependencies": {
 				"react": {
 					"specifier": "^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0",
-					"version": "19.3.0",
+					"version": "19.3.1",
 				},
 				"react-dom": {
 					"specifier": "^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0",
-					"version": "19.3.0",
+					"version": "19.3.1",
 				},
 			},
 			"dependencies": {
@@ -12385,11 +11519,11 @@ snapshots:
 			"peerDependencies": {
 				"react": {
 					"specifier": "^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0",
-					"version": "19.3.0",
+					"version": "19.3.1",
 				},
 				"react-dom": {
 					"specifier": "^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0",
-					"version": "19.3.0",
+					"version": "19.3.1",
 				},
 			},
 			"dependencies": {
@@ -12400,44 +11534,18 @@ snapshots:
 		"@tanstack/react-virtual@3.14.24": {
 			"integrity": "sha512-JoNsByXR68fNlB2NZuT3bSk8uYBxuOWl6YNJ7djTrw7IMwBWuaOtffxj/TcuMa80WmL6byb+80i1NEM/8Qmocw==",
 			"peerDependencies": {
-				"react": "^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0",
-				"react-dom": "^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0",
+				"react": {
+					"specifier": "^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0",
+					"version": "19.3.1",
+				},
+				"react-dom": {
+					"specifier": "^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0",
+					"version": "19.3.1",
+				},
 			},
 			"dependencies": {
 				"@tanstack/virtual-core": "3.19.9",
 			},
-			"snapshots": [
-				{
-					"peerDependencies": {
-						"react": {
-							"version": "19.3.0",
-						},
-						"react-dom": {
-							"version": "19.3.0",
-						},
-					},
-				},
-				{
-					"peerDependencies": {
-						"react": {
-							"version": "19.3.0",
-						},
-						"react-dom": {
-							"version": "19.3.1",
-						},
-					},
-				},
-				{
-					"peerDependencies": {
-						"react": {
-							"version": "19.3.1",
-						},
-						"react-dom": {
-							"version": "19.3.1",
-						},
-					},
-				},
-			],
 		},
 
 		"@tanstack/virtual-core@3.17.11": {
@@ -13133,11 +12241,11 @@ snapshots:
 				},
 				"react": {
 					"specifier": ">=17.0.0",
-					"version": "19.3.0",
+					"version": "19.3.1",
 				},
 				"react-dom": {
 					"specifier": ">=17.0.0",
-					"version": "19.3.0",
+					"version": "19.3.1",
 				},
 			},
 			"dependencies": {
@@ -13187,11 +12295,11 @@ snapshots:
 				},
 				"react": {
 					"specifier": ">=17.0.0",
-					"version": "19.3.0",
+					"version": "19.3.1",
 				},
 				"react-dom": {
 					"specifier": ">=17.0.0",
-					"version": "19.3.0",
+					"version": "19.3.1",
 				},
 			},
 			"dependencies": {
@@ -13728,7 +12836,10 @@ snapshots:
 					"version": "19.3.0",
 					"below": true,
 				},
-				"react": "^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0",
+				"react": {
+					"specifier": "^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0",
+					"version": "19.3.1",
+				},
 				"xstate": {
 					"specifier": "^5.28.0",
 					"optional": true,
@@ -13741,9 +12852,6 @@ snapshots:
 			"snapshots": [
 				{
 					"peerDependencies": {
-						"react": {
-							"version": "19.3.0",
-						},
 						"xstate": {
 							"version": "5.32.6",
 						},
@@ -13751,9 +12859,6 @@ snapshots:
 				},
 				{
 					"peerDependencies": {
-						"react": {
-							"version": "19.3.0",
-						},
 						"xstate": {
 							"version": "5.33.2",
 						},
@@ -13761,19 +12866,6 @@ snapshots:
 				},
 				{
 					"peerDependencies": {
-						"react": {
-							"version": "19.3.0",
-						},
-						"xstate": {
-							"version": "5.33.3",
-						},
-					},
-				},
-				{
-					"peerDependencies": {
-						"react": {
-							"version": "19.3.1",
-						},
 						"xstate": {
 							"version": "5.33.3",
 						},
@@ -14754,24 +13846,11 @@ snapshots:
 		"ce-la-react@0.3.2": {
 			"integrity": "sha512-QJ6k4lOD/btI08xG8jBPxRCGXvCnusGGkTsiXk0u3NqUu/W+BXRnFD4PYjwtqh8AWmGa5LDbGk0fLQsqr0nSMA==",
 			"peerDependencies": {
-				"react": ">=17.0.0",
+				"react": {
+					"specifier": ">=17.0.0",
+					"version": "19.3.1",
+				},
 			},
-			"snapshots": [
-				{
-					"peerDependencies": {
-						"react": {
-							"version": "19.3.0",
-						},
-					},
-				},
-				{
-					"peerDependencies": {
-						"react": {
-							"version": "19.3.1",
-						},
-					},
-				},
-			],
 		},
 
 		"chai@6.3.0": {
@@ -16509,12 +15588,12 @@ snapshots:
 			"peerDependencies": {
 				"react": {
 					"specifier": "^18.0.0 || ^19.0.0",
-					"version": "19.3.0",
+					"version": "19.3.1",
 					"optional": true,
 				},
 				"react-dom": {
 					"specifier": "^18.0.0 || ^19.0.0",
-					"version": "19.3.0",
+					"version": "19.3.1",
 					"optional": true,
 				},
 			},
@@ -16530,12 +15609,12 @@ snapshots:
 			"peerDependencies": {
 				"react": {
 					"specifier": "^18.0.0 || ^19.0.0",
-					"version": "19.3.0",
+					"version": "19.3.1",
 					"optional": true,
 				},
 				"react-dom": {
 					"specifier": "^18.0.0 || ^19.0.0",
-					"version": "19.3.0",
+					"version": "19.3.1",
 					"optional": true,
 				},
 			},
@@ -16551,10 +15630,12 @@ snapshots:
 			"peerDependencies": {
 				"react": {
 					"specifier": "^18.0.0 || ^19.0.0",
+					"version": "19.3.1",
 					"optional": true,
 				},
 				"react-dom": {
 					"specifier": "^18.0.0 || ^19.0.0",
+					"version": "19.3.1",
 					"optional": true,
 				},
 				"remix": {
@@ -16567,38 +15648,6 @@ snapshots:
 				"motion-utils": "14.7.0",
 				"tslib": "2.8.1",
 			},
-			"snapshots": [
-				{
-					"peerDependencies": {
-						"react": {
-							"version": "19.3.0",
-						},
-						"react-dom": {
-							"version": "19.3.0",
-						},
-					},
-				},
-				{
-					"peerDependencies": {
-						"react": {
-							"version": "19.3.0",
-						},
-						"react-dom": {
-							"version": "19.3.1",
-						},
-					},
-				},
-				{
-					"peerDependencies": {
-						"react": {
-							"version": "19.3.1",
-						},
-						"react-dom": {
-							"version": "19.3.1",
-						},
-					},
-				},
-			],
 		},
 
 		"fs-extra@11.3.6": {
@@ -18223,52 +17272,28 @@ snapshots:
 
 		"media-chrome@4.19.2": {
 			"integrity": "sha512-4ai1ITN8wBhwugQcRgqe3tN0z6OSKGOXqHLNrS04MgKFfsLqu6Dm8MPq02pI9Y9ZKoXtFjIl85jOryIW9es3BA==",
+			"peerDependencies": {
+				"react": {
+					"version": "19.3.1",
+					"below": true,
+				},
+			},
 			"dependencies": {
 				"ce-la-react": "0.3.2",
 			},
-			"snapshots": [
-				{
-					"peerDependencies": {
-						"react": {
-							"version": "19.3.0",
-							"below": true,
-						},
-					},
-				},
-				{
-					"peerDependencies": {
-						"react": {
-							"version": "19.3.1",
-							"below": true,
-						},
-					},
-				},
-			],
 		},
 
 		"media-chrome@4.19.4": {
 			"integrity": "sha512-QAL48kT03+InLijPzXN1end9fcsl0/l53j1laCfbt/79vF2iZ45dovv4wQMw2q9zOLEiDwWsB718NJPhtZUBDg==",
+			"peerDependencies": {
+				"react": {
+					"version": "19.3.1",
+					"below": true,
+				},
+			},
 			"dependencies": {
 				"ce-la-react": "0.3.2",
 			},
-			"snapshots": [
-				{
-					"peerDependencies": {
-						"react": {
-							"version": "19.3.0",
-							"below": true,
-						},
-					},
-				},
-				{
-					"peerDependencies": {
-						"react": {
-							"version": "19.3.1",
-							"below": true,
-						},
-					},
-				},
-			],
 		},
 
 		"media-query-parser@2.0.2": {
@@ -18491,12 +17516,12 @@ snapshots:
 			"peerDependencies": {
 				"react": {
 					"specifier": "^18.0.0 || ^19.0.0",
-					"version": "19.3.0",
+					"version": "19.3.1",
 					"optional": true,
 				},
 				"react-dom": {
 					"specifier": "^18.0.0 || ^19.0.0",
-					"version": "19.3.0",
+					"version": "19.3.1",
 					"optional": true,
 				},
 			},
@@ -18511,12 +17536,12 @@ snapshots:
 			"peerDependencies": {
 				"react": {
 					"specifier": "^18.0.0 || ^19.0.0",
-					"version": "19.3.0",
+					"version": "19.3.1",
 					"optional": true,
 				},
 				"react-dom": {
 					"specifier": "^18.0.0 || ^19.0.0",
-					"version": "19.3.0",
+					"version": "19.3.1",
 					"optional": true,
 				},
 			},
@@ -18531,10 +17556,12 @@ snapshots:
 			"peerDependencies": {
 				"react": {
 					"specifier": "^18.0.0 || ^19.0.0",
+					"version": "19.3.1",
 					"optional": true,
 				},
 				"react-dom": {
 					"specifier": "^18.0.0 || ^19.0.0",
+					"version": "19.3.1",
 					"optional": true,
 				},
 				"remix": {
@@ -18546,38 +17573,6 @@ snapshots:
 				"framer-motion": "14.9.0",
 				"tslib": "2.8.1",
 			},
-			"snapshots": [
-				{
-					"peerDependencies": {
-						"react": {
-							"version": "19.3.0",
-						},
-						"react-dom": {
-							"version": "19.3.0",
-						},
-					},
-				},
-				{
-					"peerDependencies": {
-						"react": {
-							"version": "19.3.0",
-						},
-						"react-dom": {
-							"version": "19.3.1",
-						},
-					},
-				},
-				{
-					"peerDependencies": {
-						"react": {
-							"version": "19.3.1",
-						},
-						"react-dom": {
-							"version": "19.3.1",
-						},
-					},
-				},
-			],
 		},
 
 		"mri@1.2.0": {
@@ -18690,11 +17685,11 @@ snapshots:
 				},
 				"react": {
 					"specifier": "^18.2.0 || 19.0.0-rc-de68d2f4-20241204 || ^19.0.0",
-					"version": "19.3.0",
+					"version": "19.3.1",
 				},
 				"react-dom": {
 					"specifier": "^18.2.0 || 19.0.0-rc-de68d2f4-20241204 || ^19.0.0",
-					"version": "19.3.0",
+					"version": "19.3.1",
 				},
 				"sass": {
 					"specifier": "^1.3.0",
@@ -19432,7 +18427,7 @@ snapshots:
 			"integrity": "sha512-5O9bkbq0APQIkhptyZwp0gUgheCeImGPFo4hvPF2M5xBmgsUYzsUPHCfMye2xyeRE1zvQBKtziaC3jPgnHE1tw==",
 			"peerDependencies": {
 				"react": {
-					"version": "19.3.0",
+					"version": "19.3.1",
 					"below": true,
 				},
 			},
@@ -19443,27 +18438,15 @@ snapshots:
 
 		"player.style@0.3.5": {
 			"integrity": "sha512-hknPiLjNtJP5zM0vCVXsl3Pef+uQnecYg8X/1vjd/Y3TdAgs/zxhck02SFTxRSckaObKemP5tUT8wTH7ByUmnw==",
+			"peerDependencies": {
+				"react": {
+					"version": "19.3.1",
+					"below": true,
+				},
+			},
 			"dependencies": {
 				"media-chrome": "4.19.2",
 			},
-			"snapshots": [
-				{
-					"peerDependencies": {
-						"react": {
-							"version": "19.3.0",
-							"below": true,
-						},
-					},
-				},
-				{
-					"peerDependencies": {
-						"react": {
-							"version": "19.3.1",
-							"below": true,
-						},
-					},
-				},
-			],
 		},
 
 		"pluralize-esm@9.0.5": {
@@ -19665,62 +18648,23 @@ snapshots:
 		"react-clientside-effect@1.2.8": {
 			"integrity": "sha512-ma2FePH0z3px2+WOu6h+YycZcEvFmmxIlAb62cF52bG86eMySciO/EQZeQMXd07kPCYB0a1dWDT5J+KE9mCDUw==",
 			"peerDependencies": {
-				"react": "^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0 || ^19.0.0-rc",
+				"react": {
+					"specifier": "^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0 || ^19.0.0-rc",
+					"version": "19.3.1",
+				},
 			},
 			"dependencies": {
 				"@babel/runtime": "7.29.7",
 			},
-			"snapshots": [
-				{
-					"peerDependencies": {
-						"react": {
-							"version": "19.3.0",
-						},
-					},
-				},
-				{
-					"peerDependencies": {
-						"react": {
-							"version": "19.3.1",
-						},
-					},
-				},
-			],
 		},
 
 		"react-compiler-runtime@1.0.0": {
 			"integrity": "sha512-rRfjYv66HlG8896yPUDONgKzG5BxZD1nV9U6rkm+7VCuvQc903C4MjcoZR4zPw53IKSOX9wMQVpA1IAbRtzQ7w==",
 			"peerDependencies": {
-				"react": "^17.0.0 || ^18.0.0 || ^19.0.0 || ^0.0.0-experimental",
-			},
-			"snapshots": [
-				{
-					"peerDependencies": {
-						"react": {
-							"version": "19.3.0",
-						},
-					},
-				},
-				{
-					"peerDependencies": {
-						"react": {
-							"version": "19.3.1",
-						},
-					},
-				},
-			],
-		},
-
-		"react-dom@19.3.0": {
-			"integrity": "sha512-JDk8dgif51OjFoDE70+OT9ICyYr+69HlmihNwp1+Nsfbna3t5sIiCa9ZJktDmQ4/1b/rn26hIAR2uYXDMr5r0Q==",
-			"peerDependencies": {
 				"react": {
-					"specifier": "^19.3.0",
-					"version": "19.3.0",
+					"specifier": "^17.0.0 || ^18.0.0 || ^19.0.0 || ^0.0.0-experimental",
+					"version": "19.3.1",
 				},
-			},
-			"dependencies": {
-				"scheduler": "0.28.0",
 			},
 		},
 
@@ -19743,7 +18687,7 @@ snapshots:
 			"peerDependencies": {
 				"react": {
 					"specifier": ">= 16.8",
-					"version": "19.3.0",
+					"version": "19.3.1",
 				},
 			},
 			"dependencies": {
@@ -19763,7 +18707,7 @@ snapshots:
 				},
 				"react": {
 					"specifier": "^18.0.0 || ^19.0.0",
-					"version": "19.3.0",
+					"version": "19.3.1",
 				},
 			},
 		},
@@ -19776,24 +18720,11 @@ snapshots:
 					"version": "19.3.0",
 					"optional": true,
 				},
-				"react": "^18.0.0 || ^19.0.0",
+				"react": {
+					"specifier": "^18.0.0 || ^19.0.0",
+					"version": "19.3.1",
+				},
 			},
-			"snapshots": [
-				{
-					"peerDependencies": {
-						"react": {
-							"version": "19.3.0",
-						},
-					},
-				},
-				{
-					"peerDependencies": {
-						"react": {
-							"version": "19.3.1",
-						},
-					},
-				},
-			],
 		},
 
 		"react-fast-compare@3.2.2": {
@@ -19805,11 +18736,11 @@ snapshots:
 			"peerDependencies": {
 				"react": {
 					"specifier": "^19.0.0 || ^18.0.0 || ^17.0.0 || ^16.2.0",
-					"version": "19.3.0",
+					"version": "19.3.1",
 				},
 				"react-dom": {
 					"specifier": "^19.0.0 || ^18.0.0 || ^17.0.0 || ^16.2.0",
-					"version": "19.3.0",
+					"version": "19.3.1",
 				},
 			},
 			"dependencies": {
@@ -19826,7 +18757,10 @@ snapshots:
 					"version": "19.3.0",
 					"optional": true,
 				},
-				"react": "^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0 || ^19.0.0-rc",
+				"react": {
+					"specifier": "^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0 || ^19.0.0-rc",
+					"version": "19.3.1",
+				},
 			},
 			"dependencies": {
 				"@babel/runtime": "7.29.7",
@@ -19836,22 +18770,6 @@ snapshots:
 				"use-callback-ref": "1.3.3",
 				"use-sidecar": "1.1.3",
 			},
-			"snapshots": [
-				{
-					"peerDependencies": {
-						"react": {
-							"version": "19.3.0",
-						},
-					},
-				},
-				{
-					"peerDependencies": {
-						"react": {
-							"version": "19.3.1",
-						},
-					},
-				},
-			],
 		},
 
 		"react-hook-form@7.86.0": {
@@ -19860,7 +18778,7 @@ snapshots:
 			"peerDependencies": {
 				"react": {
 					"specifier": "^16.8.0 || ^17 || ^18 || ^19",
-					"version": "19.3.0",
+					"version": "19.3.1",
 				},
 			},
 		},
@@ -19874,11 +18792,11 @@ snapshots:
 				},
 				"react": {
 					"specifier": ">= 16.8.0",
-					"version": "19.3.0",
+					"version": "19.3.1",
 				},
 				"react-dom": {
 					"specifier": "*",
-					"version": "19.3.0",
+					"version": "19.3.1",
 					"optional": true,
 				},
 				"react-native": {
@@ -19905,9 +18823,13 @@ snapshots:
 					"specifier": ">= 26.2.0",
 					"version": "26.6.0",
 				},
-				"react": ">= 16.8.0",
+				"react": {
+					"specifier": ">= 16.8.0",
+					"version": "19.3.1",
+				},
 				"react-dom": {
 					"specifier": "*",
+					"version": "19.3.1",
 					"optional": true,
 				},
 				"react-native": {
@@ -19925,38 +18847,6 @@ snapshots:
 				"html-parse-stringify": "4.0.1",
 				"use-sync-external-store": "1.7.0",
 			},
-			"snapshots": [
-				{
-					"peerDependencies": {
-						"react": {
-							"version": "19.3.0",
-						},
-						"react-dom": {
-							"version": "19.3.0",
-						},
-					},
-				},
-				{
-					"peerDependencies": {
-						"react": {
-							"version": "19.3.0",
-						},
-						"react-dom": {
-							"version": "19.3.1",
-						},
-					},
-				},
-				{
-					"peerDependencies": {
-						"react": {
-							"version": "19.3.1",
-						},
-						"react-dom": {
-							"version": "19.3.1",
-						},
-					},
-				},
-			],
 		},
 
 		"react-is@16.13.1": {
@@ -19977,7 +18867,7 @@ snapshots:
 				},
 				"react": {
 					"specifier": "^18.0 || ^19",
-					"version": "19.3.0",
+					"version": "19.3.1",
 				},
 				"redux": {
 					"specifier": "^5.0.0",
@@ -19995,29 +18885,16 @@ snapshots:
 			"integrity": "sha512-2VMRH3HA/Nu+tMFzyQwdBK0my0BIZy1pkWHhjuSrplMyf8ZLx/Gw7tUXV0t2JbEsbSNHbEc9TbHhq3sUx2seVA==",
 			"engines": {"node": ">=20.0.0"},
 			"peerDependencies": {
-				"react": ">=18.0.0",
+				"react": {
+					"specifier": ">=18.0.0",
+					"version": "19.3.1",
+				},
 			},
 			"dependencies": {
 				"refractor": "5.0.0",
 				"unist-util-filter": "5.0.1",
 				"unist-util-visit-parents": "6.0.2",
 			},
-			"snapshots": [
-				{
-					"peerDependencies": {
-						"react": {
-							"version": "19.3.0",
-						},
-					},
-				},
-				{
-					"peerDependencies": {
-						"react": {
-							"version": "19.3.1",
-						},
-					},
-				},
-			],
 		},
 
 		"react-rx@7.0.1": {
@@ -20026,7 +18903,7 @@ snapshots:
 			"peerDependencies": {
 				"react": {
 					"specifier": "^19.2",
-					"version": "19.3.0",
+					"version": "19.3.1",
 				},
 				"rxjs": {
 					"specifier": "^7.2",
@@ -20039,28 +18916,15 @@ snapshots:
 			"integrity": "sha512-22bBSdI1KgeOZ9ucV3Wdyhs3/aZF6KSLD3iqrN2dXRXPMuXhOIDdpM1Dt2rOMZwrX6VWXJTK1RnM917HIkgUIw==",
 			"engines": {"node": ">=22.12"},
 			"peerDependencies": {
-				"react": "^19.2",
+				"react": {
+					"specifier": "^19.2",
+					"version": "19.3.1",
+				},
 				"rxjs": {
 					"specifier": "^7.2",
 					"version": "7.8.2",
 				},
 			},
-			"snapshots": [
-				{
-					"peerDependencies": {
-						"react": {
-							"version": "19.3.0",
-						},
-					},
-				},
-				{
-					"peerDependencies": {
-						"react": {
-							"version": "19.3.1",
-						},
-					},
-				},
-			],
 		},
 
 		"react-select@5.10.2": {
@@ -20072,11 +18936,11 @@ snapshots:
 				},
 				"react": {
 					"specifier": "^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0",
-					"version": "19.3.0",
+					"version": "19.3.1",
 				},
 				"react-dom": {
 					"specifier": "^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0",
-					"version": "19.3.0",
+					"version": "19.3.1",
 				},
 				"supports-color": {
 					"version": "8.1.1",
@@ -20101,11 +18965,11 @@ snapshots:
 			"peerDependencies": {
 				"react": {
 					"specifier": ">=16.6.0",
-					"version": "19.3.0",
+					"version": "19.3.1",
 				},
 				"react-dom": {
 					"specifier": ">=16.6.0",
-					"version": "19.3.0",
+					"version": "19.3.1",
 				},
 			},
 			"dependencies": {
@@ -20121,18 +18985,13 @@ snapshots:
 			"peerDependencies": {
 				"react": {
 					"specifier": ">=16 || >=17 || >= 18 || >= 19",
-					"version": "19.3.0",
+					"version": "19.3.1",
 				},
 				"react-dom": {
 					"specifier": ">=16 || >=17 || >= 18 || >=19",
-					"version": "19.3.0",
+					"version": "19.3.1",
 				},
 			},
-		},
-
-		"react@19.3.0": {
-			"integrity": "sha512-E8LUcbtBWt20bbl2YoHfx4ZDBdxVTfOKtCZn9cDSJ4l6/nuoApcpIBcj47t2wZoVX8g2ZHuMHbiShgCR1T5Sog==",
-			"engines": {"node": ">=0.10.0"},
 		},
 
 		"react@19.3.1": {
@@ -20567,11 +19426,11 @@ snapshots:
 				},
 				"react": {
 					"specifier": "^18.3 || ^19",
-					"version": "19.3.0",
+					"version": "19.3.1",
 				},
 				"react-dom": {
 					"specifier": "^18.3 || ^19",
-					"version": "19.3.0",
+					"version": "19.3.1",
 				},
 				"react-is": {
 					"specifier": "^18.3 || ^19",
@@ -20643,11 +19502,11 @@ snapshots:
 				},
 				"react": {
 					"specifier": "^19.2.2",
-					"version": "19.3.0",
+					"version": "19.3.1",
 				},
 				"react-dom": {
 					"specifier": "^19.2.2",
-					"version": "19.3.0",
+					"version": "19.3.1",
 				},
 				"styled-components": {
 					"specifier": "^6.1.15",
@@ -20800,9 +19659,18 @@ snapshots:
 					"version": "11.1.18",
 					"below": true,
 				},
-				"react": "^19.2.2",
-				"react-dom": "^19.2.2",
-				"styled-components": "^6.1.15",
+				"react": {
+					"specifier": "^19.2.2",
+					"version": "19.3.1",
+				},
+				"react-dom": {
+					"specifier": "^19.2.2",
+					"version": "19.3.1",
+				},
+				"styled-components": {
+					"specifier": "^6.1.15",
+					"version": "6.5.3",
+				},
 				"supports-color": {
 					"version": "8.1.1",
 					"below": true,
@@ -20820,6 +19688,8 @@ snapshots:
 				"@algorithm.ts/lcs": "4.0.6",
 				"@date-fns/tz": "1.5.0",
 				"@dnd-kit/core": "6.3.1",
+				"@dnd-kit/modifiers": "9.0.0",
+				"@dnd-kit/sortable": "10.0.0",
 				"@dnd-kit/utilities": "3.2.2",
 				"@isaacs/ttlcache": "2.1.5",
 				"@mux/mux-player-react": "3.14.1",
@@ -20924,95 +19794,6 @@ snapshots:
 				"web-vitals": "6.2.3",
 				"xstate": "5.33.3",
 			},
-			"snapshots": [
-				{
-					"peerDependencies": {
-						"react": {
-							"version": "19.3.0",
-						},
-						"react-dom": {
-							"version": "19.3.0",
-						},
-						"styled-components": {
-							"version": "6.5.3",
-							"with": {
-								"react": "19.3.0",
-								"react-dom": "19.3.0",
-							},
-						},
-					},
-					"dependencies": {
-						"@dnd-kit/modifiers": "9.0.0",
-						"@dnd-kit/sortable": "10.0.0",
-					},
-				},
-				{
-					"peerDependencies": {
-						"react": {
-							"version": "19.3.0",
-						},
-						"react-dom": {
-							"version": "19.3.1",
-						},
-						"styled-components": {
-							"version": "6.5.3",
-							"with": {
-								"react": "19.3.1",
-								"react-dom": "19.3.1",
-							},
-						},
-					},
-					"dependencies": {
-						"@dnd-kit/modifiers": {
-							"version": "9.0.0",
-							"with": {
-								"@dnd-kit/core": {
-									"version": "6.3.1",
-									"with": {
-										"react": "19.3.0",
-										"react-dom": "19.3.1",
-									},
-								},
-								"react": "19.3.0",
-							},
-						},
-						"@dnd-kit/sortable": {
-							"version": "10.0.0",
-							"with": {
-								"@dnd-kit/core": {
-									"version": "6.3.1",
-									"with": {
-										"react": "19.3.0",
-										"react-dom": "19.3.1",
-									},
-								},
-								"react": "19.3.0",
-							},
-						},
-					},
-				},
-				{
-					"peerDependencies": {
-						"react": {
-							"version": "19.3.1",
-						},
-						"react-dom": {
-							"version": "19.3.1",
-						},
-						"styled-components": {
-							"version": "6.5.3",
-							"with": {
-								"react": "19.3.1",
-								"react-dom": "19.3.1",
-							},
-						},
-					},
-					"dependencies": {
-						"@dnd-kit/modifiers": "9.0.0",
-						"@dnd-kit/sortable": "10.0.0",
-					},
-				},
-			],
 		},
 
 		"saxes@6.0.0": {
@@ -21500,9 +20281,13 @@ snapshots:
 					"specifier": ">= 3.2.0",
 					"optional": true,
 				},
-				"react": ">= 16.8.0",
+				"react": {
+					"specifier": ">= 16.8.0",
+					"version": "19.3.1",
+				},
 				"react-dom": {
 					"specifier": ">= 16.8.0",
+					"version": "19.3.1",
 					"optional": true,
 				},
 				"react-native": {
@@ -21516,28 +20301,6 @@ snapshots:
 				"csstype": "3.2.3",
 				"stylis": "4.3.6",
 			},
-			"snapshots": [
-				{
-					"peerDependencies": {
-						"react": {
-							"version": "19.3.0",
-						},
-						"react-dom": {
-							"version": "19.3.0",
-						},
-					},
-				},
-				{
-					"peerDependencies": {
-						"react": {
-							"version": "19.3.1",
-						},
-						"react-dom": {
-							"version": "19.3.1",
-						},
-					},
-				},
-			],
 		},
 
 		"styled-jsx@5.1.6": {
@@ -21556,7 +20319,7 @@ snapshots:
 				},
 				"react": {
 					"specifier": ">= 16.8.0 || 17.x.x || ^18.0.0-0 || ^19.0.0-0",
-					"version": "19.3.0",
+					"version": "19.3.1",
 				},
 			},
 			"dependencies": {
@@ -21598,28 +20361,15 @@ snapshots:
 		"swr@2.5.1": {
 			"integrity": "sha512-BRw55e8r0B7SpDN20CAzoQAHl7y1yP7/Zt7oqUjMv0vSt2u2Xnkm88Ws+VypbV9BXHQVuSuyVq7zMjO16wSExw==",
 			"peerDependencies": {
-				"react": "^16.11.0 || ^17.0.0 || ^18.0.0 || ^19.0.0",
+				"react": {
+					"specifier": "^16.11.0 || ^17.0.0 || ^18.0.0 || ^19.0.0",
+					"version": "19.3.1",
+				},
 			},
 			"dependencies": {
 				"dequal": "2.0.3",
 				"use-sync-external-store": "1.7.0",
 			},
-			"snapshots": [
-				{
-					"peerDependencies": {
-						"react": {
-							"version": "19.3.0",
-						},
-					},
-				},
-				{
-					"peerDependencies": {
-						"react": {
-							"version": "19.3.1",
-						},
-					},
-				},
-			],
 		},
 
 		"symbol-tree@3.2.4": {
@@ -22267,96 +21017,44 @@ snapshots:
 					"version": "19.3.0",
 					"optional": true,
 				},
-				"react": "^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0 || ^19.0.0-rc",
+				"react": {
+					"specifier": "^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0 || ^19.0.0-rc",
+					"version": "19.3.1",
+				},
 			},
 			"dependencies": {
 				"tslib": "2.8.1",
 			},
-			"snapshots": [
-				{
-					"peerDependencies": {
-						"react": {
-							"version": "19.3.0",
-						},
-					},
-				},
-				{
-					"peerDependencies": {
-						"react": {
-							"version": "19.3.1",
-						},
-					},
-				},
-			],
 		},
 
 		"use-device-pixel-ratio@1.1.2": {
 			"integrity": "sha512-nFxV0HwLdRUt20kvIgqHYZe6PK/v4mU1X8/eLsT1ti5ck0l2ob0HDRziaJPx+YWzBo6dMm4cTac3mcyk68Gh+A==",
 			"peerDependencies": {
-				"react": ">=16.8.0",
+				"react": {
+					"specifier": ">=16.8.0",
+					"version": "19.3.1",
+				},
 			},
-			"snapshots": [
-				{
-					"peerDependencies": {
-						"react": {
-							"version": "19.3.0",
-						},
-					},
-				},
-				{
-					"peerDependencies": {
-						"react": {
-							"version": "19.3.1",
-						},
-					},
-				},
-			],
 		},
 
 		"use-effect-event@2.0.4": {
 			"integrity": "sha512-il5ezAwTIxg1dr+eXP+1SS1EpXe6IFy1oADvGxmiCNGCDX1X+ygERRDOFoCyzc+r6ktqag3VITmrw1ZPfoig1g==",
 			"peerDependencies": {
-				"react": "^18.3 || ^19.0.0-0",
+				"react": {
+					"specifier": "^18.3 || ^19.0.0-0",
+					"version": "19.3.1",
+				},
 			},
-			"snapshots": [
-				{
-					"peerDependencies": {
-						"react": {
-							"version": "19.3.0",
-						},
-					},
-				},
-				{
-					"peerDependencies": {
-						"react": {
-							"version": "19.3.1",
-						},
-					},
-				},
-			],
 		},
 
 		"use-hot-module-reload@2.0.0": {
 			"integrity": "sha512-RbL/OY1HjHNf5BYSFV3yDtQhIGKjCx9ntEjnUBYsOGc9fTo94nyFTcjtD42/twJkPgMljWpszUIpTGD3LuwHSg==",
 			"peerDependencies": {
-				"react": ">=17.0.0",
+				"react": {
+					"specifier": ">=17.0.0",
+					"version": "19.3.1",
+				},
 			},
-			"snapshots": [
-				{
-					"peerDependencies": {
-						"react": {
-							"version": "19.3.0",
-						},
-					},
-				},
-				{
-					"peerDependencies": {
-						"react": {
-							"version": "19.3.1",
-						},
-					},
-				},
-			],
 		},
 
 		"use-isomorphic-layout-effect@1.2.1": {
@@ -22367,24 +21065,11 @@ snapshots:
 					"version": "19.3.0",
 					"optional": true,
 				},
-				"react": "^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0",
+				"react": {
+					"specifier": "^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0",
+					"version": "19.3.1",
+				},
 			},
-			"snapshots": [
-				{
-					"peerDependencies": {
-						"react": {
-							"version": "19.3.0",
-						},
-					},
-				},
-				{
-					"peerDependencies": {
-						"react": {
-							"version": "19.3.1",
-						},
-					},
-				},
-			],
 		},
 
 		"use-sidecar@1.1.3": {
@@ -22396,28 +21081,15 @@ snapshots:
 					"version": "19.3.0",
 					"optional": true,
 				},
-				"react": "^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0 || ^19.0.0-rc",
+				"react": {
+					"specifier": "^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0 || ^19.0.0-rc",
+					"version": "19.3.1",
+				},
 			},
 			"dependencies": {
 				"detect-node-es": "1.1.0",
 				"tslib": "2.8.1",
 			},
-			"snapshots": [
-				{
-					"peerDependencies": {
-						"react": {
-							"version": "19.3.0",
-						},
-					},
-				},
-				{
-					"peerDependencies": {
-						"react": {
-							"version": "19.3.1",
-						},
-					},
-				},
-			],
 		},
 
 		"use-sync-external-store@1.6.0": {
@@ -22425,7 +21097,7 @@ snapshots:
 			"peerDependencies": {
 				"react": {
 					"specifier": "^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0",
-					"version": "19.3.0",
+					"version": "19.3.1",
 				},
 			},
 		},
@@ -22433,24 +21105,11 @@ snapshots:
 		"use-sync-external-store@1.7.0": {
 			"integrity": "sha512-6L+EeigHMQhdaIPNIFUKwfWJSwWFQ8gJbJ2DLOs5sDIegTwR9fRxvnM3uciHKjIZhFz+KAv2emhWMRvDmMcY8A==",
 			"peerDependencies": {
-				"react": "^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0",
+				"react": {
+					"specifier": "^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0",
+					"version": "19.3.1",
+				},
 			},
-			"snapshots": [
-				{
-					"peerDependencies": {
-						"react": {
-							"version": "19.3.0",
-						},
-					},
-				},
-				{
-					"peerDependencies": {
-						"react": {
-							"version": "19.3.1",
-						},
-					},
-				},
-			],
 		},
 
 		"user-home@2.0.0": {
@@ -23104,7 +21763,7 @@ snapshots:
 				},
 				"react": {
 					"specifier": ">=18.0.0",
-					"version": "19.3.0",
+					"version": "19.3.1",
 					"optional": true,
 				},
 				"use-sync-external-store": {
@@ -23131,54 +21790,15 @@ snapshots:
 				},
 				"react": {
 					"specifier": ">=18.0.0",
+					"version": "19.3.1",
 					"optional": true,
 				},
 				"use-sync-external-store": {
 					"specifier": ">=1.2.0",
+					"version": "1.7.0",
 					"optional": true,
 				},
 			},
-			"snapshots": [
-				{
-					"peerDependencies": {
-						"react": {
-							"version": "19.3.0",
-						},
-						"use-sync-external-store": {
-							"version": "1.7.0",
-							"with": {
-								"react": "19.3.0",
-							},
-						},
-					},
-				},
-				{
-					"peerDependencies": {
-						"react": {
-							"version": "19.3.0",
-						},
-						"use-sync-external-store": {
-							"version": "1.7.0",
-							"with": {
-								"react": "19.3.1",
-							},
-						},
-					},
-				},
-				{
-					"peerDependencies": {
-						"react": {
-							"version": "19.3.1",
-						},
-						"use-sync-external-store": {
-							"version": "1.7.0",
-							"with": {
-								"react": "19.3.1",
-							},
-						},
-					},
-				},
-			],
 		},
 
 		"zwitch@2.0.4": {
