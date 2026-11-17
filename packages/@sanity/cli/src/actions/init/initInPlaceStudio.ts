@@ -26,6 +26,7 @@ import {
   writeInPlaceStudioConfig,
   writeStudioSource,
 } from './inPlaceStudioBase.js'
+import {assertInPlaceStudioReact} from './inPlaceStudioReact.js'
 import {resolvePackageManager} from './resolvePackageManager.js'
 import {type InitOptions, type VersionedFramework} from './types.js'
 
@@ -55,6 +56,8 @@ export async function initInPlaceStudio({
   trace: TelemetryTrace<TelemetryUserProperties, InitStepResult>
   workDir: string
 }): Promise<void> {
+  await assertInPlaceStudioReact(workDir)
+
   const {
     autoUpdates,
     install,

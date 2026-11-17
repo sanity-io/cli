@@ -322,9 +322,7 @@ export async function initAction(options: InitOptions, context: InitContext): Pr
     await checkNextJsReactCompatibility({
       detectedFramework,
       output,
-      // In-place init writes into this folder, so a passed --output-path is
-      // not the app whose React version matters.
-      outputPath: initInPlace ? workDir : outputPath,
+      outputPath: workDir,
     })
   }
 

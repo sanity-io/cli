@@ -6,6 +6,7 @@ import {join} from 'node:path'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
 import {createCorsOrigin, listCorsOrigins} from '../../../services/cors.js'
+import {InitError} from '../initError.js'
 import {initInPlaceStudio} from '../initInPlaceStudio.js'
 import {type InitOptions, type VersionedFramework} from '../types.js'
 
@@ -94,6 +95,13 @@ describe('initInPlaceStudio', () => {
       trace: {log: vi.fn()} as never,
       workDir,
     }
+  }
+
+  async function writeApp(dependencies: Record<string, string>) {
+    await writeFile(
+      join(workDir, 'package.json'),
+      `${JSON.stringify({dependencies, name: 'next-app'}, null, 2)}\n`,
+    )
   }
 
   async function writeNextPackageJson() {
@@ -506,6 +514,56 @@ describe('initInPlaceStudio', () => {
       expect(existsSync(join(workDir, 'sanity.config.ts'))).toBe(true)
       expect(existsSync(join(workDir, 'app'))).toBe(false)
       expect(existsSync(join(workDir, 'src', 'app'))).toBe(false)
+    })
+  })
+
+  describe('React outside the range Studio supports', () => {
+    test('stops before writing files when React is newer', async () => {
+      await writeApp({react: '^20.0.0', 'react-dom': '^20.0.0'})
+
+      await expect(initInPlaceStudio(args({install: true}))).rejects.toThrow(InitError)
+      await expect(initInPlaceStudio(args({install: true}))).rejects.toThrow(
+        /react \^20\.0\.0 is newer than Studio supports/,
+      )
+
+      expect(existsSync(join(workDir, 'sanity.config.ts'))).toBe(false)
+      expect(mockInstallNewPackages).not.toHaveBeenCalled()
+    })
+
+    test('stops before writing files when React is older', async () => {
+      await writeApp({react: '^18.0.0', 'react-dom': '^18.0.0'})
+
+      await expect(initInPlaceStudio(args({install: true}))).rejects.toThrow(
+        /Upgrade to react@\^19\.2\.2 react-dom@\^19\.2\.2/,
+      )
+      expect(existsSync(join(workDir, 'sanity.config.ts'))).toBe(false)
+    })
+
+    test('uses the installed version when it is outside the declared range', async () => {
+      await writeApp({react: '^19.2.4', 'react-dom': '^19.2.4'})
+      await mkdir(join(workDir, 'node_modules', 'react'), {recursive: true})
+      await mkdir(join(workDir, 'node_modules', 'react-dom'), {recursive: true})
+      await writeFile(
+        join(workDir, 'node_modules', 'react', 'package.json'),
+        `${JSON.stringify({name: 'react', version: '20.0.0'})}\n`,
+      )
+      await writeFile(
+        join(workDir, 'node_modules', 'react-dom', 'package.json'),
+        `${JSON.stringify({name: 'react-dom', version: '20.0.0'})}\n`,
+      )
+
+      await expect(initInPlaceStudio(args({install: false}))).rejects.toThrow(
+        /react 20\.0\.0 is newer than Studio supports/,
+      )
+      expect(existsSync(join(workDir, 'sanity.config.ts'))).toBe(false)
+    })
+
+    test('allows a declared range that overlaps the supported range', async () => {
+      await writeApp({react: '^19.2.0', 'react-dom': '^19.2.0'})
+
+      await initInPlaceStudio(args({install: false}))
+
+      expect(existsSync(join(workDir, 'sanity.config.ts'))).toBe(true)
     })
   })
 })

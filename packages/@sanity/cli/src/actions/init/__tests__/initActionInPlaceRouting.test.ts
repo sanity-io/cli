@@ -213,6 +213,9 @@ describe('initAction in-place routing', () => {
   })
 
   test('keeps --output-path when --no-in-place-studio is set', async () => {
+    mockDetectFramework.mockResolvedValue(nextjs)
+    mockGetProjectOutputPath.mockResolvedValue(join(workDir, 'studio'))
+
     await initAction(
       {...baseOptions, inPlaceStudio: false, outputPath: join(workDir, 'studio')},
       context,
