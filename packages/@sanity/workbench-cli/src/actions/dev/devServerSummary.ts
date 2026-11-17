@@ -5,14 +5,14 @@ import {spinner} from '@sanity/cli-core/ux'
 
 import {isWorkbenchApp} from '../../defineApp.js'
 import {getOrganizationApplication} from '../../services/applications.js'
-import {fetchOrganizationName, request, settle} from '../dashboardSummary.js'
+import {request} from '../dashboardSummary.js'
 
 const DETAILS_TIMEOUT_MS = 3000
 const PENDING = Symbol('pending')
 
 export interface DevServerDetails {
-  organizationName?: string
-  version?: string
+  organizationName?: string | null
+  version?: string | null
 }
 
 export async function fetchDevServerDetails(cliConfig: CliConfig): Promise<DevServerDetails> {
@@ -24,8 +24,10 @@ export async function fetchDevServerDetails(cliConfig: CliConfig): Promise<DevSe
     : undefined
 
   const [organizationName, version] = await Promise.all([
-    fetchOrganizationName(organizationId),
-    idOrSlug ? settle(fetchVersion(organizationId, idOrSlug)) : undefined,
+    request<{name: string}>(`/organizations/${organizationId}`)
+      .then((org) => org.name)
+      .catch(() => null),
+    idOrSlug ? fetchVersion(organizationId, idOrSlug).catch(() => null) : undefined,
   ])
 
   return {organizationName, version}
@@ -55,9 +57,9 @@ async function fetchVersion(organizationId: string, idOrSlug: string): Promise<s
   const active = application?.activeDeployment
   if (!active) return `local preview ${styleText('dim', '· not deployed')}`
 
-  const deployedBy = await settle(
-    request<{displayName: string}>(`/users/${active.deployedBy}`).then((user) => user.displayName),
-  )
+  const deployedBy = await request<{displayName: string}>(`/users/${active.deployedBy}`)
+    .then((user) => user.displayName)
+    .catch(() => null)
   const date = new Date(active.createdAt).toLocaleDateString('en-US', {
     day: 'numeric',
     month: 'short',

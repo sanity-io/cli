@@ -10,10 +10,10 @@ export function formatDashboardSummary(options: {
   heading: string
   isApp: boolean
   organizationId?: string
-  organizationName?: string
+  organizationName?: string | null
   title?: string
   url: string
-  version?: string
+  version?: string | null
 }): string {
   const {durationMs, heading, isApp, organizationId, organizationName, title, url, version} =
     options
@@ -34,18 +34,6 @@ export function formatDashboardSummary(options: {
     ...rows.map(([label, value]) => `    ${label.padEnd(width)}  ${value}`),
     '',
   ].join('\n')
-}
-
-export function fetchOrganizationName(organizationId: string): Promise<string | undefined> {
-  return settle(request<{name: string}>(`/organizations/${organizationId}`).then((org) => org.name))
-}
-
-export async function settle<T>(promise: Promise<T>): Promise<T | undefined> {
-  try {
-    return await promise
-  } catch {
-    return
-  }
 }
 
 export async function request<T>(url: string): Promise<T> {

@@ -100,14 +100,17 @@ describe('fetchDevServerDetails', () => {
 
     await expect(fetchDevServerDetails(workbenchCliConfig())).resolves.toEqual({
       organizationName: 'Acme',
-      version: undefined,
+      version: null,
     })
   })
 
   test('resolves no details when the client cannot be created', async () => {
     vi.mocked(getGlobalCliClient).mockRejectedValue(new Error('You must login first'))
 
-    await expect(fetchDevServerDetails(workbenchCliConfig())).resolves.toEqual({})
+    await expect(fetchDevServerDetails(workbenchCliConfig())).resolves.toEqual({
+      organizationName: null,
+      version: null,
+    })
   })
 
   test('skips the deployment lookup for a media library config', async () => {
