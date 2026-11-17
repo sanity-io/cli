@@ -431,6 +431,7 @@ async function runAppDeployment(
           durationMs: Date.now() - startedAt,
           isApp: true,
           organizationId,
+          showAppIdHint: !appId,
           title: appTitle,
           url,
         }),

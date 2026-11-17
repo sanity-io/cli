@@ -24,11 +24,12 @@ export function formatDeploySummary(options: {
   isApp: boolean
   organizationId: string
   organizationName?: string | null
+  showAppIdHint: boolean
   title: string
   url: string
   userName?: string | null
 }): string {
-  const {applicationId, created, isApp, title, userName, ...rest} = options
+  const {applicationId, created, isApp, showAppIdHint, title, userName, ...rest} = options
 
   const result = created
     ? `Created ${title} as a new ${isApp ? 'application' : 'studio'}.`
@@ -45,7 +46,7 @@ export function formatDeploySummary(options: {
     '',
   ]
 
-  if (created) {
+  if (showAppIdHint) {
     lines.push(
       `  ${styleText('dim', 'Add')} deployment.appId: "${applicationId}" ${styleText('dim', 'to sanity.cli.ts so the next deploy updates it')}`,
       '',

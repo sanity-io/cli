@@ -23,6 +23,7 @@ function summarize(options: Partial<Parameters<typeof formatDeploySummary>[0]> =
     durationMs: 8400,
     isApp: true,
     organizationId: 'org-1',
+    showAppIdHint: false,
     title: 'Reports',
     url,
     ...options,
@@ -43,26 +44,32 @@ afterEach(() => {
 })
 
 describe('fetchDeploySummaryDetails', () => {
-  test('resolves the organization and deployer names', async () => {
+  test('resolves the organization and deployer names without retries', async () => {
     await expect(fetchDeploySummaryDetails('org-1')).resolves.toEqual({
       organizationName: 'Acme',
       userName: 'Sam',
     })
+    expect(mockRequest).toHaveBeenCalledWith({maxRetries: 0, timeout: 3000, url: '/users/me'})
   })
 
-  test('resolves without names when the requests fail', async () => {
-    mockRequest.mockRejectedValue(new Error('Unauthorized'))
+  test('keeps the deployer name when the organization request fails', async () => {
+    mockRequest.mockImplementation(async ({url: path}: {url: string}) => {
+      if (path === '/users/me') return {name: 'Sam'}
+      throw new Error('Forbidden')
+    })
 
     await expect(fetchDeploySummaryDetails('org-1')).resolves.toEqual({
       organizationName: null,
-      userName: null,
+      userName: 'Sam',
     })
   })
 })
 
 describe('formatDeploySummary', () => {
   test('a first deploy lists the app, the deployer, and how to pin the created id', () => {
-    expect(summarize({created: true, organizationName: 'Acme', userName: 'Sam'})).toBe(
+    expect(
+      summarize({created: true, organizationName: 'Acme', showAppIdHint: true, userName: 'Sam'}),
+    ).toBe(
       [
         '',
         '  Reports deployed in 8.4s',

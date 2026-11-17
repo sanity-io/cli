@@ -3,7 +3,7 @@ import {join} from 'node:path'
 
 import {extractCoreAppManifest} from '@sanity/cli-build/_internal/manifest'
 import {confirm, input, select} from '@sanity/cli-core/ux'
-import {createTestToken, mockApi, testCommand, testFixture} from '@sanity/cli-test'
+import {mockApi, testCommand, testFixture} from '@sanity/cli-test'
 import {defineApplication, definePanelView} from '@sanity/workbench-cli'
 import {cleanAll, pendingMocks} from 'nock'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
@@ -112,6 +112,12 @@ describe('#deploy app', () => {
     mockListApplications.mockResolvedValue([])
     // Default to empty manifest for app deployments
     mockExtractCoreAppManifest.mockResolvedValue(undefined)
+    // Optional: --json and dry runs skip the deploy summary requests.
+    mockApi({uri: `/organizations/${organizationId}`})
+      .optionally()
+      .reply(200, {name: 'Acme'})
+      .persist()
+    mockApi({uri: '/users/me'}).optionally().reply(200, {name: 'Sam'}).persist()
   })
 
   afterEach(() => {
@@ -746,6 +752,7 @@ describe('#deploy app', () => {
     )
     expect(stdout).toContain('Workbench App deployed in')
     expect(stdout).toContain('Updated Workbench App.')
+    expect(stdout).not.toContain('deployment.appId')
     expect(stdout).toMatch(
       new RegExp(`URL\\s+https://${organizationId}\\.sanity\\.run/applications/drop-desk-host\n`),
     )
@@ -810,7 +817,7 @@ describe('#deploy app', () => {
         expect.objectContaining({applicationId: 'app_taken'}),
       )
       expect(stdout).toContain('Updated Workbench App.')
-      expect(stdout).not.toContain('deployment.appId')
+      expect(stdout).toContain('deployment.appId: "app_taken"')
     })
 
     test('picking a new deployment creates the app at the configured slug', async () => {
@@ -821,9 +828,6 @@ describe('#deploy app', () => {
       mockCreateCoreApp.mockResolvedValue({
         application: {...takenApp, id: 'app_new'},
       })
-      createTestToken('test-token')
-      mockApi({uri: `/organizations/${organizationId}`}).reply(200, {name: 'Acme'})
-      mockApi({uri: '/users/me'}).reply(200, {name: 'Sam'})
 
       const {error, stdout} = await testCommand(DeployCommand, [], {
         config: {root: cwd},

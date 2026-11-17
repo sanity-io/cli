@@ -263,6 +263,7 @@ async function runStudioDeployment(
           durationMs: Date.now() - startedAt,
           isApp: false,
           organizationId,
+          showAppIdHint: !appId,
           title: appTitle,
           url,
         }),
