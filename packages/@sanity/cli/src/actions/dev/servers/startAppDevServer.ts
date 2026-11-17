@@ -61,12 +61,12 @@ export async function startAppDevServer(options: DevActionOptions): Promise<Star
       isApp: true,
     })
 
-    const {port} = server.config.server
+    const {https, port} = server.config.server
 
     // Federated apps surface through the workbench, which announces the URL;
     // only the package-unavailable fallback announces from here.
     if (isWorkbenchApp && announceUrl) {
-      const url = `http://${toDisplayHost(config.httpHost)}:${port}`
+      const url = `${https ? 'https' : 'http'}://${toDisplayHost(config.httpHost)}:${port}`
       output.log(`App dev server started at ${styleText(['blue', 'underline'], url)}`)
     } else if (!isWorkbenchApp) {
       const httpHost = config.httpHost || 'localhost'
@@ -74,6 +74,7 @@ export async function startAppDevServer(options: DevActionOptions): Promise<Star
       const dashboardAppUrl = await getDashboardAppURL({
         httpHost,
         httpPort: port,
+        https: Boolean(https),
         organizationId,
       })
       output.log(`Dev server started on port ${port}`)

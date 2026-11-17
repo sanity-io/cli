@@ -138,7 +138,7 @@ export async function startStudioDevServer(
     const {close, server} = await startDevServer(config)
 
     const {info: loggerInfo} = server.config.logger
-    const {port} = server.config.server
+    const {https, port} = server.config.server
     const httpHost = config.httpHost || 'localhost'
 
     if (loadInDashboard) {
@@ -152,14 +152,16 @@ export async function startStudioDevServer(
           await getDashboardAppURL({
             httpHost,
             httpPort: port,
+            https: Boolean(https),
             organizationId: organizationId!,
           }),
         ),
       )
     } else {
       const startupDuration = Date.now() - startTime
+      const protocol = https ? 'https' : 'http'
       const url = withUnclaimedSignInHash(
-        `http://${httpHost || 'localhost'}:${port}${config.basePath}`,
+        `${protocol}://${httpHost || 'localhost'}:${port}${config.basePath}`,
         projectId,
       )
       const appType = 'Sanity Studio'
