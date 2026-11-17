@@ -41,15 +41,34 @@ beforeEach(() => {
 
 afterEach(() => {
   vi.clearAllMocks()
+  vi.restoreAllMocks()
 })
 
 describe('fetchDeploySummaryDetails', () => {
-  test('resolves the organization and deployer names without retries', async () => {
+  test('resolves the organization and deployer names', async () => {
     await expect(fetchDeploySummaryDetails('org-1')).resolves.toEqual({
       organizationName: 'Acme',
       userName: 'Sam',
     })
-    expect(mockRequest).toHaveBeenCalledWith({maxRetries: 0, timeout: 3000, url: '/users/me'})
+  })
+
+  test('drops the deployer name when its lookup outlasts the 3s deadline', async () => {
+    const deadline = new AbortController()
+    vi.spyOn(AbortSignal, 'timeout').mockReturnValue(deadline.signal)
+    mockRequest.mockImplementation(
+      async ({signal, url: path}: {signal: AbortSignal; url: string}) => {
+        if (path === '/organizations/org-1') return {name: 'Acme'}
+
+        return new Promise((_, reject) => signal.addEventListener('abort', reject))
+      },
+    )
+
+    const details = fetchDeploySummaryDetails('org-1')
+    await vi.waitFor(() => expect(mockRequest).toHaveBeenCalledTimes(2))
+    deadline.abort()
+
+    await expect(details).resolves.toEqual({organizationName: 'Acme', userName: null})
+    expect(AbortSignal.timeout).toHaveBeenCalledWith(3000)
   })
 
   test('keeps the deployer name when the organization request fails', async () => {

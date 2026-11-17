@@ -2,14 +2,18 @@ import {styleText} from 'node:util'
 
 import {logSymbols} from '@sanity/cli-core/ux'
 
-import {formatDashboardSummary, request} from '../dashboardSummary.js'
+import {getOrganization} from '../../services/organizations.js'
+import {getCurrentUser} from '../../services/users.js'
+
+const DETAILS_TIMEOUT_MS = 3000
 
 export async function fetchDeploySummaryDetails(organizationId: string) {
+  const signal = AbortSignal.timeout(DETAILS_TIMEOUT_MS)
   const [organizationName, userName] = await Promise.all([
-    request<{name: string}>(`/organizations/${organizationId}`)
+    getOrganization(organizationId, signal)
       .then((org) => org.name)
       .catch(() => null),
-    request<{name: string}>('/users/me')
+    getCurrentUser(signal)
       .then((user) => user.name)
       .catch(() => null),
   ])
@@ -29,29 +33,30 @@ export function formatDeploySummary(options: {
   url: string
   userName?: string | null
 }): string {
-  const {applicationId, created, isApp, showAppIdHint, title, userName, ...rest} = options
+  const {applicationId, created, durationMs, isApp, organizationId, showAppIdHint, title, url} =
+    options
 
+  const seconds = (durationMs / 1000).toFixed(1)
+  const organization = options.organizationName ?? organizationId
+  const kind = isApp ? 'App' : 'Studio'
+  const link = styleText(['blue', 'underline'], url)
+  const version = options.userName ? `just now by ${options.userName}` : 'just now'
   const result = created
     ? `Created ${title} as a new ${isApp ? 'application' : 'studio'}.`
     : `Updated ${title}.`
-  const lines = [
-    formatDashboardSummary({
-      ...rest,
-      heading: `${title} deployed`,
-      isApp,
-      title,
-      version: userName ? `just now by ${userName}` : 'just now',
-    }),
-    styleText('green', `  ${logSymbols.success} ${result}`),
-    '',
-  ]
+  const success = styleText('green', `  ${logSymbols.success} ${result}`)
+  const appIdHint = showAppIdHint
+    ? `\n  ${styleText('dim', 'Add')} deployment.appId: "${applicationId}" ${styleText('dim', 'to sanity.cli.ts so the next deploy updates it')}\n`
+    : ''
 
-  if (showAppIdHint) {
-    lines.push(
-      `  ${styleText('dim', 'Add')} deployment.appId: "${applicationId}" ${styleText('dim', 'to sanity.cli.ts so the next deploy updates it')}`,
-      '',
-    )
-  }
+  return `
+  ${title} deployed in ${seconds}s
 
-  return lines.join('\n')
+    Organization  ${organization}
+    ${kind.padEnd(12)}  ${title}
+    URL           ${link}
+    Version       ${version}
+
+${success}
+${appIdHint}`
 }

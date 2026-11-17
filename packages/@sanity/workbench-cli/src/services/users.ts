@@ -10,3 +10,9 @@ export async function getUser(
 
   return client.request({signal, url: `/users/${userId}`})
 }
+
+export async function getCurrentUser(signal?: AbortSignal): Promise<{name: string}> {
+  const client = await getGlobalCliClient({apiVersion: USERS_API_VERSION, requireUser: true})
+
+  return client.request({signal, url: '/users/me'})
+}
