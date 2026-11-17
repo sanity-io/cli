@@ -4,9 +4,10 @@ import {type CliConfig, type Output} from '@sanity/cli-core'
 
 import {isWorkbenchApp} from '../../defineApp.js'
 import {createServerLifecycle, toDisplayHost} from '../../util/serverOrchestration.js'
+import {formatSummary} from '../summary.js'
 import {type AppServerResult, startAppServerSupervisor} from './appServerSupervisor.js'
 import {bindDevShortcuts} from './bindDevShortcuts.js'
-import {fetchDevSummaryDetails, waitForDevServerDetails} from './devServerSummary.js'
+import {fetchDevSummaryDetails, waitForDevSummaryDetails} from './devSummary.js'
 import {type DevServerManifest} from './registry.js'
 import {startDevServerRegistration} from './startDevServerRegistration.js'
 import {
@@ -33,10 +34,10 @@ export interface StartWorkbenchDevOptions {
   reactStrictMode: boolean
   /** Start the app/studio dev server — the CLI owns the server, this orchestrates it. */
   startAppServer: (params: {
-    announceUrl: boolean
     cliConfig: CliConfig
     httpPort: number
-    isRestarting: boolean
+    isRestarting?: boolean
+    quiet?: boolean
   }) => Promise<AppServerResult>
   workDir: string
 }
@@ -71,12 +72,7 @@ export async function startWorkbenchDev(
   // The remote can't render itself, so it runs as a plain app server (not the
   // shell) that still bridges the registry.
   if (process.env.SANITY_INTERNAL_IS_WORKBENCH_REMOTE === 'true') {
-    const remote = await startAppServer({
-      announceUrl: true,
-      cliConfig,
-      httpPort,
-      isRestarting: false,
-    })
+    const remote = await startAppServer({cliConfig, httpPort})
     if (!remote.started) return {close: async () => {}}
 
     const coordinator = startWorkbenchRemoteCoordinator({server: remote.server})
@@ -93,7 +89,12 @@ export async function startWorkbenchDev(
   // the app server, and the supervisor waits out an in-flight rebuild.
   const {close, closers, installSignalHandlers} = createServerLifecycle()
   const startedAt = Date.now()
-  const details = fetchDevSummaryDetails(cliConfig)
+  const app = isWorkbenchApp(cliConfig.app) ? cliConfig.app : undefined
+  const organizationId = cliConfig.app?.organizationId
+  const details = fetchDevSummaryDetails({
+    idOrSlug: app && (cliConfig.deployment?.appId ?? app.slug),
+    organizationId,
+  })
 
   const workbench = await startWorkbenchDevServer({
     cacheDir,
@@ -109,12 +110,16 @@ export async function startWorkbenchDev(
   // A running workbench owns the configured port; the app server takes the next.
   // Without one it claims the configured port and announces its own URL.
   const appPort = workbench.workbenchAvailable ? workbench.workbenchPort + 1 : httpPort
-  const announceUrl = !workbench.workbenchAvailable
 
   const supervised = await startAppServerSupervisor({
     cliConfig,
-    start: (config, {isRestarting}) =>
-      startAppServer({announceUrl, cliConfig: config, httpPort: appPort, isRestarting}),
+    start: (config, {isRestarting} = {}) =>
+      startAppServer({
+        cliConfig: config,
+        httpPort: appPort,
+        isRestarting,
+        quiet: workbench.workbenchAvailable,
+      }),
     workDir,
   }).catch(async (err) => {
     await close()
@@ -153,7 +158,7 @@ export async function startWorkbenchDev(
 
   const durationMs = Date.now() - startedAt
   const {deployment, organizationName} = workbench.workbenchAvailable
-    ? await waitForDevServerDetails(details)
+    ? await waitForDevSummaryDetails(details)
     : {}
 
   installSignalHandlers()
@@ -174,19 +179,17 @@ export async function startWorkbenchDev(
       version = `local preview ${styleText('dim', '· not deployed')}`
     }
 
-    const seconds = (durationMs / 1000).toFixed(1)
-    const organization = organizationName ?? cliConfig.app?.organizationId
-    const title = isWorkbenchApp(cliConfig.app) ? cliConfig.app.title : undefined
-    const titleRow = title ? `\n    ${(isApp ? 'App' : 'Studio').padEnd(12)}  ${title}` : ''
-    const link = styleText(['blue', 'underline'], url)
-    const versionRow = version ? `\n    Version       ${version}` : ''
-
-    output.log(`
-  Sanity Dashboard ready in ${seconds}s
-
-    Organization  ${organization}${titleRow}
-    URL           ${link}${versionRow}
-`)
+    output.log(
+      formatSummary({
+        durationMs,
+        heading: 'Sanity Dashboard ready',
+        isApp,
+        organization: organizationName ?? organizationId,
+        title: app?.title,
+        url,
+        version,
+      }),
+    )
 
     const quit = () => void close().then(() => process.exit(0))
     closers.push(bindDevShortcuts({output, quit, url}))

@@ -12,9 +12,6 @@ export interface DevActionOptions {
   output: Output
   workDir: string
 
-  /** Announce the server's own URL on startup; `false` when the workbench announces it instead (default `true`). */
-  announceUrl?: boolean
-
   /**
    * Port the app/studio dev server should bind. `devAction` sets it when a
    * running workbench has claimed the configured port; otherwise it stays
@@ -24,6 +21,9 @@ export interface DevActionOptions {
 
   /** Workbench is restarting this server after a view or web worker change; skip one-time startup checks and notices. */
   isRestarting?: boolean
+
+  /** Skip startup output; the workbench prints its own summary instead. */
+  quiet?: boolean
 }
 
 /**

@@ -137,11 +137,11 @@ describe('startStudioDevServer', () => {
     )
   })
 
-  test('prints no ready line when announceUrl is false', async () => {
+  test('prints no ready line when quiet', async () => {
     const started = createMockDevServer()
     mockStartDevServer.mockResolvedValueOnce(started)
 
-    const result = await startStudioDevServer(createDevOptions({announceUrl: false}))
+    const result = await startStudioDevServer(createDevOptions({quiet: true}))
 
     expect(result.started).toBe(true)
     expect(spinner).toHaveBeenCalledWith(expect.objectContaining({isSilent: true}))
@@ -401,9 +401,9 @@ describe('startStudioDevServer', () => {
       mockShouldAutoUpdate.mockReturnValue(true)
       mockIsInteractive.mockReturnValue(true)
       const options = createDevOptions({
-        announceUrl: false,
         cliConfig: {schemaExtraction: {enabled: true}} as CliConfig,
         isRestarting: true,
+        quiet: true,
       })
 
       const result = await startStudioDevServer(options)

@@ -152,18 +152,18 @@ describe('devAction', () => {
       const {startAppServer} = mockStartWorkbenchDev.mock.calls[0][0]
       const config = workbenchCliConfig()
       await startAppServer({
-        announceUrl: false,
         cliConfig: config,
         httpPort: 3334,
         isRestarting: true,
+        quiet: true,
       })
 
       expect(mockStartStudioDevServer).toHaveBeenCalledWith(
         expect.objectContaining({
-          announceUrl: false,
           cliConfig: config,
           httpPort: 3334,
           isRestarting: true,
+          quiet: true,
         }),
       )
     })
@@ -172,10 +172,10 @@ describe('devAction', () => {
       await devAction(createBaseDevOptions({cliConfig: workbenchCliConfig(), isApp: true}))
 
       const {startAppServer} = mockStartWorkbenchDev.mock.calls[0][0]
-      await startAppServer({announceUrl: false, cliConfig: workbenchCliConfig(), httpPort: 3334})
+      await startAppServer({cliConfig: workbenchCliConfig(), httpPort: 3334, quiet: true})
 
       expect(mockStartAppDevServer).toHaveBeenCalledWith(
-        expect.objectContaining({announceUrl: false, httpPort: 3334}),
+        expect.objectContaining({httpPort: 3334, quiet: true}),
       )
     })
   })

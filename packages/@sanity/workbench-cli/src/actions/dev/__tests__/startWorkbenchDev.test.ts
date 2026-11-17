@@ -7,6 +7,7 @@ import {startWorkbenchDev, type StartWorkbenchDevOptions} from '../startWorkbenc
 import {
   createMockOutput,
   createMockViteServer,
+  mediaLibraryCliConfig,
   mockWorkbenchServer,
   workbenchCliConfig,
 } from './devTestHelpers.js'
@@ -23,8 +24,8 @@ vi.mock('@sanity/cli-core', async (importOriginal) => ({
 vi.mock('../startWorkbenchDevServer.js', () => ({
   startWorkbenchDevServer: mockStartWorkbenchDevServer,
 }))
-vi.mock('../devServerSummary.js', async (importOriginal) => ({
-  ...(await importOriginal<typeof import('../devServerSummary.js')>()),
+vi.mock('../devSummary.js', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../devSummary.js')>()),
   fetchDevSummaryDetails: mockFetchDevSummaryDetails,
 }))
 vi.mock('../startDevServerRegistration.js', () => ({
@@ -92,7 +93,7 @@ describe('startWorkbenchDev', () => {
       await run()
 
       expect(mockStartAppServer).toHaveBeenCalledWith(
-        expect.objectContaining({announceUrl: false, httpPort: 3334}),
+        expect.objectContaining({httpPort: 3334, quiet: true}),
       )
     })
 
@@ -112,7 +113,7 @@ describe('startWorkbenchDev', () => {
       await run()
 
       expect(mockStartAppServer).toHaveBeenCalledWith(
-        expect.objectContaining({announceUrl: true, httpPort: 3333}),
+        expect.objectContaining({httpPort: 3333, quiet: false}),
       )
     })
 
@@ -185,6 +186,20 @@ describe('startWorkbenchDev', () => {
           `Version       local preview ${styleText('dim', '· not deployed')}`,
         ),
       )
+    })
+
+    test.each([
+      ['by its slug', workbenchCliConfig(), 'test-app'],
+      [
+        'by deployment.appId over its slug',
+        workbenchCliConfig({deployment: {appId: 'app-id'}}),
+        'app-id',
+      ],
+      ['for a media library config, without an app id or slug', mediaLibraryCliConfig(), undefined],
+    ])('looks the deployment up %s', async (_, cliConfig, idOrSlug) => {
+      await run({cliConfig})
+
+      expect(mockFetchDevSummaryDetails).toHaveBeenCalledWith({idOrSlug, organizationId: 'org-123'})
     })
 
     test('lists the organization id when its name is unavailable', async () => {

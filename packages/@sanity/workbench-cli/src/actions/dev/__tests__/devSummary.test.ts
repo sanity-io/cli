@@ -3,11 +3,10 @@ import {spinner} from '@sanity/cli-core/ux'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
 import {
-  type DevServerDetails,
+  type DevSummaryDetails,
   fetchDevSummaryDetails,
-  waitForDevServerDetails,
-} from '../devServerSummary.js'
-import {mediaLibraryCliConfig, workbenchApp, workbenchCliConfig} from './devTestHelpers.js'
+  waitForDevSummaryDetails,
+} from '../devSummary.js'
 
 vi.mock(import('@sanity/cli-core'), async (importOriginal) => ({
   ...(await importOriginal()),
@@ -28,6 +27,7 @@ const defaultResponses: Record<string, unknown> = {
   '/users/user-1': {displayName: 'Jules'},
 }
 let responses: Record<string, unknown>
+const app = {idOrSlug: 'test-app', organizationId: 'org-123'}
 const HANG = Symbol('hang')
 
 const httpError = (statusCode: number) => Object.assign(new Error('Failed'), {statusCode})
@@ -61,19 +61,9 @@ afterEach(() => {
 
 describe('fetchDevSummaryDetails', () => {
   test('resolves the organization name and the deployer of the active deployment', async () => {
-    await expect(fetchDevSummaryDetails(workbenchCliConfig())).resolves.toEqual({
+    await expect(fetchDevSummaryDetails(app)).resolves.toEqual({
       deployment: {createdAt: '2026-05-12T10:00:00.000Z', deployedBy: 'Jules'},
       organizationName: 'Acme',
-    })
-  })
-
-  test('looks the app up by deployment.appId over its slug', async () => {
-    await fetchDevSummaryDetails(workbenchCliConfig({deployment: {appId: 'app-id'}}))
-
-    expect(mockRequest).toHaveBeenCalledWith({
-      query: {include: 'activeDeployment'},
-      signal: expect.anything(),
-      url: '/organizations/org-123/applications/app-id',
     })
   })
 
@@ -82,15 +72,13 @@ describe('fetchDevSummaryDetails', () => {
       activeDeployment: null,
     }
 
-    const details = await fetchDevSummaryDetails(workbenchCliConfig())
+    const details = await fetchDevSummaryDetails(app)
 
     expect(details.deployment).toBeNull()
   })
 
   test('reports an app that was never created as not deployed', async () => {
-    const details = await fetchDevSummaryDetails(
-      workbenchCliConfig({app: workbenchApp({slug: 'new-app'})}),
-    )
+    const details = await fetchDevSummaryDetails({...app, idOrSlug: 'new-app'})
 
     expect(details.deployment).toBeNull()
   })
@@ -98,7 +86,7 @@ describe('fetchDevSummaryDetails', () => {
   test('keeps the deployment without a deployer when the user lookup fails', async () => {
     responses['/users/user-1'] = httpError(403)
 
-    const details = await fetchDevSummaryDetails(workbenchCliConfig())
+    const details = await fetchDevSummaryDetails(app)
 
     expect(details.deployment).toEqual({createdAt: '2026-05-12T10:00:00.000Z', deployedBy: null})
   })
@@ -107,7 +95,7 @@ describe('fetchDevSummaryDetails', () => {
     responses['/organizations/org-123/applications/test-app?include=activeDeployment'] =
       httpError(500)
 
-    await expect(fetchDevSummaryDetails(workbenchCliConfig())).resolves.toEqual({
+    await expect(fetchDevSummaryDetails(app)).resolves.toEqual({
       deployment: undefined,
       organizationName: 'Acme',
     })
@@ -133,7 +121,7 @@ describe('fetchDevSummaryDetails', () => {
       vi.spyOn(AbortSignal, 'timeout').mockReturnValue(deadline.signal)
       responses[key] = HANG
 
-      const details = fetchDevSummaryDetails(workbenchCliConfig())
+      const details = fetchDevSummaryDetails(app)
       await vi.waitFor(() =>
         expect(mockRequest).toHaveBeenCalledWith(expect.objectContaining({url: key.split('?')[0]})),
       )
@@ -147,33 +135,33 @@ describe('fetchDevSummaryDetails', () => {
   test('resolves no details when the client cannot be created', async () => {
     vi.mocked(getGlobalCliClient).mockRejectedValue(new Error('You must login first'))
 
-    await expect(fetchDevSummaryDetails(workbenchCliConfig())).resolves.toEqual({
+    await expect(fetchDevSummaryDetails(app)).resolves.toEqual({
       deployment: undefined,
       organizationName: null,
     })
   })
 
-  test('skips the deployment lookup for a media library config', async () => {
-    const details = await fetchDevSummaryDetails(mediaLibraryCliConfig())
+  test('skips the deployment lookup without an app id or slug', async () => {
+    const details = await fetchDevSummaryDetails({organizationId: 'org-123'})
 
     expect(details).toEqual({deployment: undefined, organizationName: 'Acme'})
     expect(mockRequest).toHaveBeenCalledTimes(1)
   })
 })
 
-describe('waitForDevServerDetails', () => {
+describe('waitForDevSummaryDetails', () => {
   test('returns details that already arrived without a spinner', async () => {
-    const details = await waitForDevServerDetails(Promise.resolve({organizationName: 'Acme'}))
+    const details = await waitForDevSummaryDetails(Promise.resolve({organizationName: 'Acme'}))
 
     expect(details).toEqual({organizationName: 'Acme'})
     expect(spinner).not.toHaveBeenCalled()
   })
 
   test('shows a spinner until pending details arrive', async () => {
-    let resolve!: (details: DevServerDetails) => void
-    const promise = new Promise<DevServerDetails>((done) => (resolve = done))
+    let resolve!: (details: DevSummaryDetails) => void
+    const promise = new Promise<DevSummaryDetails>((done) => (resolve = done))
 
-    const waiting = waitForDevServerDetails(promise)
+    const waiting = waitForDevSummaryDetails(promise)
     await new Promise((done) => setImmediate(done))
     expect(mockSpin.start).toHaveBeenCalled()
 

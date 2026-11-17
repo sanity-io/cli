@@ -13,7 +13,7 @@ export type AppServerResult =
 /** Start the app/studio dev server for a given config (port + URL intent baked in by the caller). */
 export type StartAppServer = (
   cliConfig: CliConfig,
-  options: {isRestarting: boolean},
+  options?: {isRestarting?: boolean},
 ) => Promise<AppServerResult>
 
 const noop = async () => {}
@@ -47,7 +47,7 @@ export async function startAppServerSupervisor(options: {
 }): Promise<{reason: string; started: false} | {started: true; supervisor: AppServerSupervisor}> {
   const {cliConfig, start, workDir} = options
 
-  const initial = await start(cliConfig, {isRestarting: false})
+  const initial = await start(cliConfig)
   if (!initial.started) return {reason: initial.reason, started: false}
 
   // `closeCurrent` repoints at the replacement only once a rebuild succeeds, so a

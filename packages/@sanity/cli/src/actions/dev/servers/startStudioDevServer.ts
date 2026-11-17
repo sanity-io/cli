@@ -28,7 +28,7 @@ import {getDevServerConfig} from './getDevServerConfig.js'
 export async function startStudioDevServer(
   options: DevActionOptions,
 ): Promise<StartDevServerResult> {
-  const {announceUrl = true, cliConfig, flags, httpPort, isRestarting, output, workDir} = options
+  const {cliConfig, flags, httpPort, isRestarting, output, quiet = false, workDir} = options
   const projectId = cliConfig?.api?.projectId
   let organizationId: string | undefined
 
@@ -130,7 +130,7 @@ export async function startStudioDevServer(
 
   try {
     const startTime = Date.now()
-    const spin = spinner({isSilent: !announceUrl, text: 'Starting dev server'}).start()
+    const spin = spinner({isSilent: quiet, text: 'Starting dev server'}).start()
     const {close, server} = await startDevServer(config)
     spin.succeed()
 
@@ -152,7 +152,7 @@ export async function startStudioDevServer(
           }),
         ),
       )
-    } else if (announceUrl) {
+    } else if (!quiet) {
       const startupDuration = Date.now() - startTime
       const protocol = https ? 'https' : 'http'
       const url = withUnclaimedSignInHash(
