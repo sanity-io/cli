@@ -2,17 +2,16 @@ import {styleText} from 'node:util'
 
 import {logSymbols} from '@sanity/cli-core/ux'
 
-import {
-  fetchOrganizationName,
-  formatDashboardSummary,
-  request,
-  settle,
-} from '../dashboardSummary.js'
+import {formatDashboardSummary, request} from '../dashboardSummary.js'
 
 export async function fetchDeploySummaryDetails(organizationId: string) {
   const [organizationName, userName] = await Promise.all([
-    fetchOrganizationName(organizationId),
-    settle(request<{name: string}>('/users/me').then((user) => user.name)),
+    request<{name: string}>(`/organizations/${organizationId}`)
+      .then((org) => org.name)
+      .catch(() => null),
+    request<{name: string}>('/users/me')
+      .then((user) => user.name)
+      .catch(() => null),
   ])
 
   return {organizationName, userName}
@@ -24,10 +23,10 @@ export function formatDeploySummary(options: {
   durationMs: number
   isApp: boolean
   organizationId: string
-  organizationName?: string
+  organizationName?: string | null
   title: string
   url: string
-  userName?: string
+  userName?: string | null
 }): string {
   const {applicationId, created, isApp, title, userName, ...rest} = options
 

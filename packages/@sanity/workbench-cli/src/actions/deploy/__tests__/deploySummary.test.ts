@@ -54,8 +54,8 @@ describe('fetchDeploySummaryDetails', () => {
     mockRequest.mockRejectedValue(new Error('Unauthorized'))
 
     await expect(fetchDeploySummaryDetails('org-1')).resolves.toEqual({
-      organizationName: undefined,
-      userName: undefined,
+      organizationName: null,
+      userName: null,
     })
   })
 })
