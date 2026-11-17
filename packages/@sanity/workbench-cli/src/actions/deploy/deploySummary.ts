@@ -4,11 +4,10 @@ import {logSymbols} from '@sanity/cli-core/ux'
 
 import {getOrganization} from '../../services/organizations.js'
 import {getCurrentUser} from '../../services/users.js'
-
-const DETAILS_TIMEOUT_MS = 3000
+import {formatSummary, SUMMARY_LOOKUP_TIMEOUT_MS} from '../summary.js'
 
 export async function fetchDeploySummaryDetails(organizationId: string) {
-  const signal = AbortSignal.timeout(DETAILS_TIMEOUT_MS)
+  const signal = AbortSignal.timeout(SUMMARY_LOOKUP_TIMEOUT_MS)
   const [organizationName, userName] = await Promise.all([
     getOrganization(organizationId, signal)
       .then((org) => org.name)
@@ -33,14 +32,17 @@ export function formatDeploySummary(options: {
   url: string
   userName?: string | null
 }): string {
-  const {applicationId, created, durationMs, isApp, organizationId, showAppIdHint, title, url} =
-    options
+  const {applicationId, created, durationMs, isApp, showAppIdHint, title, url, userName} = options
 
-  const seconds = (durationMs / 1000).toFixed(1)
-  const organization = options.organizationName ?? organizationId
-  const kind = isApp ? 'App' : 'Studio'
-  const link = styleText(['blue', 'underline'], url)
-  const version = options.userName ? `just now by ${options.userName}` : 'just now'
+  const summary = formatSummary({
+    durationMs,
+    heading: `${title} deployed`,
+    isApp,
+    organization: options.organizationName ?? options.organizationId,
+    title,
+    url,
+    version: userName ? `just now by ${userName}` : 'just now',
+  })
   const result = created
     ? `Created ${title} as a new ${isApp ? 'application' : 'studio'}.`
     : `Updated ${title}.`
@@ -49,14 +51,7 @@ export function formatDeploySummary(options: {
     ? `\n  ${styleText('dim', 'Add')} deployment.appId: "${applicationId}" ${styleText('dim', 'to sanity.cli.ts so the next deploy updates it')}\n`
     : ''
 
-  return `
-  ${title} deployed in ${seconds}s
-
-    Organization  ${organization}
-    ${kind.padEnd(12)}  ${title}
-    URL           ${link}
-    Version       ${version}
-
+  return `${summary}
 ${success}
 ${appIdHint}`
 }
