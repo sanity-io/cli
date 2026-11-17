@@ -20,16 +20,7 @@ export async function deployStudioSchemasAndManifests(
   options: DeployStudioSchemasAndManifestsWorkerData & {applicationId?: string},
   output: Output,
 ): Promise<StudioManifest | null> {
-  const {
-    applicationId,
-    configPath,
-    isExternal,
-    outPath,
-    projectId,
-    schemaRequired,
-    verbose,
-    workDir,
-  } = options
+  const {applicationId, configPath, isExternal, outPath, schemaRequired, verbose, workDir} = options
 
   const trace = getCliTelemetry().trace(SchemaDeploy, {
     // If the studio is externally hosted, we don't need to extract the manifest
@@ -55,7 +46,6 @@ export async function deployStudioSchemasAndManifests(
           configPath,
           isExternal,
           outPath,
-          projectId,
           schemaRequired,
           verbose,
           workDir,

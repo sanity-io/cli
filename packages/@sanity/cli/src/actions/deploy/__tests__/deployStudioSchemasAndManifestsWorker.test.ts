@@ -52,7 +52,6 @@ function createWorkerData(
     configPath: '/studio/sanity.config.ts',
     isExternal: false,
     outPath: 'dist/static',
-    projectId,
     schemaRequired: false,
     verbose: false,
     workDir: '/studio',
@@ -111,7 +110,6 @@ describe('deployStudioSchemasAndManifestsWorker', () => {
         configPath: '/studio/sanity.config.ts',
         isExternal: false,
         outPath: 'dist/static',
-        projectId,
         schemaRequired: false,
         verbose: true,
         workDir: '/studio',
@@ -124,7 +122,7 @@ describe('deployStudioSchemasAndManifestsWorker', () => {
     const {messages, port} = createPort()
 
     await expect(
-      deployStudioSchemasAndManifestsWorker(port, {...createWorkerData(), projectId: 42}),
+      deployStudioSchemasAndManifestsWorker(port, {...createWorkerData(), configPath: 42}),
     ).rejects.toThrow()
 
     expect(messages).toEqual([])

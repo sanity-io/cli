@@ -1,32 +1,39 @@
-import {resolveLocalPackage} from '@sanity/cli-core'
+import {getGlobalCliClient, resolveLocalPackage} from '@sanity/cli-core'
+import {prepareSchemaUpload} from '@sanity/schema/_internal'
 import {type Workspace} from 'sanity'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
 import {uploadSchemaToLexicon} from '../uploadSchemaToLexicon.js'
 
 const mockGetLocalPackageVersion = vi.hoisted(() => vi.fn())
+const mockRequest = vi.hoisted(() => vi.fn())
+const mockResolveIcon = vi.hoisted(() => vi.fn())
+const mockPrepareSchemaUpload = vi.hoisted(() => vi.fn())
 
-const mockUploadSchema = vi.fn()
 const mockGenerateStudioManifest = vi.fn()
-const mockWithConfig = vi.fn()
 
 vi.mock('@sanity/cli-core', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@sanity/cli-core')>()
   return {
     ...actual,
-    getLocalPackageVersion: mockGetLocalPackageVersion,
-    getProjectCliClient: vi.fn().mockResolvedValue({
-      withConfig: (...args: unknown[]) => mockWithConfig(...args),
+    getGlobalCliClient: vi.fn().mockResolvedValue({
+      request: mockRequest,
     }),
+    getLocalPackageVersion: mockGetLocalPackageVersion,
     resolveLocalPackage: vi.fn(),
   }
 })
 
-// Mock the icon resolver to avoid React/DOM dependencies
-vi.mock('../../manifest/iconResolver.js', () => ({
-  resolveIcon: vi.fn().mockResolvedValue(undefined),
+vi.mock('@sanity/schema/_internal', () => ({
+  prepareSchemaUpload: mockPrepareSchemaUpload,
 }))
 
+// Mock the icon resolver to avoid React/DOM dependencies
+vi.mock('../../manifest/iconResolver.js', () => ({
+  resolveIcon: mockResolveIcon,
+}))
+
+const mockGetGlobalCliClient = vi.mocked(getGlobalCliClient)
 const mockResolveLocalPackage = vi.mocked(resolveLocalPackage)
 
 function createWorkspace(overrides: Record<string, unknown> = {}) {
@@ -42,25 +49,62 @@ function createWorkspace(overrides: Record<string, unknown> = {}) {
 
 afterEach(() => {
   vi.clearAllMocks()
+  mockGetGlobalCliClient.mockResolvedValue({request: mockRequest} as never)
+  mockResolveIcon.mockResolvedValue(undefined)
 })
 
 describe('uploadSchemaToLexicon', () => {
-  test('single workspace success', async () => {
+  test('uploads single workspace schema via global client with temporary claim', async () => {
+    const workspace = createWorkspace()
     mockGetLocalPackageVersion.mockResolvedValue('3.0.0')
     mockResolveLocalPackage.mockResolvedValue({
       generateStudioManifest: mockGenerateStudioManifest,
-      uploadSchema: mockUploadSchema,
     })
-    mockWithConfig.mockReturnValue({withConfig: mockWithConfig})
-    mockUploadSchema.mockResolvedValue('descriptor-123')
-    mockGenerateStudioManifest.mockResolvedValue({
+    mockPrepareSchemaUpload.mockResolvedValue({descriptorId: 'descriptor-123'})
+    mockResolveIcon.mockResolvedValue('<svg />')
+    mockGenerateStudioManifest.mockImplementation(
+      async ({resolveIcon, resolveSchemaDescriptorId, workspaces}) => ({
+        buildId: '"123"',
+        bundleVersion: '3.0.0',
+        workspaces: await Promise.all(
+          workspaces.map(async (ws: Workspace) => ({
+            basePath: '/',
+            dataset: ws.dataset,
+            icon: await resolveIcon(ws),
+            name: ws.name,
+            projectId: ws.projectId,
+            schemaDescriptorId: await resolveSchemaDescriptorId(ws),
+            title: ws.title,
+          })),
+        ),
+      }),
+    )
+
+    const result = await uploadSchemaToLexicon({
+      workDir: '/tmp/test',
+      workspaces: [workspace],
+    })
+
+    expect(mockGetGlobalCliClient).toHaveBeenCalledWith({
+      apiVersion: 'v2025-06-01',
+      requestTagPrefix: 'sanity.cli.deploy',
+      requireUser: true,
+    })
+    expect(mockPrepareSchemaUpload).toHaveBeenCalledTimes(1)
+    expect(mockPrepareSchemaUpload).toHaveBeenCalledWith(workspace.schema, {
+      apiVersion: 'v2025-06-01',
+      claim: 'temporary',
+      contextKey: 'dataset:proj-123:production',
+      requester: expect.any(Function),
+    })
+    expect(result).toEqual({
       buildId: '"123"',
       bundleVersion: '3.0.0',
-      createdAt: '2024-01-01T00:00:00.000Z',
       workspaces: [
         {
           basePath: '/',
           dataset: 'production',
+          icon: '<svg />',
           name: 'default',
           projectId: 'proj-123',
           schemaDescriptorId: 'descriptor-123',
@@ -68,115 +112,185 @@ describe('uploadSchemaToLexicon', () => {
         },
       ],
     })
+  })
 
-    const result = await uploadSchemaToLexicon({
-      projectId: 'proj-123',
+  test('requester strips leading version prefix and forwards options to global client', async () => {
+    mockGetLocalPackageVersion.mockResolvedValue('3.0.0')
+    mockResolveLocalPackage.mockResolvedValue({
+      generateStudioManifest: mockGenerateStudioManifest,
+    })
+    mockRequest.mockResolvedValue({ok: true})
+    mockPrepareSchemaUpload.mockImplementation(async (_schema, options) => {
+      const controller = new AbortController()
+      await options.requester({
+        body: {descriptorId: 'desc-1'},
+        headers: {'X-Custom': 'value'},
+        method: 'POST',
+        signal: controller.signal,
+        url: '/v2025-06-01/descriptors/claim',
+      })
+      await options.requester({
+        method: 'GET',
+        url: '/descriptors/other',
+      })
+      return {descriptorId: 'descriptor-123'}
+    })
+    mockGenerateStudioManifest.mockResolvedValue({
+      buildId: '"123"',
+      bundleVersion: '3.0.0',
+      workspaces: [
+        {
+          dataset: 'production',
+          name: 'default',
+          projectId: 'proj-123',
+          schemaDescriptorId: 'descriptor-123',
+        },
+      ],
+    })
+
+    await uploadSchemaToLexicon({
       workDir: '/tmp/test',
       workspaces: [createWorkspace()],
     })
 
-    expect(result).not.toBeNull()
-    expect(result?.workspaces).toHaveLength(1)
-    expect(mockUploadSchema).toHaveBeenCalledTimes(1)
+    expect(mockRequest).toHaveBeenNthCalledWith(1, {
+      body: {descriptorId: 'desc-1'},
+      headers: {'x-custom': 'value'},
+      method: 'POST',
+      signal: expect.any(AbortSignal),
+      url: '/descriptors/claim',
+    })
+    expect(mockRequest).toHaveBeenNthCalledWith(2, {
+      body: undefined,
+      headers: undefined,
+      method: 'GET',
+      signal: undefined,
+      url: '/descriptors/other',
+    })
+    expect(vi.mocked(prepareSchemaUpload)).toHaveBeenCalledTimes(1)
   })
 
-  test('multiple workspaces', async () => {
+  test('multiple workspaces share global client and scope contextKey per workspace', async () => {
     mockGetLocalPackageVersion.mockResolvedValue('3.0.0')
     mockResolveLocalPackage.mockResolvedValue({
       generateStudioManifest: mockGenerateStudioManifest,
-      uploadSchema: mockUploadSchema,
     })
-    mockWithConfig.mockReturnValue({withConfig: mockWithConfig})
-    mockUploadSchema.mockResolvedValueOnce('descriptor-1').mockResolvedValueOnce('descriptor-2')
-    mockGenerateStudioManifest.mockResolvedValue({
-      buildId: '"123"',
-      bundleVersion: '3.0.0',
-      createdAt: '2024-01-01T00:00:00.000Z',
-      workspaces: [
-        {
-          basePath: '/',
-          dataset: 'production',
-          name: 'ws1',
-          projectId: 'proj-1',
-          schemaDescriptorId: 'descriptor-1',
-          title: 'WS1',
-        },
-        {
-          basePath: '/',
-          dataset: 'staging',
-          name: 'ws2',
-          projectId: 'proj-2',
-          schemaDescriptorId: 'descriptor-2',
-          title: 'WS2',
-        },
-      ],
-    })
+    mockPrepareSchemaUpload
+      .mockResolvedValueOnce({descriptorId: 'descriptor-1'})
+      .mockResolvedValueOnce({descriptorId: 'descriptor-2'})
+    mockResolveIcon.mockResolvedValue(null)
+    mockGenerateStudioManifest.mockImplementation(
+      async ({resolveIcon, resolveSchemaDescriptorId, workspaces}) => ({
+        buildId: '"123"',
+        bundleVersion: '3.0.0',
+        workspaces: await Promise.all(
+          workspaces.map(async (ws: Workspace) => ({
+            dataset: ws.dataset,
+            icon: await resolveIcon(ws),
+            name: ws.name,
+            projectId: ws.projectId,
+            schemaDescriptorId: await resolveSchemaDescriptorId(ws),
+          })),
+        ),
+      }),
+    )
 
     const result = await uploadSchemaToLexicon({
-      projectId: 'proj-123',
       workDir: '/tmp/test',
       workspaces: [
-        createWorkspace({dataset: 'production', name: 'ws1', projectId: 'proj-1'}),
-        createWorkspace({dataset: 'staging', name: 'ws2', projectId: 'proj-2'}),
+        createWorkspace({dataset: 'production', name: 'ws1', projectId: 'proj-1', title: ''}),
+        createWorkspace({dataset: 'staging', name: '', projectId: 'proj-2', title: ''}),
       ],
     })
 
+    expect(mockGetGlobalCliClient).toHaveBeenCalledTimes(1)
     expect(result?.workspaces).toHaveLength(2)
-    expect(mockUploadSchema).toHaveBeenCalledTimes(2)
-    expect(mockWithConfig).toHaveBeenCalledWith(
-      expect.objectContaining({dataset: 'production', projectId: 'proj-1'}),
+    expect(mockPrepareSchemaUpload).toHaveBeenCalledTimes(2)
+    expect(mockPrepareSchemaUpload).toHaveBeenNthCalledWith(
+      1,
+      expect.anything(),
+      expect.objectContaining({contextKey: 'dataset:proj-1:production'}),
     )
-    expect(mockWithConfig).toHaveBeenCalledWith(
-      expect.objectContaining({dataset: 'staging', projectId: 'proj-2'}),
+    expect(mockPrepareSchemaUpload).toHaveBeenNthCalledWith(
+      2,
+      expect.anything(),
+      expect.objectContaining({contextKey: 'dataset:proj-2:staging'}),
     )
+    expect(mockResolveIcon).toHaveBeenNthCalledWith(
+      1,
+      expect.objectContaining({title: 'ws1', workDir: '/tmp/test'}),
+    )
+    expect(mockResolveIcon).toHaveBeenNthCalledWith(
+      2,
+      expect.objectContaining({title: 'default', workDir: '/tmp/test'}),
+    )
+    expect(result?.workspaces[0]?.icon).toBeUndefined()
   })
 
   test('empty descriptorId throws', async () => {
     mockGetLocalPackageVersion.mockResolvedValue('3.0.0')
     mockResolveLocalPackage.mockResolvedValue({
       generateStudioManifest: mockGenerateStudioManifest,
-      uploadSchema: mockUploadSchema,
     })
-    mockWithConfig.mockReturnValue({withConfig: mockWithConfig})
-    mockUploadSchema.mockResolvedValue('')
+    mockPrepareSchemaUpload.mockResolvedValue({descriptorId: ''})
 
     await expect(
       uploadSchemaToLexicon({
-        projectId: 'proj-123',
         workDir: '/tmp/test',
         workspaces: [createWorkspace()],
       }),
     ).rejects.toThrow('Failed to upload schema for workspace')
   })
 
-  test('upload throws', async () => {
+  test('upload throws Error', async () => {
     mockGetLocalPackageVersion.mockResolvedValue('3.0.0')
     mockResolveLocalPackage.mockResolvedValue({
       generateStudioManifest: mockGenerateStudioManifest,
-      uploadSchema: mockUploadSchema,
     })
-    mockWithConfig.mockReturnValue({withConfig: mockWithConfig})
-    mockUploadSchema.mockRejectedValue(new Error('Network error'))
+    mockPrepareSchemaUpload.mockRejectedValue(new Error('Network error'))
 
     await expect(
       uploadSchemaToLexicon({
-        projectId: 'proj-123',
         workDir: '/tmp/test',
         workspaces: [createWorkspace()],
       }),
-    ).rejects.toThrow('Failed to upload schema for workspace')
+    ).rejects.toThrow('Failed to upload schema for workspace "default": Network error')
+  })
+
+  test('upload throws non-Error value', async () => {
+    mockGetLocalPackageVersion.mockResolvedValue('3.0.0')
+    mockResolveLocalPackage.mockResolvedValue({
+      generateStudioManifest: mockGenerateStudioManifest,
+    })
+    mockPrepareSchemaUpload.mockRejectedValue('boom')
+
+    await expect(
+      uploadSchemaToLexicon({
+        workDir: '/tmp/test',
+        workspaces: [createWorkspace()],
+      }),
+    ).rejects.toThrow('Failed to upload schema for workspace "default": Unknown error')
+  })
+
+  test('outer non-Error rejection falls back to Unknown error', async () => {
+    mockGetGlobalCliClient.mockRejectedValueOnce('auth failure')
+
+    await expect(
+      uploadSchemaToLexicon({
+        workDir: '/tmp/test',
+        workspaces: [createWorkspace()],
+      }),
+    ).rejects.toBe('auth failure')
   })
 
   test('no sanity version throws', async () => {
     mockGetLocalPackageVersion.mockResolvedValue(null)
     mockResolveLocalPackage.mockResolvedValue({
       generateStudioManifest: mockGenerateStudioManifest,
-      uploadSchema: mockUploadSchema,
     })
 
     await expect(
       uploadSchemaToLexicon({
-        projectId: 'proj-123',
         workDir: '/tmp/test',
         workspaces: [createWorkspace()],
       }),
@@ -187,10 +301,8 @@ describe('uploadSchemaToLexicon', () => {
     mockGetLocalPackageVersion.mockResolvedValue('3.0.0')
     mockResolveLocalPackage.mockResolvedValue({
       generateStudioManifest: mockGenerateStudioManifest,
-      uploadSchema: mockUploadSchema,
     } as unknown)
-    mockWithConfig.mockReturnValue({withConfig: mockWithConfig})
-    mockUploadSchema.mockResolvedValue('descriptor-123')
+    mockPrepareSchemaUpload.mockResolvedValue({descriptorId: 'descriptor-123'})
     mockGenerateStudioManifest.mockResolvedValue({
       buildId: '"123"',
       bundleVersion: '3.0.0',
@@ -199,7 +311,6 @@ describe('uploadSchemaToLexicon', () => {
     })
 
     const result = await uploadSchemaToLexicon({
-      projectId: 'proj-123',
       workDir: '/tmp/test',
       workspaces: [createWorkspace()],
     })
@@ -211,10 +322,8 @@ describe('uploadSchemaToLexicon', () => {
     mockGetLocalPackageVersion.mockResolvedValue('3.0.0')
     mockResolveLocalPackage.mockResolvedValue({
       generateStudioManifest: mockGenerateStudioManifest,
-      uploadSchema: mockUploadSchema,
     })
-    mockWithConfig.mockReturnValue({withConfig: mockWithConfig})
-    mockUploadSchema.mockResolvedValue('descriptor-123')
+    mockPrepareSchemaUpload.mockResolvedValue({descriptorId: 'descriptor-123'})
     mockGenerateStudioManifest.mockResolvedValue({
       buildId: '"123"',
       bundleVersion: '3.0.0',
@@ -235,7 +344,6 @@ describe('uploadSchemaToLexicon', () => {
     const stdoutSpy = vi.spyOn(ux, 'stdout').mockImplementation(() => {})
 
     const result = await uploadSchemaToLexicon({
-      projectId: 'proj-123',
       verbose: true,
       workDir: '/tmp/test',
       workspaces: [createWorkspace()],
@@ -253,10 +361,8 @@ describe('uploadSchemaToLexicon', () => {
     mockGetLocalPackageVersion.mockResolvedValue('3.0.0')
     mockResolveLocalPackage.mockResolvedValue({
       generateStudioManifest: mockGenerateStudioManifest,
-      uploadSchema: mockUploadSchema,
     })
-    mockWithConfig.mockReturnValue({withConfig: mockWithConfig})
-    mockUploadSchema.mockResolvedValue('descriptor-123')
+    mockPrepareSchemaUpload.mockResolvedValue({descriptorId: 'descriptor-123'})
     mockGenerateStudioManifest.mockResolvedValue({
       buildId: '"123"',
       bundleVersion: '3.0.0',
@@ -268,7 +374,6 @@ describe('uploadSchemaToLexicon', () => {
     const stdoutSpy = vi.spyOn(ux, 'stdout').mockImplementation(() => {})
 
     const result = await uploadSchemaToLexicon({
-      projectId: 'proj-123',
       verbose: true,
       workDir: '/tmp/test',
       workspaces: [createWorkspace()],

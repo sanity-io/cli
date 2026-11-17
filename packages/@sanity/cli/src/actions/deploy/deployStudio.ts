@@ -368,7 +368,7 @@ async function uploadStudioSchema(
   options: DeployAppOptions,
   {applicationId, isExternal}: {applicationId?: string; isExternal: boolean},
 ): Promise<StudioManifest | null> {
-  const {cliConfig, flags, output, projectRoot, sourceDir} = options
+  const {flags, output, projectRoot, sourceDir} = options
 
   let studioManifest: StudioManifest | null = null
   try {
@@ -378,7 +378,6 @@ async function uploadStudioSchema(
         configPath: projectRoot.path,
         isExternal,
         outPath: `${sourceDir}/static`,
-        projectId: cliConfig.api?.projectId ?? '',
         schemaRequired: flags['schema-required'],
         verbose: flags.verbose,
         workDir: projectRoot.directory,

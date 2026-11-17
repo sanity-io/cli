@@ -30,7 +30,6 @@ export async function workerBuildStudioSchemasAndManifests(
     configPath,
     isExternal,
     outPath,
-    projectId,
     schemaRequired,
     verbose,
     workDir,
@@ -52,7 +51,6 @@ export async function workerBuildStudioSchemasAndManifests(
   debug('Handling build for %s', isExternal ? 'external' : 'internal')
 
   const uploadToLexiconPromise = uploadSchemaToLexicon({
-    projectId,
     verbose,
     workDir,
     workspaces,
