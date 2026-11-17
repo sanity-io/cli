@@ -65,10 +65,11 @@ function registerForeignServer(overrides: Partial<DevServerManifest>) {
 function mockServer({
   boundPort,
   host,
+  https,
   port = 3334,
-}: {boundPort?: number; host?: boolean | string; port?: number} = {}) {
+}: {boundPort?: number; host?: boolean | string; https?: object; port?: number} = {}) {
   return {
-    config: {server: {host, port}},
+    config: {server: {host, https, port}},
     httpServer: {address: () => ({address: '127.0.0.1', family: 'IPv4', port: boundPort ?? port})},
   }
 }
@@ -105,6 +106,15 @@ describe('startDevServerRegistration', () => {
     await register({server: mockServer({port: 3334}) as any})
 
     expect(readManifest()).toMatchObject({host: 'localhost', port: 3334, type: 'studio'})
+  })
+
+  test.each([
+    [undefined, false],
+    [{}, true],
+  ])('registers https: %s when the Vite server.https is %j', async (https, expected) => {
+    await register({server: mockServer({https}) as any})
+
+    expect(readManifest()).toMatchObject({https: expected})
   })
 
   test('registers an app as a coreApp', async () => {

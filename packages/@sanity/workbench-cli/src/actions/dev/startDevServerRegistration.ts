@@ -70,6 +70,7 @@ function serverAddress(server: ViteDevServer) {
   const addr = server.httpServer?.address()
   return {
     host: typeof resolvedHost === 'string' ? resolvedHost : 'localhost',
+    https: Boolean(server.config.server.https),
     port: typeof addr === 'object' && addr ? addr.port : server.config.server.port,
   }
 }
@@ -84,7 +85,7 @@ export async function startDevServerRegistration(
 ): Promise<DevServerRegistrationHandle> {
   const {cliConfig, extractManifest, isApp, onInterfaceSetChange, output, server, workDir} = options
 
-  const {host: appHost, port: appPort} = serverAddress(server)
+  const {host: appHost, https, port: appPort} = serverAddress(server)
 
   reportConfigErrors(cliConfig.app, output)
 
@@ -129,6 +130,7 @@ export async function startDevServerRegistration(
     applicationId,
     configs,
     host: appHost,
+    https,
     id,
     interfaces,
     organizationId,
