@@ -1,5 +1,27 @@
 # Change Log
 
+## 8.31.0
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-v8.30.0...cli-v8.31.0)
+
+_2026-11-17_
+
+### Features
+
+- **workbench-cli:** show app details on dev ([#2149](https://github.com/sanity-io/cli/pull/2149)) ([d96fbe4](https://github.com/sanity-io/cli/commit/d96fbe4d938ec2985b14097adf6661b36ea2ed0b))
+- **workbench-cli:** show app details on deploy ([#2150](https://github.com/sanity-io/cli/pull/2150)) ([efa968e](https://github.com/sanity-io/cli/commit/efa968ecbe609e9d61fe8d00e053da940fbc702d))
+
+### Bug Fixes
+
+- **cli-build:** replace sanity schema upload with @sanity/schema ([#2207](https://github.com/sanity-io/cli/pull/2207)) ([d02ec30](https://github.com/sanity-io/cli/commit/d02ec30685285f52372ca86d8add28a17d11e35b))
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/cli-build bumped to 7.3.0
+    - @sanity/workbench-cli bumped to 2.18.0
+
 ## 8.30.0
 
 [Compare changes](https://github.com/sanity-io/cli/compare/cli-v8.29.0...cli-v8.30.0)
