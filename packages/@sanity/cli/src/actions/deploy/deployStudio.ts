@@ -255,12 +255,13 @@ async function runStudioDeployment(
         slug: workbench.slug,
         type: 'studio',
       })
+      const durationMs = Date.now() - startedAt
       output.log(
         formatDeploySummary({
           ...(await summaryDetails),
           applicationId,
           created: applicationCreated,
-          durationMs: Date.now() - startedAt,
+          durationMs,
           isApp: false,
           organizationId,
           showAppIdHint: !appId,

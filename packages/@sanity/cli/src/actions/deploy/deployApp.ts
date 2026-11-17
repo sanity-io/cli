@@ -423,12 +423,13 @@ async function runAppDeployment(
             type: 'coreApp',
           })
         : getWorkbenchUrl(organizationId)
+      const durationMs = Date.now() - startedAt
       output.log(
         formatDeploySummary({
           ...(await summaryDetails),
           applicationId,
           created: applicationCreated,
-          durationMs: Date.now() - startedAt,
+          durationMs,
           isApp: true,
           organizationId,
           showAppIdHint: !appId,
