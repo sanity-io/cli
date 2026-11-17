@@ -188,7 +188,7 @@ describe('buildStudioSchemasAndManifestsWorker', () => {
       await workerBuildStudioSchemasAndManifests(createOptions({verbose: true}), listeners)
 
       expect(mockUploadSchemaToLexicon).toHaveBeenCalledWith({
-        ...listeners,
+        listeners,
         projectId: 'proj-123',
         scope: 'project',
         verbose: true,
@@ -205,8 +205,8 @@ describe('buildStudioSchemasAndManifestsWorker', () => {
 
       expect(result.studioManifest).toBe(studioManifest)
       expect(mockUploadSchemaToLexicon).toHaveBeenCalledWith({
-        ...listeners,
         claimType: 'temporary',
+        listeners,
         scope: 'global',
         verbose: true,
         workDir: '/studio',
@@ -236,7 +236,7 @@ describe('buildStudioSchemasAndManifestsWorker', () => {
 
       expect(mockExtractWorkspaceManifest).toHaveBeenCalledWith(workspaces, '/studio')
       expect(mockUploadSchemaToLexicon).toHaveBeenCalledWith({
-        ...listeners,
+        listeners,
         projectId: 'proj-123',
         scope: 'project',
         verbose: true,
@@ -328,7 +328,7 @@ describe('buildStudioSchemasAndManifestsWorker', () => {
       })
 
       expect(mockUploadSchemaToLexicon).toHaveBeenCalledWith({
-        ...listeners,
+        listeners,
         projectId: 'proj-123',
         scope: 'project',
         verbose: true,

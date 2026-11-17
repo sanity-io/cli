@@ -20,13 +20,18 @@ const DESCRIPTOR_API_VERSION = 'v2025-06-01'
 
 const iconResolverPath = new URL('../manifest/iconResolver.js', import.meta.url).href
 
-interface BaseUploadSchemaToLexiconOptions {
+export interface UploadSchemaToLexiconListeners {
   onGenerateManifestDone: () => void
   onGenerateManifestFail: (error: unknown) => void
   onGenerateManifestStart: () => void
+}
 
+interface BaseUploadSchemaToLexiconOptions {
   workDir: string
+
   workspaces: Workspace[]
+
+  listeners?: UploadSchemaToLexiconListeners
 
   verbose?: boolean
 }
@@ -55,7 +60,7 @@ export async function uploadSchemaToLexicon(
   options: UploadSchemaToLexiconOptions,
 ): Promise<StudioManifest | null> {
   const {verbose, workDir, workspaces} = options
-  options.onGenerateManifestStart()
+  options.listeners?.onGenerateManifestStart()
 
   try {
     const [bundleVersion, {generateStudioManifest, uploadSchema}] = await Promise.all([
@@ -91,7 +96,7 @@ export async function uploadSchemaToLexicon(
       workspaces,
     })
 
-    options.onGenerateManifestDone()
+    options.listeners?.onGenerateManifestDone()
 
     const studioManifest = manifest.workspaces.length === 0 ? null : manifest
 
@@ -112,7 +117,7 @@ export async function uploadSchemaToLexicon(
 
     return studioManifest
   } catch (error) {
-    options.onGenerateManifestFail(error)
+    options.listeners?.onGenerateManifestFail(error)
     throw error
   }
 }

@@ -7,15 +7,9 @@ import {type WorkspaceSchemaInput} from '../manifest/types.js'
 import {writeManifestFile} from '../manifest/writeManifestFile.js'
 import {type BuildStudioSchemasAndManifestsWorkerSuccess} from './buildStudioSchemasAndManifests.js'
 import {type BuildStudioSchemasAndManifestsWorkerData} from './types.js'
-import {uploadSchemaToLexicon} from './uploadSchemaToLexicon.js'
+import {uploadSchemaToLexicon, UploadSchemaToLexiconListeners} from './uploadSchemaToLexicon.js'
 
 const debug = subdebug('buildStudioSchemasAndManifests.worker')
-
-interface BuildStudioSchemasAndManifestsListeners {
-  onGenerateManifestDone: () => void
-  onGenerateManifestFail: (error: unknown) => void
-  onGenerateManifestStart: () => void
-}
 
 /**
  * This function must only be called from another worker process.
@@ -25,7 +19,7 @@ export async function workerBuildStudioSchemasAndManifests(
   options: BuildStudioSchemasAndManifestsWorkerData & {
     workspaceSchemaHandler?: (workspaces: WorkspaceSchemaInput[]) => Promise<void>
   },
-  listeners: BuildStudioSchemasAndManifestsListeners,
+  listeners?: UploadSchemaToLexiconListeners,
 ): Promise<BuildStudioSchemasAndManifestsWorkerSuccess> {
   if (isMainThread) {
     throw new Error(
@@ -57,7 +51,7 @@ export async function workerBuildStudioSchemasAndManifests(
 
   debug('Handling build for %s', isExternal ? 'external' : 'internal')
 
-  const uploadOptions = {verbose, workDir, workspaces, ...listeners}
+  const uploadOptions = {listeners, verbose, workDir, workspaces}
   const uploadToLexiconPromise = uploadSchemaToLexicon(
     options.scope === 'project'
       ? {...uploadOptions, projectId: options.projectId, scope: options.scope}
