@@ -2,7 +2,7 @@ import {styleText} from 'node:util'
 
 import {getGlobalCliClient} from '@sanity/cli-core'
 import {spinner} from '@sanity/cli-core/ux'
-import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
+import {afterEach, beforeEach, describe, expect, onTestFinished, test, vi} from 'vitest'
 
 import {
   type DevServerDetails,
@@ -102,6 +102,23 @@ describe('fetchDevServerDetails', () => {
       organizationName: 'Acme',
       version: null,
     })
+  })
+
+  test('keeps the organization name when the app lookup outlasts the timeout', async () => {
+    vi.useFakeTimers({toFake: ['setTimeout']})
+    onTestFinished(() => {
+      vi.useRealTimers()
+    })
+    mockRequest.mockImplementation(async ({query, url}) => {
+      if (query?.include) return new Promise(() => {})
+
+      return responses[url]
+    })
+
+    const details = fetchDevServerDetails(workbenchCliConfig())
+    await vi.advanceTimersByTimeAsync(3000)
+
+    await expect(details).resolves.toEqual({organizationName: 'Acme', version: null})
   })
 
   test('resolves no details when the client cannot be created', async () => {

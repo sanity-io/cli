@@ -114,6 +114,7 @@ describe('startStudioDevServer', () => {
     )
     expect(mockCheckRequiredDependencies).toHaveBeenCalled()
     expect(mockStartDevServer).toHaveBeenCalled()
+    expect(spinner).toHaveBeenCalledWith({isSilent: false, text: 'Starting dev server'})
     expect(result.started).toBe(true)
     if (!result.started) throw new Error('expected the server to start')
     expect(result.close).toBeDefined()
@@ -408,6 +409,7 @@ describe('startStudioDevServer', () => {
       const result = await startStudioDevServer(options)
 
       expect(result.started).toBe(true)
+      expect(mockShouldAutoUpdate).not.toHaveBeenCalled()
       expect(mockCompareDependencyVersions).not.toHaveBeenCalled()
       expect(mockCheckStudioDependencyVersions).not.toHaveBeenCalled()
       expect(options.output.log).not.toHaveBeenCalledWith(

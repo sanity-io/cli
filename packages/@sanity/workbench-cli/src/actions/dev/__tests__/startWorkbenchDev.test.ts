@@ -77,7 +77,10 @@ describe('startWorkbenchDev', () => {
     mockStartDevServerRegistration.mockResolvedValue({close: vi.fn().mockResolvedValue(undefined)})
     mockStartAppServer.mockResolvedValue(mockAppServer({port: 3334}))
     mockGetCliConfigUncached.mockResolvedValue(workbenchCliConfig())
-    mockFetchDevServerDetails.mockResolvedValue({organizationName: 'Acme'})
+    mockFetchDevServerDetails.mockResolvedValue({
+      organizationName: 'Acme',
+      version: 'local preview',
+    })
   })
 
   afterEach(() => {
@@ -149,6 +152,9 @@ describe('startWorkbenchDev', () => {
       )
       expect(output.log).toHaveBeenCalledWith(expect.stringContaining('Organization  Acme'))
       expect(output.log).toHaveBeenCalledWith(expect.stringContaining('App           Test App'))
+      expect(output.log).toHaveBeenCalledWith(
+        expect.stringContaining('Version       local preview'),
+      )
     })
 
     test('lists the organization id when its name is unavailable', async () => {

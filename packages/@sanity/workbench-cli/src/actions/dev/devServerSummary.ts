@@ -23,11 +23,17 @@ export async function fetchDevServerDetails(cliConfig: CliConfig): Promise<DevSe
     ? (cliConfig.deployment?.appId ?? cliConfig.app.slug)
     : undefined
 
+  // Caps the two serial version requests so a slow lookup can't drop the organization name.
+  const versionTimeout = new Promise<null>((resolve) => {
+    setTimeout(resolve, DETAILS_TIMEOUT_MS, null).unref()
+  })
   const [organizationName, version] = await Promise.all([
     request<{name: string}>(`/organizations/${organizationId}`)
       .then((org) => org.name)
       .catch(() => null),
-    idOrSlug ? fetchVersion(organizationId, idOrSlug).catch(() => null) : undefined,
+    idOrSlug
+      ? Promise.race([fetchVersion(organizationId, idOrSlug).catch(() => null), versionTimeout])
+      : undefined,
   ])
 
   return {organizationName, version}

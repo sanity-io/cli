@@ -51,7 +51,8 @@ describe.skipIf(isRegistryMode)('sanity dev (workbench/federation)', {timeout: 1
     expect(envSource).toContain('__SANITY_APP_ID__')
     expect(envSource).toContain('"federated-studio"')
 
-    session.sendControl('c')
-    await session.waitForExit('any', 15_000).catch(() => session.kill())
+    await session.waitForText(/press o to open · q to quit/)
+    session.write('q')
+    await session.waitForExit(0, 15_000)
   })
 })
