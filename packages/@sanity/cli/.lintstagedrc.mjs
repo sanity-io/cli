@@ -1,7 +1,7 @@
 export default {
   // JavaScript and TypeScript files: run oxlint fix first, then oxfmt
   '**/*.{js,jsx,ts,tsx,mjs,cjs}': [
-    'pnpm exec oxlint --fix -c oxlint.config.ts',
+    'pnpm exec oxlint --fix',
     'pnpm exec oxfmt --no-error-on-unmatched-pattern',
   ],
 
