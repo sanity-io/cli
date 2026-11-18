@@ -47,6 +47,14 @@ function createWorkspace(overrides: Record<string, unknown> = {}) {
   } as unknown as Workspace
 }
 
+function createListeners() {
+  return {
+    onGenerateManifestDone: vi.fn(),
+    onGenerateManifestFail: vi.fn(),
+    onGenerateManifestStart: vi.fn(),
+  }
+}
+
 afterEach(() => {
   vi.clearAllMocks()
   mockGetGlobalCliClient.mockResolvedValue({request: mockRequest} as never)
@@ -272,7 +280,7 @@ describe('uploadSchemaToLexicon', () => {
     ).rejects.toThrow('Failed to upload schema for workspace "default": Unknown error')
   })
 
-  test('outer non-Error rejection falls back to Unknown error', async () => {
+  test('outer non-Error rejection is rethrown as-is', async () => {
     mockGetGlobalCliClient.mockRejectedValueOnce('auth failure')
 
     await expect(
@@ -384,5 +392,110 @@ describe('uploadSchemaToLexicon', () => {
     expect(calls.some((c) => typeof c === 'string' && c.includes('No workspaces found'))).toBe(true)
 
     stdoutSpy.mockRestore()
+  })
+
+  describe('listeners', () => {
+    test('calls start then done on success', async () => {
+      const listeners = createListeners()
+      mockGetLocalPackageVersion.mockResolvedValue('3.0.0')
+      mockResolveLocalPackage.mockResolvedValue({
+        generateStudioManifest: mockGenerateStudioManifest,
+      })
+      mockPrepareSchemaUpload.mockResolvedValue({descriptorId: 'descriptor-123'})
+      mockGenerateStudioManifest.mockImplementation(async () => {
+        // The manifest is generated after start and before done
+        expect(listeners.onGenerateManifestStart).toHaveBeenCalledTimes(1)
+        expect(listeners.onGenerateManifestDone).not.toHaveBeenCalled()
+        return {buildId: '"123"', bundleVersion: '3.0.0', workspaces: []}
+      })
+
+      await uploadSchemaToLexicon({
+        listeners,
+        workDir: '/tmp/test',
+        workspaces: [createWorkspace()],
+      })
+
+      expect(listeners.onGenerateManifestStart).toHaveBeenCalledTimes(1)
+      expect(listeners.onGenerateManifestStart).toHaveBeenCalledWith()
+      expect(listeners.onGenerateManifestDone).toHaveBeenCalledTimes(1)
+      expect(listeners.onGenerateManifestDone).toHaveBeenCalledWith()
+      expect(listeners.onGenerateManifestFail).not.toHaveBeenCalled()
+    })
+
+    test('calls start before any work is done', async () => {
+      const listeners = createListeners()
+      mockGetGlobalCliClient.mockImplementationOnce(async () => {
+        expect(listeners.onGenerateManifestStart).toHaveBeenCalledTimes(1)
+        throw new Error('auth failure')
+      })
+
+      await expect(
+        uploadSchemaToLexicon({
+          listeners,
+          workDir: '/tmp/test',
+          workspaces: [createWorkspace()],
+        }),
+      ).rejects.toThrow('auth failure')
+    })
+
+    test('calls fail with the thrown error when the schema upload fails', async () => {
+      const listeners = createListeners()
+      mockGetLocalPackageVersion.mockResolvedValue('3.0.0')
+      mockResolveLocalPackage.mockResolvedValue({
+        generateStudioManifest: mockGenerateStudioManifest,
+      })
+      mockPrepareSchemaUpload.mockRejectedValue(new Error('Network error'))
+
+      const error = await uploadSchemaToLexicon({
+        listeners,
+        workDir: '/tmp/test',
+        workspaces: [createWorkspace()],
+      }).catch((err: unknown) => err)
+
+      expect(error).toBeInstanceOf(Error)
+      expect(listeners.onGenerateManifestStart).toHaveBeenCalledTimes(1)
+      expect(listeners.onGenerateManifestFail).toHaveBeenCalledTimes(1)
+      expect(listeners.onGenerateManifestFail).toHaveBeenCalledWith(error)
+      expect(listeners.onGenerateManifestDone).not.toHaveBeenCalled()
+    })
+
+    test('calls fail when manifest generation fails', async () => {
+      const listeners = createListeners()
+      const failure = new Error('Manifest generation failed')
+      mockGetLocalPackageVersion.mockResolvedValue('3.0.0')
+      mockResolveLocalPackage.mockResolvedValue({
+        generateStudioManifest: mockGenerateStudioManifest,
+      })
+      mockPrepareSchemaUpload.mockResolvedValue({descriptorId: 'descriptor-123'})
+      mockGenerateStudioManifest.mockRejectedValue(failure)
+
+      await expect(
+        uploadSchemaToLexicon({
+          listeners,
+          workDir: '/tmp/test',
+          workspaces: [createWorkspace()],
+        }),
+      ).rejects.toBe(failure)
+
+      expect(listeners.onGenerateManifestFail).toHaveBeenCalledWith(failure)
+      expect(listeners.onGenerateManifestDone).not.toHaveBeenCalled()
+    })
+
+    test('passes non-Error rejections to fail as-is', async () => {
+      const listeners = createListeners()
+      mockGetGlobalCliClient.mockRejectedValueOnce('auth failure')
+
+      await expect(
+        uploadSchemaToLexicon({
+          listeners,
+          workDir: '/tmp/test',
+          workspaces: [createWorkspace()],
+        }),
+      ).rejects.toBe('auth failure')
+
+      expect(listeners.onGenerateManifestStart).toHaveBeenCalledTimes(1)
+      expect(listeners.onGenerateManifestFail).toHaveBeenCalledWith('auth failure')
+      expect(listeners.onGenerateManifestDone).not.toHaveBeenCalled()
+    })
   })
 })

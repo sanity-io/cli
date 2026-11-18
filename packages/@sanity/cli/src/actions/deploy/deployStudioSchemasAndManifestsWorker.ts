@@ -3,6 +3,7 @@ import {
   workerBuildStudioSchemasAndManifests,
 } from '@sanity/cli-build/_internal/extract'
 import {subdebug} from '@sanity/cli-core'
+import {spinner} from '@sanity/cli-core/ux'
 
 import {updateWorkspacesSchemas} from '../schema/updateWorkspaceSchema.js'
 import {
@@ -45,7 +46,18 @@ export async function deployStudioSchemasAndManifestsWorker(
   }
 
   try {
-    const result = await workerBuildStudioSchemasAndManifests(options)
+    const spin = spinner('Generating studio manifest')
+    const result = await workerBuildStudioSchemasAndManifests(options, {
+      onGenerateManifestDone() {
+        spin.succeed('Generated studio manifest')
+      },
+      onGenerateManifestFail(error) {
+        spin.fail(error instanceof Error ? error.message : 'Unknown error')
+      },
+      onGenerateManifestStart() {
+        spin.start()
+      },
+    })
 
     port.postMessage({
       studioManifest: result.studioManifest,

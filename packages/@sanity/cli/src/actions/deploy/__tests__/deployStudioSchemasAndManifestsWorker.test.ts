@@ -11,6 +11,12 @@ import {
 const mockWorkerBuildStudioSchemasAndManifests = vi.hoisted(() => vi.fn())
 const mockExtractValidationFromSchemaError = vi.hoisted(() => vi.fn())
 const mockUpdateWorkspacesSchemas = vi.hoisted(() => vi.fn())
+const mockSpin = vi.hoisted(() => ({
+  fail: vi.fn(),
+  start: vi.fn(),
+  succeed: vi.fn(),
+}))
+const mockSpinner = vi.hoisted(() => vi.fn())
 
 vi.mock(import('@sanity/cli-build/_internal/extract'), () => ({
   extractValidationFromSchemaError: mockExtractValidationFromSchemaError,
@@ -23,6 +29,10 @@ vi.mock(import('../../schema/updateWorkspaceSchema.js'), () => ({
 
 vi.mock('@sanity/cli-core', () => ({
   subdebug: () => vi.fn(),
+}))
+
+vi.mock('@sanity/cli-core/ux', () => ({
+  spinner: mockSpinner,
 }))
 
 const projectId = 'test-project-id'
@@ -80,6 +90,7 @@ beforeEach(() => {
   handedSchemaInputs = [createSchemaInput()]
   mockExtractValidationFromSchemaError.mockResolvedValue(undefined)
   mockUpdateWorkspacesSchemas.mockResolvedValue(undefined)
+  mockSpinner.mockReturnValue(mockSpin)
   // Mirrors cli-build: the build invokes the handler, and a handler failure fails the build.
   mockWorkerBuildStudioSchemasAndManifests.mockImplementation(async (options) => {
     await options.workspaceSchemaHandler?.(handedSchemaInputs)
@@ -115,6 +126,11 @@ describe('deployStudioSchemasAndManifestsWorker', () => {
         workDir: '/studio',
         workspaceSchemaHandler: expect.any(Function),
       }),
+      {
+        onGenerateManifestDone: expect.any(Function),
+        onGenerateManifestFail: expect.any(Function),
+        onGenerateManifestStart: expect.any(Function),
+      },
     )
   })
 
@@ -127,6 +143,74 @@ describe('deployStudioSchemasAndManifestsWorker', () => {
 
     expect(messages).toEqual([])
     expect(mockWorkerBuildStudioSchemasAndManifests).not.toHaveBeenCalled()
+  })
+
+  describe('manifest generation listeners', () => {
+    test('starts the spinner when generation starts', async () => {
+      const {port} = createPort()
+      mockWorkerBuildStudioSchemasAndManifests.mockImplementation(async (_options, listeners) => {
+        listeners.onGenerateManifestStart()
+        return {schemaInputs: null, studioManifest, type: 'success'}
+      })
+
+      await deployStudioSchemasAndManifestsWorker(port, createWorkerData())
+
+      expect(mockSpin.start).toHaveBeenCalledTimes(1)
+      expect(mockSpin.succeed).not.toHaveBeenCalled()
+      expect(mockSpin.fail).not.toHaveBeenCalled()
+    })
+
+    test('succeeds the spinner when generation is done', async () => {
+      const {messages, port} = createPort()
+      mockWorkerBuildStudioSchemasAndManifests.mockImplementation(async (_options, listeners) => {
+        listeners.onGenerateManifestStart()
+        listeners.onGenerateManifestDone()
+        return {schemaInputs: null, studioManifest, type: 'success'}
+      })
+
+      await deployStudioSchemasAndManifestsWorker(port, createWorkerData())
+
+      expect(mockSpin.start).toHaveBeenCalledTimes(1)
+      expect(mockSpin.succeed).toHaveBeenCalledWith('Generated studio manifest')
+      expect(mockSpin.fail).not.toHaveBeenCalled()
+      expect(messages).toEqual([{studioManifest, type: 'success'}])
+    })
+
+    test('fails the spinner with the error message when generation fails', async () => {
+      const {messages, port} = createPort()
+      const failure = new Error('Failed to upload schema for workspace "default"')
+      mockWorkerBuildStudioSchemasAndManifests.mockImplementation(async (_options, listeners) => {
+        listeners.onGenerateManifestStart()
+        listeners.onGenerateManifestFail(failure)
+        throw failure
+      })
+
+      await deployStudioSchemasAndManifestsWorker(port, createWorkerData())
+
+      expect(mockSpin.start).toHaveBeenCalledTimes(1)
+      expect(mockSpin.fail).toHaveBeenCalledWith('Failed to upload schema for workspace "default"')
+      expect(mockSpin.succeed).not.toHaveBeenCalled()
+      expect(messages).toEqual([
+        {
+          error: 'Failed to upload schema for workspace "default"',
+          type: 'error',
+          validation: undefined,
+        },
+      ])
+    })
+
+    test('fails the spinner with a generic message for non-Error failures', async () => {
+      const {port} = createPort()
+      mockWorkerBuildStudioSchemasAndManifests.mockImplementation(async (_options, listeners) => {
+        listeners.onGenerateManifestStart()
+        listeners.onGenerateManifestFail('auth failure')
+        return {schemaInputs: null, studioManifest, type: 'success'}
+      })
+
+      await deployStudioSchemasAndManifestsWorker(port, createWorkerData())
+
+      expect(mockSpin.fail).toHaveBeenCalledWith('Unknown error')
+    })
   })
 
   describe('schema deployment', () => {

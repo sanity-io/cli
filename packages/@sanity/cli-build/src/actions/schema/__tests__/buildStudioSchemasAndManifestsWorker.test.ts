@@ -98,6 +98,14 @@ function createOptions(
   }
 }
 
+function createListeners() {
+  return {
+    onGenerateManifestDone: vi.fn(),
+    onGenerateManifestFail: vi.fn(),
+    onGenerateManifestStart: vi.fn(),
+  }
+}
+
 beforeEach(() => {
   mockIsMainThread.value = false
   mockGetStudioWorkspaces.mockResolvedValue(workspaces)
@@ -156,6 +164,34 @@ describe('buildStudioSchemasAndManifestsWorker', () => {
     expect(mockWriteManifestFile).not.toHaveBeenCalled()
   })
 
+  describe('listeners', () => {
+    test.each([
+      {isExternal: false, label: 'internal'},
+      {isExternal: true, label: 'external'},
+    ])('passes the listeners through to the schema upload ($label)', async ({isExternal}) => {
+      const listeners = createListeners()
+
+      await workerBuildStudioSchemasAndManifests(createOptions({isExternal}), listeners)
+
+      expect(mockUploadSchemaToLexicon).toHaveBeenCalledTimes(1)
+      expect(mockUploadSchemaToLexicon).toHaveBeenCalledWith(expect.objectContaining({listeners}))
+    })
+
+    test('does not call the listeners when the build fails before the schema upload', async () => {
+      const listeners = createListeners()
+      mockGetStudioWorkspaces.mockResolvedValue([])
+
+      await expect(
+        workerBuildStudioSchemasAndManifests(createOptions(), listeners),
+      ).rejects.toThrow('No workspaces found')
+
+      expect(mockUploadSchemaToLexicon).not.toHaveBeenCalled()
+      expect(listeners.onGenerateManifestStart).not.toHaveBeenCalled()
+      expect(listeners.onGenerateManifestDone).not.toHaveBeenCalled()
+      expect(listeners.onGenerateManifestFail).not.toHaveBeenCalled()
+    })
+  })
+
   describe('internal studio', () => {
     test('writes the manifest file, uploads the schema and returns the result', async () => {
       const workspaceSchemaHandler = vi.fn().mockResolvedValue(undefined)
@@ -173,6 +209,7 @@ describe('buildStudioSchemasAndManifestsWorker', () => {
 
       expect(mockExtractWorkspaceManifest).toHaveBeenCalledWith(workspaces, '/studio')
       expect(mockUploadSchemaToLexicon).toHaveBeenCalledWith({
+        listeners: undefined,
         verbose: true,
         workDir: '/studio',
         workspaces,
@@ -250,6 +287,7 @@ describe('buildStudioSchemasAndManifestsWorker', () => {
       })
 
       expect(mockUploadSchemaToLexicon).toHaveBeenCalledWith({
+        listeners: undefined,
         verbose: true,
         workDir: '/studio',
         workspaces,
