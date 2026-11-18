@@ -7,13 +7,14 @@
 
 import path from 'node:path'
 
-import {readPackageJson} from '@sanity/cli-core'
+import {getCliConfig, readPackageJson} from '@sanity/cli-core'
 import {type PluginOption} from 'vite'
 
 import {type WorkbenchExposes} from '../../../resolveWorkbenchApp.js'
 import {isMediaLibraryConfigApp} from '../configs/configApp.js'
 import {federation} from './plugin.js'
 import {sanityAppId} from './plugins/plugin-sanity-app-id.js'
+import {sanityAppScope} from './plugins/plugin-sanity-app-scope.js'
 import {sanityAppStyles} from './plugins/plugin-sanity-app-styles.js'
 import {type AutoUpdates} from './plugins/plugin-sanity-auto-updates.js'
 import {stripSuiGlobalReset} from './plugins/plugin-strip-sui-global-reset.js'
@@ -64,6 +65,9 @@ export async function workbenchVitePlugins(options: WorkbenchViteOptions): Promi
   }
 
   const pkgJson = await readPackageJson(path.join(cwd, 'package.json'))
+  // Every `defineApplication` has a slug, deployed or not; it names the app's CSS scope.
+  const app = (await getCliConfig(cwd)).app
+  const slug = app && 'slug' in app && typeof app.slug === 'string' ? app.slug : undefined
 
   const federationPlugin = federation({
     ...(isApp
@@ -93,6 +97,10 @@ export async function workbenchVitePlugins(options: WorkbenchViteOptions): Promi
 
   return [
     ...configAppPlugins,
+    // The Dashboard's own remote is built like an app, but must stay as it is.
+    ...(slug === undefined || process.env.SANITY_INTERNAL_IS_WORKBENCH_REMOTE === 'true'
+      ? []
+      : [sanityAppScope(slug)]),
     federationPlugin,
     ...(appId === undefined ? [] : [sanityAppId(appId), sanityAppStyles(appId)]),
   ]

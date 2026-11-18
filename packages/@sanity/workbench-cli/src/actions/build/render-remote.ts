@@ -88,6 +88,8 @@ function closeRoot(rootElement) {
 function mount(rootElement, args) {
   let root = rootMap.get(rootElement)
   if (!root) {
+    // The app's root rules (\`:root\`, \`html\`, \`body\`) also target the element it renders into, by its slug.
+    if (typeof __SANITY_APP_SCOPE__ === 'string') rootElement.setAttribute('data-app-scope', __SANITY_APP_SCOPE__)
     root = createRoot(rootElement, args?.renderOptions?.rootOptions)
     rootMap.set(rootElement, root)
     const controller = new AbortController()

@@ -85,6 +85,7 @@
     "@vitejs/plugin-react": "catalog:",
     "form-data": "catalog:",
     "open": "catalog:",
+    "postcss": "^8.5.32",
     "rxjs": "catalog:",
     "semver": "catalog:",
     "tar": "catalog:",
