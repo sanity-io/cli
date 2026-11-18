@@ -24,6 +24,15 @@ export const buildStudioSchemasAndManifestsWorkerData = z.object({
   outPath: z.string(),
   // Kept optional for external callers (`@sanity/runtime-cli`) that still pass `projectId`.
   projectId: z.optional(z.string()),
+  resourceBindings: z.optional(
+    z.array(
+      z.object({
+        id: z.string(),
+        name: z.string(),
+        type: z.string(),
+      }),
+    ),
+  ),
   schemaRequired: z.boolean(),
   verbose: z.boolean(),
   workDir: z.string(),

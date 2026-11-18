@@ -116,6 +116,7 @@ beforeEach(() => {
 
 afterEach(() => {
   vi.clearAllMocks()
+  delete globalThis.__SANITY_RESOURCE_BINDINGS__
 })
 
 describe('buildStudioSchemasAndManifestsWorker', () => {
@@ -189,6 +190,31 @@ describe('buildStudioSchemasAndManifestsWorker', () => {
       expect(listeners.onGenerateManifestStart).not.toHaveBeenCalled()
       expect(listeners.onGenerateManifestDone).not.toHaveBeenCalled()
       expect(listeners.onGenerateManifestFail).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('resource bindings', () => {
+    test('stores the given resource bindings on globalThis before resolving workspaces', async () => {
+      const resourceBindings = [
+        {id: 'proj1234:production', name: 'content', type: 'sanity.project.dataset'},
+      ]
+
+      let bindingsDuringWorkspaceResolution: unknown
+      mockGetStudioWorkspaces.mockImplementation(async () => {
+        bindingsDuringWorkspaceResolution = globalThis.__SANITY_RESOURCE_BINDINGS__
+        return workspaces
+      })
+
+      await workerBuildStudioSchemasAndManifests(createOptions({resourceBindings}))
+
+      expect(globalThis.__SANITY_RESOURCE_BINDINGS__).toEqual(resourceBindings)
+      expect(bindingsDuringWorkspaceResolution).toEqual(resourceBindings)
+    })
+
+    test('does not set the global when no resource bindings are given', async () => {
+      await workerBuildStudioSchemasAndManifests(createOptions())
+
+      expect('__SANITY_RESOURCE_BINDINGS__' in globalThis).toBe(false)
     })
   })
 
