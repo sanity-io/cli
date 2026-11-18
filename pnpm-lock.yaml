@@ -985,8 +985,8 @@ snapshots:
 					"version": "1.8.1",
 				},
 				"smol-toml": {
-					"specifier": "^1.6.1",
-					"version": "1.9.0",
+					"specifier": "^1.9.1",
+					"version": "1.9.1",
 				},
 				"string-argv": {
 					"specifier": "^0.3.2",
@@ -16919,7 +16919,7 @@ snapshots:
 				"oxc-parser": "0.147.0",
 				"oxc-resolver": "11.24.2",
 				"picomatch": "4.0.7",
-				"smol-toml": "1.9.0",
+				"smol-toml": "1.9.1",
 				"strip-json-comments": "5.0.3",
 				"tinyglobby": "0.2.17",
 				"unbash": "4.0.10",
@@ -20020,8 +20020,8 @@ snapshots:
 			"engines": {"node": ">= 18"},
 		},
 
-		"smol-toml@1.9.0": {
-			"integrity": "sha512-hpd+HLON7HdZXqYchMM/+LaTTbdK0AU3NngIJ4KVyWbY9bfQqdL9cD+4yf6dUoU2Ap4VsU0JkQi6FxAI1B2mXQ==",
+		"smol-toml@1.9.1": {
+			"integrity": "sha512-j7WyPdf0CJoutMzMoPLF/bVXHtKZIT9Rb4eGeEbWw8X2t5oirjPgpL+OpaENZrILYaXqYwnVH+qgUwVbl+pUJQ==",
 			"engines": {"node": ">= 18"},
 		},
 
