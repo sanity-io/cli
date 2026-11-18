@@ -1,4 +1,4 @@
-/* eslint-disable eslint-js/no-undef */
+/* eslint-disable no-undef */
 const baseConfig = {
   api: {
     dataset: 'production',

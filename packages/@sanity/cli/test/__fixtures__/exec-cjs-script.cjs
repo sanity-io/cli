@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-require-imports, no-console, eslint-js/no-undef */
+/* eslint-disable @typescript-eslint/no-require-imports, no-console, no-undef */
 const {join} = require('node:path')
 
 console.log(

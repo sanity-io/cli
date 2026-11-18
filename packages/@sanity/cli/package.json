@@ -80,7 +80,8 @@
     "test:coverage": "vitest run --coverage",
     "test:watch": "vitest",
     "prewatch": "pnpm run manifest:remove",
-    "watch": "swc --delete-dir-on-start --strip-leading-paths --out-dir dist/ --watch src"
+    "watch": "swc --delete-dir-on-start --strip-leading-paths --out-dir dist/ --watch src",
+    "lint": "oxlint -c oxlint.config.ts"
   },
   "dependencies": {
     "@oclif/core": "catalog:",
@@ -150,6 +151,7 @@
   },
   "devDependencies": {
     "@oxc-project/types": "0.156.0",
+    "@repo/oxc-config": "workspace:*",
     "@repo/package.config": "workspace:*",
     "@repo/tsconfig": "workspace:*",
     "@sanity/cli-test": "workspace:*",
@@ -171,6 +173,7 @@
     "nock": "catalog:",
     "oclif": "^4.24.0",
     "oxc-transform-react": "catalog:",
+    "oxlint": "catalog:",
     "publint": "catalog:",
     "rimraf": "catalog:",
     "sanity": "catalog:",

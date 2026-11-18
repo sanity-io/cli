@@ -329,6 +329,10 @@ snapshots:
 					"specifier": "^0.79.0",
 					"version": "0.79.0",
 				},
+				"oxlint": {
+					"specifier": "^1.93.0",
+					"version": "1.93.0",
+				},
 				"publint": {
 					"specifier": "^0.3.25",
 					"version": "0.3.25",
@@ -429,34 +433,6 @@ snapshots:
 					"version": "1.2.5",
 				},
 				"@vitest/coverage-istanbul": "catalog:",
-				"eslint-import-resolver-typescript": {
-					"specifier": "^4.4.5",
-					"version": "4.4.5",
-				},
-				"eslint-plugin-import-x": {
-					"specifier": "^4.17.1",
-					"version": "4.17.1",
-				},
-				"eslint-plugin-n": {
-					"specifier": "^17.24.0",
-					"version": "17.24.0",
-				},
-				"eslint-plugin-perfectionist": {
-					"specifier": "^5.10.1",
-					"version": "5.10.1",
-				},
-				"eslint-plugin-tsdoc": {
-					"specifier": "^0.5.2",
-					"version": "0.5.2",
-				},
-				"eslint-plugin-unicorn": {
-					"specifier": "^63.0.0",
-					"version": "63.0.0",
-				},
-				"eslint-plugin-unused-imports": {
-					"specifier": "^4.4.1",
-					"version": "4.4.1",
-				},
 				"execa": "catalog:",
 				"husky": {
 					"specifier": "^9.1.7",
@@ -471,14 +447,7 @@ snapshots:
 					"version": "16.4.0",
 				},
 				"oxfmt": "catalog:",
-				"oxlint": {
-					"specifier": "^1.93.0",
-					"version": "1.93.0",
-				},
-				"oxlint-plugin-eslint": {
-					"specifier": "^1.93.0",
-					"version": "1.93.0",
-				},
+				"oxlint": "catalog:",
 				"rimraf": "catalog:",
 				"turbo": {
 					"specifier": "^2.10.5",
@@ -818,12 +787,49 @@ snapshots:
 				"oxfmt": "catalog:",
 			},
 			"devDependencies": {
+				"@repo/oxc-config": "workspace:*",
 				"@repo/tsconfig": "workspace:*",
 				"@types/node": {
 					"specifier": "^22.20.5",
 					"version": "22.20.5",
 				},
+				"oxlint": "catalog:",
 				"vitest": "catalog:",
+			},
+		},
+
+		"packages/@repo/oxc-config": {
+			"name": "@repo/oxc-config",
+			"dependencies": {
+				"eslint-import-resolver-typescript": {
+					"specifier": "^4.4.5",
+					"version": "4.4.5",
+				},
+				"eslint-plugin-import-x": {
+					"specifier": "^4.17.1",
+					"version": "4.17.1",
+				},
+				"eslint-plugin-n": {
+					"specifier": "^17.24.0",
+					"version": "17.24.0",
+				},
+				"eslint-plugin-perfectionist": {
+					"specifier": "^5.10.1",
+					"version": "5.10.1",
+				},
+				"eslint-plugin-tsdoc": {
+					"specifier": "^0.5.2",
+					"version": "0.5.2",
+				},
+				"eslint-plugin-unicorn": {
+					"specifier": "^63.0.0",
+					"version": "63.0.0",
+				},
+				"oxlint": "catalog:",
+				"oxlint-plugin-eslint": {
+					"specifier": "^1.93.0",
+					"version": "1.93.0",
+				},
 			},
 		},
 
@@ -853,12 +859,14 @@ snapshots:
 				"lodash-es": "catalog:",
 			},
 			"devDependencies": {
+				"@repo/oxc-config": "workspace:*",
 				"@repo/tsconfig": "workspace:*",
 				"@types/lodash-es": "catalog:",
 				"@types/node": {
 					"specifier": "^22.20.5",
 					"version": "22.20.5",
 				},
+				"oxlint": "catalog:",
 				"tsx": "catalog:",
 			},
 		},
@@ -1044,6 +1052,7 @@ snapshots:
 			},
 			"devDependencies": {
 				"@oxc-project/types": "0.156.0",
+				"@repo/oxc-config": "workspace:*",
 				"@repo/package.config": "workspace:*",
 				"@repo/tsconfig": "workspace:*",
 				"@sanity/cli-test": "workspace:*",
@@ -1083,6 +1092,7 @@ snapshots:
 					"version": "4.24.0",
 				},
 				"oxc-transform-react": "catalog:",
+				"oxlint": "catalog:",
 				"publint": "catalog:",
 				"rimraf": "catalog:",
 				"sanity": "catalog:",
@@ -1151,6 +1161,7 @@ snapshots:
 				"zod": "catalog:",
 			},
 			"devDependencies": {
+				"@repo/oxc-config": "workspace:*",
 				"@repo/package.config": "workspace:*",
 				"@repo/tsconfig": "workspace:*",
 				"@sanity/cli-test": "workspace:*",
@@ -1185,6 +1196,7 @@ snapshots:
 					"version": "0.30.21",
 				},
 				"oxc-transform-react": "catalog:",
+				"oxlint": "catalog:",
 				"publint": "catalog:",
 				"sanity": "catalog:",
 				"styled-components": {
@@ -1241,6 +1253,7 @@ snapshots:
 				"zod": "catalog:",
 			},
 			"devDependencies": {
+				"@repo/oxc-config": "workspace:*",
 				"@repo/package.config": "workspace:*",
 				"@repo/tsconfig": "workspace:*",
 				"@sanity/pkg-utils": "catalog:",
@@ -1254,6 +1267,7 @@ snapshots:
 				},
 				"babel-plugin-react-compiler": "catalog:",
 				"oxc-transform-react": "catalog:",
+				"oxlint": "catalog:",
 				"publint": "catalog:",
 				"sanity": "catalog:",
 				"typescript": "catalog:",
@@ -1263,6 +1277,7 @@ snapshots:
 
 		"packages/@sanity/cli-e2e": {
 			"devDependencies": {
+				"@repo/oxc-config": "workspace:*",
 				"@repo/tsconfig": "workspace:*",
 				"@sanity/cli": "workspace:*",
 				"@sanity/cli-build": "workspace:*",
@@ -1274,6 +1289,7 @@ snapshots:
 				},
 				"create-sanity": "workspace:*",
 				"node-pty": "catalog:",
+				"oxlint": "catalog:",
 				"strip-ansi": "catalog:",
 				"typescript": "catalog:",
 				"vitest": "catalog:",
@@ -1299,6 +1315,7 @@ snapshots:
 			},
 			"devDependencies": {
 				"@oclif/core": "catalog:",
+				"@repo/oxc-config": "workspace:*",
 				"@repo/package.config": "workspace:*",
 				"@repo/tsconfig": "workspace:*",
 				"@sanity/client": "catalog:",
@@ -1308,6 +1325,7 @@ snapshots:
 					"specifier": "^22.20.5",
 					"version": "22.20.5",
 				},
+				"oxlint": "catalog:",
 				"publint": "catalog:",
 				"rimraf": "catalog:",
 				"tsx": "catalog:",
@@ -1340,6 +1358,7 @@ snapshots:
 				"zod": "catalog:",
 			},
 			"devDependencies": {
+				"@repo/oxc-config": "workspace:*",
 				"@repo/package.config": "workspace:*",
 				"@repo/tsconfig": "workspace:*",
 				"@sanity/cli-test": "workspace:*",
@@ -1354,6 +1373,7 @@ snapshots:
 				"@types/semver": "catalog:",
 				"@vitest/coverage-istanbul": "catalog:",
 				"jsdom": "catalog:",
+				"oxlint": "catalog:",
 				"publint": "catalog:",
 				"react": "catalog:",
 				"react-dom": "catalog:",
@@ -12184,67 +12204,6 @@ snapshots:
 			"integrity": "sha512-ltIpx+kM7g/MLRZfkbL7EsCEjfzCcScLpkg37eXEtx5kmrAKBkTJwd1GIAjDSL8wTpM6Hzn5YO4pSb91BEwu1g==",
 		},
 
-		"@typescript-eslint/eslint-plugin@8.68.0": {
-			"integrity": "sha512-WASHDpCm6qO5jj9g1a+8NiW5+GCkAyLReR56/4VruYmNgfUmqpxOfZ2Yfb8xGfJPWv5Qi6LSD8sXdces3vbp/Q==",
-			"engines": {"node": "^18.18.0 || ^20.9.0 || >=21.1.0"},
-			"peerDependencies": {
-				"@typescript-eslint/parser": {
-					"specifier": "^8.68.0",
-					"version": "8.68.0",
-				},
-				"eslint": {
-					"specifier": "^8.57.0 || ^9.0.0 || ^10.0.0",
-					"version": "10.9.1",
-				},
-				"supports-color": {
-					"version": "8.1.1",
-					"below": true,
-				},
-				"typescript": {
-					"specifier": ">=4.8.4 <6.1.0",
-					"version": "6.0.3",
-				},
-			},
-			"optional": true,
-			"dependencies": {
-				"@eslint-community/regexpp": "4.12.2",
-				"@typescript-eslint/scope-manager": "8.68.0",
-				"@typescript-eslint/type-utils": "8.68.0",
-				"@typescript-eslint/utils": "8.68.0",
-				"@typescript-eslint/visitor-keys": "8.68.0",
-				"ignore": "7.0.6",
-				"natural-compare": "1.4.0",
-				"ts-api-utils": "2.5.0",
-			},
-		},
-
-		"@typescript-eslint/parser@8.68.0": {
-			"integrity": "sha512-fHq2VC1kpyYfvEcbiMjOpySY4WS7voEp89yAThrHRX5sm9j2lzYppCb2umFMEed4fWcyeLjHxrz0mpjNBaBxMQ==",
-			"engines": {"node": "^18.18.0 || ^20.9.0 || >=21.1.0"},
-			"peerDependencies": {
-				"eslint": {
-					"specifier": "^8.57.0 || ^9.0.0 || ^10.0.0",
-					"version": "10.9.1",
-				},
-				"supports-color": {
-					"version": "8.1.1",
-					"below": true,
-				},
-				"typescript": {
-					"specifier": ">=4.8.4 <6.1.0",
-					"version": "6.0.3",
-				},
-			},
-			"optional": true,
-			"dependencies": {
-				"@typescript-eslint/scope-manager": "8.68.0",
-				"@typescript-eslint/types": "8.68.0",
-				"@typescript-eslint/typescript-estree": "8.68.0",
-				"@typescript-eslint/visitor-keys": "8.68.0",
-				"debug": "4.4.3",
-			},
-		},
-
 		"@typescript-eslint/project-service@8.56.1": {
 			"integrity": "sha512-TAdqQTzHNNvlVFfR+hu2PDJrURiwKsUvxFn1M0h95BB8ah5jejas08jUWG4dBA68jDMI988IvtfdAI53JzEHOQ==",
 			"engines": {"node": "^18.18.0 || ^20.9.0 || >=21.1.0"},
@@ -12322,33 +12281,6 @@ snapshots:
 					"specifier": ">=4.8.4 <6.1.0",
 					"version": "6.0.3",
 				},
-			},
-		},
-
-		"@typescript-eslint/type-utils@8.68.0": {
-			"integrity": "sha512-X77zqoY1EjeWGs/0JNxeaMfp5C5lIz4Tw8y66F1Ne8Faq6g424sBNYM6xBAqElfGZPLpWS+CZAp0DXyKDzWiHg==",
-			"engines": {"node": "^18.18.0 || ^20.9.0 || >=21.1.0"},
-			"peerDependencies": {
-				"eslint": {
-					"specifier": "^8.57.0 || ^9.0.0 || ^10.0.0",
-					"version": "10.9.1",
-				},
-				"supports-color": {
-					"version": "8.1.1",
-					"below": true,
-				},
-				"typescript": {
-					"specifier": ">=4.8.4 <6.1.0",
-					"version": "6.0.3",
-				},
-			},
-			"optional": true,
-			"dependencies": {
-				"@typescript-eslint/types": "8.68.0",
-				"@typescript-eslint/typescript-estree": "8.68.0",
-				"@typescript-eslint/utils": "8.68.0",
-				"debug": "4.4.3",
-				"ts-api-utils": "2.5.0",
 			},
 		},
 
@@ -15387,21 +15319,6 @@ snapshots:
 				"regjsparser": "0.13.2",
 				"semver": "7.8.6",
 				"strip-indent": "4.1.1",
-			},
-		},
-
-		"eslint-plugin-unused-imports@4.4.1": {
-			"integrity": "sha512-oZGYUz1X3sRMGUB+0cZyK2VcvRX5lm/vB56PgNNcU+7ficUCKm66oZWKUubXWnOuPjQ8PvmXtCViXBMONPe7tQ==",
-			"peerDependencies": {
-				"@typescript-eslint/eslint-plugin": {
-					"specifier": "^8.0.0-0 || ^7.0.0 || ^6.0.0 || ^5.0.0",
-					"version": "8.68.0",
-					"optional": true,
-				},
-				"eslint": {
-					"specifier": "^10.0.0 || ^9.0.0 || ^8.0.0",
-					"version": "10.9.1",
-				},
 			},
 		},
 

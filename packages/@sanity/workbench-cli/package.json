@@ -73,7 +73,8 @@
     "posttest": "pnpm run lint",
     "test:coverage": "vitest run --coverage",
     "test:watch": "vitest",
-    "watch": "swc --delete-dir-on-start --strip-leading-paths --out-dir dist/ --watch src"
+    "watch": "swc --delete-dir-on-start --strip-leading-paths --out-dir dist/ --watch src",
+    "lint": "oxlint -c oxlint.config.ts"
   },
   "dependencies": {
     "@module-federation/runtime": "2.9.3",
@@ -91,6 +92,7 @@
     "zod": "catalog:"
   },
   "devDependencies": {
+    "@repo/oxc-config": "workspace:*",
     "@repo/package.config": "workspace:*",
     "@repo/tsconfig": "workspace:*",
     "@sanity/cli-test": "workspace:*",
@@ -102,6 +104,7 @@
     "@types/semver": "catalog:",
     "@vitest/coverage-istanbul": "catalog:",
     "jsdom": "catalog:",
+    "oxlint": "catalog:",
     "publint": "catalog:",
     "react": "catalog:",
     "react-dom": "catalog:",

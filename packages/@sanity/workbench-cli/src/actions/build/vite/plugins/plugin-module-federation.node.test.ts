@@ -22,7 +22,7 @@ function runPlugin(): Plugin[] {
 function appliesTo(plugin: Plugin, name: string, command: 'build' | 'serve'): boolean {
   const apply = plugin.applyToEnvironment
   expect(typeof apply).toBe('function')
-  if (typeof apply !== 'function') throw new Error('unreachable')
+  if (typeof apply !== 'function') throw new TypeError('unreachable')
   return apply({config: {command}, name} as unknown as Environment) === true
 }
 

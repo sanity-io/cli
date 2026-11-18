@@ -22,5 +22,25 @@
     ".changeset",
     "**/dist/**",
     "**/lib/**"
+  ],
+  "sortImports": {
+    "groups": [
+      "type-import",
+      "value-builtin",
+      "value-external",
+      "type-internal",
+      "value-internal",
+      ["type-parent", "type-sibling", "type-index"],
+      ["value-parent", "value-sibling", "value-index"],
+      "unknown"
+    ]
+  },
+  "overrides": [
+    {
+      "files": ["packages/@sanity/cli/templates/**", "**/*.md"],
+      "options": {
+        "sortImports": false
+      }
+    }
   ]
 }

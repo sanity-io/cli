@@ -5,7 +5,8 @@
   "description": "Parse @sanity/cli commands and write structured reference docs to Sanity",
   "type": "module",
   "scripts": {
-    "update": "tsx src/manifest.ts"
+    "update": "tsx src/manifest.ts",
+    "lint": "oxlint -c oxlint.config.ts"
   },
   "dependencies": {
     "@oclif/core": "catalog:",
@@ -14,9 +15,11 @@
     "lodash-es": "catalog:"
   },
   "devDependencies": {
+    "@repo/oxc-config": "workspace:*",
     "@repo/tsconfig": "workspace:*",
     "@types/lodash-es": "catalog:",
     "@types/node": "catalog:",
+    "oxlint": "catalog:",
     "tsx": "catalog:"
   }
 }
