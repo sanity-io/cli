@@ -118,13 +118,13 @@
     "check:types": "tsc --noEmit",
     "clean": "rimraf dist fixtures",
     "copy:fixtures": "tsx scripts/copy-fixtures.ts",
-    "lint": "eslint .",
     "publint": "publint",
     "test": "vitest run",
     "posttest": "pnpm run lint",
     "test:coverage": "vitest run --coverage",
     "test:watch": "vitest",
-    "watch": "swc --delete-dir-on-start --strip-leading-paths --out-dir dist/ --watch src"
+    "watch": "swc --delete-dir-on-start --strip-leading-paths --out-dir dist/ --watch src",
+    "lint": "oxlint -c oxlint.config.ts"
   },
   "dependencies": {
     "@sanity/cli-core": "workspace:*",
@@ -136,16 +136,15 @@
     "tinyglobby": "catalog:"
   },
   "devDependencies": {
-    "@eslint/compat": "catalog:",
     "@oclif/core": "catalog:",
+    "@repo/oxc-config": "workspace:*",
     "@repo/package.config": "workspace:*",
     "@repo/tsconfig": "workspace:*",
     "@sanity/client": "catalog:",
-    "@sanity/eslint-config-cli": "workspace:*",
     "@sanity/pkg-utils": "catalog:",
     "@swc/cli": "catalog:",
     "@types/node": "catalog:",
-    "eslint": "catalog:",
+    "oxlint": "catalog:",
     "publint": "catalog:",
     "rimraf": "catalog:",
     "tsx": "catalog:",

@@ -98,18 +98,16 @@ export async function startDevServer(options: DevServerOptions): Promise<DevServ
   }
 
   let viteConfig: InlineConfig = await getViteConfig({
-    additionalPlugins: [
-      // Add typegen when enabled
-      ...(typegen?.enabled
-        ? [
-            sanityTypegenPlugin({
-              config: typegen,
-              telemetryLogger: getCliTelemetry(),
-              workDir: cwd,
-            }),
-          ]
-        : []),
-    ],
+    // Add typegen when enabled
+    additionalPlugins: typegen?.enabled
+      ? [
+          sanityTypegenPlugin({
+            config: typegen,
+            telemetryLogger: getCliTelemetry(),
+            workDir: cwd,
+          }),
+        ]
+      : [],
     basePath,
     cwd,
     entries,

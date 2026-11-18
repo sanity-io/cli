@@ -101,7 +101,7 @@ Before submitting a PR, run:
 ```bash
 pnpm check:format          # oxfmt formatting
 pnpm check:types           # TypeScript checking
-pnpm check:lint            # ESLint
+pnpm check:lint            # oxlint
 pnpm check:deps            # Unused dependencies
 pnpm test:unit             # Run only unit tests
 pnpm test:coverage         # Code coverage report based on unit tests
@@ -654,8 +654,7 @@ npm install \
   https://pkg.pr.new/@sanity/cli@<commit-sha> \
   https://pkg.pr.new/@sanity/cli-build@<commit-sha> \
   https://pkg.pr.new/@sanity/cli-core@<commit-sha> \
-  https://pkg.pr.new/@sanity/cli-test@<commit-sha> \
-  https://pkg.pr.new/@sanity/eslint-config-cli@<commit-sha>
+  https://pkg.pr.new/@sanity/cli-test@<commit-sha>
 ```
 
 Or use pnpm:

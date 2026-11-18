@@ -50,7 +50,7 @@ if (isMainThread || !parentPort) {
 
 const report = WorkerChannelReporter.from<ValidationWorkerChannel>(parentPort)
 
-// eslint-disable-next-line n/no-unsupported-features/node-builtins
+// eslint-disable-next-line n-js/no-unsupported-features/node-builtins
 async function* readerToGenerator(reader: ReadableStreamDefaultReader<Uint8Array>) {
   while (true) {
     const {done, value} = await reader.read()

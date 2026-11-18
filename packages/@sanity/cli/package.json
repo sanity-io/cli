@@ -67,7 +67,6 @@
     "check:types": "tsc --noEmit",
     "generate:api-routes": "tsx scripts/generate-api-routes.ts",
     "generate:context-commands": "tsx scripts/generate-context-commands.ts && oxfmt src/commands/context",
-    "lint": "eslint .",
     "manifest:generate": "oclif manifest",
     "manifest:remove": "rimraf oclif.manifest.json",
     "prepack": "pnpm run manifest:generate",
@@ -81,7 +80,8 @@
     "test:coverage": "vitest run --coverage",
     "test:watch": "vitest",
     "prewatch": "pnpm run manifest:remove",
-    "watch": "swc --delete-dir-on-start --strip-leading-paths --out-dir dist/ --watch src"
+    "watch": "swc --delete-dir-on-start --strip-leading-paths --out-dir dist/ --watch src",
+    "lint": "oxlint -c oxlint.config.ts"
   },
   "dependencies": {
     "@oclif/core": "catalog:",
@@ -150,12 +150,11 @@
     "zod": "catalog:"
   },
   "devDependencies": {
-    "@eslint/compat": "catalog:",
     "@oxc-project/types": "0.156.0",
+    "@repo/oxc-config": "workspace:*",
     "@repo/package.config": "workspace:*",
     "@repo/tsconfig": "workspace:*",
     "@sanity/cli-test": "workspace:*",
-    "@sanity/eslint-config-cli": "workspace:*",
     "@sanity/pkg-utils": "catalog:",
     "@swc/cli": "catalog:",
     "@swc/core": "catalog:",
@@ -169,12 +168,12 @@
     "@types/which": "^3.0.4",
     "@vitest/coverage-istanbul": "catalog:",
     "babel-plugin-react-compiler": "catalog:",
-    "eslint": "catalog:",
     "get-it": "catalog:",
     "jsdom": "catalog:",
     "nock": "catalog:",
     "oclif": "^4.24.0",
     "oxc-transform-react": "catalog:",
+    "oxlint": "catalog:",
     "publint": "catalog:",
     "rimraf": "catalog:",
     "sanity": "catalog:",

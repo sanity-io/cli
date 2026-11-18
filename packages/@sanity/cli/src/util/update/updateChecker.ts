@@ -66,7 +66,7 @@ export async function updateChecker(config: {version: string}): Promise<void> {
         debug('Update is available (%s)', latestVersion)
         // Imported lazily: the notification pulls in the ux helpers, and this
         // check runs on every invocation, including `--version` and `--help`.
-        // eslint-disable-next-line no-restricted-syntax -- static relative import, not a user file path
+        // eslint-disable-next-line eslint-js/no-restricted-syntax -- static relative import, not a user file path
         const {showUpdateNotification} = await import('./showNotificationUpdate.js')
         await showUpdateNotification(installedVersion, latestVersion, packageName, runner)
         store.set(notifiedKey, updatedAt)

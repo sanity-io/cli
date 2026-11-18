@@ -33,7 +33,9 @@
       "inputs": ["$TURBO_DEFAULT$", "!**/*.md", "!**/*.test.ts"],
       "outputs": ["dist/**/*.d.ts"]
     },
-    "lint": {},
+    "lint": {
+      "inputs": ["$TURBO_DEFAULT$", "$TURBO_ROOT$/packages/@repo/oxc-config/**"]
+    },
     "publint": {
       "dependsOn": ["build:types", "^build:types", "^publint"],
       "cache": false

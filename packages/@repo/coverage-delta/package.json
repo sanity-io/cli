@@ -4,18 +4,18 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "lint": "eslint .",
     "report": "node src/coverage-delta.ts",
-    "test": "vitest run"
+    "test": "vitest run",
+    "lint": "oxlint -c oxlint.config.ts"
   },
   "dependencies": {
     "oxfmt": "catalog:"
   },
   "devDependencies": {
+    "@repo/oxc-config": "workspace:*",
     "@repo/tsconfig": "workspace:*",
-    "@sanity/eslint-config-cli": "workspace:*",
     "@types/node": "catalog:",
-    "eslint": "catalog:",
+    "oxlint": "catalog:",
     "vitest": "catalog:"
   }
 }

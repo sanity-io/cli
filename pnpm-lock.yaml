@@ -173,10 +173,6 @@ snapshots:
 		"excludeLinksFromLockfile": false,
 		"catalogs": {
 			"default": {
-				"@eslint/compat": {
-					"specifier": "^2.1.0",
-					"version": "2.1.0",
-				},
 				"@oclif/core": {
 					"specifier": "^4.14.0",
 					"version": "4.14.0",
@@ -273,10 +269,6 @@ snapshots:
 					"specifier": "^2.1.0",
 					"version": "2.1.0",
 				},
-				"eslint": {
-					"specifier": "^10.7.0",
-					"version": "10.9.1",
-				},
 				"execa": {
 					"specifier": "^10.0.1",
 					"version": "10.0.1",
@@ -336,6 +328,10 @@ snapshots:
 				"oxfmt": {
 					"specifier": "^0.79.0",
 					"version": "0.79.0",
+				},
+				"oxlint": {
+					"specifier": "^1.93.0",
+					"version": "1.93.0",
 				},
 				"publint": {
 					"specifier": "^0.3.25",
@@ -428,8 +424,6 @@ snapshots:
 					"specifier": "^20.5.0",
 					"version": "20.5.0",
 				},
-				"@eslint/compat": "catalog:",
-				"@sanity/eslint-config-cli": "workspace:*",
 				"@types/node": {
 					"specifier": "^22.20.5",
 					"version": "22.20.5",
@@ -439,7 +433,6 @@ snapshots:
 					"version": "1.2.5",
 				},
 				"@vitest/coverage-istanbul": "catalog:",
-				"eslint": "catalog:",
 				"execa": "catalog:",
 				"husky": {
 					"specifier": "^9.1.7",
@@ -454,6 +447,7 @@ snapshots:
 					"version": "16.4.0",
 				},
 				"oxfmt": "catalog:",
+				"oxlint": "catalog:",
 				"rimraf": "catalog:",
 				"turbo": {
 					"specifier": "^2.10.5",
@@ -793,14 +787,49 @@ snapshots:
 				"oxfmt": "catalog:",
 			},
 			"devDependencies": {
+				"@repo/oxc-config": "workspace:*",
 				"@repo/tsconfig": "workspace:*",
-				"@sanity/eslint-config-cli": "workspace:*",
 				"@types/node": {
 					"specifier": "^22.20.5",
 					"version": "22.20.5",
 				},
-				"eslint": "catalog:",
+				"oxlint": "catalog:",
 				"vitest": "catalog:",
+			},
+		},
+
+		"packages/@repo/oxc-config": {
+			"name": "@repo/oxc-config",
+			"dependencies": {
+				"eslint-import-resolver-typescript": {
+					"specifier": "^4.4.5",
+					"version": "4.4.5",
+				},
+				"eslint-plugin-import-x": {
+					"specifier": "^4.17.1",
+					"version": "4.17.1",
+				},
+				"eslint-plugin-n": {
+					"specifier": "^17.24.0",
+					"version": "17.24.0",
+				},
+				"eslint-plugin-perfectionist": {
+					"specifier": "^5.10.1",
+					"version": "5.10.1",
+				},
+				"eslint-plugin-tsdoc": {
+					"specifier": "^0.5.2",
+					"version": "0.5.2",
+				},
+				"eslint-plugin-unicorn": {
+					"specifier": "^63.0.0",
+					"version": "63.0.0",
+				},
+				"oxlint": "catalog:",
+				"oxlint-plugin-eslint": {
+					"specifier": "^1.93.0",
+					"version": "1.93.0",
+				},
 			},
 		},
 
@@ -830,14 +859,14 @@ snapshots:
 				"lodash-es": "catalog:",
 			},
 			"devDependencies": {
+				"@repo/oxc-config": "workspace:*",
 				"@repo/tsconfig": "workspace:*",
-				"@sanity/eslint-config-cli": "workspace:*",
 				"@types/lodash-es": "catalog:",
 				"@types/node": {
 					"specifier": "^22.20.5",
 					"version": "22.20.5",
 				},
-				"eslint": "catalog:",
+				"oxlint": "catalog:",
 				"tsx": "catalog:",
 			},
 		},
@@ -1022,12 +1051,11 @@ snapshots:
 				"zod": "catalog:",
 			},
 			"devDependencies": {
-				"@eslint/compat": "catalog:",
 				"@oxc-project/types": "0.156.0",
+				"@repo/oxc-config": "workspace:*",
 				"@repo/package.config": "workspace:*",
 				"@repo/tsconfig": "workspace:*",
 				"@sanity/cli-test": "workspace:*",
-				"@sanity/eslint-config-cli": "workspace:*",
 				"@sanity/pkg-utils": "catalog:",
 				"@swc/cli": "catalog:",
 				"@swc/core": "catalog:",
@@ -1056,7 +1084,6 @@ snapshots:
 				},
 				"@vitest/coverage-istanbul": "catalog:",
 				"babel-plugin-react-compiler": "catalog:",
-				"eslint": "catalog:",
 				"get-it": "catalog:",
 				"jsdom": "catalog:",
 				"nock": "catalog:",
@@ -1065,6 +1092,7 @@ snapshots:
 					"version": "4.24.0",
 				},
 				"oxc-transform-react": "catalog:",
+				"oxlint": "catalog:",
 				"publint": "catalog:",
 				"rimraf": "catalog:",
 				"sanity": "catalog:",
@@ -1133,11 +1161,10 @@ snapshots:
 				"zod": "catalog:",
 			},
 			"devDependencies": {
-				"@eslint/compat": "catalog:",
+				"@repo/oxc-config": "workspace:*",
 				"@repo/package.config": "workspace:*",
 				"@repo/tsconfig": "workspace:*",
 				"@sanity/cli-test": "workspace:*",
-				"@sanity/eslint-config-cli": "workspace:^",
 				"@sanity/pkg-utils": "catalog:",
 				"@sanity/ui": {
 					"specifier": "^4.4.12",
@@ -1164,12 +1191,12 @@ snapshots:
 				"@types/semver": "catalog:",
 				"@vitest/coverage-istanbul": "catalog:",
 				"babel-plugin-react-compiler": "catalog:",
-				"eslint": "catalog:",
 				"magic-string": {
 					"specifier": "^0.30.21",
 					"version": "0.30.21",
 				},
 				"oxc-transform-react": "catalog:",
+				"oxlint": "catalog:",
 				"publint": "catalog:",
 				"sanity": "catalog:",
 				"styled-components": {
@@ -1226,10 +1253,9 @@ snapshots:
 				"zod": "catalog:",
 			},
 			"devDependencies": {
-				"@eslint/compat": "catalog:",
+				"@repo/oxc-config": "workspace:*",
 				"@repo/package.config": "workspace:*",
 				"@repo/tsconfig": "workspace:*",
-				"@sanity/eslint-config-cli": "workspace:*",
 				"@sanity/pkg-utils": "catalog:",
 				"@sanity/telemetry": "catalog:",
 				"@swc/cli": "catalog:",
@@ -1240,8 +1266,8 @@ snapshots:
 					"version": "22.20.5",
 				},
 				"babel-plugin-react-compiler": "catalog:",
-				"eslint": "catalog:",
 				"oxc-transform-react": "catalog:",
+				"oxlint": "catalog:",
 				"publint": "catalog:",
 				"sanity": "catalog:",
 				"typescript": "catalog:",
@@ -1251,20 +1277,19 @@ snapshots:
 
 		"packages/@sanity/cli-e2e": {
 			"devDependencies": {
-				"@eslint/compat": "catalog:",
+				"@repo/oxc-config": "workspace:*",
 				"@repo/tsconfig": "workspace:*",
 				"@sanity/cli": "workspace:*",
 				"@sanity/cli-build": "workspace:*",
 				"@sanity/cli-core": "workspace:*",
 				"@sanity/cli-test": "workspace:*",
-				"@sanity/eslint-config-cli": "workspace:*",
 				"@types/node": {
 					"specifier": "^22.20.5",
 					"version": "22.20.5",
 				},
 				"create-sanity": "workspace:*",
-				"eslint": "catalog:",
 				"node-pty": "catalog:",
+				"oxlint": "catalog:",
 				"strip-ansi": "catalog:",
 				"typescript": "catalog:",
 				"vitest": "catalog:",
@@ -1289,75 +1314,24 @@ snapshots:
 				"tinyglobby": "catalog:",
 			},
 			"devDependencies": {
-				"@eslint/compat": "catalog:",
 				"@oclif/core": "catalog:",
+				"@repo/oxc-config": "workspace:*",
 				"@repo/package.config": "workspace:*",
 				"@repo/tsconfig": "workspace:*",
 				"@sanity/client": "catalog:",
-				"@sanity/eslint-config-cli": "workspace:*",
 				"@sanity/pkg-utils": "catalog:",
 				"@swc/cli": "catalog:",
 				"@types/node": {
 					"specifier": "^22.20.5",
 					"version": "22.20.5",
 				},
-				"eslint": "catalog:",
+				"oxlint": "catalog:",
 				"publint": "catalog:",
 				"rimraf": "catalog:",
 				"tsx": "catalog:",
 				"typescript": "catalog:",
 				"vitest": "catalog:",
 				"yaml": "catalog:",
-			},
-		},
-
-		"packages/@sanity/eslint-config-cli": {
-			"name": "@sanity/eslint-config-cli",
-			"dependencies": {
-				"@eslint/js": {
-					"specifier": "^10.0.0",
-					"version": "10.0.1",
-				},
-				"eslint-config-prettier": {
-					"specifier": "^10.1.8",
-					"version": "10.1.8",
-				},
-				"eslint-import-resolver-typescript": {
-					"specifier": "^4.4.5",
-					"version": "4.4.5",
-				},
-				"eslint-plugin-import-x": {
-					"specifier": "^4.17.1",
-					"version": "4.17.1",
-				},
-				"eslint-plugin-n": {
-					"specifier": "^17.24.0",
-					"version": "17.24.0",
-				},
-				"eslint-plugin-perfectionist": {
-					"specifier": "^5.10.0",
-					"version": "5.10.1",
-				},
-				"eslint-plugin-tsdoc": {
-					"specifier": "^0.5.2",
-					"version": "0.5.2",
-				},
-				"eslint-plugin-unicorn": {
-					"specifier": "^63.0.0",
-					"version": "63.0.0",
-				},
-				"eslint-plugin-unused-imports": {
-					"specifier": "^4.4.1",
-					"version": "4.4.1",
-				},
-				"typescript-eslint": {
-					"specifier": "^8.64.0",
-					"version": "8.68.0",
-				},
-			},
-			"devDependencies": {
-				"eslint": "catalog:",
-				"publint": "catalog:",
 			},
 		},
 
@@ -1384,11 +1358,10 @@ snapshots:
 				"zod": "catalog:",
 			},
 			"devDependencies": {
-				"@eslint/compat": "catalog:",
+				"@repo/oxc-config": "workspace:*",
 				"@repo/package.config": "workspace:*",
 				"@repo/tsconfig": "workspace:*",
 				"@sanity/cli-test": "workspace:*",
-				"@sanity/eslint-config-cli": "workspace:^",
 				"@sanity/pkg-utils": "catalog:",
 				"@swc/cli": "catalog:",
 				"@swc/core": "catalog:",
@@ -1399,8 +1372,8 @@ snapshots:
 				"@types/react": "catalog:",
 				"@types/semver": "catalog:",
 				"@vitest/coverage-istanbul": "catalog:",
-				"eslint": "catalog:",
 				"jsdom": "catalog:",
+				"oxlint": "catalog:",
 				"publint": "catalog:",
 				"react": "catalog:",
 				"react-dom": "catalog:",
@@ -4062,15 +4035,6 @@ snapshots:
 			},
 		},
 
-		"@codemirror/lint@6.9.7": {
-			"integrity": "sha512-28/+iWLYxKxsvGYhSYL7zaCZqLz5+FFFDq9tVsvGv9kv8RY4fFAchJ5WX9M3YrrRlTIsECjsXPqeNgnSmNP2dg==",
-			"dependencies": {
-				"@codemirror/state": "6.7.6",
-				"@codemirror/view": "6.43.15",
-				"crelt": "1.0.7",
-			},
-		},
-
 		"@codemirror/lint@6.9.8": {
 			"integrity": "sha512-qNvtcE73xUto/D1RvtgSRI4A1Hg8ekxlvtZpjHpdpisLBnhyu82EUEJMEgaxkjuQCA8vqnrylENWKOsEDCOHcw==",
 			"dependencies": {
@@ -4120,7 +4084,7 @@ snapshots:
 				"@codemirror/language": "6.13.1",
 				"@codemirror/state": "6.7.6",
 				"@codemirror/view": "6.43.15",
-				"@lezer/highlight": "1.2.3",
+				"@lezer/highlight": "1.2.5",
 			},
 		},
 
@@ -4950,21 +4914,6 @@ snapshots:
 			"engines": {"node": "^12.0.0 || ^14.0.0 || >=16.0.0"},
 		},
 
-		"@eslint/compat@2.1.0": {
-			"integrity": "sha512-LgaSCymEpw7tF53xvDw9SNsraPb1IBHxpdABIOM0hW8UAlP8znrjYtuxfR58FSJ3L9BhwD+FaPRFQpZq84Nh6g==",
-			"engines": {"node": "^20.19.0 || ^22.13.0 || >=24"},
-			"peerDependencies": {
-				"eslint": {
-					"specifier": "^8.40 || 9 || 10",
-					"version": "10.9.1",
-					"optional": true,
-				},
-			},
-			"dependencies": {
-				"@eslint/core": "1.2.1",
-			},
-		},
-
 		"@eslint/config-array@0.23.5": {
 			"integrity": "sha512-Y3kKLvC1dvTOT+oGlqNQ1XLqK6D1HU2YXPc52NmAlJZbMMWDzGYXMiPRJ8TYD39muD/OTjlZmNJ4ib7dvSrMBA==",
 			"engines": {"node": "^20.19.0 || ^22.13.0 || >=24"},
@@ -4994,18 +4943,6 @@ snapshots:
 			"engines": {"node": "^20.19.0 || ^22.13.0 || >=24"},
 			"dependencies": {
 				"@types/json-schema": "7.0.15",
-			},
-		},
-
-		"@eslint/js@10.0.1": {
-			"integrity": "sha512-zeR9k5pd4gxjZ0abRoIaxdc7I3nDktoXZk2qOv9gCNWx3mVwEn32VRhyLaRsDiJjTs0xq/T8mfPtyuXu7GWBcA==",
-			"engines": {"node": "^20.19.0 || ^22.13.0 || >=24"},
-			"peerDependencies": {
-				"eslint": {
-					"specifier": "^10.0.0",
-					"version": "10.9.1",
-					"optional": true,
-				},
 			},
 		},
 
@@ -6555,8 +6492,27 @@ snapshots:
 			"integrity": "sha512-UMduMbqO5s5zF2NkNacMT/yK5Y5QiKvWr2+50bzIIxFDwVJ2h49b+oyjaCGPhJxd2/gC2x39EHv/gHVuu36x2Q==",
 			"engines": {"node": "^20.19.0 || ^22.13.0 || >=23.5.0"},
 			"peerDependencies": {
-				"@emnapi/core": "^1.7.1 || ^2.0.0-alpha.4",
-				"@emnapi/runtime": "^1.7.1 || ^2.0.0-alpha.4",
+				"@emnapi/core": {
+					"specifier": "^1.7.1 || ^2.0.0-alpha.4",
+					"version": "1.11.2",
+				},
+				"@emnapi/runtime": {
+					"specifier": "^1.7.1 || ^2.0.0-alpha.4",
+					"version": "1.11.2",
+				},
+			},
+			"optional": true,
+			"dependencies": {
+				"@tybys/wasm-util": "0.10.3",
+			},
+		},
+
+		"@napi-rs/wasm-runtime@1.2.6": {
+			"integrity": "sha512-mRyDmEw9/fCDXCGfL1sbgIw/GUK0PVxRW4YwgPN61F3LQ+fSyoBFarJVzgGyhF6kRzEQZ0FejDqm4WLXSeqQmw==",
+			"engines": {"node": "^20.19.0 || ^22.13.0 || >=23.5.0"},
+			"peerDependencies": {
+				"@emnapi/core": "^1.7.1 || 2.0.0-beta.2",
+				"@emnapi/runtime": "^1.7.1 || 2.0.0-beta.2",
 			},
 			"optional": true,
 			"dependencies": {
@@ -6576,33 +6532,14 @@ snapshots:
 				{
 					"peerDependencies": {
 						"@emnapi/core": {
-							"version": "1.11.2",
+							"version": "2.0.0-beta.2",
 						},
 						"@emnapi/runtime": {
-							"version": "1.11.2",
+							"version": "2.0.0-beta.2",
 						},
 					},
 				},
 			],
-		},
-
-		"@napi-rs/wasm-runtime@1.2.6": {
-			"integrity": "sha512-mRyDmEw9/fCDXCGfL1sbgIw/GUK0PVxRW4YwgPN61F3LQ+fSyoBFarJVzgGyhF6kRzEQZ0FejDqm4WLXSeqQmw==",
-			"engines": {"node": "^20.19.0 || ^22.13.0 || >=23.5.0"},
-			"peerDependencies": {
-				"@emnapi/core": {
-					"specifier": "^1.7.1 || 2.0.0-beta.2",
-					"version": "2.0.0-beta.2",
-				},
-				"@emnapi/runtime": {
-					"specifier": "^1.7.1 || 2.0.0-beta.2",
-					"version": "2.0.0-beta.2",
-				},
-			},
-			"optional": true,
-			"dependencies": {
-				"@tybys/wasm-util": "0.10.3",
-			},
 		},
 
 		"@next/env@16.2.12": {
@@ -7586,6 +7523,166 @@ snapshots:
 
 		"@oxfmt/binding-win32-x64-msvc@0.79.0": {
 			"integrity": "sha512-JLaeaQ+4LkQiVXY06JIV1dBFEDJzssvDieK/3Poi6CsY+c4UxghZVrrsfcKGJ5R/0F2Sw3C5Lf5Hu0sM5qJfPw==",
+			"engines": {"node": "^20.19.0 || >=22.12.0"},
+			"cpu": ["x64"],
+			"os": ["win32"],
+			"optional": true,
+		},
+
+		"@oxlint/binding-android-arm-eabi@1.93.0": {
+			"integrity": "sha512-KKw70pbD5Pvq3G2lJ+WQ71XPMjCmg37rkSe2+mDqCRP3PoTSdDMuEi4UOnE8JBtyNM7bek61EC2s0Jt7S7u+Sg==",
+			"engines": {"node": "^20.19.0 || >=22.12.0"},
+			"cpu": ["arm"],
+			"os": ["android"],
+			"optional": true,
+		},
+
+		"@oxlint/binding-android-arm64@1.93.0": {
+			"integrity": "sha512-fvr1fTUZGelwRxKDt64pf28aL1WaWgviwz3X+E/FcRYvrlEahH0NECRz/c1SY+K+KWmZk5uAf6h1kQnyBkp/2A==",
+			"engines": {"node": "^20.19.0 || >=22.12.0"},
+			"cpu": ["arm64"],
+			"os": ["android"],
+			"optional": true,
+		},
+
+		"@oxlint/binding-darwin-arm64@1.93.0": {
+			"integrity": "sha512-VdvSN9JRf4Es6ZzoAdvEeh8tgKdw8L4H82WmA8MMPVfPdZGCwE/nI27Z1HrRHYQhPxOh4kmnxQEioSUFrOvDaw==",
+			"engines": {"node": "^20.19.0 || >=22.12.0"},
+			"cpu": ["arm64"],
+			"os": ["darwin"],
+			"optional": true,
+		},
+
+		"@oxlint/binding-darwin-x64@1.93.0": {
+			"integrity": "sha512-QR1V890Ml0YGRG0F/iV0K9igG+pOhe+VWd+aZnxY849rRHZf3F2gEoQks5+GVHf105X9Mh/6HdShTP5juekG2g==",
+			"engines": {"node": "^20.19.0 || >=22.12.0"},
+			"cpu": ["x64"],
+			"os": ["darwin"],
+			"optional": true,
+		},
+
+		"@oxlint/binding-freebsd-x64@1.93.0": {
+			"integrity": "sha512-jDfIbi30zZaKi+rTvig3sge+Xhi8pFFSgHxb0jzovc4qh8ETm/irKV9c7N/JsuwnYc5sbvf4IC8w1vQQ0IL+BA==",
+			"engines": {"node": "^20.19.0 || >=22.12.0"},
+			"cpu": ["x64"],
+			"os": ["freebsd"],
+			"optional": true,
+		},
+
+		"@oxlint/binding-linux-arm-gnueabihf@1.93.0": {
+			"integrity": "sha512-qtxZ714ND/koFgVH00QgxlzZiIbRPmguaPhnHRU5DFFtrtEdOrSnZD4U/H2AzXrXkZ59eQbMBnJwbum5XohrIQ==",
+			"engines": {"node": "^20.19.0 || >=22.12.0"},
+			"cpu": ["arm"],
+			"os": ["linux"],
+			"optional": true,
+		},
+
+		"@oxlint/binding-linux-arm-musleabihf@1.93.0": {
+			"integrity": "sha512-5pJ9NjMvH7WMUqXB6bTTOSemBm39w2cod27Hu3+Yom/GhbTeNXlYcpDx1o4CgBP6fhp0YHG66TNdVaUm6sHjsA==",
+			"engines": {"node": "^20.19.0 || >=22.12.0"},
+			"cpu": ["arm"],
+			"os": ["linux"],
+			"optional": true,
+		},
+
+		"@oxlint/binding-linux-arm64-gnu@1.93.0": {
+			"integrity": "sha512-pRf+7jtbt2fHE23SX7qBxRgnBZicUgsoCK1PVIjnOk+t3a6UBkpt/GrKI99WlxsKUxftz/5nv/kfKvScmYywkw==",
+			"engines": {"node": "^20.19.0 || >=22.12.0"},
+			"cpu": ["arm64"],
+			"os": ["linux"],
+			"libc": ["glibc"],
+			"optional": true,
+		},
+
+		"@oxlint/binding-linux-arm64-musl@1.93.0": {
+			"integrity": "sha512-zM8Fd/K8sqGvsBcJBZ3oVZ3ctGWbszA08IaGt5gFFF5RcunppAI/ZnAXbouABvnWeJ//S44KKlfPZnDDbeiphg==",
+			"engines": {"node": "^20.19.0 || >=22.12.0"},
+			"cpu": ["arm64"],
+			"os": ["linux"],
+			"libc": ["musl"],
+			"optional": true,
+		},
+
+		"@oxlint/binding-linux-ppc64-gnu@1.93.0": {
+			"integrity": "sha512-7qKCnvhZKDXJG2pdbLazd2hw4FxjJHbZOFrrbzyy5PdHfPLH9vnNUa1le01A8uItZuYKPBPncH+HCoEiFT4SgA==",
+			"engines": {"node": "^20.19.0 || >=22.12.0"},
+			"cpu": ["ppc64"],
+			"os": ["linux"],
+			"libc": ["glibc"],
+			"optional": true,
+		},
+
+		"@oxlint/binding-linux-riscv64-gnu@1.93.0": {
+			"integrity": "sha512-2pgulxC6G8V5wE750NJE/fRkf9aO6i6yoj10wyaR2EdiNtan4OemsOtsQ0ZTXGdY8Q3IoTmlND3GYvjJsvikYg==",
+			"engines": {"node": "^20.19.0 || >=22.12.0"},
+			"cpu": ["riscv64"],
+			"os": ["linux"],
+			"libc": ["glibc"],
+			"optional": true,
+		},
+
+		"@oxlint/binding-linux-riscv64-musl@1.93.0": {
+			"integrity": "sha512-yWsn6Gg2PnGG5jlyDz5+pHGiMTMiy4adaa4WRMzDgzB8efaShk1JMmTHIBSVLQMh0tYXRs4CN5uJCO79r4Mi4g==",
+			"engines": {"node": "^20.19.0 || >=22.12.0"},
+			"cpu": ["riscv64"],
+			"os": ["linux"],
+			"libc": ["musl"],
+			"optional": true,
+		},
+
+		"@oxlint/binding-linux-s390x-gnu@1.93.0": {
+			"integrity": "sha512-WCn5plwp/ezS2RDPQKp0/EXEVRr9/dDexUdRKmsMFqzNM5xBSZ1wbsi3PuMk1VfkMRnI5BuazCsziCWMXRDOlw==",
+			"engines": {"node": "^20.19.0 || >=22.12.0"},
+			"cpu": ["s390x"],
+			"os": ["linux"],
+			"libc": ["glibc"],
+			"optional": true,
+		},
+
+		"@oxlint/binding-linux-x64-gnu@1.93.0": {
+			"integrity": "sha512-F2CGjb9LAkzH+IYTZSzd1klQ1vk5z6Utjax64WeLByCkYXbVDbsun+Oy2hLfW2MDSKCvW+jwy/9ld0EPgdeu+A==",
+			"engines": {"node": "^20.19.0 || >=22.12.0"},
+			"cpu": ["x64"],
+			"os": ["linux"],
+			"libc": ["glibc"],
+			"optional": true,
+		},
+
+		"@oxlint/binding-linux-x64-musl@1.93.0": {
+			"integrity": "sha512-plf5DE2objcG8Tf7mXRuRa8tT8rzDkpjqXQtKoGsKHWkpgsialbON1+cCtoSEUTVbQUjXvuAm8vV9+3rR0yCBw==",
+			"engines": {"node": "^20.19.0 || >=22.12.0"},
+			"cpu": ["x64"],
+			"os": ["linux"],
+			"libc": ["musl"],
+			"optional": true,
+		},
+
+		"@oxlint/binding-openharmony-arm64@1.93.0": {
+			"integrity": "sha512-Kp2yJrKvoTe9FfKdO/xwLNUbs2bYTMKx0+aoQD1s0h/Tx0kSgtHSdGmrk8tTKdluosjFbo88qYRIaNIX43AfFw==",
+			"engines": {"node": "^20.19.0 || >=22.12.0"},
+			"cpu": ["arm64"],
+			"os": ["openharmony"],
+			"optional": true,
+		},
+
+		"@oxlint/binding-win32-arm64-msvc@1.93.0": {
+			"integrity": "sha512-vigjcHCFsR6KjnWTEVfaCxcMYapEuaK9FZa1MpewwQ1S+Xud3v0okfkj1RySsD6RF1NRHIjSlQSalTnKIaj3nA==",
+			"engines": {"node": "^20.19.0 || >=22.12.0"},
+			"cpu": ["arm64"],
+			"os": ["win32"],
+			"optional": true,
+		},
+
+		"@oxlint/binding-win32-ia32-msvc@1.93.0": {
+			"integrity": "sha512-0Ot3BEe/AAr2/uQhe55r8CmPlperYk2mQmxdutOru7oU0kir6IiEVHb1TG3GORRlfra97lPHVDLhgmihiKzLrg==",
+			"engines": {"node": "^20.19.0 || >=22.12.0"},
+			"cpu": ["ia32"],
+			"os": ["win32"],
+			"optional": true,
+		},
+
+		"@oxlint/binding-win32-x64-msvc@1.93.0": {
+			"integrity": "sha512-ZzzIIVs/Qkm8trUWYKF0OYub5ALlv50/3gsEZbKAvWgz+yNJX6uRmQ8ySPXU2Q0/Y9m4JCOjhpmC8XUYbPHX5Q==",
 			"engines": {"node": "^20.19.0 || >=22.12.0"},
 			"cpu": ["x64"],
 			"os": ["win32"],
@@ -12107,65 +12204,6 @@ snapshots:
 			"integrity": "sha512-ltIpx+kM7g/MLRZfkbL7EsCEjfzCcScLpkg37eXEtx5kmrAKBkTJwd1GIAjDSL8wTpM6Hzn5YO4pSb91BEwu1g==",
 		},
 
-		"@typescript-eslint/eslint-plugin@8.68.0": {
-			"integrity": "sha512-WASHDpCm6qO5jj9g1a+8NiW5+GCkAyLReR56/4VruYmNgfUmqpxOfZ2Yfb8xGfJPWv5Qi6LSD8sXdces3vbp/Q==",
-			"engines": {"node": "^18.18.0 || ^20.9.0 || >=21.1.0"},
-			"peerDependencies": {
-				"@typescript-eslint/parser": {
-					"specifier": "^8.68.0",
-					"version": "8.68.0",
-				},
-				"eslint": {
-					"specifier": "^8.57.0 || ^9.0.0 || ^10.0.0",
-					"version": "10.9.1",
-				},
-				"supports-color": {
-					"version": "8.1.1",
-					"below": true,
-				},
-				"typescript": {
-					"specifier": ">=4.8.4 <6.1.0",
-					"version": "6.0.3",
-				},
-			},
-			"dependencies": {
-				"@eslint-community/regexpp": "4.12.2",
-				"@typescript-eslint/scope-manager": "8.68.0",
-				"@typescript-eslint/type-utils": "8.68.0",
-				"@typescript-eslint/utils": "8.68.0",
-				"@typescript-eslint/visitor-keys": "8.68.0",
-				"ignore": "7.0.6",
-				"natural-compare": "1.4.0",
-				"ts-api-utils": "2.5.0",
-			},
-		},
-
-		"@typescript-eslint/parser@8.68.0": {
-			"integrity": "sha512-fHq2VC1kpyYfvEcbiMjOpySY4WS7voEp89yAThrHRX5sm9j2lzYppCb2umFMEed4fWcyeLjHxrz0mpjNBaBxMQ==",
-			"engines": {"node": "^18.18.0 || ^20.9.0 || >=21.1.0"},
-			"peerDependencies": {
-				"eslint": {
-					"specifier": "^8.57.0 || ^9.0.0 || ^10.0.0",
-					"version": "10.9.1",
-				},
-				"supports-color": {
-					"version": "8.1.1",
-					"below": true,
-				},
-				"typescript": {
-					"specifier": ">=4.8.4 <6.1.0",
-					"version": "6.0.3",
-				},
-			},
-			"dependencies": {
-				"@typescript-eslint/scope-manager": "8.68.0",
-				"@typescript-eslint/types": "8.68.0",
-				"@typescript-eslint/typescript-estree": "8.68.0",
-				"@typescript-eslint/visitor-keys": "8.68.0",
-				"debug": "4.4.3",
-			},
-		},
-
 		"@typescript-eslint/project-service@8.56.1": {
 			"integrity": "sha512-TAdqQTzHNNvlVFfR+hu2PDJrURiwKsUvxFn1M0h95BB8ah5jejas08jUWG4dBA68jDMI988IvtfdAI53JzEHOQ==",
 			"engines": {"node": "^18.18.0 || ^20.9.0 || >=21.1.0"},
@@ -12180,8 +12218,8 @@ snapshots:
 				},
 			},
 			"dependencies": {
-				"@typescript-eslint/tsconfig-utils": "8.68.0",
-				"@typescript-eslint/types": "8.68.0",
+				"@typescript-eslint/tsconfig-utils": "8.56.1",
+				"@typescript-eslint/types": "8.56.1",
 				"debug": "4.4.3",
 			},
 		},
@@ -12243,32 +12281,6 @@ snapshots:
 					"specifier": ">=4.8.4 <6.1.0",
 					"version": "6.0.3",
 				},
-			},
-		},
-
-		"@typescript-eslint/type-utils@8.68.0": {
-			"integrity": "sha512-X77zqoY1EjeWGs/0JNxeaMfp5C5lIz4Tw8y66F1Ne8Faq6g424sBNYM6xBAqElfGZPLpWS+CZAp0DXyKDzWiHg==",
-			"engines": {"node": "^18.18.0 || ^20.9.0 || >=21.1.0"},
-			"peerDependencies": {
-				"eslint": {
-					"specifier": "^8.57.0 || ^9.0.0 || ^10.0.0",
-					"version": "10.9.1",
-				},
-				"supports-color": {
-					"version": "8.1.1",
-					"below": true,
-				},
-				"typescript": {
-					"specifier": ">=4.8.4 <6.1.0",
-					"version": "6.0.3",
-				},
-			},
-			"dependencies": {
-				"@typescript-eslint/types": "8.68.0",
-				"@typescript-eslint/typescript-estree": "8.68.0",
-				"@typescript-eslint/utils": "8.68.0",
-				"debug": "4.4.3",
-				"ts-api-utils": "2.5.0",
 			},
 		},
 
@@ -12752,7 +12764,7 @@ snapshots:
 			"dependencies": {
 				"@emnapi/core": "1.10.0",
 				"@emnapi/runtime": "1.10.0",
-				"@napi-rs/wasm-runtime": "1.2.3",
+				"@napi-rs/wasm-runtime": "1.2.6",
 			},
 		},
 
@@ -14318,7 +14330,7 @@ snapshots:
 				"@codemirror/autocomplete": "6.20.4",
 				"@codemirror/commands": "6.11.1",
 				"@codemirror/language": "6.13.1",
-				"@codemirror/lint": "6.9.7",
+				"@codemirror/lint": "6.9.8",
 				"@codemirror/search": "6.7.2",
 				"@codemirror/state": "6.7.6",
 				"@codemirror/view": "6.43.15",
@@ -15109,17 +15121,6 @@ snapshots:
 			},
 		},
 
-		"eslint-config-prettier@10.1.8": {
-			"integrity": "sha512-82GZUjRS0p/jganf6q1rEO25VSoHH0hKPCTrgillPjdI/3bgBhAE1QzHrHTizjpRvy6pGAvKjDJtk2pF9NDq8w==",
-			"hasBin": true,
-			"peerDependencies": {
-				"eslint": {
-					"specifier": ">=7.0.0",
-					"version": "10.9.1",
-				},
-			},
-		},
-
 		"eslint-import-context@0.1.9": {
 			"integrity": "sha512-K9Hb+yRaGAGUbwjhFNHvSmmkZs9+zbuoe3kFQ4V1wYjrepUFYM2dZAfNtjbbj3qsPfUfsA68Bx/ICWQMi+C8Eg==",
 			"engines": {"node": "^12.20.0 || ^14.18.0 || >=16.0.0"},
@@ -15318,21 +15319,6 @@ snapshots:
 				"regjsparser": "0.13.2",
 				"semver": "7.8.6",
 				"strip-indent": "4.1.1",
-			},
-		},
-
-		"eslint-plugin-unused-imports@4.4.1": {
-			"integrity": "sha512-oZGYUz1X3sRMGUB+0cZyK2VcvRX5lm/vB56PgNNcU+7ficUCKm66oZWKUubXWnOuPjQ8PvmXtCViXBMONPe7tQ==",
-			"peerDependencies": {
-				"@typescript-eslint/eslint-plugin": {
-					"specifier": "^8.0.0-0 || ^7.0.0 || ^6.0.0 || ^5.0.0",
-					"version": "8.68.0",
-					"optional": true,
-				},
-				"eslint": {
-					"specifier": "^10.0.0 || ^9.0.0 || ^8.0.0",
-					"version": "10.9.1",
-				},
 			},
 		},
 
@@ -18420,6 +18406,48 @@ snapshots:
 			},
 		},
 
+		"oxlint-plugin-eslint@1.93.0": {
+			"integrity": "sha512-NN1PcS4IUrxeDQqBCOpqa8qhsTcxR5j7l0kTqp8Le+904FeIYwkG4qwbYtpR7e3G8JlKi6qaZ0VEsooPi++wSA==",
+			"engines": {"node": "^20.19.0 || >=22.12.0"},
+		},
+
+		"oxlint@1.93.0": {
+			"integrity": "sha512-19JMsQFX+YvEbcUTFQxjTwhvs0Ibg0D6CFneSLgpwnACWcY/6LjhpGpkPodh0T5aIT1pjMTLlYaeBFzaVgugTA==",
+			"engines": {"node": "^20.19.0 || >=22.12.0"},
+			"hasBin": true,
+			"peerDependencies": {
+				"oxlint-tsgolint": {
+					"specifier": ">=7.0.2005",
+					"optional": true,
+				},
+				"vite-plus": {
+					"specifier": "*",
+					"optional": true,
+				},
+			},
+			"optionalDependencies": {
+				"@oxlint/binding-android-arm-eabi": "1.93.0",
+				"@oxlint/binding-android-arm64": "1.93.0",
+				"@oxlint/binding-darwin-arm64": "1.93.0",
+				"@oxlint/binding-darwin-x64": "1.93.0",
+				"@oxlint/binding-freebsd-x64": "1.93.0",
+				"@oxlint/binding-linux-arm-gnueabihf": "1.93.0",
+				"@oxlint/binding-linux-arm-musleabihf": "1.93.0",
+				"@oxlint/binding-linux-arm64-gnu": "1.93.0",
+				"@oxlint/binding-linux-arm64-musl": "1.93.0",
+				"@oxlint/binding-linux-ppc64-gnu": "1.93.0",
+				"@oxlint/binding-linux-riscv64-gnu": "1.93.0",
+				"@oxlint/binding-linux-riscv64-musl": "1.93.0",
+				"@oxlint/binding-linux-s390x-gnu": "1.93.0",
+				"@oxlint/binding-linux-x64-gnu": "1.93.0",
+				"@oxlint/binding-linux-x64-musl": "1.93.0",
+				"@oxlint/binding-openharmony-arm64": "1.93.0",
+				"@oxlint/binding-win32-arm64-msvc": "1.93.0",
+				"@oxlint/binding-win32-ia32-msvc": "1.93.0",
+				"@oxlint/binding-win32-x64-msvc": "1.93.0",
+			},
+		},
+
 		"p-cancelable@3.0.0": {
 			"integrity": "sha512-mlVgR3PGuzlo0MmTdk4cXqXWlwQDLnONTAg6sm62XkMJEiRxN3GL3SffkYvqwonbkJBcrI7Uvv5Zh9yjvn2iUw==",
 			"engines": {"node": ">=12.20"},
@@ -21061,31 +21089,6 @@ snapshots:
 			"integrity": "sha512-A1EmvIWG6xwYRfHuYUjPltHqteZ1EiDG+HOmbIYXeHUVztmnGrPIfU9KIK1QC30x59ko0r4JsMlwzsALCyiB3Q==",
 			"dependencies": {
 				"uuidv7": "0.4.4",
-			},
-		},
-
-		"typescript-eslint@8.68.0": {
-			"integrity": "sha512-MHy0Y0ynqeEbx/S45+i/bBssdy3X6KNBfmJAP35GrgtNxu2TQ5K5xsFDhAnmsq1jvpdoZOPG1LGtJo0HWqYCrQ==",
-			"engines": {"node": "^18.18.0 || ^20.9.0 || >=21.1.0"},
-			"peerDependencies": {
-				"eslint": {
-					"specifier": "^8.57.0 || ^9.0.0 || ^10.0.0",
-					"version": "10.9.1",
-				},
-				"supports-color": {
-					"version": "8.1.1",
-					"below": true,
-				},
-				"typescript": {
-					"specifier": ">=4.8.4 <6.1.0",
-					"version": "6.0.3",
-				},
-			},
-			"dependencies": {
-				"@typescript-eslint/eslint-plugin": "8.68.0",
-				"@typescript-eslint/parser": "8.68.0",
-				"@typescript-eslint/typescript-estree": "8.68.0",
-				"@typescript-eslint/utils": "8.68.0",
 			},
 		},
 

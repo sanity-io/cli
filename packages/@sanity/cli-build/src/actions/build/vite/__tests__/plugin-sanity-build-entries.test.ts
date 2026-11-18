@@ -98,7 +98,7 @@ async function renderBundle(options: {
 
 async function resolveConfig(plugin: Plugin, cssCodeSplit: boolean): Promise<void> {
   const hook = plugin.configResolved
-  if (typeof hook !== 'function') throw new Error('expected configResolved function')
+  if (typeof hook !== 'function') throw new TypeError('expected configResolved function')
   await hook.call(
     {} as ThisParameterType<typeof hook>,
     {

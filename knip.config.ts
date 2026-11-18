@@ -14,6 +14,8 @@ const baseConfig = {
     // Generated test fixture copies (gitignored, populated during test runs)
     'packages/@sanity/cli-test/fixtures/**',
   ],
+  // oxlint JS plugins are dependencies of `@repo/oxc-config`, but knip attributes them to each consuming config
+  ignoreDependencies: [/^eslint-plugin-/, 'oxlint-plugin-eslint'],
   workspaces: {
     'fixtures/*': {
       project: ['schemaTypes/**/*.{js,jsx,ts,tsx}'],
@@ -50,6 +52,10 @@ const baseConfig = {
     },
     'packages/@repo/coverage-delta': {
       project,
+    },
+    'packages/@repo/oxc-config': {
+      // Loaded by name through the `import-x/resolver` setting
+      ignoreDependencies: ['eslint-import-resolver-typescript'],
     },
     'packages/@repo/upload-docs': {
       project,

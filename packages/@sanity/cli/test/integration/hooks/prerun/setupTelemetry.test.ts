@@ -87,9 +87,7 @@ function setupBasicMocks(testDir: string) {
   createTestToken('test-auth-token-123')
 }
 
-function setupUserConfigMock(
-  options = {telemetryDisclosed: true} as {telemetryDisclosed: boolean},
-) {
+function setupUserConfigMock(options: {telemetryDisclosed: boolean}) {
   const mockConfig = new Map()
   if (options.telemetryDisclosed) {
     mockConfig.set('telemetryDisclosed', Date.now())

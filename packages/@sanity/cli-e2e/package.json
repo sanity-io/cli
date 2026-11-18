@@ -6,22 +6,21 @@
   "type": "module",
   "scripts": {
     "test": "vitest run",
-    "lint": "eslint .",
     "check:types": "tsc --noEmit",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "lint": "oxlint -c oxlint.config.ts"
   },
   "devDependencies": {
-    "@eslint/compat": "catalog:",
+    "@repo/oxc-config": "workspace:*",
     "@repo/tsconfig": "workspace:*",
     "@sanity/cli": "workspace:*",
     "@sanity/cli-build": "workspace:*",
     "@sanity/cli-core": "workspace:*",
     "@sanity/cli-test": "workspace:*",
-    "@sanity/eslint-config-cli": "workspace:*",
     "@types/node": "catalog:",
     "create-sanity": "workspace:*",
-    "eslint": "catalog:",
     "node-pty": "catalog:",
+    "oxlint": "catalog:",
     "strip-ansi": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:"

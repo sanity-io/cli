@@ -56,9 +56,9 @@ export async function getStudioWorkspaces(configPath: string): Promise<Workspace
   // Imported lazily: rxjs and `@sanity/client` are only needed here, but this
   // module is reachable from the `@sanity/cli-core` barrel that every command loads.
   const [{firstValueFrom, of}, {getEmptyAuth}] = await Promise.all([
-    // eslint-disable-next-line no-restricted-syntax -- package import, not a file path
+    // eslint-disable-next-line eslint-js/no-restricted-syntax -- package import, not a file path
     import('rxjs'),
-    // eslint-disable-next-line no-restricted-syntax -- static relative import, not a user file path
+    // eslint-disable-next-line eslint-js/no-restricted-syntax -- static relative import, not a user file path
     import('../../util/getEmptyAuth.js'),
   ])
   const emptyAuth = {state: of(getEmptyAuth())}

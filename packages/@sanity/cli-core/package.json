@@ -122,13 +122,13 @@
     "build": "swc --delete-dir-on-start --strip-leading-paths --out-dir dist/ src",
     "build:types": "pkg-utils build --emitDeclarationOnly",
     "check:types": "tsc --noEmit",
-    "lint": "eslint .",
     "publint": "publint",
     "test": "vitest run",
     "posttest": "pnpm run lint",
     "test:coverage": "vitest run --coverage",
     "test:watch": "vitest",
-    "watch": "swc --delete-dir-on-start --strip-leading-paths --out-dir dist/ --watch src"
+    "watch": "swc --delete-dir-on-start --strip-leading-paths --out-dir dist/ --watch src",
+    "lint": "oxlint -c oxlint.config.ts"
   },
   "dependencies": {
     "@inquirer/core": "^12.0.6",
@@ -152,10 +152,9 @@
     "zod": "catalog:"
   },
   "devDependencies": {
-    "@eslint/compat": "catalog:",
+    "@repo/oxc-config": "workspace:*",
     "@repo/package.config": "workspace:*",
     "@repo/tsconfig": "workspace:*",
-    "@sanity/eslint-config-cli": "workspace:*",
     "@sanity/pkg-utils": "catalog:",
     "@sanity/telemetry": "catalog:",
     "@swc/cli": "catalog:",
@@ -163,8 +162,8 @@
     "@types/jsdom": "catalog:",
     "@types/node": "catalog:",
     "babel-plugin-react-compiler": "catalog:",
-    "eslint": "catalog:",
     "oxc-transform-react": "catalog:",
+    "oxlint": "catalog:",
     "publint": "catalog:",
     "sanity": "catalog:",
     "typescript": "catalog:",
