@@ -107,8 +107,9 @@ function transformCommonTypeFields(
     ? transformGlobalDocumentReference(type)
     : {}
 
-  const includeFields = type.jsonType === 'object' && Boolean(type.type) && isCustomized(type)
-  const customFields = includeFields ? getCustomFields(type) : []
+  const includeFields =
+    type.jsonType === 'object' && Boolean(type.type) && isCustomized(type, context.coreFieldNames)
+  const customFields = includeFields ? getCustomFields(type, context.coreFieldNames) : []
   rememberFieldDefinitions(rawDef, customFields, context)
 
   const objectFields: ObjectFields = includeFields
