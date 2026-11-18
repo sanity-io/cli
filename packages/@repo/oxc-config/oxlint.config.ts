@@ -281,8 +281,9 @@ export default defineConfig({
       'error',
       {
         allowWarningComments: true,
+        checkDates: true,
+        checkDatesOnPullRequests: false,
         ignore: [],
-        ignoreDatesOnPullRequests: true,
         terms: ['todo', 'fixme', 'xxx'],
       },
     ],
