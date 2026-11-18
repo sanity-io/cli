@@ -27,15 +27,15 @@ catalog:
   groq-js: ^2.0.1
 
   # Sanity
-  sanity: ^6.22.0
-  '@sanity/vision': ^6.22.0
-  '@sanity/types': ^6.22.0
-  '@sanity/schema': ^6.22.0
-  '@sanity/util': ^6.22.0
-  '@sanity/validation': ^6.23.0
-  '@sanity/client': ^8.15.0
-  '@sanity/codegen': ^8.3.0
-  '@sanity/sdk': ^3.12.0
+  sanity: ^6.24.0
+  '@sanity/vision': ^6.24.0
+  '@sanity/types': ^6.24.0
+  '@sanity/schema': ^6.24.0
+  '@sanity/util': ^6.24.0
+  '@sanity/validation': ^6.24.0
+  '@sanity/client': ^8.16.0
+  '@sanity/codegen': ^8.3.1
+  '@sanity/sdk': ^3.14.0
   '@sanity/telemetry': ^1.1.0
 
   # React
