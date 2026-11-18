@@ -255,7 +255,7 @@ describe('document validation worker', () => {
         documentId: 'published-category',
         level: 'error',
         markers: expect.arrayContaining([
-          expect.objectContaining({level: 'warning', message, path: []}),
+          expect.objectContaining({level: 'error', message, path: []}),
           expect.objectContaining({
             level: 'error',
             message: locale === 'en-US' ? 'Title is required' : 'Tittel er påkrevd',
