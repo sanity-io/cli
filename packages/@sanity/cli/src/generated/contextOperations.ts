@@ -512,7 +512,7 @@ export const contextOperations = {
   },
   getJob: {
     body: 'none',
-    description: 'Returns the status of a background job, such as a build, sync, or refresh. The endpoint that starts the work returns the job ID.',
+    description: 'Returns the status of a background job, such as a build, sync, or refresh. The endpoint that starts the work returns the job ID. A job cancelled before it started never ran, so it returns 404.',
     fields: [],
     noContent: false,
     paginated: false,
@@ -909,7 +909,7 @@ export const contextOperations = {
   },
   syncAllSources: {
     body: 'none',
-    description: 'Queues a sync of every website and dataset source, which starts once any sync of the source that is running ends. `files` sources sync when you upload a file.',
+    description: 'Queues a sync of every website and dataset source, which starts once any sync of the source that is running ends. `files` sources sync when you upload a file. New documents, from these syncs or waiting from earlier ones, are then placed in the knowledge base right away instead of waiting to be placed together with the documents that follow them. This covers the documents that arrive within an hour of the request. A refresh writes a limited number of entries, so a large batch is placed over several refreshes.',
     fields: [],
     noContent: false,
     paginated: false,

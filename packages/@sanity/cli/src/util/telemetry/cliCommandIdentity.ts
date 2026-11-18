@@ -182,10 +182,10 @@ const commandPaths = new Set([
   'workflows list',
   'workflows nuke',
   'workflows reset-activity',
-  'workflows set-stage',
   'workflows show',
   'workflows start',
   'workflows tail',
+  'workflows whoami',
 ])
 
 const knownRoots = new Set([...commandPaths].map((path) => path.split(' ')[0]))
