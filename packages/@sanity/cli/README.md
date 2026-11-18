@@ -4914,10 +4914,12 @@ Create a new organization
 
 ```
 USAGE
-  $ sanity organizations create [--default-role <value>] [--name <value>]
+  $ sanity organizations create [--default-role <value>] [--logo <path>] [--name <value>]
 
 FLAGS
   --default-role=<value>  Default role assigned to new members
+  --logo=<path>           Image file to use as the logo: PNG, JPEG, GIF, WebP, SVG, BMP, TIFF, HEIF or AVIF, at most 5
+                          MB
   --name=<value>          Organization name
 
 DESCRIPTION
@@ -4935,6 +4937,10 @@ EXAMPLES
   Create an organization with a default member role
 
     $ sanity organizations create --name "Acme Corp" --default-role member
+
+  Create an organization with a logo
+
+    $ sanity organizations create --name "Acme Corp" --logo ./logo.png
 ```
 
 ## `sanity organizations delete ORGANIZATIONID`
@@ -5007,13 +5013,16 @@ Update an organization
 
 ```
 USAGE
-  $ sanity organizations update ORGANIZATIONID [--default-role <value>] [--name <value>] [--slug <value>]
+  $ sanity organizations update ORGANIZATIONID [--default-role <value>] [--logo <path>] [--name <value>] [--slug
+  <value>]
 
 ARGUMENTS
   ORGANIZATIONID  Organization ID
 
 FLAGS
   --default-role=<value>  New default role for new members
+  --logo=<path>           Image file to use as the logo: PNG, JPEG, GIF, WebP, SVG, BMP, TIFF, HEIF or AVIF, at most 5
+                          MB ("" removes it)
   --name=<value>          New organization name
   --slug=<value>          New URL slug (requires authSAML feature on the organization)
 
@@ -5032,6 +5041,14 @@ EXAMPLES
   Change the default member role
 
     $ sanity organizations update org-abc123 --default-role viewer
+
+  Set or replace the organization logo
+
+    $ sanity organizations update org-abc123 --logo ./logo.png
+
+  Remove the organization logo
+
+    $ sanity organizations update org-abc123 --logo ""
 ```
 
 ## `sanity preview [OUTPUTDIR]`
