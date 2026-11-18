@@ -136,7 +136,7 @@
     "rxjs": "catalog:",
     "semver": "catalog:",
     "skills": "^1.8.1",
-    "smol-toml": "^1.6.1",
+    "smol-toml": "^1.9.1",
     "string-argv": "^0.3.2",
     "string-width": "^7.2.0",
     "tar": "catalog:",
