@@ -7,18 +7,23 @@ import {type WorkspaceSchemaInput} from '../manifest/types.js'
 import {writeManifestFile} from '../manifest/writeManifestFile.js'
 import {type BuildStudioSchemasAndManifestsWorkerSuccess} from './buildStudioSchemasAndManifests.js'
 import {type BuildStudioSchemasAndManifestsWorkerData} from './types.js'
-import {uploadSchemaToLexicon} from './uploadSchemaToLexicon.js'
+import {
+  uploadSchemaToLexicon,
+  type UploadSchemaToLexiconListeners,
+} from './uploadSchemaToLexicon.js'
 
 const debug = subdebug('buildStudioSchemasAndManifests.worker')
 
 /**
  * This function must only be called from another worker process.
  * @param options - The worker options
+ * @param listeners - The event handlers
  */
 export async function workerBuildStudioSchemasAndManifests(
   options: BuildStudioSchemasAndManifestsWorkerData & {
     workspaceSchemaHandler?: (workspaces: WorkspaceSchemaInput[]) => Promise<void>
   },
+  listeners?: UploadSchemaToLexiconListeners,
 ): Promise<BuildStudioSchemasAndManifestsWorkerSuccess> {
   if (isMainThread) {
     throw new Error(
@@ -51,6 +56,7 @@ export async function workerBuildStudioSchemasAndManifests(
   debug('Handling build for %s', isExternal ? 'external' : 'internal')
 
   const uploadToLexiconPromise = uploadSchemaToLexicon({
+    listeners,
     verbose,
     workDir,
     workspaces,

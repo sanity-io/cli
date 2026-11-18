@@ -8,7 +8,6 @@ import {
   resolveLocalPackage,
   subdebug,
 } from '@sanity/cli-core'
-import {spinner} from '@sanity/cli-core/ux'
 import {type DescriptorRequester, prepareSchemaUpload} from '@sanity/schema/_internal'
 import {type StudioManifest, type Workspace} from 'sanity'
 
@@ -17,9 +16,17 @@ const SCHEMA_DESCRIPTOR_API_VERSION = 'v2025-06-01'
 
 const iconResolverPath = new URL('../manifest/iconResolver.js', import.meta.url).href
 
+export interface UploadSchemaToLexiconListeners {
+  onGenerateManifestDone: () => void
+  onGenerateManifestFail: (error: unknown) => void
+  onGenerateManifestStart: () => void
+}
+
 interface UploadSchemaToLexiconOptions {
   workDir: string
   workspaces: Workspace[]
+
+  listeners?: UploadSchemaToLexiconListeners
 
   verbose?: boolean
 }
@@ -35,7 +42,7 @@ export async function uploadSchemaToLexicon(
   options: UploadSchemaToLexiconOptions,
 ): Promise<StudioManifest | null> {
   const {verbose, workDir, workspaces} = options
-  const spin = spinner('Generating studio manifest').start()
+  options.listeners?.onGenerateManifestStart()
 
   try {
     const schemaDescriptors = new Map<string, string>()
@@ -125,7 +132,7 @@ export async function uploadSchemaToLexicon(
       workspaces,
     })
 
-    spin.succeed('Generated studio manifest')
+    options.listeners?.onGenerateManifestDone()
 
     const studioManifest = manifest.workspaces.length === 0 ? null : manifest
 
@@ -146,7 +153,7 @@ export async function uploadSchemaToLexicon(
 
     return studioManifest
   } catch (error) {
-    spin.fail(error instanceof Error ? error.message : 'Unknown error')
+    options.listeners?.onGenerateManifestFail(error)
     throw error
   }
 }
