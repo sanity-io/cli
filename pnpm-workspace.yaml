@@ -21,7 +21,7 @@ catalog:
   # Linting
   eslint: ^10.7.0
   '@eslint/compat': ^2.1.0
-  publint: ^0.3.21
+  publint: ^0.3.25
 
   # GROQ
   groq-js: ^2.0.1
