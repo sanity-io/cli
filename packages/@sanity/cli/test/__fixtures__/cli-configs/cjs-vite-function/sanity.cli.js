@@ -1,4 +1,4 @@
-/* eslint-disable no-undef */
+/* eslint-disable eslint-js/no-undef */
 // CJS config with non-serializable vite function (forces main-thread fallback)
 module.exports = {
   api: {

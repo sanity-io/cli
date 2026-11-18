@@ -12,15 +12,12 @@ packages:
   - 'packages/@sanity/cli-core'
   - 'packages/@sanity/cli-e2e'
   - 'packages/@sanity/cli-test'
-  - 'packages/@sanity/eslint-config-cli'
   - 'packages/@sanity/workbench-cli'
   - 'packages/create-sanity'
   - 'fixtures/*'
 
 catalog:
   # Linting
-  eslint: ^10.7.0
-  '@eslint/compat': ^2.1.0
   publint: ^0.3.25
 
   # GROQ

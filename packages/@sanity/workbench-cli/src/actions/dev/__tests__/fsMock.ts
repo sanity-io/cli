@@ -1,4 +1,4 @@
-// eslint-disable-next-line import-x/no-extraneous-dependencies
+// eslint-disable-next-line import-js/no-extraneous-dependencies
 import {vi} from 'vitest'
 
 /**

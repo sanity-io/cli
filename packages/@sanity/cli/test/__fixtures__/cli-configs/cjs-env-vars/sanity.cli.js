@@ -1,4 +1,4 @@
-/* eslint-disable no-undef */
+/* eslint-disable eslint-js/no-undef */
 // CJS config with environment variables and conditional logic
 const isCI = process.env.CI === 'true'
 const dataset = process.env.SANITY_STUDIO_DATASET || 'development'

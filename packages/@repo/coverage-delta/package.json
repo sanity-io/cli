@@ -4,7 +4,6 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "lint": "eslint .",
     "report": "node src/coverage-delta.ts",
     "test": "vitest run"
   },
@@ -13,9 +12,7 @@
   },
   "devDependencies": {
     "@repo/tsconfig": "workspace:*",
-    "@sanity/eslint-config-cli": "workspace:*",
     "@types/node": "catalog:",
-    "eslint": "catalog:",
     "vitest": "catalog:"
   }
 }

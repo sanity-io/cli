@@ -53,7 +53,6 @@
     "build": "swc --delete-dir-on-start --strip-leading-paths --out-dir dist/ src",
     "build:types": "pkg-utils build --emitDeclarationOnly",
     "check:types": "tsc --noEmit",
-    "lint": "eslint .",
     "publint": "publint",
     "test": "vitest run",
     "posttest": "pnpm run lint",
@@ -88,11 +87,9 @@
     "zod": "catalog:"
   },
   "devDependencies": {
-    "@eslint/compat": "catalog:",
     "@repo/package.config": "workspace:*",
     "@repo/tsconfig": "workspace:*",
     "@sanity/cli-test": "workspace:*",
-    "@sanity/eslint-config-cli": "workspace:^",
     "@sanity/pkg-utils": "catalog:",
     "@sanity/ui": "^4.4.12",
     "@swc/cli": "catalog:",
@@ -107,7 +104,6 @@
     "@types/semver": "catalog:",
     "@vitest/coverage-istanbul": "catalog:",
     "babel-plugin-react-compiler": "catalog:",
-    "eslint": "catalog:",
     "magic-string": "^0.30.21",
     "oxc-transform-react": "catalog:",
     "publint": "catalog:",

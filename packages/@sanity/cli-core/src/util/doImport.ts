@@ -12,7 +12,7 @@ export function doImport(source: string) {
   // We need to convert the path to a file URL.
   // See: https://github.com/nodejs/node/issues/31710
   const url = /^file:\/\//.test(source) ? source : pathToFileURL(source).href
-  // eslint-disable-next-line no-restricted-syntax
+  // eslint-disable-next-line eslint-js/no-restricted-syntax
   return import(
     /* @vite-ignore */
     url

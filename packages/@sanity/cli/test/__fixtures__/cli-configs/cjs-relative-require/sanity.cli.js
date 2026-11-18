@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-require-imports, no-undef */
+/* eslint-disable @typescript-eslint/no-require-imports, eslint-js/no-undef */
 // CJS config with relative require and spread override
 const {baseConfig} = require('./base')
 const {serverDefaults} = require('./shared')

@@ -1,4 +1,4 @@
-/* eslint-disable no-undef */
+/* eslint-disable eslint-js/no-undef */
 const serverDefaults = {
   hostname: 'localhost',
   port: 5555,

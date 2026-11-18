@@ -14,6 +14,8 @@ const baseConfig = {
     // Generated test fixture copies (gitignored, populated during test runs)
     'packages/@sanity/cli-test/fixtures/**',
   ],
+  // Loaded by name through the `import-x/resolver` setting in `.oxlintrc.json`
+  ignoreDependencies: ['eslint-import-resolver-typescript'],
   workspaces: {
     'fixtures/*': {
       project: ['schemaTypes/**/*.{js,jsx,ts,tsx}'],

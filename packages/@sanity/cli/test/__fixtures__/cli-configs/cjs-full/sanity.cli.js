@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-require-imports, no-undef */
+/* eslint-disable @typescript-eslint/no-require-imports, eslint-js/no-undef */
 // Full-featured CJS config covering all config sections
 const path = require('node:path')
 

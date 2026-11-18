@@ -118,7 +118,7 @@ export async function initStudio({
     if (!token) {
       throw new InitError('Authentication required to import dataset', 1)
     }
-    // eslint-disable-next-line no-restricted-syntax
+    // eslint-disable-next-line eslint-js/no-restricted-syntax
     const {ImportDatasetCommand} = await import('../../commands/datasets/import.js')
     await ImportDatasetCommand.run(
       [

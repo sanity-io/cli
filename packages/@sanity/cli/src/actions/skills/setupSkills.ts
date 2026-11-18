@@ -105,7 +105,7 @@ export async function setupSkills(options: SetupSkillsOptions): Promise<SetupSki
   try {
     // Loaded lazily so a problem with the `skills` package only affects this
     // best-effort step, not every command that imports this module.
-    // eslint-disable-next-line no-restricted-syntax -- package import, not a file path
+    // eslint-disable-next-line eslint-js/no-restricted-syntax -- package import, not a file path
     const {installSkills} = await import('skills')
     const result = await installSkills(SANITY_SKILLS_REPO, {
       agents: uniqueAgents,
