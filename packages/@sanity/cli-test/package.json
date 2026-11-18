@@ -129,7 +129,7 @@
   "dependencies": {
     "@sanity/cli-core": "workspace:*",
     "@swc/core": "catalog:",
-    "ansis": "^4.2.0",
+    "ansis": "^4.5.0",
     "esbuild": "^0.28.2",
     "get-it": "catalog:",
     "nock": "catalog:",
