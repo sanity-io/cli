@@ -276,7 +276,7 @@ exports[`plugin-contributed command surface > matches the recorded surface 1`] =
       "with-user-token",
     ],
   },
-  "@sanity/workflow-cli": {
+  "@sanity/workflows-cli": {
     "workflows:abort": [
       "deployment",
       "partition",
@@ -292,6 +292,9 @@ exports[`plugin-contributed command surface > matches the recorded surface 1`] =
       "check",
       "path",
       "verbose",
+    ],
+    "workflows:codemod:packages": [
+      "dry-run",
     ],
     "workflows:definition:delete": [
       "cascade",
@@ -317,6 +320,7 @@ exports[`plugin-contributed command surface > matches the recorded surface 1`] =
       "partition",
       "path",
       "project-id",
+      "workflow-resource",
     ],
     "workflows:definition:show": [
       "dataset",
@@ -327,6 +331,7 @@ exports[`plugin-contributed command surface > matches the recorded surface 1`] =
       "path",
       "project-id",
       "version",
+      "workflow-resource",
     ],
     "workflows:definition:validate": [
       "json",
@@ -355,6 +360,7 @@ exports[`plugin-contributed command surface > matches the recorded surface 1`] =
       "partition",
       "path",
       "project-id",
+      "workflow-resource",
     ],
     "workflows:definitions:show": [
       "dataset",
@@ -365,6 +371,7 @@ exports[`plugin-contributed command surface > matches the recorded surface 1`] =
       "path",
       "project-id",
       "version",
+      "workflow-resource",
     ],
     "workflows:definitions:validate": [
       "json",
@@ -388,6 +395,7 @@ exports[`plugin-contributed command surface > matches the recorded surface 1`] =
       "partition",
       "path",
       "project-id",
+      "workflow-resource",
     ],
     "workflows:fire-action": [
       "action",
@@ -414,6 +422,7 @@ exports[`plugin-contributed command surface > matches the recorded surface 1`] =
       "partition",
       "path",
       "project-id",
+      "workflow-resource",
     ],
     "workflows:nuke": [
       "deployment",
@@ -437,6 +446,7 @@ exports[`plugin-contributed command surface > matches the recorded surface 1`] =
       "partition",
       "path",
       "project-id",
+      "workflow-resource",
     ],
     "workflows:start": [
       "deployment",
@@ -455,6 +465,7 @@ exports[`plugin-contributed command surface > matches the recorded surface 1`] =
       "partition",
       "path",
       "project-id",
+      "workflow-resource",
     ],
     "workflows:whoami": [
       "dataset",
@@ -464,6 +475,7 @@ exports[`plugin-contributed command surface > matches the recorded surface 1`] =
       "partition",
       "path",
       "project-id",
+      "workflow-resource",
     ],
   },
 }

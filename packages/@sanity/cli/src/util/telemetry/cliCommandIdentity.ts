@@ -166,6 +166,7 @@ const commandPaths = new Set([
   'workflows abort',
   'workflows blueprint generate',
   'workflows blueprints generate',
+  'workflows codemod packages',
   'workflows definition delete',
   'workflows definition diff',
   'workflows definition list',
