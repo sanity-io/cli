@@ -95,3 +95,18 @@ describe('mcpPolicy context sources and documents', () => {
     expect(validate('context:documents:content', {flags: {format: 'raw'}})).toBe(false)
   })
 })
+
+describe('mcpPolicy organization logos', () => {
+  test('refuses a logo file on create and update, which reads from the host', () => {
+    expect(validate('organizations:create', {flags: {logo: './logo.png', name: 'Acme'}})).toBe(
+      false,
+    )
+    expect(validate('organizations:update', {flags: {logo: './logo.png'}})).toBe(false)
+  })
+
+  test('allows removing the logo, and changes that read no file', () => {
+    expect(validate('organizations:update', {flags: {logo: ''}})).toBe(true)
+    expect(validate('organizations:update', {flags: {name: 'Acme'}})).toBe(true)
+    expect(validate('organizations:create', {flags: {name: 'Acme'}})).toBe(true)
+  })
+})

@@ -255,11 +255,16 @@ export const mcpPolicy: CommandPolicySet = {
   'openapi:get': conditionalDenyFlags('web'),
   'openapi:list': conditionalDenyFlags('web'),
 
-  'organizations:create': allow,
+  // --logo reads an image from the machine running the command.
+  'organizations:create': conditionalDenyFlags('logo'),
   'organizations:delete': allow,
   'organizations:get': allow,
   'organizations:list': allow,
-  'organizations:update': allow,
+  // --logo reads an image from the machine running the command, except --logo "", which removes
+  // the logo and reads nothing.
+  'organizations:update': conditionalPolicy({
+    validate: ({flags}) => flags.logo === undefined || flags.logo === '',
+  }),
 
   // Serves a local production build.
   preview: deny,
