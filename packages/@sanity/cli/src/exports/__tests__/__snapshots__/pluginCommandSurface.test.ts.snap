@@ -477,15 +477,6 @@ exports[`plugin-contributed command surface > matches the recorded surface 1`] =
       "project-id",
       "workflow-resource",
     ],
-    "workflows:whoami": [
-      "dataset",
-      "deployment",
-      "json",
-      "media-library-id",
-      "partition",
-      "path",
-      "project-id",
-    ],
   },
 }
 `;
