@@ -184,10 +184,10 @@ Code for sanity cli
 - [`sanity workflows list`](#sanity-workflows-list)
 - [`sanity workflows nuke`](#sanity-workflows-nuke)
 - [`sanity workflows reset-activity INSTANCEID ACTIVITY`](#sanity-workflows-reset-activity-instanceid-activity)
-- [`sanity workflows set-stage INSTANCEID`](#sanity-workflows-set-stage-instanceid)
 - [`sanity workflows show INSTANCEID`](#sanity-workflows-show-instanceid)
 - [`sanity workflows start NAME`](#sanity-workflows-start-name)
 - [`sanity workflows tail INSTANCEID`](#sanity-workflows-tail-instanceid)
+- [`sanity workflows whoami`](#sanity-workflows-whoami)
 
 ## `sanity api ENDPOINT`
 
@@ -616,7 +616,7 @@ DESCRIPTION
   Destroy a remote Stack deployment and its resources
 
   Permanently removes the remote Stack and all its provisioned resources. Your Blueprint manifest and resource files
-  remain intact; "stackId" is unset in your local config.
+  remain intact; "stackId" is unset in your local config once destruction completes (or immediately with --no-wait).
 
   This is a destructive operation. You will be prompted to confirm unless --force is specified.
 
@@ -1791,7 +1791,7 @@ DESCRIPTION
   Get a job
 
   Returns the status of a background job, such as a build, sync, or refresh. The endpoint that starts the work returns
-  the job ID.
+  the job ID. A job cancelled before it started never ran, so it returns 404.
 
 EXAMPLES
   Get a job
@@ -2612,7 +2612,10 @@ DESCRIPTION
   Sync every source
 
   Queues a sync of every website and dataset source, which starts once any sync of the source that is running ends.
-  `files` sources sync when you upload a file.
+  `files` sources sync when you upload a file. New documents, from these syncs or waiting from earlier ones, are then
+  placed in the knowledge base right away instead of waiting to be placed together with the documents that follow them.
+  This covers the documents that arrive within an hour of the request. A refresh writes a limited number of entries, so
+  a large batch is placed over several refreshes.
 
 EXAMPLES
   Sync every source
@@ -5813,26 +5816,31 @@ EXAMPLES
 
 ## `sanity workflows blueprints generate`
 
-Experimental: generate the Sanity Blueprints runtime the definitions require, next to sanity.workflow.ts. Writes the workflow resources, one function per derived need, the effect-handler registry, and a handler stub per declared effect. Covers every deployment in the config, because the emitted resources module declares them all. These flags and this output may change before the Blueprints backend accepts the sanity.workflow resource.
+Generate the Sanity Blueprints runtime the definitions require, next to sanity.workflow.ts. Writes the workflow resources, one function per derived need, the effect-handler registry, and a handler stub per declared effect. Covers every deployment in the config, because the emitted resources module declares them all. Document functions deploy from sanity.blueprint.ts to a project stack with a project token; a generated heartbeat deploys from workflows-heartbeat/ to an organization stack with an organization deploy token.
 
 ```
 USAGE
-  $ sanity workflows blueprints generate [--path <file|dir>] [--check]
+  $ sanity workflows blueprints generate [--path <file|dir>] [--verbose | --check]
 
 FLAGS
-  --check            Experimental: verify the tree on disk still matches the definitions; write nothing and exit
-                     non-zero on any difference. The CI drift gate.
+  --check            Verify the tree on disk still matches the definitions; write nothing and exit non-zero on any
+                     difference. The CI drift gate.
   --path=<file|dir>  Path to a sanity.workflow file, or a directory to search from upward through its parents. Defaults
                      to the current directory.
+  --verbose          Print the full runtime-needs report, every file written, and the heartbeat stack instructions even
+                     when its files are unchanged, in place of the summary of what changed and what needs you.
 
 DESCRIPTION
-  Experimental: generate the Sanity Blueprints runtime the definitions require, next to sanity.workflow.ts. Writes the
-  workflow resources, one function per derived need, the effect-handler registry, and a handler stub per declared
-  effect. Covers every deployment in the config, because the emitted resources module declares them all. These flags and
-  this output may change before the Blueprints backend accepts the sanity.workflow resource.
+  Generate the Sanity Blueprints runtime the definitions require, next to sanity.workflow.ts. Writes the workflow
+  resources, one function per derived need, the effect-handler registry, and a handler stub per declared effect. Covers
+  every deployment in the config, because the emitted resources module declares them all. Document functions deploy from
+  sanity.blueprint.ts to a project stack with a project token; a generated heartbeat deploys from workflows-heartbeat/
+  to an organization stack with an organization deploy token.
 
 EXAMPLES
   $ sanity workflows blueprints generate
+
+  $ sanity workflows blueprints generate --verbose
 
   $ sanity workflows blueprints generate --check
 ```
@@ -5895,9 +5903,9 @@ DESCRIPTION
   Diff an in-code definition against the deployed version (latest by default).
 
 EXAMPLES
-  $ sanity workflows definitions diff productLaunch
+  $ sanity workflows definitions diff product-launch
 
-  $ sanity workflows definitions diff productLaunch --version 2
+  $ sanity workflows definitions diff product-launch --version 2
 ```
 
 ## `sanity workflows definitions list`
@@ -6043,7 +6051,7 @@ EXAMPLES
 
   $ sanity workflows deploy --check --verbose
 
-  $ sanity workflows deploy --only productLaunch
+  $ sanity workflows deploy --only product-launch
 ```
 
 ## `sanity workflows diagnose INSTANCEID`
@@ -6165,7 +6173,7 @@ EXAMPLES
 
   $ sanity workflows list --include-completed
 
-  $ sanity workflows list --definition productLaunch
+  $ sanity workflows list --definition product-launch
 
   $ sanity workflows list --document dataset:proj:ds:article-1
 
@@ -6243,41 +6251,6 @@ EXAMPLES
   $ sanity workflows reset-activity wf-instance.abc123 legal-review --skip
 ```
 
-## `sanity workflows set-stage INSTANCEID`
-
-Force an instance into a stage, regardless of its declared transitions and filters — the engine's setStage admin override. The target stage's enter lifecycle still runs (auto-activities start, stage guards reconcile), and the post-move cascade can immediately auto-transition the instance onward.
-
-```
-USAGE
-  $ sanity workflows set-stage INSTANCEID [--path <file|dir>] [--deployment <value> | --partition <value>] [--to <value>]
-    [--reason <value>]
-
-ARGUMENTS
-  INSTANCEID  Workflow instance id to move.
-
-FLAGS
-  --deployment=<value>  Deployment name — narrow the instance search to the resource that deployment targets; the
-                        partition still comes from the loaded instance.
-  --partition=<value>   Workflow environment partition (e.g. prod, test) — narrows which resources are searched for the
-                        instance; the instance's stored partition is what the command uses.
-  --path=<file|dir>     Path to a sanity.workflow file, or a directory to search from upward through its parents.
-                        Defaults to the current directory.
-  --reason=<value>      Free-text reason — recorded on the history entry for audit.
-  --to=<value>          Target stage name. Omit on an interactive terminal to pick from the workflow’s stages.
-
-DESCRIPTION
-  Force an instance into a stage, regardless of its declared transitions and filters — the engine's setStage admin
-  override. The target stage's enter lifecycle still runs (auto-activities start, stage guards reconcile), and the
-  post-move cascade can immediately auto-transition the instance onward.
-
-EXAMPLES
-  $ sanity workflows set-stage wf-instance.abc123 --to ready
-
-  $ sanity workflows set-stage wf-instance.abc123
-
-  $ sanity workflows set-stage wf-instance.abc123 --to ready --reason 'unblock for demo'
-```
-
 ## `sanity workflows show INSTANCEID`
 
 Show the state, activities, and effects of a workflow instance.
@@ -6325,38 +6298,44 @@ Start a workflow instance from a deployed definition. Supply values for the work
 ```
 USAGE
   $ sanity workflows start NAME [--path <file|dir>] [--deployment <value> | --partition <value>] [--version <value>]
-    [--field <value>...] [--instance-id <value>] [--json]
+    [--field <value>...] [--release-resource <alias>] [--instance-id <value>] [--json]
 
 ARGUMENTS
   NAME  Workflow definition name.
 
 FLAGS
-  --deployment=<value>   Deployment name — the unique identity of one deployment in the config.
-  --field=<value>...     [default: ] Initial value for a declared input-sourced field, as name=value (repeatable).
-                         Values are JSON-parsed, falling back to a string; ref kinds take a JSON object with a GDR `id`
-                         and doc `type`.
-  --instance-id=<value>  Start under this instance id — for retries. The id is the start's idempotency key: pass the id
-                         of a start that failed partway and the engine resumes it instead of creating a duplicate (an
-                         already-settled start replays as a no-op). Omit to mint a fresh id.
-  --json                 Emit structured JSON instead of rendered output.
-  --partition=<value>    Workflow environment partition (e.g. prod, test) — selects the deployment to act on while the
-                         partition names exactly one; pass --deployment when it spans several.
-  --path=<file|dir>      Path to a sanity.workflow file, or a directory to search from upward through its parents.
-                         Defaults to the current directory.
-  --version=<value>      Definition version to start from (default: highest deployed).
+  --deployment=<value>        Deployment name — the unique identity of one deployment in the config.
+  --field=<value>...          [default: ] Initial value for a declared input-sourced field, as name=value (repeatable).
+                              Values are JSON-parsed, falling back to a string; ref kinds take a JSON object with a GDR
+                              `id` and doc `type`. A release ref also takes a bare Content Release name.
+  --instance-id=<value>       Start under this instance id — for retries. The id is the start's idempotency key: pass
+                              the id of a start that failed partway and the engine resumes it instead of creating a
+                              duplicate (an already-settled start replays as a no-op). Omit to mint a fresh id.
+  --json                      Emit structured JSON instead of rendered output.
+  --partition=<value>         Workflow environment partition (e.g. prod, test) — selects the deployment to act on while
+                              the partition names exactly one; pass --deployment when it spans several.
+  --path=<file|dir>           Path to a sanity.workflow file, or a directory to search from upward through its parents.
+                              Defaults to the current directory.
+  --release-resource=<alias>  Resource alias (from the deployment's `resourceAliases`) that bare release names in
+                              --field point at. Needed when the deployment binds several other resources.
+  --version=<value>           Definition version to start from (default: highest deployed).
 
 DESCRIPTION
   Start a workflow instance from a deployed definition. Supply values for the workflow's input-sourced fields with
   --field (e.g. the subject document ref).
 
 EXAMPLES
-  $ sanity workflows start productLaunch
+  $ sanity workflows start product-launch
 
   $ sanity workflows start article-review --field subject='{"id":"dataset:proj:ds:article-1","type":"article"}'
 
-  $ sanity workflows start productLaunch --version 2 --partition prod
+  $ sanity workflows start release-review --field release=rA1b2C3d4
 
-  $ sanity workflows start productLaunch --instance-id prod.wf-instance.a1b2c3d4e5f6
+  $ sanity workflows start release-review --field release=rA1b2C3d4 --release-resource content
+
+  $ sanity workflows start product-launch --version 2 --partition prod
+
+  $ sanity workflows start product-launch --instance-id prod.wf-instance.a1b2c3d4e5f6
 ```
 
 ## `sanity workflows tail INSTANCEID`
@@ -6389,6 +6368,39 @@ DESCRIPTION
 
 EXAMPLES
   $ sanity workflows tail wf-instance.abc123
+```
+
+## `sanity workflows whoami`
+
+Show the user ID Workflows records for your login. Put the Sanity user ID in user assignee fields.
+
+```
+USAGE
+  $ sanity workflows whoami [--media-library-id <id> | [-p <id> -d <name>] |  | --path <file|dir> | [--deployment
+    <value> | --partition <value>]] [--json]
+
+FLAGS
+  --deployment=<value>  Deployment name — read only the resource and partition that deployment targets.
+  --json                Emit structured JSON instead of rendered output.
+  --partition=<value>   Workflow environment partition (e.g. prod, test) — an optional query filter that also narrows
+                        which resources are searched; omit to span them all.
+  --path=<file|dir>     Path to a sanity.workflow file, or a directory to search from upward through its parents.
+                        Defaults to the current directory.
+
+OVERRIDE FLAGS
+  -d, --dataset=<name>         Dataset to read (overrides sanity.workflow.ts)
+  -p, --project-id=<id>        Project ID of the dataset to read (overrides sanity.workflow.ts)
+      --media-library-id=<id>  Media library to read (overrides sanity.workflow.ts)
+
+DESCRIPTION
+  Show the user ID Workflows records for your login. Put the Sanity user ID in user assignee fields.
+
+EXAMPLES
+  $ sanity workflows whoami
+
+  $ sanity workflows whoami --json
+
+  $ sanity workflows whoami --project-id abc123 --dataset production
 ```
 
 <!-- commandsstop -->
