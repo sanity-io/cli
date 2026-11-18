@@ -451,14 +451,6 @@ export default defineConfig({
   settings: {
     'import-x/extensions': ['.ts', '.tsx', '.cts', '.mts', '.js', '.jsx', '.cjs', '.mjs'],
     'import-x/external-module-folders': ['node_modules', 'node_modules/@types'],
-    'import-x/resolver': {
-      typescript: {
-        noWarnOnMultipleProjects: true,
-        project: [
-          fileURLToPath(new URL('../../*/*/tsconfig.json', import.meta.url)),
-          fileURLToPath(new URL('../../*/tsconfig.json', import.meta.url)),
-        ],
-      },
-    },
+    'import-x/resolver': {typescript: true},
   },
 })
