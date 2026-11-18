@@ -27,16 +27,21 @@ export interface FederationOptions extends Pick<ModuleFederationOptions, 'expose
    * defaults to your package.json name if not provided.
    */
   name: string
+
+  /** The app resolves `styled-components` itself; the render entry gives each root its own stylesheet. */
+  usesStyledComponents?: boolean
 }
 
 export function sanityModuleFederation(
   options: FederationOptions,
   sharing?: FederationSharing,
 ): PluginOption {
-  const {exposes, name} = options
-  // Development keeps styled-components local. Sharing it across production apps requires
-  // a stylesheet per mounted root so their global rules don't overwrite each other.
-  const isolateStyles = Boolean(sharing && 'styled-components' in sharing.shared)
+  const {exposes, name, usesStyledComponents = false} = options
+  // A stylesheet per mounted root keeps shared copies from overwriting each other's global rules,
+  // and is where the render entry scopes an app's global rules. Development keeps styled-components
+  // local, so dev decides on whether the app uses it at all.
+  const isolateStyles =
+    Boolean(sharing && 'styled-components' in sharing.shared) || usesStyledComponents
   // Discovery replaces this plugin set as a group; callers need no knowledge of upstream plugin names.
   const api: FederationPluginApi = {
     create: (sharing) => sanityModuleFederation(options, sharing),

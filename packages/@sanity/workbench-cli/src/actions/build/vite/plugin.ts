@@ -1,3 +1,4 @@
+import {createRequire} from 'node:module'
 import path from 'node:path'
 
 import {type ModuleFederationOptions} from '@module-federation/vite'
@@ -140,11 +141,18 @@ export const federation = (options: FederationPluginOptions): PluginOption => {
   // environment from the runtime bootstrap cli-build writes.
   const clientInput = exposesApp ? path.join(workDir, '.sanity', 'runtime', 'app.js') : undefined
 
+  let usesStyledComponents = true
+  try {
+    createRequire(path.join(workDir, 'package.json')).resolve('styled-components')
+  } catch {
+    usesStyledComponents = false
+  }
+
   return [
     sanityEnvironmentPlugin({clientInput, input: entryPath, isBlueprints}),
     sanityFederationRuntime(runtimeOptions),
     sanityExtensionArtifacts({artifacts}),
-    sanityModuleFederation({exposes: federationExposes, name}),
+    sanityModuleFederation({exposes: federationExposes, name, usesStyledComponents}),
     sanityFederationHost(),
     sanityAutoUpdates(options.autoUpdates),
   ]

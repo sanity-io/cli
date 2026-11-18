@@ -77,6 +77,20 @@ function uniqueStylisPlugin() {
   return Object.defineProperty(() => {}, 'name', { value: 'sanity-root-' + globalThis[stylisPluginCount] })
 }
 
+// The CLI scopes the app's CSS files, but styled-components writes \`createGlobalStyle\` rules at runtime.
+// This limits rules that aren't a component's own (those start with its generated class) to the app.
+function scopeGlobalRules(element) {
+  if (element.type !== 'rule') return
+  const scope = '[data-app-scope="' + __SANITY_APP_SCOPE__ + '"]'
+  element.props = element.props.map((selector) => {
+    if (/^[.[&]/.test(selector)) return selector
+    const rest = selector.replace(/^(?:(?::root|html|body)(?![\\w.:#[-])\\s*>?\\s*)+/, '')
+    if (rest !== selector) return rest ? scope + ' ' + rest : scope + ':not([data-app-portal])'
+    return ':where(' + scope + ') ' + selector
+  })
+}
+Object.defineProperty(scopeGlobalRules, 'name', { value: 'sanity-app-scope' })
+
 // The SDK disposes the root's instance, closing its bus connection, when the signal aborts. Next tick:
 // a host disposing a child root from its own cleanup code leaves the child still unmounting.
 function closeRoot(rootElement) {
@@ -88,7 +102,8 @@ function closeRoot(rootElement) {
 function mount(rootElement, args) {
   let root = rootMap.get(rootElement)
   if (!root) {
-    // The app's root rules (\`:root\`, \`html\`, \`body\`) also target the element it renders into, by its slug.
+    // The app's CSS is scoped to elements with its slug, starting with the one it renders into.
+    // Stamped before \`createRoot\`, so the CLI's \`react-dom/client\` wrapper leaves this root alone.
     if (typeof __SANITY_APP_SCOPE__ === 'string') rootElement.setAttribute('data-app-scope', __SANITY_APP_SCOPE__)
     root = createRoot(rootElement, args?.renderOptions?.rootOptions)
     rootMap.set(rootElement, root)
@@ -102,7 +117,7 @@ function mount(rootElement, args) {
       // React can replace the mount node's contents; keep its stylesheet outside that node.
       rootElement.ownerDocument.head.appendChild(target)
       styleTargets.set(rootElement, target)
-      stylisPlugins.set(rootElement, [uniqueStylisPlugin()])
+      stylisPlugins.set(rootElement, typeof __SANITY_APP_SCOPE__ === 'string' ? [uniqueStylisPlugin(), scopeGlobalRules] : [uniqueStylisPlugin()])
     }
   }
   const rootContext = rootContexts.get(rootElement)

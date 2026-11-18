@@ -97,7 +97,9 @@ export async function workbenchVitePlugins(options: WorkbenchViteOptions): Promi
 
   return [
     ...configAppPlugins,
-    // The Dashboard's own remote is built like an app, but must stay as it is.
+    // Ahead of federation: the app's own `react-dom/client` imports resolve to the scope's wrapper
+    // before federation turns them into the shared module. The Dashboard's own remote is built
+    // like an app, but must stay unscoped.
     ...(slug === undefined || process.env.SANITY_INTERNAL_IS_WORKBENCH_REMOTE === 'true'
       ? []
       : [sanityAppScope(slug)]),
