@@ -11,7 +11,7 @@ export function doImport(source: string) {
   // Absolute paths in windows are not valid URLs and are not supported by import().
   // We need to convert the path to a file URL.
   // See: https://github.com/nodejs/node/issues/31710
-  const url = /^file:\/\//.test(source) ? source : pathToFileURL(source).href
+  const url = source.startsWith('file://') ? source : pathToFileURL(source).href
   // eslint-disable-next-line eslint-js/no-restricted-syntax
   return import(
     /* @vite-ignore */
