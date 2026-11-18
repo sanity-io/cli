@@ -822,8 +822,8 @@ snapshots:
 					"version": "0.5.2",
 				},
 				"eslint-plugin-unicorn": {
-					"specifier": "^63.0.0",
-					"version": "63.0.0",
+					"specifier": "^74.0.0",
+					"version": "74.0.0",
 				},
 				"oxlint": "catalog:",
 				"oxlint-plugin-eslint": {
@@ -4943,6 +4943,15 @@ snapshots:
 			"engines": {"node": "^20.19.0 || ^22.13.0 || >=24"},
 			"dependencies": {
 				"@types/json-schema": "7.0.15",
+			},
+		},
+
+		"@eslint/css-tree@4.1.2": {
+			"integrity": "sha512-rVcxLmwSkEL3aWS3vAgsTRrQHoYE1b0XcgDtKHDJ92XOkyUpcbS/g0tUJKhvCtlEhYzgKBWsgDd+Z/aPhd166w==",
+			"engines": {"node": "^20.19.0 || ^22.13.0 || >=24"},
+			"dependencies": {
+				"mdn-data": "2.37.2",
+				"source-map-js": "1.2.2",
 			},
 		},
 
@@ -14238,14 +14247,6 @@ snapshots:
 			"integrity": "sha512-lmNyBzi6iYiqyrExTctfmjd8tInx+dHu9PBomTfH5RXS53c27JMFJgzNv5TyAnm3PgGf+MLy0+Ws41/HlVxdKQ==",
 		},
 
-		"clean-regexp@1.0.0": {
-			"integrity": "sha512-GfisEZEJvzKrmGWkvfhgzcz/BllN1USeqD2V6tg14OAOgaCD2Z/PUEuxnAZ/nPvmaHRG7a8y77p1T/IRQ4D1Hw==",
-			"engines": {"node": ">=4"},
-			"dependencies": {
-				"escape-string-regexp": "1.0.5",
-			},
-		},
-
 		"clean-stack@3.0.1": {
 			"integrity": "sha512-lR9wNiMRcVQjSB3a7xXGLuz4cr4wJuuXlaAEbRutGowQTmlp7R72/DOgN21e8jdwblMWl9UOJMJXarX94pzKdg==",
 			"engines": {"node": ">=10"},
@@ -14801,6 +14802,11 @@ snapshots:
 			"engines": {"node": ">=8"},
 		},
 
+		"detect-indent@7.0.2": {
+			"integrity": "sha512-y+8xyqdGLL+6sh0tVeHcfP/QDd8gUgbasolJJpY7NgeQGSZ739bDtSiaiDgtoicy+mtYB81dKLxO9xRhCyIB3A==",
+			"engines": {"node": ">=12.20"},
+		},
+
 		"detect-libc@2.1.2": {
 			"integrity": "sha512-Btj2BOOO83o3WyH59e8MgXsxEQVcarkUOpEYrubB0urwnN10yQ364rsiByU11nZlqWYZm05i/of7io4mzihBtQ==",
 			"engines": {"node": ">=8"},
@@ -15097,11 +15103,6 @@ snapshots:
 			"engines": {"node": ">=6"},
 		},
 
-		"escape-string-regexp@1.0.5": {
-			"integrity": "sha512-vbRorB5FUQWvla16U8R/qgaFIya2qGzwDrNmCZuYKrbdSUMG6I1ZCGQRefkRVhuOkIGVne7BQ35DSfo1qvJqFg==",
-			"engines": {"node": ">=0.8.0"},
-		},
-
 		"escape-string-regexp@4.0.0": {
 			"integrity": "sha512-TtpcNJ3XAzx3Gq8sWRzJaVajRs0uVxA2YAkdb1jm2YkPz4G6egUFAyA3n5vtEIZefPk5Wa4UXbKuS5fKkJWdgA==",
 			"engines": {"node": ">=10"},
@@ -15293,32 +15294,36 @@ snapshots:
 			},
 		},
 
-		"eslint-plugin-unicorn@63.0.0": {
-			"integrity": "sha512-Iqecl9118uQEXYh7adylgEmGfkn5es3/mlQTLLkd4pXkIk9CTGrAbeUux+YljSa2ohXCBmQQ0+Ej1kZaFgcfkA==",
-			"engines": {"node": "^20.10.0 || >=21.0.0"},
+		"eslint-plugin-unicorn@74.0.0": {
+			"integrity": "sha512-AGnsGi2SxHg1HEAXxn9nSnZfyjvTWkxm8E8hpd/9tD6dLjBUdcD7+D6ZN64HmmCXTSXlrwVyUqe20Uyb2CaurA==",
+			"engines": {"node": ">=22"},
 			"peerDependencies": {
 				"eslint": {
-					"specifier": ">=9.38.0",
+					"specifier": ">=10.4",
 					"version": "10.9.1",
 				},
 			},
 			"dependencies": {
-				"@babel/helper-validator-identifier": "7.29.7",
 				"@eslint-community/eslint-utils": "4.10.1",
+				"@eslint/css-tree": "4.1.2",
+				"browserslist": "4.28.8",
 				"change-case": "5.4.4",
 				"ci-info": "4.4.0",
-				"clean-regexp": "1.0.0",
 				"core-js-compat": "3.50.0",
+				"detect-indent": "7.0.2",
+				"entities": "8.0.0",
 				"find-up-simple": "1.0.1",
-				"globals": "16.5.0",
+				"globals": "17.14.0",
 				"indent-string": "5.0.0",
 				"is-builtin-module": "5.0.0",
-				"jsesc": "3.1.0",
+				"is-identifier": "1.1.0",
 				"pluralize": "8.0.0",
-				"regexp-tree": "0.1.27",
+				"quote-js-string": "0.1.0",
 				"regjsparser": "0.13.2",
+				"reserved-identifiers": "1.2.0",
 				"semver": "7.8.6",
 				"strip-indent": "4.1.1",
+				"yaml": "2.9.1",
 			},
 		},
 
@@ -16147,8 +16152,8 @@ snapshots:
 			"engines": {"node": ">=18"},
 		},
 
-		"globals@16.5.0": {
-			"integrity": "sha512-c/c15i26VrJ4IRt5Z89DnIzCGDn9EcebibhAOjw5ibqEHsE1wLUgkPn9RDmNcUKyU87GeaL633nyJ+pplFR2ZQ==",
+		"globals@17.14.0": {
+			"integrity": "sha512-UtdkTVyAJePQv0J2M9Xe4L0ruNSDV314XiIJsADI2Zf40bcdAonE/D/OhAU8AT99oij9mhLByb+NvA3QWZYgCg==",
 			"engines": {"node": ">=18"},
 		},
 
@@ -16554,6 +16559,14 @@ snapshots:
 			},
 		},
 
+		"identifier-regex@1.1.0": {
+			"integrity": "sha512-SLX4H/vtcYlYnL7XqnuJKHU7Z8517TgsW9nmQiGOgMCjQ8V/deLYu6bEmbGoXe7WMMhc9+EUGyFFneHja8KabA==",
+			"engines": {"node": ">=18"},
+			"dependencies": {
+				"reserved-identifiers": "1.2.0",
+			},
+		},
+
 		"ieee754@1.2.1": {
 			"integrity": "sha512-dcyqhDvX1C46lXZcVqCpK+FtMRQVdIMN6/Df5js2zouUsqG7I6sFxitIC+7KYK29KdXOLHdu9zL4sFnoVQnqaA==",
 		},
@@ -16742,6 +16755,15 @@ snapshots:
 
 		"is-hotkey-esm@1.0.0": {
 			"integrity": "sha512-eTXNmLCPXpKEZUERK6rmFsqmL66+5iNB998JMO+/61fSxBZFuUR1qHyFyx7ocBl5Vs8qjFzRAJLACpYfhS5g5w==",
+		},
+
+		"is-identifier@1.1.0": {
+			"integrity": "sha512-NhOds0mDx9lJu+1lBRO0xbwFo5nobA7GCk/0e5xjr6+6XugX985+0OyGX35BNrTkPAsdLcIKg02HUQJOK8D8kw==",
+			"engines": {"node": ">=18"},
+			"dependencies": {
+				"identifier-regex": "1.1.0",
+				"super-regex": "1.1.0",
+			},
 		},
 
 		"is-in-ssh@1.0.0": {
@@ -17540,6 +17562,10 @@ snapshots:
 
 		"mdn-data@2.27.1": {
 			"integrity": "sha512-9Yubnt3e8A0OKwxYSXyhLymGW4sCufcLG6VdiDdUGVkPhpqLxlvP5vl1983gQjJl3tqbrM731mjaZaP68AgosQ==",
+		},
+
+		"mdn-data@2.37.2": {
+			"integrity": "sha512-rz9YOBGItdSbe7HcSArUbhiAv4SB/4DKRYg96CSFS2CcIYMbUvBtZlzA1NCbk2AdgbmYwMqwNblLpR441lLeiQ==",
 		},
 
 		"media-chrome@4.19.2": {
@@ -18957,6 +18983,11 @@ snapshots:
 			"engines": {"node": ">=18"},
 		},
 
+		"quote-js-string@0.1.0": {
+			"integrity": "sha512-Y3NoRtprEEZQD8RfxMCfS0ZTqc4e+i18OrXEXAvpM6TfC/3y+0L5rNbZiSnbBBEkDfFzbpd8o+cE8q3/anjMGA==",
+			"engines": {"node": ">=22"},
+		},
+
 		"raf@3.4.1": {
 			"integrity": "sha512-Sq4CW4QhwOHE8ucn6J34MqtZCeWFP2aQSmrlroYgqAV1PjStIhJXxYuTgUIfkEk7zTLjmIjLmU5q+fbD1NnOJA==",
 			"dependencies": {
@@ -19444,11 +19475,6 @@ snapshots:
 			},
 		},
 
-		"regexp-tree@0.1.27": {
-			"integrity": "sha512-iETxpjK6YoRWJG5o6hXLwvjYAoW+FEZn9os0PD/b6AP6xQwsa/Y7lCVgIixBbUPMfhu+i2LtdeAqVTgGlQarfA==",
-			"hasBin": true,
-		},
-
 		"regexpu-core@6.4.0": {
 			"integrity": "sha512-0ghuzq67LI9bLXpOX/ISfve/Mq33a4aFRzoQYhnnok1JOFpmE/A2TBGkNVenOGEeSBCjIiWcc6MVOG5HEQv0sA==",
 			"engines": {"node": ">=4"},
@@ -19503,6 +19529,11 @@ snapshots:
 
 		"reselect@5.3.0": {
 			"integrity": "sha512-XGoLeRAVzUTcJ1qkxPQhDJyIZ5d6zzZD9nT7AEZOaaU9UbWclhycElmhO+VD5bFeLuzhPBaOV2oXC8uG35ZSpg==",
+		},
+
+		"reserved-identifiers@1.2.0": {
+			"integrity": "sha512-yE7KUfFvaBFzGPs5H3Ops1RevfUEsDc5Iz65rOwWg4lE8HJSYtle77uul3+573457oHvBKuHYDl/xqUkKpEEdw==",
+			"engines": {"node": ">=18"},
 		},
 
 		"resolve-alpn@1.2.1": {
