@@ -981,8 +981,8 @@ snapshots:
 				"rxjs": "catalog:",
 				"semver": "catalog:",
 				"skills": {
-					"specifier": "^1.8.0",
-					"version": "1.8.0",
+					"specifier": "^1.8.1",
+					"version": "1.8.1",
 				},
 				"smol-toml": {
 					"specifier": "^1.6.1",
@@ -19976,8 +19976,8 @@ snapshots:
 			"integrity": "sha512-bLGGlR1QxBcynn2d5YmDX4MGjlZvy2MRBDRNHLJ8VI6l6+9FUiyTFNJ0IveOSP0bcXgVDPRcfGqA0pjaqUpfVg==",
 		},
 
-		"skills@1.8.0": {
-			"integrity": "sha512-SOF4o+gtsCq2ggS416zGj+Em2ryAzewVbIIvxlf+72R6g/9HfmINaVQgFqgXdy6fd6y2J6A7IBM8VocK8c0Dmw==",
+		"skills@1.8.1": {
+			"integrity": "sha512-QK3wlZ5j8wcpLPUOXt7+1Gu1f9JKpv7lBpO0zmqKa5VBrt45/woVo8Max1x4wha3pCNafNHiiodYK6Xi/0alQQ==",
 			"engines": {"node": ">=22.20.0"},
 			"hasBin": true,
 			"dependencies": {
