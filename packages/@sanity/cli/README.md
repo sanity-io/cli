@@ -173,6 +173,7 @@ Code for sanity cli
 - [`sanity whoami`](#sanity-whoami)
 - [`sanity workflows abort INSTANCEID`](#sanity-workflows-abort-instanceid)
 - [`sanity workflows blueprints generate`](#sanity-workflows-blueprints-generate)
+- [`sanity workflows codemod packages [PATH]`](#sanity-workflows-codemod-packages-path)
 - [`sanity workflows definitions delete NAME`](#sanity-workflows-definitions-delete-name)
 - [`sanity workflows definitions diff NAME`](#sanity-workflows-definitions-diff-name)
 - [`sanity workflows definitions list`](#sanity-workflows-definitions-list)
@@ -5862,6 +5863,41 @@ EXAMPLES
   $ sanity workflows blueprints generate --check
 ```
 
+## `sanity workflows codemod packages [PATH]`
+
+Move imports and package.json dependencies from the retired Workflows packages to @sanity/workflows, @sanity/workflows-ui, @sanity/workflows-cli, and @sanity/workflows-test. Rewrites module specifiers in import, export, dynamic import(), require(), and vi.mock() calls, and replaces the old packages in every package.json dependency field. Imports of exports renamed in the same release, such as workflowStudioPlugin, are renamed with every reference to them, as are names after an import() type. A name read through export *, require(), import x = require(), a dynamic import(), a mocked module factory, a computed member, or destructuring from a namespace keeps its old name, so check require() calls, plain JavaScript files, and test mocks by hand. Package names in other strings, comments, and built-up specifiers are listed for you to fix by hand, as are members read through a namespace name the file declares again: rename one if it reads the import. Generated blueprint files are skipped: run blueprints generate after installing. Lockfiles are never edited.
+
+```
+USAGE
+  $ sanity workflows codemod packages [PATH...] [--dry-run]
+
+ARGUMENTS
+  [PATH...]  File or directory to rewrite. Pass several to limit the run; defaults to the current directory. Directories
+             skip node_modules, dist, and files git ignores.
+
+FLAGS
+  --dry-run  Print what would change and write nothing.
+
+DESCRIPTION
+  Move imports and package.json dependencies from the retired Workflows packages to @sanity/workflows,
+  @sanity/workflows-ui, @sanity/workflows-cli, and @sanity/workflows-test. Rewrites module specifiers in import, export,
+  dynamic import(), require(), and vi.mock() calls, and replaces the old packages in every package.json dependency
+  field. Imports of exports renamed in the same release, such as workflowStudioPlugin, are renamed with every reference
+  to them, as are names after an import() type. A name read through export *, require(), import x = require(), a dynamic
+  import(), a mocked module factory, a computed member, or destructuring from a namespace keeps its old name, so check
+  require() calls, plain JavaScript files, and test mocks by hand. Package names in other strings, comments, and
+  built-up specifiers are listed for you to fix by hand, as are members read through a namespace name the file declares
+  again: rename one if it reads the import. Generated blueprint files are skipped: run blueprints generate after
+  installing. Lockfiles are never edited.
+
+EXAMPLES
+  $ sanity workflows codemod packages --dry-run
+
+  $ sanity workflows codemod packages
+
+  $ sanity workflows codemod packages apps/studio packages/shared
+```
+
 ## `sanity workflows definitions delete NAME`
 
 Delete a deployed workflow definition (every version, or one via --version). Refuses while non-terminal instances exist unless --cascade aborts them first — instances are aborted in place, never deleted.
@@ -5931,8 +5967,8 @@ List deployed workflow definitions.
 
 ```
 USAGE
-  $ sanity workflows definitions list [--media-library-id <id> | [-p <id> -d <name>] |  | --path <file|dir> | [--deployment
-    <value> | --partition <value>]] [--limit <value>] [--name <value>] [--json]
+  $ sanity workflows definitions list [--workflow-resource <type>:<id> | -p <id> | -d <name> |  | --path <file|dir> |
+    [--deployment <value> | --partition <value>]] [--limit <value>] [--name <value>] [--json]
 
 FLAGS
   --deployment=<value>  Deployment name — read only the resource and partition that deployment targets.
@@ -5945,9 +5981,10 @@ FLAGS
                         Defaults to the current directory.
 
 OVERRIDE FLAGS
-  -d, --dataset=<name>         Dataset to read (overrides sanity.workflow.ts)
-  -p, --project-id=<id>        Project ID of the dataset to read (overrides sanity.workflow.ts)
-      --media-library-id=<id>  Media library to read (overrides sanity.workflow.ts)
+  -d, --dataset=<name>                 Dataset to read, with --project-id (overrides sanity.workflow.ts)
+  -p, --project-id=<id>                Project ID of the dataset to read, with --dataset (overrides sanity.workflow.ts)
+      --workflow-resource=<type>:<id>  Resource to read, as <type>:<id>: dataset:<projectId>.<dataset>,
+                                       media-library:<id>, canvas:<id> or dashboard:<id> (overrides sanity.workflow.ts)
 
 DESCRIPTION
   List deployed workflow definitions.
@@ -5966,8 +6003,8 @@ Show a deployed workflow definition.
 
 ```
 USAGE
-  $ sanity workflows definitions show NAME [--media-library-id <id> | [-p <id> -d <name>] |  | --path <file|dir> | [--deployment
-    <value> | --partition <value>]] [--version <value>] [--json]
+  $ sanity workflows definitions show NAME [--workflow-resource <type>:<id> | -p <id> | -d <name> |  | --path <file|dir> |
+    [--deployment <value> | --partition <value>]] [--version <value>] [--json]
 
 ARGUMENTS
   NAME  Workflow definition name.
@@ -5982,9 +6019,10 @@ FLAGS
   --version=<value>     Specific version (default: latest).
 
 OVERRIDE FLAGS
-  -d, --dataset=<name>         Dataset to read (overrides sanity.workflow.ts)
-  -p, --project-id=<id>        Project ID of the dataset to read (overrides sanity.workflow.ts)
-      --media-library-id=<id>  Media library to read (overrides sanity.workflow.ts)
+  -d, --dataset=<name>                 Dataset to read, with --project-id (overrides sanity.workflow.ts)
+  -p, --project-id=<id>                Project ID of the dataset to read, with --dataset (overrides sanity.workflow.ts)
+      --workflow-resource=<type>:<id>  Resource to read, as <type>:<id>: dataset:<projectId>.<dataset>,
+                                       media-library:<id>, canvas:<id> or dashboard:<id> (overrides sanity.workflow.ts)
 
 DESCRIPTION
   Show a deployed workflow definition.
@@ -6077,7 +6115,7 @@ Explain why a workflow instance is or isn't progressing, and what would unstick 
 
 ```
 USAGE
-  $ sanity workflows diagnose INSTANCEID [--media-library-id <id> | [-p <id> -d <name>] |  | --path <file|dir> |
+  $ sanity workflows diagnose INSTANCEID [--workflow-resource <type>:<id> | -p <id> | -d <name> |  | --path <file|dir> |
     [--deployment <value> | --partition <value>]] [--json]
 
 ARGUMENTS
@@ -6093,9 +6131,10 @@ FLAGS
                         Defaults to the current directory.
 
 OVERRIDE FLAGS
-  -d, --dataset=<name>         Dataset to read (overrides sanity.workflow.ts)
-  -p, --project-id=<id>        Project ID of the dataset to read (overrides sanity.workflow.ts)
-      --media-library-id=<id>  Media library to read (overrides sanity.workflow.ts)
+  -d, --dataset=<name>                 Dataset to read, with --project-id (overrides sanity.workflow.ts)
+  -p, --project-id=<id>                Project ID of the dataset to read, with --dataset (overrides sanity.workflow.ts)
+      --workflow-resource=<type>:<id>  Resource to read, as <type>:<id>: dataset:<projectId>.<dataset>,
+                                       media-library:<id>, canvas:<id> or dashboard:<id> (overrides sanity.workflow.ts)
 
 DESCRIPTION
   Explain why a workflow instance is or isn't progressing, and what would unstick it.
@@ -6147,14 +6186,14 @@ EXAMPLES
 
 ## `sanity workflows list`
 
-List workflow instances (in-flight by default) across the resources sanity.workflow.ts declares, or in the one resource --project-id/--dataset or --media-library-id names.
+List workflow instances (in-flight by default) across the resources sanity.workflow.ts declares, or in the one resource --workflow-resource (or --project-id with --dataset) names.
 
 ```
 USAGE
-  $ sanity workflows list [--media-library-id <id> | [-p <id> -d <name>] |  | --path <file|dir> | [--deployment
-    <value> | --partition <value>]] [--include-completed] [--failed] [--definition <value>] [--document <value>]
-    [--assignment-user <value>] [--assignment-role <value>...] [--assignment-state unrouted|routed|held...] [--limit
-    <value>] [--json]
+  $ sanity workflows list [--workflow-resource <type>:<id> | -p <id> | -d <name> |  | --path <file|dir> |
+    [--deployment <value> | --partition <value>]] [--include-completed] [--failed] [--definition <value>] [--document
+    <value>] [--assignment-user <value>] [--assignment-role <value>...] [--assignment-state unrouted|routed|held...]
+    [--limit <value>] [--json]
 
 FLAGS
   --assignment-role=<value>...    A literal project role held by --assignment-user. Repeat for multiple roles.
@@ -6177,18 +6216,21 @@ FLAGS
                                   parents. Defaults to the current directory.
 
 OVERRIDE FLAGS
-  -d, --dataset=<name>         Dataset to read (overrides sanity.workflow.ts)
-  -p, --project-id=<id>        Project ID of the dataset to read (overrides sanity.workflow.ts)
-      --media-library-id=<id>  Media library to read (overrides sanity.workflow.ts)
+  -d, --dataset=<name>                 Dataset to read, with --project-id (overrides sanity.workflow.ts)
+  -p, --project-id=<id>                Project ID of the dataset to read, with --dataset (overrides sanity.workflow.ts)
+      --workflow-resource=<type>:<id>  Resource to read, as <type>:<id>: dataset:<projectId>.<dataset>,
+                                       media-library:<id>, canvas:<id> or dashboard:<id> (overrides sanity.workflow.ts)
 
 DESCRIPTION
   List workflow instances (in-flight by default) across the resources sanity.workflow.ts declares, or in the one
-  resource --project-id/--dataset or --media-library-id names.
+  resource --workflow-resource (or --project-id with --dataset) names.
 
 EXAMPLES
   $ sanity workflows list
 
   $ sanity workflows list --include-completed
+
+  $ sanity workflows list --workflow-resource media-library:mlAbc123
 
   $ sanity workflows list --definition product-launch
 
@@ -6274,7 +6316,7 @@ Show the state, activities, and effects of a workflow instance.
 
 ```
 USAGE
-  $ sanity workflows show INSTANCEID [--media-library-id <id> | [-p <id> -d <name>] |  | --path <file|dir> |
+  $ sanity workflows show INSTANCEID [--workflow-resource <type>:<id> | -p <id> | -d <name> |  | --path <file|dir> |
     [--deployment <value> | --partition <value>]] [--include history...] [--json]
 
 ARGUMENTS
@@ -6293,9 +6335,10 @@ FLAGS
                          Defaults to the current directory.
 
 OVERRIDE FLAGS
-  -d, --dataset=<name>         Dataset to read (overrides sanity.workflow.ts)
-  -p, --project-id=<id>        Project ID of the dataset to read (overrides sanity.workflow.ts)
-      --media-library-id=<id>  Media library to read (overrides sanity.workflow.ts)
+  -d, --dataset=<name>                 Dataset to read, with --project-id (overrides sanity.workflow.ts)
+  -p, --project-id=<id>                Project ID of the dataset to read, with --dataset (overrides sanity.workflow.ts)
+      --workflow-resource=<type>:<id>  Resource to read, as <type>:<id>: dataset:<projectId>.<dataset>,
+                                       media-library:<id>, canvas:<id> or dashboard:<id> (overrides sanity.workflow.ts)
 
 DESCRIPTION
   Show the state, activities, and effects of a workflow instance.
@@ -6357,11 +6400,11 @@ EXAMPLES
 
 ## `sanity workflows tail INSTANCEID`
 
-Stream new history entries on a workflow instance as they land in the dataset.
+Stream new history entries on a workflow instance as they land in its workflow resource.
 
 ```
 USAGE
-  $ sanity workflows tail INSTANCEID [--media-library-id <id> | [-p <id> -d <name>] |  | --path <file|dir> |
+  $ sanity workflows tail INSTANCEID [--workflow-resource <type>:<id> | -p <id> | -d <name> |  | --path <file|dir> |
     [--deployment <value> | --partition <value>]]
 
 ARGUMENTS
@@ -6376,12 +6419,13 @@ FLAGS
                         Defaults to the current directory.
 
 OVERRIDE FLAGS
-  -d, --dataset=<name>         Dataset to read (overrides sanity.workflow.ts)
-  -p, --project-id=<id>        Project ID of the dataset to read (overrides sanity.workflow.ts)
-      --media-library-id=<id>  Media library to read (overrides sanity.workflow.ts)
+  -d, --dataset=<name>                 Dataset to read, with --project-id (overrides sanity.workflow.ts)
+  -p, --project-id=<id>                Project ID of the dataset to read, with --dataset (overrides sanity.workflow.ts)
+      --workflow-resource=<type>:<id>  Resource to read, as <type>:<id>: dataset:<projectId>.<dataset>,
+                                       media-library:<id>, canvas:<id> or dashboard:<id> (overrides sanity.workflow.ts)
 
 DESCRIPTION
-  Stream new history entries on a workflow instance as they land in the dataset.
+  Stream new history entries on a workflow instance as they land in its workflow resource.
 
 EXAMPLES
   $ sanity workflows tail wf-instance.abc123
@@ -6393,8 +6437,8 @@ Show the user ID Workflows records for your login. Put the Sanity user ID in use
 
 ```
 USAGE
-  $ sanity workflows whoami [--media-library-id <id> | [-p <id> -d <name>] |  | --path <file|dir> | [--deployment
-    <value> | --partition <value>]] [--json]
+  $ sanity workflows whoami [--workflow-resource <type>:<id> | -p <id> | -d <name> |  | --path <file|dir> |
+    [--deployment <value> | --partition <value>]] [--json]
 
 FLAGS
   --deployment=<value>  Deployment name — read only the resource and partition that deployment targets.
@@ -6405,9 +6449,10 @@ FLAGS
                         Defaults to the current directory.
 
 OVERRIDE FLAGS
-  -d, --dataset=<name>         Dataset to read (overrides sanity.workflow.ts)
-  -p, --project-id=<id>        Project ID of the dataset to read (overrides sanity.workflow.ts)
-      --media-library-id=<id>  Media library to read (overrides sanity.workflow.ts)
+  -d, --dataset=<name>                 Dataset to read, with --project-id (overrides sanity.workflow.ts)
+  -p, --project-id=<id>                Project ID of the dataset to read, with --dataset (overrides sanity.workflow.ts)
+      --workflow-resource=<type>:<id>  Resource to read, as <type>:<id>: dataset:<projectId>.<dataset>,
+                                       media-library:<id>, canvas:<id> or dashboard:<id> (overrides sanity.workflow.ts)
 
 DESCRIPTION
   Show the user ID Workflows records for your login. Put the Sanity user ID in user assignee fields.
@@ -6417,7 +6462,9 @@ EXAMPLES
 
   $ sanity workflows whoami --json
 
-  $ sanity workflows whoami --project-id abc123 --dataset production
+  $ sanity workflows whoami --workflow-resource dataset:abc123.production
+
+  $ sanity workflows whoami --workflow-resource media-library:mlAbc123
 ```
 
 <!-- commandsstop -->
