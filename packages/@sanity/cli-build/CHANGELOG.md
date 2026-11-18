@@ -1,5 +1,59 @@
 # Changelog
 
+## 7.3.0
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-build-v7.2.2...cli-build-v7.3.0)
+
+_2026-11-17_
+
+### Features
+
+- **workbench-cli:** show app details on dev ([#2149](https://github.com/sanity-io/cli/pull/2149)) ([d96fbe4](https://github.com/sanity-io/cli/commit/d96fbe4d938ec2985b14097adf6661b36ea2ed0b))
+
+### Bug Fixes
+
+- **cli-build:** replace sanity schema upload with @sanity/schema ([#2207](https://github.com/sanity-io/cli/pull/2207)) ([d02ec30](https://github.com/sanity-io/cli/commit/d02ec30685285f52372ca86d8add28a17d11e35b))
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/workbench-cli bumped to 2.18.0
+
+## 7.2.2
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-build-v7.2.1...cli-build-v7.2.2)
+
+_2026-11-17_
+
+### Bug Fixes
+
+- **deps:** update react monorepo to ^19.3.1 ([#2192](https://github.com/sanity-io/cli/pull/2192)) ([2cb7c7a](https://github.com/sanity-io/cli/commit/2cb7c7af9f23d931c6480bfa67ed4432ed1e76f5))
+- **deps:** update dependency cjs-module-lexer to ^2.3.0 ([#2204](https://github.com/sanity-io/cli/pull/2204)) ([54525db](https://github.com/sanity-io/cli/commit/54525db4d770b0200dd70c7e45158d970063d9eb))
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/workbench-cli bumped to 2.17.0
+
+## 7.2.1
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-build-v7.2.0...cli-build-v7.2.1)
+
+_2026-11-17_
+
+### Bug Fixes
+
+- **cli-build:** preserve named array types during serialization ([#2198](https://github.com/sanity-io/cli/pull/2198)) ([04f0fa2](https://github.com/sanity-io/cli/commit/04f0fa2ea878f455be21c0277301076fa5838b71))
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/cli-core bumped to 3.15.1
+    - @sanity/workbench-cli bumped to 2.16.1
+
 ## 7.2.0
 
 [Compare changes](https://github.com/sanity-io/cli/compare/cli-build-v7.1.2...cli-build-v7.2.0)

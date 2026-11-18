@@ -130,6 +130,7 @@ export const devServerManifestSchema = z.object({
     ),
   ),
   host: z.string(),
+  https: z.optional(z.boolean()),
   /**
    * The id the app runs under on the bus. It stays apart from `applicationId`,
    * because Dashboards that predate `applicationId` key local apps on it.

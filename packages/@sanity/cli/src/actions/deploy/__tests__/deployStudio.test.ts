@@ -5,6 +5,7 @@ import {readBuiltManifest} from '@sanity/workbench-cli/build'
 import {
   createStudio,
   deployWorkbenchApp,
+  fetchDeploySummaryDetails,
   getApplication,
   listApplications,
   selectWorkbenchAppId,
@@ -29,6 +30,7 @@ vi.mock(import('@sanity/workbench-cli/deploy'), async (importOriginal) => ({
   ...(await importOriginal()),
   createStudio: vi.fn(),
   deployWorkbenchApp: vi.fn(),
+  fetchDeploySummaryDetails: vi.fn(async () => ({organizationName: 'Acme', userName: 'Sam'})),
   getApplication: vi.fn(),
   listApplications: vi.fn(),
   selectWorkbenchAppId: vi.fn(),
@@ -184,18 +186,7 @@ describe('deployStudio (federated studio)', () => {
     expect(vi.mocked(deployStudioSchemasAndManifests).mock.calls[0][0]).toEqual(
       expect.objectContaining({applicationId: 'studio-1'}),
     )
-  })
-
-  test('prints the workbench URL at the configured slug', async () => {
-    const options = deployOptions({flags: {json: false}})
-
-    await deployStudio(options)
-
-    expect(options.output.log).toHaveBeenCalledWith(
-      expect.stringContaining(
-        'Success! Studio deployed to https://org-1.sanity.run/studios/my-studio',
-      ),
-    )
+    expect(fetchDeploySummaryDetails).not.toHaveBeenCalled()
   })
 
   test('a redeploy targets `deployment.appId` and reports the resolved record', async () => {

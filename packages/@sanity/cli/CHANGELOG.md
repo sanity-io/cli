@@ -1,5 +1,60 @@
 # Change Log
 
+## 8.31.0
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-v8.30.0...cli-v8.31.0)
+
+_2026-11-17_
+
+### Features
+
+- **workbench-cli:** show app details on dev ([#2149](https://github.com/sanity-io/cli/pull/2149)) ([d96fbe4](https://github.com/sanity-io/cli/commit/d96fbe4d938ec2985b14097adf6661b36ea2ed0b))
+- **workbench-cli:** show app details on deploy ([#2150](https://github.com/sanity-io/cli/pull/2150)) ([efa968e](https://github.com/sanity-io/cli/commit/efa968ecbe609e9d61fe8d00e053da940fbc702d))
+
+### Bug Fixes
+
+- **cli-build:** replace sanity schema upload with @sanity/schema ([#2207](https://github.com/sanity-io/cli/pull/2207)) ([d02ec30](https://github.com/sanity-io/cli/commit/d02ec30685285f52372ca86d8add28a17d11e35b))
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/cli-build bumped to 7.3.0
+    - @sanity/workbench-cli bumped to 2.18.0
+
+## 8.30.0
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-v8.29.0...cli-v8.30.0)
+
+_2026-11-17_
+
+### Features
+
+- **mcp:** use OAuth for every agent in `sanity mcp configure` ([#2185](https://github.com/sanity-io/cli/pull/2185)) ([63be160](https://github.com/sanity-io/cli/commit/63be160c85d3a743d8ca7d41da61f14ab1618836))
+
+  `sanity mcp configure` and `sanity init` no longer save a login token in your agent's MCP config. Every supported agent now signs in to the Sanity MCP server itself, using OAuth, the first time it connects. If an agent's Sanity MCP config contains a token, `sanity mcp configure` and `sanity init` offer to replace it with OAuth when run in a terminal, and leave it alone otherwise. Running `sanity logout` invalidates tokens saved by earlier CLI versions. If you added an API token to an agent's config yourself, revoke it in the project's API settings or with `sanity tokens` once you've switched.
+
+  `sanity mcp configure` no longer requires you to be logged in to the CLI. It now finds current Antigravity installs (`~/.gemini/config/mcp_config.json`) and writes the settings file shared by the Cline VS Code extension and Cline CLI (`~/.cline/data/settings/cline_mcp_settings.json`), so Cline CLI is no longer listed separately.
+
+### Bug Fixes
+
+- **cli-core:** make the CLI config file readable by its owner only ([#2183](https://github.com/sanity-io/cli/pull/2183)) ([687c6e4](https://github.com/sanity-io/cli/commit/687c6e4d3c66df1224926cc5bd7ec8d8f20eb6ef))
+
+  Since 6.0.0, the file that stores your CLI login (`~/.config/sanity/config.json`) could be created readable by other users on the same computer. The CLI now creates it readable only by you, and fixes an existing file the next time you run a command. If you use the CLI on a computer shared with other people, you can replace your login token by running `sanity logout` and then `sanity login`.
+
+- **cli:** validate references within the same release ([#2106](https://github.com/sanity-io/cli/pull/2106)) ([72b1b50](https://github.com/sanity-io/cli/commit/72b1b504f3704d93d658c48653160d1cfab04095))
+- **deps:** update oclif-tooling ([#2186](https://github.com/sanity-io/cli/pull/2186)) ([12528b9](https://github.com/sanity-io/cli/commit/12528b9ee2de1379f0814dca8e04df6695293d40))
+- **deps:** update dependency is-installed-globally to ^1.0.1 ([#2190](https://github.com/sanity-io/cli/pull/2190)) ([9a68d56](https://github.com/sanity-io/cli/commit/9a68d56693866ba0a33a44bd712cecfcd4f0b081))
+- Fix development server startup and dashboard links when HTTPS is enabled through Vite configuration. ([#2200](https://github.com/sanity-io/cli/pull/2200)) ([a07874a](https://github.com/sanity-io/cli/commit/a07874aa576f2dcc427060f22ceb9e20730ce6f8))
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/cli-core bumped to 3.15.1
+    - @sanity/cli-build bumped to 7.2.1
+    - @sanity/workbench-cli bumped to 2.16.1
+
 ## 8.29.0
 
 [Compare changes](https://github.com/sanity-io/cli/compare/cli-v8.28.2...cli-v8.29.0)

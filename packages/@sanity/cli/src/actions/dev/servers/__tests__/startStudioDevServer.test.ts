@@ -1,4 +1,5 @@
 import {type CliConfig, exitCodes} from '@sanity/cli-core'
+import {spinner} from '@sanity/cli-core/ux'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
 import {
@@ -113,10 +114,38 @@ describe('startStudioDevServer', () => {
     )
     expect(mockCheckRequiredDependencies).toHaveBeenCalled()
     expect(mockStartDevServer).toHaveBeenCalled()
+    expect(spinner).toHaveBeenCalledWith({isSilent: false, text: 'Starting dev server'})
     expect(result.started).toBe(true)
     if (!result.started) throw new Error('expected the server to start')
     expect(result.close).toBeDefined()
     expect(result.server).toBeDefined()
+  })
+
+  test.each([
+    {https: undefined, protocol: 'http'},
+    {https: {}, protocol: 'https'},
+  ])('announces $protocol from the resolved server configuration', async ({https, protocol}) => {
+    const started = createMockDevServer({port: 4443})
+    Object.assign(started.server.config.server, {https})
+    mockStartDevServer.mockResolvedValueOnce(started)
+    mockGetDevServerConfig.mockReturnValueOnce({...DEV_SERVER_CONFIG, basePath: '/studio'})
+
+    await startStudioDevServer(createDevOptions())
+
+    expect(started.server.config.logger.info).toHaveBeenCalledWith(
+      expect.stringContaining(`${protocol}://localhost:4443/studio`),
+    )
+  })
+
+  test('prints no ready line when quiet', async () => {
+    const started = createMockDevServer()
+    mockStartDevServer.mockResolvedValueOnce(started)
+
+    const result = await startStudioDevServer(createDevOptions({quiet: true}))
+
+    expect(result.started).toBe(true)
+    expect(spinner).toHaveBeenCalledWith(expect.objectContaining({isSilent: true}))
+    expect(started.server.config.logger.info).not.toHaveBeenCalled()
   })
 
   describe('unclaimed sign-in URL', () => {
@@ -200,7 +229,10 @@ describe('startStudioDevServer', () => {
   })
 
   describe('load-in-dashboard', () => {
-    test('resolves the org and logs the dashboard URL for non-workbench studios', async () => {
+    test.each([undefined, {}])('passes resolved HTTPS=%j to the dashboard', async (https) => {
+      const started = createMockDevServer()
+      Object.assign(started.server.config.server, {https})
+      mockStartDevServer.mockResolvedValue(started)
       mockGetProjectCliClient.mockResolvedValue({
         projects: {
           getById: vi.fn().mockResolvedValue({organizationId: 'org-x'}),
@@ -219,6 +251,7 @@ describe('startStudioDevServer', () => {
       expect(mockGetDashboardAppURL).toHaveBeenCalledWith({
         httpHost: 'localhost',
         httpPort: 3333,
+        https: Boolean(https),
         organizationId: 'org-x',
       })
       expect(output.log).toHaveBeenCalledWith('Dev server started on port 3333')
@@ -361,6 +394,26 @@ describe('startStudioDevServer', () => {
           packages: [['sanity', '3.50.0']],
         }),
         expect.anything(),
+      )
+    })
+
+    test('skips the startup checks and notices when the workbench restarts the server', async () => {
+      mockShouldAutoUpdate.mockReturnValue(true)
+      mockIsInteractive.mockReturnValue(true)
+      const options = createDevOptions({
+        cliConfig: {schemaExtraction: {enabled: true}} as CliConfig,
+        isRestarting: true,
+        quiet: true,
+      })
+
+      const result = await startStudioDevServer(options)
+
+      expect(result.started).toBe(true)
+      expect(mockShouldAutoUpdate).not.toHaveBeenCalled()
+      expect(mockCompareDependencyVersions).not.toHaveBeenCalled()
+      expect(mockCheckStudioDependencyVersions).not.toHaveBeenCalled()
+      expect(options.output.log).not.toHaveBeenCalledWith(
+        expect.stringContaining('schema extraction'),
       )
     })
 

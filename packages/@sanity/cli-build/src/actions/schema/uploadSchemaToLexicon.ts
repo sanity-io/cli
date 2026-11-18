@@ -3,21 +3,21 @@ import {styleText} from 'node:util'
 import {ux} from '@oclif/core/ux'
 import {
   doImport,
+  getGlobalCliClient,
   getLocalPackageVersion,
-  getProjectCliClient,
   resolveLocalPackage,
   subdebug,
 } from '@sanity/cli-core'
 import {spinner} from '@sanity/cli-core/ux'
+import {type DescriptorRequester, prepareSchemaUpload} from '@sanity/schema/_internal'
 import {type StudioManifest, type Workspace} from 'sanity'
 
-/** This version corresponds to the one used in the cli schema service but was copied here to avoid the dependency issue. */
-const SCHEMA_API_VERSION = 'v2025-03-01'
+/** Matches `SCHEMA_DESCRIPTOR_API_VERSION` in `@sanity/cli` and the default in `@sanity/schema`. */
+const SCHEMA_DESCRIPTOR_API_VERSION = 'v2025-06-01'
 
 const iconResolverPath = new URL('../manifest/iconResolver.js', import.meta.url).href
 
 interface UploadSchemaToLexiconOptions {
-  projectId: string
   workDir: string
   workspaces: Workspace[]
 
@@ -34,20 +34,19 @@ const debug = subdebug('uploadSchemaToLexicon')
 export async function uploadSchemaToLexicon(
   options: UploadSchemaToLexiconOptions,
 ): Promise<StudioManifest | null> {
-  const {projectId, verbose, workDir, workspaces} = options
+  const {verbose, workDir, workspaces} = options
   const spin = spinner('Generating studio manifest').start()
 
   try {
     const schemaDescriptors = new Map<string, string>()
 
-    const client = await getProjectCliClient({
-      apiVersion: SCHEMA_API_VERSION,
-      projectId,
+    const client = await getGlobalCliClient({
+      apiVersion: SCHEMA_DESCRIPTOR_API_VERSION,
       requestTagPrefix: 'sanity.cli.deploy',
       requireUser: true,
     })
 
-    const [bundleVersion, {generateStudioManifest, uploadSchema}] = await Promise.all([
+    const [bundleVersion, {generateStudioManifest}] = await Promise.all([
       getLocalPackageVersion('sanity', workDir),
       resolveLocalPackage<typeof import('sanity')>('sanity', workDir),
     ])
@@ -56,24 +55,36 @@ export async function uploadSchemaToLexicon(
       throw new Error('Failed to find sanity version')
     }
 
-    for (const workspace of workspaces) {
-      const workspaceClient = client.withConfig({
-        dataset: workspace.dataset,
-        projectId: workspace.projectId,
+    // `prepareSchemaUpload` prefixes paths with `/${apiVersion}`, while `client.request`
+    // already scopes requests to `apiVersion` — strip the leading segment so it isn't doubled.
+    const versionPrefix = `/${SCHEMA_DESCRIPTOR_API_VERSION}`
+    const requester: DescriptorRequester = <T>(
+      requestOptions: Parameters<DescriptorRequester>[0],
+    ) =>
+      client.request<T>({
+        body: requestOptions.body,
+        headers: requestOptions.headers
+          ? Object.fromEntries(new Headers(requestOptions.headers).entries())
+          : undefined,
+        method: requestOptions.method,
+        signal: requestOptions.signal,
+        url: requestOptions.url.startsWith(`${versionPrefix}/`)
+          ? requestOptions.url.slice(versionPrefix.length)
+          : requestOptions.url,
       })
 
+    for (const workspace of workspaces) {
       try {
         debug('Uploading schema to lexicon for workspace %o', {
           dataset: workspace.dataset,
           projectId: workspace.projectId,
         })
-        // The local `sanity` package types its client against its own
-        // @sanity/client major; the runtime surface uploadSchema uses is
-        // compatible across v7/v8.
-        const descriptorId = await uploadSchema(
-          workspace.schema,
-          workspaceClient as unknown as Parameters<typeof uploadSchema>[1],
-        )
+        const {descriptorId} = await prepareSchemaUpload(workspace.schema, {
+          apiVersion: SCHEMA_DESCRIPTOR_API_VERSION,
+          claim: 'temporary',
+          contextKey: `dataset:${workspace.projectId}:${workspace.dataset}`,
+          requester,
+        })
 
         if (!descriptorId) {
           throw new Error(

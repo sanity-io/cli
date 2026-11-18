@@ -11,7 +11,10 @@ export type AppServerResult =
   | {reason: string; started: false}
 
 /** Start the app/studio dev server for a given config (port + URL intent baked in by the caller). */
-export type StartAppServer = (cliConfig: CliConfig) => Promise<AppServerResult>
+export type StartAppServer = (
+  cliConfig: CliConfig,
+  options?: {isRestarting?: boolean},
+) => Promise<AppServerResult>
 
 const noop = async () => {}
 
@@ -63,7 +66,7 @@ export async function startAppServerSupervisor(options: {
     const freshConfig = await getCliConfigUncached(workDir)
     await closeCurrent()
     closeCurrent = noop
-    const result = await start(freshConfig)
+    const result = await start(freshConfig, {isRestarting: true})
     if (!result.started) {
       // The server already reported why (e.g. organizationId was removed).
       throw new Error('Dev server did not restart after the view/web worker change')

@@ -1,6 +1,6 @@
 import {Schema} from '@sanity/schema'
 import {createSchemaFromManifestTypes} from '@sanity/schema/_internal'
-import {type SchemaType} from '@sanity/types'
+import {type ArraySchemaType, type ObjectSchemaType, type SchemaType} from '@sanity/types'
 import {describe, expect, test} from 'vitest'
 
 import {extractTypes} from './testHelpers.js'
@@ -49,6 +49,30 @@ function typeForComparison(type: SchemaType, visited = new Set<string>()): Recor
 }
 
 describe('extractManifestRestore', () => {
+  test('restores fields using named array types without overriding their members', () => {
+    const extractedTypes = extractTypes([
+      {name: 'richText', of: [{type: 'block'}], type: 'array'},
+      {name: 'articleBody', type: 'richText'},
+      {
+        fields: [
+          {name: 'body', type: 'richText'},
+          {name: 'summary', type: 'articleBody'},
+        ],
+        name: 'article',
+        type: 'document',
+      },
+    ])
+
+    const restoredSchema = createSchemaFromManifestTypes({name: 'restored', types: extractedTypes})
+    const article = restoredSchema.get('article') as ObjectSchemaType
+
+    for (const field of article.fields) {
+      const arrayType = field.type as ArraySchemaType
+      expect(arrayType.jsonType).toBe('array')
+      expect(arrayType.of.map((member) => member.name)).toEqual(['block'])
+    }
+  })
+
   test('extract-then-restore roundtrip preserves schema structure', () => {
     // Uses only types supported by both Schema.compile and createSchemaFromManifestTypes.
     // Omits slug, geopoint (not built-in in Schema.compile) and image/file fields

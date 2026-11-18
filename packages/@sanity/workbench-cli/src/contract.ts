@@ -11,6 +11,9 @@ export const VIEW_CONTRACT_VERSION = 2
 export const WEB_WORKER_CONTRACT_VERSION = 1
 
 /** @internal */
+export const WINDOW_CONTRACT_VERSION = 1
+
+/** @internal */
 export const MEDIA_LIBRARY_CONFIG_CONTRACT_VERSION = 1
 
 /**
@@ -102,17 +105,16 @@ const INTERFACE_CONTRACT_VERSIONS = {
   asset_source: VIEW_CONTRACT_VERSION,
   panel: VIEW_CONTRACT_VERSION,
   tile: VIEW_CONTRACT_VERSION,
-  window: undefined,
+  window: WINDOW_CONTRACT_VERSION,
   worker: WEB_WORKER_CONTRACT_VERSION,
-} as const
+} as const satisfies Record<string, number>
 
 /** Every interface type an app exposes — a window, a view, or a web worker. */
 export type InterfaceKind = keyof typeof INTERFACE_CONTRACT_VERSIONS
 
 /** @internal */
-export function interfaceContractVersion(kind: InterfaceKind): string | undefined {
-  const version = INTERFACE_CONTRACT_VERSIONS[kind]
-  return version === undefined ? undefined : String(version)
+export function interfaceContractVersion(kind: InterfaceKind): string {
+  return String(INTERFACE_CONTRACT_VERSIONS[kind])
 }
 
 /**

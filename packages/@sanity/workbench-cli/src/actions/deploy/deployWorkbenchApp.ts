@@ -27,26 +27,26 @@ export interface CreatedApplication {
   rollback: () => Promise<void>
 }
 
-function toBrettInterface(iface: DerivedInterface, version: string): BrettInterface {
+function toBrettInterface(iface: DerivedInterface): BrettInterface {
   const {id: _id, src: _src, ...declaration} = iface
-  if ('type' in declaration) return {...declaration, version}
+  if ('type' in declaration) return declaration
 
   switch (declaration.surface) {
     case 'asset_source': {
       const {surface, ...view} = declaration
-      return {...view, type: surface, version}
+      return {...view, type: surface}
     }
     case 'panel': {
       const {surface, ...view} = declaration
-      return {...view, type: surface, version}
+      return {...view, type: surface}
     }
     case 'tile': {
       const {surface, ...view} = declaration
-      return {...view, type: surface, version}
+      return {...view, type: surface}
     }
     case 'window': {
       const {surface, ...view} = declaration
-      return {...view, type: 'app', version}
+      return {...view, type: 'app'}
     }
   }
 }
@@ -164,7 +164,7 @@ export async function deployWorkbenchApp(options: {
       applicationId,
       // Brett assigns the id and resolves modules by `moduleId`, so neither travels.
       interfaces: deriveInterfaces(app, {appTitle: title, isApp}).map((iface) =>
-        toBrettInterface(iface, version),
+        toBrettInterface(iface),
       ),
       isAutoUpdating,
       mfManifest,

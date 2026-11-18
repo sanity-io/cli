@@ -1,6 +1,6 @@
 {
   "name": "@sanity/workbench-cli",
-  "version": "2.16.0",
+  "version": "2.18.0",
   "description": "Internal implementation detail of the Sanity CLI's unstable workbench support. Not intended for direct use.",
   "homepage": "https://github.com/sanity-io/cli",
   "bugs": "https://github.com/sanity-io/cli/issues",
@@ -78,12 +78,13 @@
   },
   "dependencies": {
     "@module-federation/runtime": "2.9.3",
-    "@module-federation/vite": "1.23.11",
+    "@module-federation/vite": "1.24.0",
     "@sanity/cli-core": "workspace:^",
     "@sanity/sdk": "catalog:",
     "@sanity/types": "catalog:",
     "@vitejs/plugin-react": "catalog:",
     "form-data": "catalog:",
+    "open": "catalog:",
     "rxjs": "catalog:",
     "semver": "catalog:",
     "tar": "catalog:",

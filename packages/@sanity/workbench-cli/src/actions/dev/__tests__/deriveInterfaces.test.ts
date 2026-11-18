@@ -126,7 +126,7 @@ describe('deriveInterfaces', () => {
         src: './src/App.tsx',
         surface: 'window',
         title: 'Test App',
-        version: undefined,
+        version: '1',
       },
     ])
   })
@@ -142,7 +142,7 @@ describe('deriveInterfaces', () => {
         src: './src/App.tsx',
         surface: 'window',
         title: 'Deploy Title',
-        version: undefined,
+        version: '1',
       },
     ])
   })
@@ -158,7 +158,7 @@ describe('deriveInterfaces', () => {
         src: './src/App.tsx',
         surface: 'window',
         title: 'Test App',
-        version: undefined,
+        version: '1',
       },
     ])
   })
@@ -308,7 +308,7 @@ describe('deriveInterfaces', () => {
         src: './src/App.tsx',
         surface: 'window',
         title: 'Test App',
-        version: undefined,
+        version: '1',
       },
     ])
   })
@@ -392,7 +392,7 @@ describe('deriveInterfaces', () => {
         src: './.sanity/federation/remote-entry.jsx',
         surface: 'window',
         title: 'Test App',
-        version: undefined,
+        version: '1',
       },
     ])
   })

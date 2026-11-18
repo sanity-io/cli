@@ -91,7 +91,6 @@ function createOptions(
     configPath: '/studio/sanity.config.ts',
     isExternal: false,
     outPath: 'dist/static',
-    projectId: 'proj-123',
     schemaRequired: false,
     verbose: false,
     workDir: '/studio',
@@ -174,7 +173,6 @@ describe('buildStudioSchemasAndManifestsWorker', () => {
 
       expect(mockExtractWorkspaceManifest).toHaveBeenCalledWith(workspaces, '/studio')
       expect(mockUploadSchemaToLexicon).toHaveBeenCalledWith({
-        projectId: 'proj-123',
         verbose: true,
         workDir: '/studio',
         workspaces,
@@ -252,7 +250,6 @@ describe('buildStudioSchemasAndManifestsWorker', () => {
       })
 
       expect(mockUploadSchemaToLexicon).toHaveBeenCalledWith({
-        projectId: 'proj-123',
         verbose: true,
         workDir: '/studio',
         workspaces,
