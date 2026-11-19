@@ -1,6 +1,6 @@
 import {Args, Command, Flags} from '@oclif/core'
 import {CLIError} from '@oclif/core/errors'
-import {SanityCommand} from '@sanity/cli-core'
+import {isCi, SanityCommand} from '@sanity/cli-core'
 
 import {initAction} from '../actions/init/initAction.js'
 import {InitError} from '../actions/init/initError.js'
@@ -240,15 +240,14 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
 
   public async run(): Promise<void> {
     let mcpMode: 'auto' | 'prompt' | 'skip' = 'prompt'
-    if (!this.flags.mcp || !this.resolveIsInteractive()) {
+    if (!this.flags.mcp || isCi()) {
       mcpMode = 'skip'
     } else if (this.isUnattended()) {
-      // Any unattended run (e.g. --yes, --json) configures MCP with defaults rather than prompting
+      // Unattended runs configure MCP with defaults rather than prompting.
       mcpMode = 'auto'
     }
 
-    // Mirror MCP's environment gating: skip install in test environments
-    // ensure e2e / CI tests don't run the bundled skills CLI.
+    // Skills still require an interactive terminal.
     let skillsMode: 'auto' | 'prompt' | 'skip' = 'auto'
     if (!this.flags.skills || !this.resolveIsInteractive()) {
       skillsMode = 'skip'
