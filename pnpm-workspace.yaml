@@ -21,7 +21,7 @@ catalog:
   publint: ^0.3.25
 
   # GROQ
-  groq-js: ^2.0.1
+  groq-js: ^2.0.2
 
   # Sanity
   sanity: ^6.24.0
@@ -31,7 +31,7 @@ catalog:
   '@sanity/util': ^6.24.0
   '@sanity/validation': ^6.24.0
   '@sanity/client': ^8.16.0
-  '@sanity/codegen': ^8.3.1
+  '@sanity/codegen': ^8.3.2
   '@sanity/sdk': ^3.14.0
   '@sanity/telemetry': ^1.1.0
 
