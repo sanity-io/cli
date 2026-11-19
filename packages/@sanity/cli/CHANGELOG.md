@@ -1,5 +1,40 @@
 # Change Log
 
+## 8.32.0
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-v8.31.0...cli-v8.32.0)
+
+_2026-11-19_
+
+### Features
+
+- **cli-build:** add generate schema event listeners ([#2210](https://github.com/sanity-io/cli/pull/2210)) ([ab6d722](https://github.com/sanity-io/cli/commit/ab6d722db87a05991c9102d4e180ddf148e24e8e))
+- **organizations:** set an organization's logo from the CLI ([#2227](https://github.com/sanity-io/cli/pull/2227)) ([230b7b1](https://github.com/sanity-io/cli/commit/230b7b12b63587e08fb60984ab4c66efdfbdc279))
+
+### Bug Fixes
+
+- **deps:** update dependency skills to ^1.8.1 ([#2214](https://github.com/sanity-io/cli/pull/2214)) ([3750973](https://github.com/sanity-io/cli/commit/375097389401a99cbe805701ff6cc668fba18b96))
+- **deps:** update dependency smol-toml to ^1.9.1 ([#2219](https://github.com/sanity-io/cli/pull/2219)) ([f7b7de8](https://github.com/sanity-io/cli/commit/f7b7de80724c8fa164fb60ca4b5cd3321adb0371))
+- **deps:** update sanity-tooling ([#2221](https://github.com/sanity-io/cli/pull/2221)) ([ff30dc4](https://github.com/sanity-io/cli/commit/ff30dc4d75c0ca6661a970feea632cce6254980e))
+- **documents:** skip managed documents in file validation ([#2209](https://github.com/sanity-io/cli/pull/2209)) ([314880e](https://github.com/sanity-io/cli/commit/314880e4b5dfafb4e5244c897e2a052d3396848c))
+- **workflows:** add `sanity workflows whoami` and `sanity workflows codemod packages` ([#2147](https://github.com/sanity-io/cli/pull/2147)) ([6c4a8b7](https://github.com/sanity-io/cli/commit/6c4a8b726efa00a8e2b88e911c420b37682b7d09))
+
+  `sanity workflows whoami` shows the user ID Workflows records for your login, for use in user assignee fields. `sanity workflows codemod packages` moves a project's imports and dependencies from the retired Workflows packages to `@sanity/workflows`, `@sanity/workflows-ui`, `@sanity/workflows-cli` and `@sanity/workflows-test`.
+
+- **workflows:** add `--release-resource`, `--workflow-resource` and `--verbose` flags ([#2147](https://github.com/sanity-io/cli/pull/2147)) ([6c4a8b7](https://github.com/sanity-io/cli/commit/6c4a8b726efa00a8e2b88e911c420b37682b7d09))
+
+  `sanity workflows start` accepts `--release-resource`. The `sanity workflows` commands that read or write a workflow store accept `--workflow-resource`. `sanity workflows blueprints generate` accepts `--verbose`.
+
+- **workflows:** remove `sanity workflows set-stage` ([#2147](https://github.com/sanity-io/cli/pull/2147)) ([6c4a8b7](https://github.com/sanity-io/cli/commit/6c4a8b726efa00a8e2b88e911c420b37682b7d09))
+
+  `sanity workflows set-stage` is removed. Workflow instances move between stages through their actions.
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/cli-build bumped to 7.4.0
+
 ## 8.31.0
 
 [Compare changes](https://github.com/sanity-io/cli/compare/cli-v8.30.0...cli-v8.31.0)

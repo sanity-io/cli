@@ -1,5 +1,21 @@
 # Changelog
 
+## 7.4.0
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-build-v7.3.0...cli-build-v7.4.0)
+
+_2026-11-19_
+
+### Features
+
+- **cli-build:** add generate schema event listeners ([#2210](https://github.com/sanity-io/cli/pull/2210)) ([ab6d722](https://github.com/sanity-io/cli/commit/ab6d722db87a05991c9102d4e180ddf148e24e8e))
+- **cli-build:** accept resource bindings during studio build ([#2230](https://github.com/sanity-io/cli/pull/2230)) ([7c787d1](https://github.com/sanity-io/cli/commit/7c787d16232b40e517247e0cd515aaefd5cee2a4))
+
+### Bug Fixes
+
+- **deps:** update dependency dompurify to ^3.4.18 ([#2212](https://github.com/sanity-io/cli/pull/2212)) ([0cdbcb5](https://github.com/sanity-io/cli/commit/0cdbcb50efca2dce8f8fe2e7b7ef1db44b5fd79d))
+- **deps:** update sanity-tooling ([#2221](https://github.com/sanity-io/cli/pull/2221)) ([ff30dc4](https://github.com/sanity-io/cli/commit/ff30dc4d75c0ca6661a970feea632cce6254980e))
+
 ## 7.3.0
 
 [Compare changes](https://github.com/sanity-io/cli/compare/cli-build-v7.2.2...cli-build-v7.3.0)
