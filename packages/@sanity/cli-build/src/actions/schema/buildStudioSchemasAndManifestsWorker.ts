@@ -12,6 +12,15 @@ import {
   type UploadSchemaToLexiconListeners,
 } from './uploadSchemaToLexicon.js'
 
+declare global {
+  /**
+   * Set as a side effect by the statically-imported, deploy-time-baked bindings
+   * module, which runs before any app code. Absent when the bundle is used
+   * without that module (e.g. this package standalone).
+   */
+  var __SANITY_RESOURCE_BINDINGS__: BuildStudioSchemasAndManifestsWorkerData['resourceBindings']
+}
+
 const debug = subdebug('buildStudioSchemasAndManifests.worker')
 
 /**
@@ -35,11 +44,18 @@ export async function workerBuildStudioSchemasAndManifests(
     configPath,
     isExternal,
     outPath,
+    resourceBindings,
     schemaRequired,
     verbose,
     workDir,
     workspaceSchemaHandler,
   } = options
+
+  if (resourceBindings) {
+    // store the given resource bindings in the special global variable so they are
+    // available during the build
+    globalThis.__SANITY_RESOURCE_BINDINGS__ = resourceBindings
+  }
 
   debug('Building studio schemas and manifests from config path %s', configPath)
   const workspaces = await getStudioWorkspaces(configPath)
