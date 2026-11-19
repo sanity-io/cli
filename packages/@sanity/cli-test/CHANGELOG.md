@@ -1,5 +1,15 @@
 # Changelog
 
+## 25.0.2
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-test-v25.0.1...cli-test-v25.0.2)
+
+_2026-11-19_
+
+### Bug Fixes
+
+- **deps:** update dependency ansis to ^4.5.0 ([#2217](https://github.com/sanity-io/cli/pull/2217)) ([f6613e4](https://github.com/sanity-io/cli/commit/f6613e47d759a439aaabb727db7c500f44b9ff35))
+
 ## 25.0.1
 
 [Compare changes](https://github.com/sanity-io/cli/compare/cli-test-v25.0.0...cli-test-v25.0.1)
