@@ -450,6 +450,10 @@ snapshots:
 					"specifier": "^20.5.0",
 					"version": "20.5.0",
 				},
+				"@sanity/oxfmt-config": {
+					"specifier": "^1.0.0",
+					"version": "1.0.0",
+				},
 				"@types/node": {
 					"specifier": "^22.20.5",
 					"version": "22.20.5",
@@ -9991,6 +9995,11 @@ snapshots:
 				"dequal": "2.0.3",
 				"obug": "3.0.0",
 			},
+		},
+
+		"@sanity/oxfmt-config@1.0.0": {
+			"integrity": "sha512-2BB9cTIJpfTKYqeTQSirHXbZNG+Vypfp3oKxwkxbICN6J1OvnD2czcuz/ne2kxZEh/pD+T3hInRdCwinmtzwiw==",
+			"engines": {"node": ">=20.19 <22 || >=22.12"},
 		},
 
 		"@sanity/parse-package-json@2.3.3": {
