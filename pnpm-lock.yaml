@@ -228,8 +228,8 @@ snapshots:
 					"version": "6.24.0",
 				},
 				"@sanity/sdk": {
-					"specifier": "^3.14.0",
-					"version": "3.14.0",
+					"specifier": "^3.15.0",
+					"version": "3.15.0",
 				},
 				"@sanity/telemetry": {
 					"specifier": "^1.1.0",
@@ -10486,6 +10486,10 @@ snapshots:
 					"version": "5.1.1",
 					"below": true,
 				},
+				"xstate": {
+					"version": "5.33.4",
+					"below": true,
+				},
 			},
 			"dependencies": {
 				"@sanity/bifur-client": "2.0.2",
@@ -10501,6 +10505,52 @@ snapshots:
 				"@sanity/telemetry": "1.1.0",
 				"@sanity/types": "6.24.0",
 				"@sentry/browser": "11.10.0",
+				"groq": "6.24.0",
+				"groq-js": "2.0.3",
+				"reselect": "5.3.0",
+				"rxjs": "7.8.2",
+				"zustand": "5.1.0",
+			},
+		},
+
+		"@sanity/sdk@3.15.0": {
+			"integrity": "sha512-90IQHAFbz3qYMomsL0Iyy/vTr+de/KatJtgGa9DcIx35PP0+kYSThII20B3Ql0zwWTeScSaoUwU5NL7NmAYafw==",
+			"peerDependencies": {
+				"@types/react": {
+					"version": "19.3.0",
+					"below": true,
+				},
+				"immer": {
+					"version": "11.1.18",
+					"below": true,
+				},
+				"react": {
+					"version": "19.3.1",
+					"below": true,
+				},
+				"use-sync-external-store": {
+					"version": "1.7.0",
+					"below": true,
+				},
+				"vitest": {
+					"version": "5.1.1",
+					"below": true,
+				},
+			},
+			"dependencies": {
+				"@sanity/bifur-client": "2.0.2",
+				"@sanity/client": "8.17.0",
+				"@sanity/comlink": "4.0.3",
+				"@sanity/diff-match-patch": "3.2.1",
+				"@sanity/diff-patch": "7.0.0",
+				"@sanity/id-utils": "1.1.0",
+				"@sanity/image-url": "2.2.0",
+				"@sanity/json-match": "1.0.5",
+				"@sanity/message-protocol": "0.24.0",
+				"@sanity/mutate": "0.18.2",
+				"@sanity/telemetry": "1.1.0",
+				"@sanity/types": "6.24.0",
+				"@sentry/browser": "11.12.0",
 				"groq": "6.24.0",
 				"groq-js": "2.0.3",
 				"reselect": "5.3.0",
@@ -11217,7 +11267,7 @@ snapshots:
 				"@module-federation/runtime": "2.9.3",
 				"@module-federation/vite": "1.24.0",
 				"@sanity/cli-core": "3.15.1",
-				"@sanity/sdk": "3.14.0",
+				"@sanity/sdk": "3.15.0",
 				"@sanity/types": "6.24.0",
 				"@vitejs/plugin-react": "6.3.0",
 				"form-data": "4.0.6",
@@ -19979,7 +20029,7 @@ snapshots:
 				"@sanity/preview-url-secret": "4.1.5",
 				"@sanity/prism-groq": "1.1.2",
 				"@sanity/schema": "6.17.0",
-				"@sanity/sdk": "3.14.0",
+				"@sanity/sdk": "3.15.0",
 				"@sanity/sdk-react": "3.9.1",
 				"@sanity/telemetry": "1.1.0",
 				"@sanity/types": "6.17.0",
