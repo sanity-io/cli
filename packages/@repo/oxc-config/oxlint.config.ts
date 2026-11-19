@@ -119,6 +119,7 @@ export default defineConfig({
           '**/package.bundle.ts',
           '**/package.config.ts',
           '**/knip.config.ts',
+          '**/oxfmt.config.ts',
           '**/scripts/**',
         ],
         includeTypes: false,

@@ -33,7 +33,7 @@ jobs:
               - '!**/*.md'
               - '!LICENSE'
               - '!.editorconfig'
-              - '!.oxfmtrc.json'
+              - '!oxfmt.config.ts'
               - '!.claude/**'
               - '!.cursor/**'
               - '!.gitignore'
