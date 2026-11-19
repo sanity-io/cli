@@ -239,8 +239,9 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
   })
 
   public async run(): Promise<void> {
+    const mcpSkippedNonInteractive = this.flags.mcp && !this.resolveIsInteractive()
     let mcpMode: 'auto' | 'prompt' | 'skip' = 'prompt'
-    if (!this.flags.mcp || !this.resolveIsInteractive()) {
+    if (!this.flags.mcp || mcpSkippedNonInteractive) {
       mcpMode = 'skip'
     } else if (this.isUnattended()) {
       // Any unattended run (e.g. --yes, --json) configures MCP with defaults rather than prompting
@@ -263,6 +264,16 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
           workDir: process.cwd(),
         },
       )
+
+      // stderr, so a --json caller still sees it without breaking stdout
+      if (mcpSkippedNonInteractive && !this.flags.bare) {
+        this.output.logDiagnostic(
+          'Skipped MCP setup (non-interactive shell). If you still need to connect your AI editor to Sanity, run: npx sanity@latest mcp configure',
+        )
+        this.output.logDiagnostic(
+          'Run code when content changes or on a schedule with Sanity Functions: https://www.sanity.io/docs/functions',
+        )
+      }
     } catch (error) {
       if (error instanceof InitError) {
         this.error(error.message, {exit: error.exitCode})

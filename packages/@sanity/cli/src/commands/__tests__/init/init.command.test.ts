@@ -83,6 +83,37 @@ describe('mcpMode resolution', () => {
   })
 })
 
+describe('MCP setup hint', () => {
+  afterEach(() => {
+    vi.clearAllMocks()
+    mockIsInteractive.mockReturnValue(true)
+  })
+
+  test.each([
+    {argv: ['--json'], interactive: false, shown: true},
+    {argv: ['--bare'], interactive: false, shown: false},
+    {argv: ['--no-mcp'], interactive: false, shown: false},
+    {argv: [], interactive: true, shown: false},
+  ])(
+    'argv $argv, interactive $interactive: hint shown $shown',
+    async ({argv, interactive, shown}) => {
+      mockIsInteractive.mockReturnValue(interactive)
+      mockInitAction.mockResolvedValue(undefined)
+
+      const {error, stderr, stdout} = await testCommand(InitCommand, argv, {
+        mocks: {isInteractive: interactive, token: 'test-token'},
+      })
+
+      if (error) throw error
+      expect(stdout).not.toContain('mcp configure')
+      expect(stdout).not.toContain('https://www.sanity.io/docs/functions')
+      expect(stderr.includes('Skipped MCP setup (non-interactive shell).')).toBe(shown)
+      expect(stderr.includes('run: npx sanity@latest mcp configure')).toBe(shown)
+      expect(stderr.includes('https://www.sanity.io/docs/functions')).toBe(shown)
+    },
+  )
+})
+
 describe('skillsMode resolution', () => {
   afterEach(() => {
     vi.clearAllMocks()
