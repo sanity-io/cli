@@ -1,7 +1,6 @@
 import {getGlobalCliClient} from '@sanity/cli-core'
+import {type ImageFile} from '@sanity/cli-core/images'
 import {RawRequestOptions} from '@sanity/client'
-
-import {type OrganizationLogo} from '../actions/organizations/readOrganizationLogo.js'
 
 export const ORGANIZATIONS_API_VERSION = 'v2025-05-14'
 
@@ -150,7 +149,7 @@ export async function updateOrganization(
  */
 export async function setOrganizationLogo(
   organizationId: string,
-  logo: OrganizationLogo,
+  logo: ImageFile,
 ): Promise<OrganizationLogoResponse> {
   const client = await getGlobalCliClient({
     apiVersion: ORGANIZATION_LOGO_API_VERSION,

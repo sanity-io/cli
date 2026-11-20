@@ -61,6 +61,10 @@
       "source": "./src/_exports/errors.ts",
       "default": "./dist/_exports/errors.js"
     },
+    "./images": {
+      "source": "./src/_exports/images.ts",
+      "default": "./dist/_exports/images.js"
+    },
     "./executionContext": {
       "source": "./src/executionContext.ts",
       "default": "./dist/executionContext.js"
