@@ -1,5 +1,15 @@
 # Change Log
 
+## 8.34.0
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-v8.33.0...cli-v8.34.0)
+
+_2026-11-20_
+
+### Features
+
+- **cli:** migrate dashboard views to plain exports ([#2182](https://github.com/sanity-io/cli/pull/2182)) ([f5e0b75](https://github.com/sanity-io/cli/commit/f5e0b758d71fb5931789388cd67bf0956963ac2d))
+
 ## 8.33.0
 
 [Compare changes](https://github.com/sanity-io/cli/compare/cli-v8.32.1...cli-v8.33.0)
