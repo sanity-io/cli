@@ -8,6 +8,7 @@ import {
   type ImportDeclaration,
   type ImportSpecifier,
   type JSCodeshift,
+  type Options,
 } from 'jscodeshift'
 
 interface Import {
@@ -92,6 +93,7 @@ function migrateWebWorker(
   exportDefault: ExportDefaultDeclaration,
   call: CallExpression,
   isTypeScript: boolean,
+  sdkPackage: string,
 ): Import[] | undefined {
   const [, fn] = call.arguments
   if (!j.ArrowFunctionExpression.check(fn) && !j.FunctionExpression.check(fn)) {
@@ -126,7 +128,7 @@ function migrateWebWorker(
 
   props.typeAnnotation = j.tsTypeAnnotation(j.tsTypeReference(j.identifier('WebWorkerProps')))
 
-  return [{kind: 'type', name: 'WebWorkerProps', source: '@sanity/sdk/dashboard'}]
+  return [{kind: 'type', name: 'WebWorkerProps', source: `${sdkPackage}/dashboard`}]
 }
 
 function addImport(j: JSCodeshift, root: Collection, {kind, name, source}: Import): void {
@@ -170,7 +172,11 @@ function removeUnusedImport(j: JSCodeshift, root: Collection, path: ASTPath<Impo
   declaration.prune()
 }
 
-export default function dashboardViewsV1(file: FileInfo, api: API): string | undefined {
+export default function dashboardViewsV1(
+  file: FileInfo,
+  api: API,
+  {sdkPackage = '@sanity/sdk-react'}: Options,
+): string | undefined {
   const j = api.jscodeshift
   const root = j(file.source)
   const isTypeScript = /\.tsx?$/.test(file.path)
@@ -202,7 +208,7 @@ export default function dashboardViewsV1(file: FileInfo, api: API): string | und
       const added =
         defineName === 'unstable_defineView'
           ? migrateView(j, root, api, exportDefault, path.node)
-          : migrateWebWorker(j, api, exportDefault, path.node, isTypeScript)
+          : migrateWebWorker(j, api, exportDefault, path.node, isTypeScript, sdkPackage)
       if (!added) continue
 
       imports.push(...added)

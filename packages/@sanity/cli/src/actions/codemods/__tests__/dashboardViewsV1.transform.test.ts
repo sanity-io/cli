@@ -6,10 +6,10 @@ import transform, {parser} from '../../../../codemods/dashboardViewsV1.js'
 const report = vi.fn()
 const VIEW = 'import { unstable_defineView } from "sanity/dashboard";\n'
 
-function migrate(source: string, path = 'src/view.tsx') {
+function migrate(source: string, path = 'src/view.tsx', options = {}) {
   const j = jscodeshift.withParser(parser)
 
-  return transform({path, source}, {j, jscodeshift: j, report, stats: () => {}})
+  return transform({path, source}, {j, jscodeshift: j, report, stats: () => {}}, options)
 }
 
 describe('dashboard-views-v1 transform', () => {
@@ -103,7 +103,7 @@ export default unstable_defineService("worker", ({ bus, service }) => {
         'src/worker.ts',
       ),
     ).toMatchInlineSnapshot(`
-      "import type { WebWorkerProps } from "@sanity/sdk/dashboard";
+      "import type { WebWorkerProps } from "@sanity/sdk-react/dashboard";
 
       /** Checks for drop updates. */
       export default ({
@@ -115,6 +115,17 @@ export default unstable_defineService("worker", ({ bus, service }) => {
         return () => clearInterval(interval);
       };"
     `)
+  })
+
+  test('imports the web worker props type from the SDK package that prepare picked', () => {
+    expect(
+      migrate(
+        `import { unstable_defineService } from "sanity/dashboard";
+export default unstable_defineService("worker", ({ bus }) => {});`,
+        'src/worker.ts',
+        {sdkPackage: '@sanity/sdk'},
+      ),
+    ).toContain('import type { WebWorkerProps } from "@sanity/sdk/dashboard";')
   })
 
   test('renames service on a props object and leaves a JavaScript web worker untyped', () => {

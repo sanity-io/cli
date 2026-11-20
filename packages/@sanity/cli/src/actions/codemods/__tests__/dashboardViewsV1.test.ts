@@ -78,34 +78,29 @@ describe('dashboard-views-v1 codemod prepare', () => {
   })
 
   test('targets the files of every view and web worker except the window view', async () => {
-    await expect(
-      prepare({app}, {'@sanity/sdk': '3.15.0', '@sanity/sdk-react': '3.15.0'}),
-    ).resolves.toEqual({
-      options: {},
+    await expect(prepare({app}, {'@sanity/sdk-react': '3.15.0'})).resolves.toEqual({
+      options: {sdkPackage: '@sanity/sdk-react'},
       paths: ['src/views/panel.tsx', 'src/views/tile.tsx', 'src/feed.ts'].map((src) =>
         path.resolve(workDir, src),
       ),
     })
     expect(installNewPackages).not.toHaveBeenCalled()
     expect(upgradeRequiredPackages).toHaveBeenCalledWith(
-      [
-        {min: '3.15.0', name: '@sanity/sdk-react', neededBy},
-        {min: '3.15.0', name: '@sanity/sdk', neededBy},
-      ],
+      [{min: '3.15.0', name: '@sanity/sdk-react', neededBy}],
       {dry: false, output, workDir},
     )
   })
 
-  test('installs the missing SDK packages', async () => {
-    await prepare({app}, {'@sanity/sdk-react': '3.12.0'})
+  test('installs @sanity/sdk-react for views even when @sanity/sdk is installed', async () => {
+    await prepare({app}, {'@sanity/sdk': '3.15.0'})
 
     expect(installNewPackages).toHaveBeenCalledWith(
-      {packageManager: 'pnpm', packages: ['@sanity/sdk@^3.15.0']},
+      {packageManager: 'pnpm', packages: ['@sanity/sdk-react@^3.15.0']},
       {output, workDir},
     )
   })
 
-  test('lists the missing SDK packages and still offers upgrades when the install is declined', async () => {
+  test('lists the missing SDK package and still offers upgrades when the install is declined', async () => {
     vi.mocked(confirm).mockResolvedValue(false)
 
     await prepare({app}, {'@sanity/sdk': '3.15.0'})
@@ -125,15 +120,19 @@ describe('dashboard-views-v1 codemod prepare', () => {
     })
   })
 
-  test('requires only @sanity/sdk without views to migrate', async () => {
-    await prepare({app: workerOnly}, {})
-
-    expect(installNewPackages).toHaveBeenCalledWith(
-      {packageManager: 'pnpm', packages: ['@sanity/sdk@^3.15.0']},
-      {output, workDir},
-    )
+  test.each([
+    [
+      '@sanity/sdk-react when it is installed',
+      {'@sanity/sdk-react': '3.15.0'},
+      '@sanity/sdk-react',
+    ],
+    ['@sanity/sdk otherwise', {}, '@sanity/sdk'],
+  ])('migrates web workers without views to %s', async (_, versions, sdkPackage) => {
+    await expect(prepare({app: workerOnly}, versions)).resolves.toMatchObject({
+      options: {sdkPackage},
+    })
     expect(upgradeRequiredPackages).toHaveBeenCalledWith(
-      [{min: '3.15.0', name: '@sanity/sdk', neededBy}],
+      [{min: '3.15.0', name: sdkPackage, neededBy}],
       {dry: false, output, workDir},
     )
   })
