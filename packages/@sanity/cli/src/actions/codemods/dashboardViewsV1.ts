@@ -9,7 +9,6 @@ import {getPackageManagerChoice} from '../../util/packageManager/packageManagerC
 import {type CodeMod} from './types.js'
 import {upgradeRequiredPackages} from './upgradeRequiredPackages.js'
 
-const MIN_SANITY_VERSION = '6.24.0'
 const MIN_SDK_VERSION = '3.15.0'
 
 const purpose = 'Migrate Dashboard tiles, asset sources and web workers to plain default exports'
@@ -21,8 +20,7 @@ receive \`{bus, worker}\`, typed with \`WebWorkerProps\` from \`@sanity/sdk/dash
 are left unchanged.
 
 Installs @sanity/sdk-react (views) and @sanity/sdk (web workers) when they are missing, and
-offers to upgrade sanity (older than ${MIN_SANITY_VERSION}) and those SDK packages (older than
-${MIN_SDK_VERSION}).
+offers to upgrade them when they are older than ${MIN_SDK_VERSION}.
 `.trim()
 
 export const dashboardViewsV1: CodeMod = {
@@ -68,10 +66,7 @@ export const dashboardViewsV1: CodeMod = {
 
     const neededBy = 'the migrated files need'
     await upgradeRequiredPackages(
-      [
-        {min: MIN_SANITY_VERSION, name: 'sanity', neededBy},
-        ...sdkPackages.map((name) => ({min: MIN_SDK_VERSION, name, neededBy})),
-      ],
+      sdkPackages.map((name) => ({min: MIN_SDK_VERSION, name, neededBy})),
       {dry: listOnly, output, workDir},
     )
 

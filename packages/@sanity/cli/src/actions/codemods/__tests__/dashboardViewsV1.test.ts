@@ -89,7 +89,6 @@ describe('dashboard-views-v1 codemod prepare', () => {
     expect(installNewPackages).not.toHaveBeenCalled()
     expect(upgradeRequiredPackages).toHaveBeenCalledWith(
       [
-        {min: '6.24.0', name: 'sanity', neededBy},
         {min: '3.15.0', name: '@sanity/sdk-react', neededBy},
         {min: '3.15.0', name: '@sanity/sdk', neededBy},
       ],
@@ -134,10 +133,7 @@ describe('dashboard-views-v1 codemod prepare', () => {
       {output, workDir},
     )
     expect(upgradeRequiredPackages).toHaveBeenCalledWith(
-      [
-        {min: '6.24.0', name: 'sanity', neededBy},
-        {min: '3.15.0', name: '@sanity/sdk', neededBy},
-      ],
+      [{min: '3.15.0', name: '@sanity/sdk', neededBy}],
       {dry: false, output, workDir},
     )
   })
