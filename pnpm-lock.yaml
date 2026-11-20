@@ -1065,8 +1065,8 @@ snapshots:
 				},
 				"tinyglobby": "catalog:",
 				"valibot": {
-					"specifier": "^1.4.2",
-					"version": "1.4.2",
+					"specifier": "^1.5.0",
+					"version": "1.5.0",
 				},
 				"vite": "catalog:",
 				"which": {
@@ -9531,7 +9531,7 @@ snapshots:
 				"prettier": "3.9.6",
 				"reselect": "5.3.0",
 				"tsconfig-paths": "4.2.0",
-				"valibot": "1.4.2",
+				"valibot": "1.5.0",
 			},
 		},
 
@@ -21642,17 +21642,6 @@ snapshots:
 		"uuidv7@0.4.4": {
 			"integrity": "sha512-jjRGChg03uGp9f6wQYSO8qXkweJwRbA5WRuEQE8xLIiehIzIIi23qZSzsyvZPCPoFqkeLtZuz7Plt1LGukAInA==",
 			"hasBin": true,
-		},
-
-		"valibot@1.4.2": {
-			"integrity": "sha512-gjdCvJ6d3RyHAneqxMYMW9QMCwYMb3jpOO0IyHZV1bnRHFBHrX3VkIILt5XYR0WhwHiH7Mty8ovuPZ/O3gamrg==",
-			"peerDependencies": {
-				"typescript": {
-					"specifier": ">=5",
-					"version": "6.0.3",
-					"optional": true,
-				},
-			},
 		},
 
 		"valibot@1.5.0": {
