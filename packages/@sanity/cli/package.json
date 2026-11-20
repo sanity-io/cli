@@ -81,7 +81,8 @@
     "test:watch": "vitest",
     "prewatch": "pnpm run manifest:remove",
     "watch": "swc --delete-dir-on-start --strip-leading-paths --out-dir dist/ --watch src",
-    "lint": "oxlint -c oxlint.config.ts"
+    "lint": "oxlint -c oxlint.config.ts",
+    "generate:logo-image": "tsx scripts/generate-logo-image.ts"
   },
   "dependencies": {
     "@oclif/core": "catalog:",
