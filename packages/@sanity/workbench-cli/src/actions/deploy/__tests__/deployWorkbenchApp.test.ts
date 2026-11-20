@@ -42,7 +42,7 @@ const workspaces: BrettWorkspace[] = [
   },
 ]
 const access: BrettAccess[] = [{resourceId: 'proj-1.production', resourceType: 'dataset'}]
-const icon = '<svg viewBox="0 0 16 16"><path d="M2 2h12v12H2z"/></svg>'
+const icon = {contentType: 'image/png', image: Buffer.from('png bytes')}
 
 /** The (name, value) pairs a call appended to its FormData. */
 function appendedFields(): Array<[string, unknown]> {
@@ -398,7 +398,7 @@ describe('deployWorkbenchApp', () => {
     expect(appendedFields()).toContainEqual(['access', JSON.stringify(access)])
   })
 
-  test('syncs the title and icon after shipping the deployment', async () => {
+  test('syncs the title, then uploads the icon, after shipping the deployment', async () => {
     mockClient.request.mockResolvedValueOnce({id: 'dep_1'}).mockResolvedValueOnce(undefined)
 
     await deployWorkbenchApp({
@@ -413,14 +413,18 @@ describe('deployWorkbenchApp', () => {
       version: '1.0.0',
     })
 
-    expect(mockClient.request.mock.calls[1][0]).toEqual({
-      body: {icon, title: 'Drop Desk'},
-      method: 'PATCH',
-      url: '/applications/app_1',
-    })
+    expect(mockClient.request.mock.calls.slice(1).map(([request]) => request)).toEqual([
+      {body: {title: 'Drop Desk'}, method: 'PATCH', url: '/applications/app_1'},
+      {
+        body: icon.image,
+        headers: {'Content-Type': 'image/png'},
+        method: 'PUT',
+        url: '/applications/app_1/icon',
+      },
+    ])
   })
 
-  test('syncs the title without an icon when none is declared', async () => {
+  test('removes the icon when none is declared', async () => {
     mockClient.request.mockResolvedValueOnce({id: 'dep_1'}).mockResolvedValueOnce(undefined)
 
     await deployWorkbenchApp({
@@ -434,11 +438,56 @@ describe('deployWorkbenchApp', () => {
       version: '1.0.0',
     })
 
-    expect(mockClient.request.mock.calls[1][0]).toEqual({
-      body: {title: 'Drop Desk'},
-      method: 'PATCH',
-      url: '/applications/app_1',
-    })
+    expect(mockClient.request.mock.calls.slice(1).map(([request]) => request)).toEqual([
+      {body: {title: 'Drop Desk'}, method: 'PATCH', url: '/applications/app_1'},
+      {method: 'DELETE', url: '/applications/app_1/icon'},
+    ])
+  })
+
+  test('leaves a failure to remove the icon untouched, since no image was sent', async () => {
+    const notFound = Object.assign(new Error('Not Found'), {statusCode: 404})
+    mockClient.request
+      .mockResolvedValueOnce({id: 'dep_1'})
+      .mockResolvedValueOnce(undefined)
+      .mockRejectedValueOnce(notFound)
+
+    await expect(
+      deployWorkbenchApp({
+        app,
+        applicationId: 'app_1',
+        isApp: true,
+        isAutoUpdating: false,
+        mfManifest,
+        sourceDir,
+        title: 'Drop Desk',
+        version: '1.0.0',
+      }),
+    ).rejects.toBe(notFound)
+  })
+
+  test('names the server reason when the icon is rejected', async () => {
+    mockClient.request
+      .mockResolvedValueOnce({id: 'dep_1'})
+      .mockResolvedValueOnce(undefined)
+      .mockRejectedValueOnce(
+        Object.assign(new Error('Unsupported image format'), {statusCode: 415}),
+      )
+
+    await expect(
+      deployWorkbenchApp({
+        app,
+        applicationId: 'app_1',
+        icon,
+        isApp: true,
+        isAutoUpdating: false,
+        mfManifest,
+        sourceDir,
+        title: 'Drop Desk',
+        version: '1.0.0',
+      }),
+    ).rejects.toThrow(
+      "The app icon was rejected: Unsupported image format. The deployment is live with the application's previous icon. Change `app.icon` in sanity.cli.ts and deploy again.",
+    )
   })
 
   test('syncs visibility on redeploy when declared', async () => {

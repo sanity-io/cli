@@ -1,7 +1,9 @@
+import {mkdir, mkdtemp, rm, writeFile} from 'node:fs/promises'
+import {tmpdir} from 'node:os'
 import {join} from 'node:path'
 import {styleText} from 'node:util'
 
-import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
+import {afterEach, beforeEach, describe, expect, onTestFinished, test, vi} from 'vitest'
 
 import {buildAppId} from '../../../appId.js'
 import {resolveWorkbenchApp} from '../../../resolveWorkbenchApp.js'
@@ -176,6 +178,42 @@ describe('startWorkbenchPreview', () => {
         applicationId: 'v27rvqtlp3lmdvcln6ey3lro',
         id: 'app_deployed_id',
       })
+    })
+
+    test("serves the app's icon from the project, and points the manifest at it", async () => {
+      const workDir = await mkdtemp(join(tmpdir(), 'preview-icon-'))
+      onTestFinished(() => rm(workDir, {force: true, recursive: true}))
+      await mkdir(join(workDir, 'public'))
+      await writeFile(join(workDir, 'public', 'icon.png'), 'png bytes')
+      const image = Buffer.from('png bytes')
+      mockReadFile.mockImplementation(async (path: string) => {
+        if (path.endsWith('icon.png')) return image
+        throw Object.assign(new Error('ENOENT'), {code: 'ENOENT'})
+      })
+      // Non-strict ports: the build is served on whichever port was free.
+      mockServeBuiltApplication.mockResolvedValue({
+        close: vi.fn().mockResolvedValue(undefined),
+        host: 'localhost',
+        port: 4001,
+      })
+
+      await run({
+        cliConfig: workbenchCliConfig({app: workbenchApp({icon: './public/icon.png'})}),
+        workDir,
+      })
+
+      expect(mockServeBuiltApplication).toHaveBeenCalledWith(
+        expect.objectContaining({
+          icon: expect.objectContaining({
+            contentType: 'image/png',
+            image,
+            path: '/public/icon.png',
+          }),
+        }),
+      )
+      expect(mockExtractManifest).toHaveBeenCalledWith(
+        expect.objectContaining({iconUrl: 'http://localhost:4001/public/icon.png'}),
+      )
     })
 
     test('registers a studio build as a studio', async () => {

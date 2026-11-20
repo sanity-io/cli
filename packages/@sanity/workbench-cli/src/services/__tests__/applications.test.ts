@@ -15,6 +15,8 @@ import {
   getApplicationUrl,
   getWorkbenchUrl,
   listApplications,
+  removeApplicationIcon,
+  setApplicationIcon,
   updateApplication,
 } from '../applications.js'
 
@@ -188,15 +190,43 @@ describe('createApplication', () => {
 describe('updateApplication', () => {
   test('PATCHes the given mutable fields', async () => {
     mockClient.request.mockResolvedValueOnce(undefined)
-    const icon = '<svg viewBox="0 0 16 16"><circle cx="8" cy="8" r="6"/></svg>'
 
-    await updateApplication('app_1', {icon})
+    await updateApplication('app_1', {title: 'Drop Desk'})
 
     expect(getGlobalCliClient).toHaveBeenCalledWith({apiVersion: 'vX', requireUser: true})
     expect(mockClient.request).toHaveBeenCalledWith({
-      body: {icon},
+      body: {title: 'Drop Desk'},
       method: 'PATCH',
       url: '/applications/app_1',
+    })
+  })
+})
+
+describe('setApplicationIcon', () => {
+  test("PUTs the image as the request body, with the image's Content-Type", async () => {
+    mockClient.request.mockResolvedValueOnce({icon: 'https://cdn.sanity.io/icon.png'})
+    const image = Buffer.from('png bytes')
+
+    await setApplicationIcon('app_1', {contentType: 'image/png', image})
+
+    expect(mockClient.request).toHaveBeenCalledWith({
+      body: image,
+      headers: {'Content-Type': 'image/png'},
+      method: 'PUT',
+      url: '/applications/app_1/icon',
+    })
+  })
+})
+
+describe('removeApplicationIcon', () => {
+  test("DELETEs the application's icon", async () => {
+    mockClient.request.mockResolvedValueOnce({icon: null})
+
+    await removeApplicationIcon('app_1')
+
+    expect(mockClient.request).toHaveBeenCalledWith({
+      method: 'DELETE',
+      url: '/applications/app_1/icon',
     })
   })
 })

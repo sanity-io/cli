@@ -37,12 +37,11 @@ export const DefineAppInputSchema = z
      */
     entry: z.optional(z.string("must be a path to the app's entry file")),
     /**
-     * Path to an `.svg` file, relative to the project root. Other file types are
-     * rejected. Wins over manifest/studio icon.
+     * Path to the app's icon, relative to the project root: a PNG, JPEG, GIF,
+     * WebP, SVG, BMP, TIFF, HEIF or AVIF image of at most 5 MB. Wins over
+     * manifest/studio icon.
      */
-    icon: z.optional(
-      z.string().check(z.regex(/\.svg$/i, 'App `icon` must be a path to an .svg file')),
-    ),
+    icon: z.optional(z.string()),
     /** Sanity-owned app deployed once and installed per org. @internal */
     isSingleton: z.optional(z.boolean()),
     /**

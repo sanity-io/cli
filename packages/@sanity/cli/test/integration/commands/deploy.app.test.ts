@@ -980,10 +980,10 @@ describe('#deploy app', () => {
     expect(mockDeployWorkbenchApp).toHaveBeenCalledWith(expect.objectContaining({mfManifest}))
   })
 
-  test('ships the sanitized workbench app icon straight to Brett', async () => {
+  test('ships the workbench app icon image to Brett', async () => {
     const cwd = await testFixture('basic-app')
     process.cwd = () => cwd
-    await writeFile(join(cwd, 'icon.svg'), '<svg xmlns="http://www.w3.org/2000/svg"><rect /></svg>')
+    await writeFile(join(cwd, 'icon.png'), 'png bytes')
 
     mockCreateCoreApp.mockResolvedValue({
       application: {
@@ -997,7 +997,7 @@ describe('#deploy app', () => {
 
     const app = defineApplication({
       entry: './src/App.tsx',
-      icon: './icon.svg',
+      icon: './icon.png',
       organizationId,
       slug: 'drop-desk-host',
       title: 'Workbench App',
@@ -1011,7 +1011,9 @@ describe('#deploy app', () => {
     if (error) throw error
     // The icon syncs with the deployment, whether the app was just created or not.
     expect(mockDeployWorkbenchApp).toHaveBeenCalledWith(
-      expect.objectContaining({icon: expect.stringContaining('<svg')}),
+      expect.objectContaining({
+        icon: expect.objectContaining({contentType: 'image/png', image: Buffer.from('png bytes')}),
+      }),
     )
   })
 
@@ -1033,7 +1035,7 @@ describe('#deploy app', () => {
     })
 
     expect(error).toBeInstanceOf(Error)
-    expect(error?.message).toContain('Could not read icon file')
+    expect(error?.message).toContain('Can\'t use app icon "./missing-icon.svg"')
     // The icon is read before the app is created, so a bad path fails fast.
     expect(mockCreateCoreApp).not.toHaveBeenCalled()
     expect(mockDeployWorkbenchApp).not.toHaveBeenCalled()

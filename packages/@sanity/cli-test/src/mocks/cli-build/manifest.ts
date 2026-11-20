@@ -3,8 +3,6 @@ import {type Mock, vi} from 'vitest'
 /** @internal */
 export const extractCoreAppManifest: Mock = vi.fn()
 /** @internal */
-export const readIconFromPath: Mock = vi.fn()
-/** @internal */
 export const resolveTitleUpdate: Mock = vi.fn()
 /** @internal */
 export const extractManifest: Mock = vi.fn()

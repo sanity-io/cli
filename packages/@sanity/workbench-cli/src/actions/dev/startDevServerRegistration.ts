@@ -1,8 +1,11 @@
+import {relative} from 'node:path'
+
 import {type CliConfig, getCliConfigUncached, type Output} from '@sanity/cli-core'
 import {type ViteDevServer} from 'vite'
 
 import {isWorkbenchApp, isWorkbenchConfig} from '../../defineApp.js'
 import {deriveInterfaces} from '../../deriveInterfaces.js'
+import {readAppIcon, toUrlPath} from '../../readAppIcon.js'
 import {resolveWorkbenchConfig} from '../../resolveWorkbenchConfig.js'
 import {formatWorkbenchAppErrors, validateWorkbenchApp} from '../../validateWorkbenchApp.js'
 import {deriveConfigs} from './deriveConfigs.js'
@@ -26,6 +29,8 @@ interface DevServerRegistrationOptions {
   extractManifest: (params: {
     applicationId?: string
     configPath: string
+    /** Where this server serves the app's icon. */
+    iconUrl?: string
     workDir: string
   }) => Promise<DevServerManifest['manifest']>
   isApp: boolean
@@ -142,6 +147,7 @@ export async function startDevServerRegistration(
   })
 
   const exposesSet = trackExposesSet({configs, interfaces})
+  let liveServer = server
 
   const watcher = await startDevManifestWatcher({
     // Re-derive every pass (don't omit): the registry patch is a shallow merge,
@@ -149,10 +155,22 @@ export async function startDevServerRegistration(
     extract: async (params) => {
       const nextConfig = await getCliConfigUncached(params.workDir)
       reportConfigErrors(nextConfig.app, output)
+
+      let iconUrl: string | undefined
+      if (isApp && isWorkbenchApp(nextConfig.app) && nextConfig.app.icon) {
+        // Read in full so an image a deploy would reject warns here, while editing.
+        const {file} = await readAppIcon(workDir, nextConfig.app.icon)
+        // Vite serves `public/` at the root, and warns on every request for `/public/...`.
+        const {base, publicDir, root} = liveServer.config
+        const inPublicDir = Boolean(publicDir) && !relative(publicDir, file).startsWith('..')
+        const {host, https, port} = serverAddress(liveServer)
+        iconUrl = `${https ? 'https' : 'http'}://${host}:${port}${base}${toUrlPath(inPublicDir ? publicDir : root, file)}`
+      }
+
       return {
         configs: await deriveConfigs(nextConfig),
         interfaces: deriveInterfaces(nextConfig.app, {isApp}),
-        manifest: await extractManifest({...params, applicationId: id}),
+        manifest: await extractManifest({...params, applicationId: id, iconUrl}),
       }
     },
     // A studio's root resolves to `sanity.config.*` but its interfaces live in
@@ -178,6 +196,7 @@ export async function startDevServerRegistration(
         interfaces: patch.interfaces,
       })
       // The recreated server can bind a different port (non-strict ports).
+      if (rebuiltServer) liveServer = rebuiltServer
       registration.update(rebuiltServer ? {...patch, ...serverAddress(rebuiltServer)} : patch)
     },
     workDir,

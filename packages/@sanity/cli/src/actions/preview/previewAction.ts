@@ -38,7 +38,7 @@ export async function previewAction(
       checkForDeprecatedAppId: () => checkForDeprecatedAppId({cliConfig, output}),
       cliConfig,
       extractManifest: isApp
-        ? ({workDir: wd}) => extractCoreAppManifest({workDir: wd})
+        ? ({iconUrl, workDir: wd}) => extractCoreAppManifest({iconUrl, workDir: wd})
         : (params) => extractStudioManifest(params),
       httpHost: config.httpHost,
       httpPort: config.httpPort,

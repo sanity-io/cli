@@ -158,6 +158,26 @@ describe('extractCoreAppManifest', () => {
     expect(result?.title).toBe('My App')
   })
 
+  test('points the icon at iconUrl instead of inlining the file', async () => {
+    mockGetCliConfig.mockResolvedValue({
+      app: defineApplication({
+        entry: './src/App.tsx',
+        icon: './icon.png',
+        organizationId: 'org-1',
+        slug: 'my-app',
+        title: 'My App',
+      }),
+    } as never)
+
+    const result = await extractCoreAppManifest({
+      iconUrl: 'http://localhost:3334/icon.png',
+      workDir: '/project',
+    })
+
+    expect(result?.icon).toBe('http://localhost:3334/icon.png')
+    expect(mockReadFile).not.toHaveBeenCalled()
+  })
+
   test('sanitizes the icon SVG before inlining it', async () => {
     mockGetCliConfig.mockResolvedValue({
       app: {icon: 'public/icon.svg', organizationId: 'org-1', title: 'My App'},

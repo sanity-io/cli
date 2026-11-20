@@ -25,6 +25,8 @@ export interface StartWorkbenchDevOptions {
   extractManifest: (params: {
     applicationId?: string
     configPath: string
+    /** Where the app server serves the app's icon. */
+    iconUrl?: string
     workDir: string
   }) => Promise<DevServerManifest['manifest']>
   httpHost: string | undefined

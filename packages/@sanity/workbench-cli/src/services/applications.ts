@@ -2,6 +2,7 @@ import {PassThrough} from 'node:stream'
 import {type Gzip} from 'node:zlib'
 
 import {type AppVisibility, getGlobalCliClient} from '@sanity/cli-core'
+import {type ImageFile} from '@sanity/cli-core/images'
 import {isStaging} from '@sanity/cli-core/util'
 import FormData from 'form-data'
 
@@ -165,7 +166,6 @@ export async function createApplication(options: {
 
 /** Mutable application fields the deploy flow patches after create. */
 export interface ApplicationUpdate {
-  icon?: string | null
   /** The address the application is served at; renaming moves it. */
   slug?: string
   title?: string
@@ -179,6 +179,23 @@ export async function updateApplication(
 ): Promise<void> {
   const client = await getClient()
   await client.request({body: update, method: 'PATCH', url: `/applications/${applicationId}`})
+}
+
+/** Upload the application's icon, replacing any it has. */
+export async function setApplicationIcon(applicationId: string, icon: ImageFile): Promise<void> {
+  const client = await getClient()
+  await client.request({
+    body: icon.image,
+    headers: {'Content-Type': icon.contentType},
+    method: 'PUT',
+    url: `/applications/${applicationId}/icon`,
+  })
+}
+
+/** Remove the application's icon; removing one that isn't set changes nothing. */
+export async function removeApplicationIcon(applicationId: string): Promise<void> {
+  const client = await getClient()
+  await client.request({method: 'DELETE', url: `/applications/${applicationId}/icon`})
 }
 
 /**

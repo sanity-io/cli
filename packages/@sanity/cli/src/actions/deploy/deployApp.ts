@@ -5,7 +5,6 @@ import {createGzip} from 'node:zlib'
 import {
   type CoreAppManifest,
   extractCoreAppManifest,
-  readIconFromPath,
   resolveTitleUpdate,
 } from '@sanity/cli-build/_internal/manifest'
 import {type AppVisibility, exitCodes} from '@sanity/cli-core'
@@ -22,6 +21,7 @@ import {
   getApplicationUrl,
   getWorkbench,
   getWorkbenchUrl,
+  readAppIcon,
   resolveInstallationId,
   resolveWorkbenchConfig,
   selectWorkbenchAppId,
@@ -186,7 +186,7 @@ async function runAppDeployment(
 
   // Read up front so a bad icon path fails before we create or build.
   const appIcon =
-    !dryRun && workbench?.icon ? await readIconFromPath(workDir, workbench.icon) : undefined
+    !dryRun && workbench?.icon ? await readAppIcon(workDir, workbench.icon) : undefined
 
   const startedAt = Date.now()
   const summaryDetails =
