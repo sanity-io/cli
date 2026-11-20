@@ -212,12 +212,12 @@ snapshots:
 					"version": "3.3.0",
 				},
 				"@sanity/client": {
-					"specifier": "^8.16.0",
-					"version": "8.16.0",
+					"specifier": "^8.17.0",
+					"version": "8.17.0",
 				},
 				"@sanity/codegen": {
-					"specifier": "^8.3.2",
-					"version": "8.3.2",
+					"specifier": "^8.3.3",
+					"version": "8.3.3",
 				},
 				"@sanity/pkg-utils": {
 					"specifier": "^12.3.4",
@@ -943,8 +943,8 @@ snapshots:
 					"version": "8.0.5",
 				},
 				"@sanity/runtime-cli": {
-					"specifier": "^17.21.5",
-					"version": "17.21.5",
+					"specifier": "^17.21.6",
+					"version": "17.21.6",
 				},
 				"@sanity/schema": "catalog:",
 				"@sanity/schema-descriptor-utils": {
@@ -9038,7 +9038,7 @@ snapshots:
 				},
 			},
 			"dependencies": {
-				"@sanity/client": "8.16.0",
+				"@sanity/client": "8.17.0",
 				"@sanity/icons": "5.2.2",
 				"@sanity/ui": "4.4.12",
 				"ui5": "@sanity/ui@5.0.0-alpha.11",
@@ -9067,7 +9067,7 @@ snapshots:
 				},
 			},
 			"dependencies": {
-				"@sanity/client": "8.16.0",
+				"@sanity/client": "8.17.0",
 				"@sanity/icons": "5.4.0",
 				"@sanity/ui": "4.4.12",
 				"react-rx": "7.1.0",
@@ -9270,68 +9270,6 @@ snapshots:
 			},
 		},
 
-		"@sanity/cli-core@3.14.1": {
-			"integrity": "sha512-vDK7nM6F9aHq7XrzFw77W2pIJ4Ipax9zG9lt0yp04NbfcIDLuEwnV+N9NwrXzj/niGouEs/QeTI1EnOyhfO2fA==",
-			"engines": {"node": ">=22.12"},
-			"peerDependencies": {
-				"@noble/hashes": {
-					"version": "2.4.0",
-					"below": true,
-				},
-				"@types/node": {
-					"version": "22.20.5",
-					"below": true,
-				},
-				"babel-plugin-react-compiler": {
-					"specifier": "*",
-					"version": "1.0.0",
-					"optional": true,
-				},
-				"esbuild": {
-					"version": "0.28.2",
-					"below": true,
-				},
-				"oxc-transform-react": {
-					"specifier": "*",
-					"version": "0.158.0",
-					"optional": true,
-				},
-				"tsx": {
-					"version": "4.23.15",
-					"below": true,
-				},
-				"vitest": {
-					"version": "5.1.1",
-					"below": true,
-				},
-				"yaml": {
-					"version": "2.9.1",
-					"below": true,
-				},
-			},
-			"dependencies": {
-				"@inquirer/core": "12.0.6",
-				"@inquirer/prompts": "8.7.5",
-				"@oclif/core": "4.14.0",
-				"@sanity/client": "8.16.0",
-				"boxen": "8.0.1",
-				"empathic": "2.1.0",
-				"get-it": "9.7.0",
-				"get-tsconfig": "4.14.3",
-				"import-meta-resolve": "4.2.0",
-				"jiti": "2.7.0",
-				"jsdom": "29.1.1",
-				"json-lexer": "1.2.0",
-				"log-symbols": "7.0.1",
-				"obug": "3.0.0",
-				"ora": "9.4.1",
-				"rxjs": "7.8.2",
-				"vite": "8.3.8",
-				"wrap-ansi": "9.0.2",
-				"zod": "4.6.7",
-			},
-		},
-
 		"@sanity/cli-core@3.15.1": {
 			"integrity": "sha512-G90y7ON8me3LbbUm2DwcFr4fLyq8gNBpq+Pjo28VnHOdU5UHTInfA+JSlh3Dbffojhw5nK3VG1sObKs3yDiXaw==",
 			"engines": {"node": ">=22.12"},
@@ -9375,7 +9313,7 @@ snapshots:
 				"@inquirer/core": "12.0.6",
 				"@inquirer/prompts": "8.7.5",
 				"@oclif/core": "4.14.0",
-				"@sanity/client": "8.16.0",
+				"@sanity/client": "8.17.0",
 				"boxen": "8.0.1",
 				"empathic": "2.1.0",
 				"get-it": "9.7.0",
@@ -9405,8 +9343,8 @@ snapshots:
 			},
 		},
 
-		"@sanity/client@8.16.0": {
-			"integrity": "sha512-x6VKopU1Rt2mp3YBQRBIyWE2ebzqc4sMwUbQJJzIzNS0TMnNURvHe/z1qo/bDIph37B5vYvfWIT7Js6SPAQkUQ==",
+		"@sanity/client@8.17.0": {
+			"integrity": "sha512-X7qnv2HdKPZUKlrLBRsjw+8yKqjCJd2i2V3cV1CRY5zq9k0wB1mhWpiwXiJhcRTBza8wdQtNSCdQCh8hBoZ71g==",
 			"engines": {"node": ">=22.12.0"},
 			"peerDependencies": {
 				"vitest": {
@@ -9488,8 +9426,8 @@ snapshots:
 			},
 		},
 
-		"@sanity/codegen@8.3.2": {
-			"integrity": "sha512-ssxBTwACIRvvJgDdVpyRrcN5TQF5e2UvfQF0UO4yQoGJtrVbW1+TrzeHUMKPq10wAgmljl93hsdtkBPLdFZhvQ==",
+		"@sanity/codegen@8.3.3": {
+			"integrity": "sha512-uZpfYZif+NZs/c2HK3m6JYaiOBzUhBDKMEZi3ieXCBpg+lmCLJdtSk4jC1s+rtS5v3Fm7V1D5HhA2gUlud0g1g==",
 			"engines": {"node": ">=22.12"},
 			"peerDependencies": {
 				"oxfmt": {
@@ -9752,7 +9690,7 @@ snapshots:
 			"peerDependencies": {
 				"@sanity/client": {
 					"specifier": "^5.0.0 || ^6.0.0 || ^7.0.0 || ^8.0.0",
-					"version": "8.16.0",
+					"version": "8.17.0",
 				},
 				"@types/react": {
 					"version": "19.3.0",
@@ -9859,7 +9797,7 @@ snapshots:
 				},
 			},
 			"dependencies": {
-				"@sanity/client": "8.16.0",
+				"@sanity/client": "8.17.0",
 				"@sanity/mutate": "0.18.2",
 				"@sanity/types": "6.24.0",
 				"@sanity/util": "6.24.0",
@@ -9926,7 +9864,7 @@ snapshots:
 			},
 			"dependencies": {
 				"@isaacs/ttlcache": "2.1.5",
-				"@sanity/client": "8.16.0",
+				"@sanity/client": "8.17.0",
 				"@sanity/diff-match-patch": "3.2.1",
 				"@sanity/uuid": "3.0.3",
 				"hotscript": "1.0.13",
@@ -10143,7 +10081,7 @@ snapshots:
 			"peerDependencies": {
 				"@sanity/client": {
 					"specifier": "^7.26.2 || ^8.0.0",
-					"version": "8.16.0",
+					"version": "8.17.0",
 				},
 			},
 			"dependencies": {
@@ -10161,8 +10099,8 @@ snapshots:
 			},
 		},
 
-		"@sanity/runtime-cli@17.21.5": {
-			"integrity": "sha512-o7uYswDIMi19CeMu9L0KRNhEmjnrrXAs4RTAD0kd+rKPDEM39sBjK+rDJN+Ggq1wCTVgiecxtZKMlOSmr3jJIQ==",
+		"@sanity/runtime-cli@17.21.6": {
+			"integrity": "sha512-WaCaEjkvgPZSPvrzPh/2pF8kuqpbHT/tRpeXTzUhB/bGCoXETS/MhXBoqs2XO+bbDrtpr8mJxLXnJH05MV6sMg==",
 			"engines": {"node": ">=22.12"},
 			"hasBin": true,
 			"peerDependencies": {
@@ -10247,8 +10185,8 @@ snapshots:
 				"@sanity/blueprints": "0.34.1",
 				"@sanity/blueprints-parser": "0.5.0",
 				"@sanity/cli-build": "7.3.0",
-				"@sanity/cli-core": "3.14.1",
-				"@sanity/client": "8.16.0",
+				"@sanity/cli-core": "3.15.1",
+				"@sanity/client": "8.17.0",
 				"adm-zip": "0.6.1",
 				"array-treeify": "0.2.0",
 				"cardinal": "2.1.1",
@@ -10408,7 +10346,7 @@ snapshots:
 			},
 			"dependencies": {
 				"@module-federation/runtime": "2.9.3",
-				"@sanity/client": "8.16.0",
+				"@sanity/client": "8.17.0",
 				"@sanity/message-protocol": "0.24.0",
 				"@sanity/sdk": "3.14.0",
 				"@sanity/types": "6.24.0",
@@ -10448,7 +10386,7 @@ snapshots:
 			},
 			"dependencies": {
 				"@module-federation/runtime": "2.9.3",
-				"@sanity/client": "8.16.0",
+				"@sanity/client": "8.17.0",
 				"@sanity/message-protocol": "0.24.0",
 				"@sanity/sdk": "3.9.1",
 				"@sanity/types": "6.24.0",
@@ -10525,55 +10463,6 @@ snapshots:
 			},
 		},
 
-		"@sanity/sdk@3.12.0": {
-			"integrity": "sha512-txL9iO4ob0CnW7ljiZ930+pEiAj9C3M/v3lJvGNhp+q8mHytGTfUNoZf9EaMB8KwfEx9lbMTl+ZUwl/8kjvhIw==",
-			"peerDependencies": {
-				"@types/react": {
-					"version": "19.3.0",
-					"below": true,
-				},
-				"immer": {
-					"version": "11.1.18",
-					"below": true,
-				},
-				"react": {
-					"version": "19.3.1",
-					"below": true,
-				},
-				"use-sync-external-store": {
-					"version": "1.7.0",
-					"below": true,
-				},
-				"vitest": {
-					"version": "5.1.1",
-					"below": true,
-				},
-				"xstate": {
-					"version": "5.33.2",
-					"below": true,
-				},
-			},
-			"dependencies": {
-				"@sanity/bifur-client": "2.0.2",
-				"@sanity/client": "8.16.0",
-				"@sanity/comlink": "4.0.3",
-				"@sanity/diff-match-patch": "3.2.1",
-				"@sanity/diff-patch": "7.0.0",
-				"@sanity/id-utils": "1.1.0",
-				"@sanity/image-url": "2.1.1",
-				"@sanity/json-match": "1.0.5",
-				"@sanity/message-protocol": "0.24.0",
-				"@sanity/mutate": "0.18.2",
-				"@sanity/telemetry": "1.1.0",
-				"@sanity/types": "6.24.0",
-				"groq": "6.22.0",
-				"groq-js": "2.0.3",
-				"reselect": "5.3.0",
-				"rxjs": "7.8.2",
-				"zustand": "5.0.16",
-			},
-		},
-
 		"@sanity/sdk@3.14.0": {
 			"integrity": "sha512-v+kVY1ab/qHEyjFue8NDait40qVqOb9Hq3CLdDMbdKnFQ4aCz252ofblUeyPVHJLWL6yrX8RjaxhEGucO0neoQ==",
 			"peerDependencies": {
@@ -10600,7 +10489,7 @@ snapshots:
 			},
 			"dependencies": {
 				"@sanity/bifur-client": "2.0.2",
-				"@sanity/client": "8.16.0",
+				"@sanity/client": "8.17.0",
 				"@sanity/comlink": "4.0.3",
 				"@sanity/diff-match-patch": "3.2.1",
 				"@sanity/diff-patch": "7.0.0",
@@ -10664,7 +10553,7 @@ snapshots:
 			},
 			"dependencies": {
 				"@sanity/bifur-client": "1.0.0",
-				"@sanity/client": "8.16.0",
+				"@sanity/client": "8.17.0",
 				"@sanity/comlink": "4.0.3",
 				"@sanity/diff-match-patch": "3.2.1",
 				"@sanity/diff-patch": "6.0.0",
@@ -10828,7 +10717,7 @@ snapshots:
 				},
 			},
 			"dependencies": {
-				"@sanity/client": "8.16.0",
+				"@sanity/client": "8.17.0",
 				"@sanity/media-library-types": "1.7.1",
 			},
 		},
@@ -10847,7 +10736,7 @@ snapshots:
 				},
 			},
 			"dependencies": {
-				"@sanity/client": "8.16.0",
+				"@sanity/client": "8.17.0",
 				"@sanity/media-library-types": "1.8.0",
 			},
 		},
@@ -10979,7 +10868,7 @@ snapshots:
 			"dependencies": {
 				"@date-fns/tz": "1.5.0",
 				"@date-fns/utc": "2.1.1",
-				"@sanity/client": "8.16.0",
+				"@sanity/client": "8.17.0",
 				"@sanity/types": "6.17.0",
 				"date-fns": "4.4.0",
 				"get-it": "9.7.0",
@@ -11003,7 +10892,7 @@ snapshots:
 			"dependencies": {
 				"@date-fns/tz": "1.5.0",
 				"@date-fns/utc": "2.1.1",
-				"@sanity/client": "8.16.0",
+				"@sanity/client": "8.17.0",
 				"@sanity/types": "6.24.0",
 				"date-fns": "4.4.0",
 				"get-it": "9.7.0",
@@ -11036,7 +10925,7 @@ snapshots:
 				},
 			},
 			"dependencies": {
-				"@sanity/client": "8.16.0",
+				"@sanity/client": "8.17.0",
 				"@sanity/id-utils": "1.1.0",
 				"@sanity/schema": "6.17.0",
 				"@sanity/types": "6.17.0",
@@ -11066,7 +10955,7 @@ snapshots:
 				},
 			},
 			"dependencies": {
-				"@sanity/client": "8.16.0",
+				"@sanity/client": "8.17.0",
 				"@sanity/id-utils": "1.1.0",
 				"@sanity/schema": "6.24.0",
 				"@sanity/types": "6.24.0",
@@ -11196,7 +11085,7 @@ snapshots:
 				"@rexxars/react-json-inspector": "9.0.1",
 				"@rexxars/react-split-pane": "1.0.0",
 				"@sanity-labs/groq-wasm": "1.2.0",
-				"@sanity/client": "8.16.0",
+				"@sanity/client": "8.17.0",
 				"@sanity/color": "3.0.9",
 				"@sanity/icons": "5.4.0",
 				"@sanity/lezer-groq": "1.0.4",
@@ -11328,7 +11217,7 @@ snapshots:
 				"@module-federation/runtime": "2.9.3",
 				"@module-federation/vite": "1.24.0",
 				"@sanity/cli-core": "3.15.1",
-				"@sanity/sdk": "3.12.0",
+				"@sanity/sdk": "3.14.0",
 				"@sanity/types": "6.24.0",
 				"@vitejs/plugin-react": "6.3.0",
 				"form-data": "4.0.6",
@@ -11371,7 +11260,7 @@ snapshots:
 			"dependencies": {
 				"@oclif/core": "4.14.0",
 				"@oclif/plugin-help": "6.3.0",
-				"@sanity/client": "8.16.0",
+				"@sanity/client": "8.17.0",
 				"@sanity/telemetry": "1.1.0",
 				"boxen": "8.0.1",
 				"diff": "9.0.0",
@@ -11410,7 +11299,7 @@ snapshots:
 				},
 			},
 			"dependencies": {
-				"@sanity/client": "8.16.0",
+				"@sanity/client": "8.17.0",
 				"@sanity/id-utils": "1.1.0",
 				"@sanity/telemetry": "1.1.0",
 				"@sanity/types": "6.24.0",
@@ -16439,11 +16328,6 @@ snapshots:
 			"engines": {"node": ">=22.12"},
 		},
 
-		"groq@6.22.0": {
-			"integrity": "sha512-ZzyqGaWBl5lMfjCCdPdOXltTWlEI0fIUbPUNMxbwtMOulcGj01bHWoAOeofLP+ERh9fwLvTsmYqh4V0InNVZWg==",
-			"engines": {"node": ">=22.12"},
-		},
-
 		"groq@6.24.0": {
 			"integrity": "sha512-HzSEcR/exLPAyvOdpzkn+UXYIrp5aYNFzVnAv2IB+XTRXQlkbczhmItJ5xXewbpxqDxJkjowaYT7ovbV0Z+sTg==",
 			"engines": {"node": ">=22.12"},
@@ -20074,7 +19958,7 @@ snapshots:
 				"@sanity/asset-utils": "2.3.0",
 				"@sanity/bifur-client": "2.0.2",
 				"@sanity/cli": "link:packages/@sanity/cli",
-				"@sanity/client": "8.16.0",
+				"@sanity/client": "8.17.0",
 				"@sanity/color": "3.0.9",
 				"@sanity/comlink": "4.0.3",
 				"@sanity/diff": "6.17.0",
@@ -20233,7 +20117,7 @@ snapshots:
 				"@sanity/asset-utils": "2.3.0",
 				"@sanity/bifur-client": "3.0.1",
 				"@sanity/cli": "link:packages/@sanity/cli",
-				"@sanity/client": "8.16.0",
+				"@sanity/client": "8.17.0",
 				"@sanity/color": "3.0.9",
 				"@sanity/comlink": "4.0.3",
 				"@sanity/diff": "6.24.0",
@@ -22275,33 +22159,6 @@ snapshots:
 
 		"zustand@5.0.15": {
 			"integrity": "sha512-MpSEjRiBkA9crSYeOUH32rJC7SVqAbm0Fqcqge/bUi2PPoLcBWKOsG+C8mevmpr8TwXHBVkChbbJiyvkE+i/3A==",
-			"engines": {"node": ">=12.20.0"},
-			"peerDependencies": {
-				"@types/react": {
-					"specifier": ">=18.0.0",
-					"version": "19.3.0",
-					"optional": true,
-				},
-				"immer": {
-					"specifier": ">=9.0.6",
-					"version": "11.1.18",
-					"optional": true,
-				},
-				"react": {
-					"specifier": ">=18.0.0",
-					"version": "19.3.1",
-					"optional": true,
-				},
-				"use-sync-external-store": {
-					"specifier": ">=1.2.0",
-					"version": "1.7.0",
-					"optional": true,
-				},
-			},
-		},
-
-		"zustand@5.0.16": {
-			"integrity": "sha512-Uv7e327ihlCfayfja3hDc0M64Upev1LWBKpRobdK4NyovDDPeeX4imWXc/wzC1yc6fkYPoAY/ncKVPAs2jrtQw==",
 			"engines": {"node": ">=12.20.0"},
 			"peerDependencies": {
 				"@types/react": {
