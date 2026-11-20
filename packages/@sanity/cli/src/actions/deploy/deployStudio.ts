@@ -3,7 +3,6 @@ import {styleText} from 'node:util'
 import {createGzip, type Gzip} from 'node:zlib'
 
 import {formatSchemaValidation, SchemaExtractionError} from '@sanity/cli-build/_internal/extract'
-import {readIconFromPath} from '@sanity/cli-build/_internal/manifest'
 import {exitCodes} from '@sanity/cli-core'
 import {spinner} from '@sanity/cli-core/ux'
 import {
@@ -16,6 +15,7 @@ import {
   getApplicationUrl,
   getWorkbench,
   getWorkbenchUrl,
+  readAppIcon,
   selectWorkbenchAppId,
   toWorkbenchPayload,
 } from '@sanity/workbench-cli/deploy'
@@ -146,7 +146,7 @@ async function runStudioDeployment(
 
   // Read up front so a bad icon path fails before we create or build.
   const appIcon =
-    !dryRun && workbench?.icon ? await readIconFromPath(workDir, workbench.icon) : undefined
+    !dryRun && workbench?.icon ? await readAppIcon(workDir, workbench.icon) : undefined
 
   const startedAt = Date.now()
   const summaryDetails =

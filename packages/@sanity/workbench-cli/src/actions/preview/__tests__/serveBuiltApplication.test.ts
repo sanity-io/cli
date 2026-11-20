@@ -1,4 +1,8 @@
-import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
+import {mkdir, mkdtemp, rm} from 'node:fs/promises'
+import {tmpdir} from 'node:os'
+import {join} from 'node:path'
+
+import {afterEach, beforeEach, describe, expect, onTestFinished, test, vi} from 'vitest'
 
 import {serveBuiltApplication} from '../serveBuiltApplication.js'
 
@@ -66,6 +70,31 @@ describe('serveBuiltApplication', () => {
       }),
     )
     expect(server).toMatchObject({host: 'localhost', port: 4009})
+  })
+
+  test("serves the app's icon at its path, with its Content-Type, as Dashboard requests it", async () => {
+    const {preview} = await vi.importActual<typeof import('vite')>('vite')
+    mockPreview.mockImplementationOnce(preview)
+    const workDir = await mkdtemp(join(tmpdir(), 'preview-icon-'))
+    onTestFinished(() => rm(workDir, {force: true, recursive: true}))
+    await mkdir(join(workDir, 'dist'))
+    const image = Buffer.from('png bytes')
+
+    const server = await serve({
+      cacheDir: join(workDir, '.sanity/vite'),
+      httpPort: 0,
+      icon: {contentType: 'image/png', image, path: '/public/icon.png'},
+      outDir: join(workDir, 'dist'),
+      workDir,
+    })
+    onTestFinished(() => server.close())
+    const response = await fetch(
+      `http://localhost:${server.port}/public/icon.png?w=16&h=16&fit=crop&auto=format&dpr=2`,
+    )
+
+    expect(response.status).toBe(200)
+    expect(response.headers.get('content-type')).toBe('image/png')
+    expect(Buffer.from(await response.arrayBuffer())).toEqual(image)
   })
 
   test('close shuts the http server down', async () => {

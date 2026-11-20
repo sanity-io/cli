@@ -5,7 +5,9 @@ import {styleText} from 'node:util'
 import {type CliConfig, findProjectRoot, type Output} from '@sanity/cli-core'
 
 import {buildAppId, SANITY_APP_ID_FILE} from '../../appId.js'
+import {isWorkbenchApp} from '../../defineApp.js'
 import {deriveInterfaces} from '../../deriveInterfaces.js'
+import {readAppIcon, toUrlPath} from '../../readAppIcon.js'
 import {resolveWorkbenchApp} from '../../resolveWorkbenchApp.js'
 import {createServerLifecycle, toDisplayHost} from '../../util/serverOrchestration.js'
 import {deriveConfigs} from '../dev/deriveConfigs.js'
@@ -28,6 +30,8 @@ export interface StartWorkbenchPreviewOptions {
   extractManifest: (params: {
     applicationId?: string
     configPath: string
+    /** Where the preview serves the app's icon. */
+    iconUrl?: string
     workDir: string
   }) => Promise<DevServerManifest['manifest']>
   httpHost: string
@@ -68,6 +72,11 @@ export async function startWorkbenchPreview(
     workDir,
   } = options
 
+  // Read before any server starts, so a bad icon path fails with nothing to tear down.
+  const iconPath = isApp && isWorkbenchApp(cliConfig.app) ? cliConfig.app.icon : undefined
+  const icon = iconPath ? await readAppIcon(workDir, iconPath) : undefined
+  const servedIcon = icon && {...icon, path: `/${toUrlPath(workDir, icon.file)}`}
+
   const {close, closers, installSignalHandlers} = createServerLifecycle()
 
   const workbench = await startWorkbenchDevServer({
@@ -87,6 +96,7 @@ export async function startWorkbenchPreview(
     cacheDir,
     httpHost,
     httpPort: remotePort,
+    icon: servedIcon,
     outDir,
     workDir,
   }).catch(async (err) => {
@@ -118,7 +128,12 @@ export async function startWorkbenchPreview(
       host: remote.host,
       id,
       interfaces,
-      manifest: await extractManifest({applicationId: id, configPath, workDir}),
+      manifest: await extractManifest({
+        applicationId: id,
+        configPath,
+        iconUrl: servedIcon && `http://${remote.host}:${remote.port}${servedIcon.path}`,
+        workDir,
+      }),
       manifestUpdatedAt: new Date().toISOString(),
       port: remote.port,
       projectId: cliConfig?.api?.projectId,

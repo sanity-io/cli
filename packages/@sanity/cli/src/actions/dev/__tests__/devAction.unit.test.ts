@@ -140,6 +140,21 @@ describe('devAction', () => {
       expect(extractor).toHaveBeenCalledWith(expect.objectContaining({silent: true}))
     })
 
+    test("points the app manifest's icon at the URL the app server serves it from", async () => {
+      await devAction(createBaseDevOptions({cliConfig: workbenchCliConfig(), isApp: true}))
+      const {extractManifest} = mockStartWorkbenchDev.mock.calls[0][0]
+
+      await extractManifest({
+        configPath: '/tmp/sanity.cli.ts',
+        iconUrl: 'http://localhost:3334/icon.png',
+        workDir: '/tmp',
+      })
+
+      expect(mockExtractCoreAppManifest).toHaveBeenCalledWith(
+        expect.objectContaining({iconUrl: 'http://localhost:3334/icon.png'}),
+      )
+    })
+
     test('passes isApp: true through for app mode', async () => {
       await devAction(createBaseDevOptions({cliConfig: workbenchCliConfig(), isApp: true}))
 

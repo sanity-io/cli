@@ -3,6 +3,7 @@ import {createGzip} from 'node:zlib'
 
 import {type AppVisibility, type CliConfig} from '@sanity/cli-core'
 import {getErrorMessage} from '@sanity/cli-core/errors'
+import {type ImageFile} from '@sanity/cli-core/images'
 import {spinner} from '@sanity/cli-core/ux'
 import {c as createTar} from 'tar'
 
@@ -15,6 +16,8 @@ import {
   createApplication,
   createDeployment,
   deleteApplication,
+  removeApplicationIcon,
+  setApplicationIcon,
   updateApplication,
 } from '../../services/applications.js'
 
@@ -101,9 +104,10 @@ export async function createStudio(options: {
 
 /**
  * Ship a deployment to an already-created (or `deployment.appId`) application,
- * then sync its mutable metadata (`title`, and `icon`/`slug`/`visibility` when
- * set) from config. The deploy endpoint ignores these, so a redeploy patches
- * them here alongside the new deployment.
+ * then sync its mutable metadata (`title`, and `slug`/`visibility` when set)
+ * and its icon from config. The deploy endpoint ignores these, so a redeploy
+ * patches them here alongside the new deployment. No `icon` removes the
+ * application's icon.
  *
  * `onDeployed` fires the instant the deployment is live, before the metadata
  * sync — so a caller can disarm a create-time rollback that must not delete an
@@ -117,7 +121,7 @@ export async function deployWorkbenchApp(options: {
   access?: readonly BrettAccess[]
   app: CliConfig['app']
   applicationId: string
-  icon?: string
+  icon?: ImageFile
   isApp: boolean
   isAutoUpdating: boolean
   isExternal?: boolean
@@ -176,12 +180,20 @@ export async function deployWorkbenchApp(options: {
     try {
       await updateApplication(applicationId, {
         title,
-        ...(icon ? {icon} : {}),
         ...(slug ? {slug} : {}),
         ...(visibility ? {visibility} : {}),
       })
     } catch (error) {
       throw toSlugRejection(error, slug)
+    }
+    if (icon) {
+      try {
+        await setApplicationIcon(applicationId, icon)
+      } catch (error) {
+        throw toIconRejection(error)
+      }
+    } else {
+      await removeApplicationIcon(applicationId)
     }
     spin.succeed()
   } catch (error) {
@@ -201,6 +213,16 @@ function toSlugRejection(error: unknown, slug: string | undefined): unknown {
   if (!slug || statusCode === undefined || statusCode < 400 || statusCode >= 500) return error
   return new Error(
     `Slug "${slug}" was rejected: ${getErrorMessage(error)}. The deployment is live at the application's previous slug — change \`app.slug\` in sanity.cli.ts and deploy again.`,
+    {cause: error},
+  )
+}
+
+/** A 4xx on the icon upload is the image being rejected; name the server's reason. */
+function toIconRejection(error: unknown): unknown {
+  const statusCode = (error as {statusCode?: number})?.statusCode
+  if (statusCode === undefined || statusCode < 400 || statusCode >= 500) return error
+  return new Error(
+    `The app icon was rejected: ${getErrorMessage(error)}. The deployment is live with the application's previous icon. Change \`app.icon\` in sanity.cli.ts and deploy again.`,
     {cause: error},
   )
 }

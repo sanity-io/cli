@@ -1,3 +1,7 @@
+import {mkdtemp, rm, writeFile} from 'node:fs/promises'
+import {tmpdir} from 'node:os'
+import {join} from 'node:path'
+
 import {findBlueprintFile, readBlueprint} from '@sanity/blueprints/resolve'
 import {SchemaExtractionError} from '@sanity/cli-build/_internal/extract'
 import {type CliConfig, exitCodes, type Output} from '@sanity/cli-core'
@@ -10,7 +14,7 @@ import {
   listApplications,
   selectWorkbenchAppId,
 } from '@sanity/workbench-cli/deploy'
-import {beforeEach, describe, expect, test, vi} from 'vitest'
+import {beforeEach, describe, expect, onTestFinished, test, vi} from 'vitest'
 
 import {buildStudio} from '../../build/buildStudio.js'
 import {createMockOutput, workbenchApp} from '../../dev/__tests__/testHelpers.js'
@@ -46,7 +50,6 @@ vi.mock('../../build/buildStudio.js', () => ({buildStudio: vi.fn()}))
 vi.mock('../deployStudioSchemasAndManifests.js', () => ({
   deployStudioSchemasAndManifests: vi.fn(async () => ({workspaces: []})),
 }))
-vi.mock('../../manifest/extractCoreAppManifest.js', () => ({readIconFromPath: vi.fn()}))
 vi.mock('../../../services/userApplications.js', () => ({createDeployment: vi.fn()}))
 
 const mockCreateStudio = vi.mocked(createStudio)
@@ -168,6 +171,23 @@ describe('deployStudio (federated studio)', () => {
     expect(mockCreateStudio).toHaveBeenCalledWith(expect.objectContaining({visibility: 'unlisted'}))
     expect(mockDeployWorkbenchApp).toHaveBeenCalledWith(
       expect.objectContaining({visibility: 'unlisted'}),
+    )
+  })
+
+  test('the declared icon image reaches the deployment', async () => {
+    const workDir = await mkdtemp(join(tmpdir(), 'studio-icon-'))
+    onTestFinished(() => rm(workDir, {force: true, recursive: true}))
+    await writeFile(join(workDir, 'icon.png'), 'png bytes')
+
+    await deployStudio({
+      ...deployOptions({app: {icon: './icon.png'}}),
+      projectRoot: {directory: workDir, path: join(workDir, 'sanity.cli.ts')},
+    } as DeployAppOptions)
+
+    expect(mockDeployWorkbenchApp).toHaveBeenCalledWith(
+      expect.objectContaining({
+        icon: expect.objectContaining({contentType: 'image/png', image: Buffer.from('png bytes')}),
+      }),
     )
   })
 

@@ -282,18 +282,9 @@ describe('DefineAppInputSchema (build-time validation)', () => {
     expect(DefineAppInputSchema.safeParse(validInput({visibility: 'hidden'})).success).toBe(false)
   })
 
-  test('accepts an .svg icon path with any extension casing, rejecting other file types', () => {
+  test('accepts an icon path to an image of any type', () => {
     expect(DefineAppInputSchema.safeParse(validInput({icon: './icon.svg'})).success).toBe(true)
-    expect(DefineAppInputSchema.safeParse(validInput({icon: './ICON.SVG'})).success).toBe(true)
-
-    const result = DefineAppInputSchema.safeParse(validInput({icon: './src/icon.tsx'}))
-
-    expect(result.error?.issues).toEqual([
-      expect.objectContaining({
-        message: 'App `icon` must be a path to an .svg file',
-        path: ['icon'],
-      }),
-    ])
+    expect(DefineAppInputSchema.safeParse(validInput({icon: './icon.png'})).success).toBe(true)
   })
 
   test('accepts a panel view declaration', () => {

@@ -1,6 +1,8 @@
-import {join} from 'node:path'
+import {mkdir, mkdtemp, rm, writeFile} from 'node:fs/promises'
+import {tmpdir} from 'node:os'
+import {dirname, join} from 'node:path'
 
-import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
+import {afterEach, beforeEach, describe, expect, onTestFinished, test, vi} from 'vitest'
 
 import {unstable_defineMediaLibrary} from '../../../defineApp.js'
 import {type DevServerManifest, getRegisteredServers} from '../registry.js'
@@ -72,6 +74,23 @@ function mockServer({
     config: {server: {host, https, port}},
     httpServer: {address: () => ({address: '127.0.0.1', family: 'IPv4', port: boundPort ?? port})},
   }
+}
+
+/** A project holding `icon`, and a dev server for it on any port. */
+async function iconProject(icon: string) {
+  const workDir = await mkdtemp(join(tmpdir(), 'dev-icon-'))
+  onTestFinished(() => rm(workDir, {force: true, recursive: true}))
+  await mkdir(join(workDir, dirname(icon)), {recursive: true})
+  await writeFile(join(workDir, icon), 'png bytes')
+  mockGetCliConfigUncached.mockResolvedValue({app: workbenchApp({icon})})
+  const serverOn = (port: number) => {
+    const server = mockServer({port})
+    return {
+      ...server,
+      config: {...server.config, base: '/', publicDir: join(workDir, 'public'), root: workDir},
+    } as any
+  }
+  return {serverOn, workDir}
 }
 
 type RegistrationOptions = Parameters<typeof startDevServerRegistration>[0]
@@ -370,6 +389,35 @@ describe('startDevServerRegistration', () => {
       manifest,
     })
     expect(mockExtractManifest).toHaveBeenCalledWith({...params, applicationId: 'test-app'})
+  })
+
+  describe('app icon', () => {
+    test.each([
+      {expected: 'http://localhost:3334/icon.png', icon: './public/icon.png'},
+      {expected: 'http://localhost:3334/assets/my%20icon.png', icon: './assets/my icon.png'},
+    ])('gives the manifest $icon as $expected on the app server', async ({expected, icon}) => {
+      const {serverOn, workDir} = await iconProject(icon)
+
+      await register({isApp: true, server: serverOn(3334), workDir})
+      const {extract} = mockStartDevManifestWatcher.mock.calls[0][0]
+      await extract({configPath: join(workDir, 'sanity.cli.ts'), workDir})
+
+      expect(mockExtractManifest).toHaveBeenCalledWith(expect.objectContaining({iconUrl: expected}))
+    })
+
+    test('gives the icon on the rebuilt server once a rebuild moves it to another port', async () => {
+      const {serverOn, workDir} = await iconProject('./public/icon.png')
+      const onInterfaceSetChange = vi.fn().mockResolvedValue(serverOn(4444))
+
+      await register({isApp: true, onInterfaceSetChange, server: serverOn(3334), workDir})
+      const {extract, update} = mockStartDevManifestWatcher.mock.calls[0][0]
+      await update({interfaces: [feed], manifest: undefined, manifestUpdatedAt: 'a'})
+      await extract({configPath: join(workDir, 'sanity.cli.ts'), workDir})
+
+      expect(mockExtractManifest).toHaveBeenCalledWith(
+        expect.objectContaining({iconUrl: 'http://localhost:4444/icon.png'}),
+      )
+    })
   })
 
   test('removes the registry entry on close', async () => {
