@@ -10,6 +10,8 @@ import {
   ssrModuleExportsKey,
 } from 'vite/module-runner'
 
+import {getNodeModuleFormat} from './studioWorkerExternals.js'
+
 function isPrimitive(value: unknown): boolean {
   return !value || (typeof value !== 'object' && typeof value !== 'function')
 }
@@ -39,6 +41,42 @@ function exportAll(exports: Record<string, unknown>, sourceModule: unknown) {
   }
 }
 
+function isCommonJsUrl(url: string): boolean {
+  if (!url.startsWith('file://')) return false
+  return getNodeModuleFormat(fileURLToPath(url)) === 'commonjs'
+}
+
+/**
+ * Node.js only exposes the named exports of a CommonJS module that its static
+ * analysis can detect, while bundlers (and modules evaluated by the runner)
+ * expose every property of `module.exports`. Fall back to `module.exports` for
+ * names that Node.js didn't detect, so that `import {name} from 'cjs-package'`
+ * in the studio config behaves the same whether the package is loaded natively
+ * or through Vite.
+ */
+function withCommonJsNamedExports(namespace: unknown): unknown {
+  if (isPrimitive(namespace)) return namespace
+
+  const moduleNamespace = namespace as Record<PropertyKey, unknown>
+  const moduleExports = moduleNamespace.default
+  if (isPrimitive(moduleExports)) return namespace
+
+  const fallback = moduleExports as Record<PropertyKey, unknown>
+  const has = (key: PropertyKey) => key in moduleNamespace || (key !== 'then' && key in fallback)
+  const get = (key: PropertyKey) => (key in moduleNamespace ? moduleNamespace[key] : fallback[key])
+
+  // The namespace object itself is not extensible, so it can't be the proxy target
+  return new Proxy(Object.create(null) as Record<PropertyKey, unknown>, {
+    get: (_target, key) => (has(key) ? get(key) : undefined),
+    getOwnPropertyDescriptor: (_target, key) =>
+      has(key)
+        ? {configurable: true, enumerable: true, value: get(key), writable: false}
+        : undefined,
+    has: (_target, key) => has(key),
+    ownKeys: () => [...new Set([...Reflect.ownKeys(moduleNamespace), ...Object.keys(fallback)])],
+  })
+}
+
 /**
  * Module evaluator that can execute raw CommonJS modules in addition to
  * Vite's SSR-transformed ESM. Matches vite-node's CJS execution behavior,
@@ -48,8 +86,9 @@ export class StudioModuleEvaluator implements ModuleEvaluator {
   private readonly esmEvaluator = new ESModulesEvaluator()
   readonly startOffset = this.esmEvaluator.startOffset
 
-  runExternalModule(filepath: string): Promise<unknown> {
-    return this.esmEvaluator.runExternalModule(filepath)
+  async runExternalModule(filepath: string): Promise<unknown> {
+    const namespace = await this.esmEvaluator.runExternalModule(filepath)
+    return isCommonJsUrl(filepath) ? withCommonJsNamedExports(namespace) : namespace
   }
 
   runInlinedModule(

@@ -14,11 +14,19 @@ import {subdebug} from '../../_exports/debug.js'
 import {getCliConfig} from '../../config/cli/getCliConfig.js'
 import {type CliConfig} from '../../config/cli/types/cliConfig.js'
 import {isNotFoundError} from '../../errors/NotFoundError.js'
+import {doImport} from '../../util/doImport.js'
 import {getStudioEnvironmentVariables} from '../../util/environment/getStudioEnvironmentVariables.js'
 import {setupBrowserStubs} from '../../util/environment/setupBrowserStubs.js'
 import {isRecord} from '../../util/isRecord.js'
+import {isTrueish} from '../../util/isTrueish.js'
 import {skipDependencySourcemapsPlugin} from './skipDependencySourcemapsPlugin.js'
 import {StudioModuleEvaluator} from './studioModuleEvaluator.js'
+import {
+  getNodeModuleFormat,
+  getNodeModulesPackageName,
+  getStudioWorkerExternals,
+  preferNativeExternal,
+} from './studioWorkerExternals.js'
 import {createOneShotWorkerLifecycle} from './studioWorkerLifecycle.js'
 
 if (isMainThread) {
@@ -80,6 +88,38 @@ function isHttpsUrl(id: string): boolean {
   return id.startsWith('https://')
 }
 
+/**
+ * Packages loaded natively by Node.js instead of being transformed by Vite:
+ * `sanity` with its dependencies and peers, and the CLI's own runtime
+ * dependencies. Transforming the entire Studio through Vite's SSR pipeline
+ * costs more than a gigabyte of memory on large studios, while loading it
+ * natively costs a fraction of that. The user's files and third-party plugins
+ * still go through Vite, so TypeScript, JSX, path aliases, `define`, CSS/asset
+ * imports and bundler-style CommonJS interop keep working for them.
+ *
+ * Set `SANITY_CLI_STUDIO_WORKER_INLINE_DEPENDENCIES=true` to transform every
+ * dependency through Vite, like earlier versions did.
+ */
+const nativeExternals = isTrueish(process.env.SANITY_CLI_STUDIO_WORKER_INLINE_DEPENDENCIES)
+  ? undefined
+  : getStudioWorkerExternals({
+      cliFilePaths: [fileURLToPath(import.meta.url), workerScriptPath],
+      studioRootPath: rootPath,
+    })
+const nativeExternalsSet = new Set(nativeExternals)
+debug('Dependencies loaded natively: %o', nativeExternals ?? 'none')
+
+if (nativeExternals) {
+  // Natively loaded modules don't get Vite's `define` replacements, so expose
+  // the same values at runtime.
+  for (const [key, value] of Object.entries(studioEnvVars)) {
+    process.env[key] ??= value
+  }
+  if (applicationId) {
+    ;(globalThis as Record<string, unknown>).__SANITY_APP_ID__ = applicationId
+  }
+}
+
 const defaultViteConfig: InlineConfig = {
   build: {target: 'node'},
   configFile: false,
@@ -117,9 +157,11 @@ const defaultViteConfig: InlineConfig = {
   },
   ssr: {
     /**
-     * We don't want to externalize any dependencies, we want everything to run thru vite.
-     * Especially for CJS compatibility, etc.
+     * Everything that isn't explicitly external runs through Vite, which gives
+     * user files and plugins bundler semantics (CommonJS interop, CSS/asset
+     * imports and so on). See `nativeExternals` above.
      */
+    ...(nativeExternals ? {external: nativeExternals} : {}),
     noExternal: true,
   },
 }
@@ -184,9 +226,22 @@ try {
 
   await ssrEnvironment.init()
 
+  const defaultFetchModule = ssrEnvironment.fetchModule.bind(ssrEnvironment)
+
+  function getNativeExternalOptions(
+    importer: string | undefined,
+    options: Parameters<typeof defaultFetchModule>[2],
+  ): Parameters<typeof preferNativeExternal>[1] {
+    return {
+      importNatively: doImport,
+      inline: (url) => defaultFetchModule(url, importer, options),
+      onInline: (url, error) =>
+        debug('Failed to load %s natively, transforming it with Vite: %o', url, error),
+    }
+  }
+
   // Override fetchModule to support https:// imports and resolve relative imports from
   // remote modules (e.g. esm.sh re-exports with absolute paths).
-  const defaultFetchModule = ssrEnvironment.fetchModule.bind(ssrEnvironment)
   ssrEnvironment.fetchModule = async (id, importer, options) => {
     if (importer && isHttpsUrl(importer) && !isHttpsUrl(id)) {
       id = new URL(id, importer).href
@@ -217,14 +272,32 @@ try {
       if (resolved?.id && !resolved.id.startsWith('\0')) {
         id = pathToFileURL(resolved.id).href
       }
+
+      // Files inside natively loaded packages (e.g. `sanity` resolved by
+      // `resolveLocalPackage()`) must share the native instance as well.
+      const filePath = fileURLToPath(id)
+      const packageName = getNodeModulesPackageName(filePath)
+      if (packageName && nativeExternalsSet.has(packageName) && /\.[cm]?js$/.test(filePath)) {
+        return preferNativeExternal(
+          {externalize: id, type: getNodeModuleFormat(filePath)},
+          getNativeExternalOptions(importer, options),
+        )
+      }
     }
 
-    return defaultFetchModule(id, importer, options)
+    const result = await defaultFetchModule(id, importer, options)
+    return nativeExternals
+      ? preferNativeExternal(result, getNativeExternalOptions(importer, options))
+      : result
   }
 
   const runner = createServerModuleRunner(ssrEnvironment, {
     evaluator: new StudioModuleEvaluator(),
     hmr: false,
+    // Vite's default (`node`) enables Node.js source map support for the whole
+    // worker, which makes Node.js read and parse the source maps of every
+    // natively loaded dependency up front. Only map the modules Vite runs.
+    sourcemapInterceptor: nativeExternals ? 'prepareStackTrace' : 'node',
   })
 
   await runner.import(workerScriptPath)

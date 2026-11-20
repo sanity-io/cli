@@ -1,4 +1,6 @@
-import {dirname} from 'node:path'
+import {mkdirSync, mkdtempSync, rmSync, writeFileSync} from 'node:fs'
+import {tmpdir} from 'node:os'
+import {dirname, join} from 'node:path'
 import {fileURLToPath, pathToFileURL} from 'node:url'
 
 import {
@@ -11,7 +13,7 @@ import {
   ssrImportMetaKey,
   ssrModuleExportsKey,
 } from 'vite/module-runner'
-import {describe, expect, test} from 'vitest'
+import {afterAll, beforeAll, describe, expect, test} from 'vitest'
 
 import {StudioModuleEvaluator} from '../studioModuleEvaluator.js'
 
@@ -202,5 +204,91 @@ describe('StudioModuleEvaluator', () => {
     expect(namespace.value).toBe('esm')
     expect(namespace.named).toBe('esm')
     expect(namespace.default).toBeUndefined()
+  })
+})
+
+describe('StudioModuleEvaluator.runExternalModule', () => {
+  let tempDir: string
+
+  function writeModule(path: string, content: string): string {
+    const filePath = join(tempDir, path)
+    mkdirSync(dirname(filePath), {recursive: true})
+    writeFileSync(filePath, content)
+    return pathToFileURL(filePath).href
+  }
+
+  beforeAll(() => {
+    tempDir = mkdtempSync(join(tmpdir(), 'studio-module-evaluator-'))
+  })
+
+  afterAll(() => {
+    rmSync(tempDir, {force: true, recursive: true})
+  })
+
+  test('exposes CommonJS exports that Node.js cannot detect as named exports', async () => {
+    const url = writeModule(
+      'cjs/index.cjs',
+      `function impl() { return 'impl' }\n` +
+        `module.exports = Object.assign(impl, {hidden: 'hidden value', then: 'not a thenable'})\n` +
+        `module.exports.detected = 'detected value'\n`,
+    )
+
+    const namespace = (await new StudioModuleEvaluator().runExternalModule(url)) as Record<
+      string,
+      unknown
+    >
+
+    expect((namespace.default as () => string)()).toBe('impl')
+    expect(namespace.hidden).toBe('hidden value')
+    expect(namespace.detected).toBe('detected value')
+    expect('hidden' in namespace).toBe(true)
+    expect('missing' in namespace).toBe(false)
+    expect(namespace.missing).toBeUndefined()
+    // Never make the namespace look like a promise
+    expect('then' in namespace).toBe(false)
+    expect(Object.keys(namespace)).toEqual(expect.arrayContaining(['default', 'hidden']))
+    expect(Object.getOwnPropertyDescriptor(namespace, 'hidden')).toMatchObject({
+      enumerable: true,
+      value: 'hidden value',
+    })
+    expect(Object.getOwnPropertyDescriptor(namespace, 'missing')).toBeUndefined()
+
+    const copied: Record<string, unknown> = {}
+    for (const key in namespace) copied[key] = namespace[key]
+    expect(copied).toMatchObject({detected: 'detected value', hidden: 'hidden value'})
+  })
+
+  test('returns the namespace untouched for CommonJS modules without object exports', async () => {
+    const url = writeModule('primitive/index.cjs', `module.exports = 'primitive'\n`)
+
+    const namespace = (await new StudioModuleEvaluator().runExternalModule(url)) as Record<
+      string,
+      unknown
+    >
+
+    expect(namespace.default).toBe('primitive')
+    expect(Object.prototype.toString.call(namespace)).toBe('[object Module]')
+  })
+
+  test('returns ES module namespaces untouched', async () => {
+    writeModule('esm/package.json', JSON.stringify({type: 'module'}))
+    const url = writeModule(
+      'esm/index.js',
+      `export default {hidden: true}\nexport const named = 1\n`,
+    )
+
+    const namespace = (await new StudioModuleEvaluator().runExternalModule(url)) as Record<
+      string,
+      unknown
+    >
+
+    expect(namespace.named).toBe(1)
+    expect('hidden' in namespace).toBe(false)
+  })
+
+  test('returns builtin modules untouched', async () => {
+    const namespace = await new StudioModuleEvaluator().runExternalModule('node:path')
+
+    expect(namespace).toHaveProperty('join')
   })
 })

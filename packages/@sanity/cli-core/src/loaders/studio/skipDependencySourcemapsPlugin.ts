@@ -7,12 +7,15 @@ const DEPENDENCY_SCRIPT_RE = /[\\/]node_modules[\\/].+\.[cm]?js$/
 /**
  * Loads plain JavaScript files from `node_modules` without their source maps.
  *
- * The studio worker runs every dependency through Vite's SSR transform
- * (`ssr.noExternal: true`). By default Vite reads each dependency's `.js.map`,
- * combines it with the SSR transform's own map, inlines the result as a base64
- * comment and the module runner then has Node parse it again for stack traces.
- * For a studio that imports `sanity` this means thousands of modules and tens of
- * megabytes of source maps, which roughly doubles the worker's peak memory.
+ * The studio worker runs dependencies that aren't loaded natively (third-party
+ * plugins, or every dependency when
+ * `SANITY_CLI_STUDIO_WORKER_INLINE_DEPENDENCIES` is set) through Vite's SSR
+ * transform. By default Vite reads each dependency's `.js.map`, combines it with
+ * the SSR transform's own map, inlines the result as a base64 comment and the
+ * module runner then has Node parse it again for stack traces. For a studio
+ * whose dependencies all go through Vite this means thousands of modules and
+ * tens of megabytes of source maps, which roughly doubles the worker's peak
+ * memory.
  *
  * Returning `map: {mappings: ''}` from `load` skips Vite's source map handling.
  * Keep the source intact: sourceMappingURL text can also appear inside strings.
