@@ -1,3 +1,4 @@
+import {constants as fsConstants} from 'node:fs'
 import fs from 'node:fs/promises'
 import path from 'node:path'
 import {styleText} from 'node:util'
@@ -81,6 +82,12 @@ export async function bootstrapLocalTemplate(
   }
   debug(`Copying shared template code from : ${sharedDir}`)
   await copy(path.join(sharedDir, 'gitignore.txt'), outputPath, {rename: () => '.gitignore'})
+  // Studio templates ship no AGENTS.md of their own, so copy the shared
+  // agent guide into every non-app scaffold. The normal template copier
+  // overwrites, so request exclusive copy to never clobber an AGENTS.md.
+  if (!isAppTemplate && !isMediaLibraryTemplate) {
+    await copyFileIfNotExists(path.join(sharedDir, 'AGENTS.md'), path.join(outputPath, 'AGENTS.md'))
+  }
   // Dashboard apps dev and deploy differently, so their docs replace the
   // template's. Studio templates have no overlay.
   if (isAppTemplate && variables.workbench) {
@@ -228,6 +235,18 @@ export async function bootstrapLocalTemplate(
   // Finish up by providing init process with template-specific info
   spin.succeed()
   return template
+
+  async function copyFileIfNotExists(sourcePath: string, targetPath: string): Promise<void> {
+    try {
+      await fs.copyFile(sourcePath, targetPath, fsConstants.COPYFILE_EXCL)
+    } catch (err) {
+      if (err.code === 'EEXIST') {
+        output.warn(`\n${styleText('yellow', '⚠')} File "${targetPath}" already exists, skipping`)
+      } else {
+        throw err
+      }
+    }
+  }
 
   async function writeFileIfNotExists(fileName: string, content: string): Promise<void> {
     const filePath = path.join(outputPath, fileName)
