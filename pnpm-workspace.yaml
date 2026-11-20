@@ -30,8 +30,8 @@ catalog:
   '@sanity/schema': ^6.24.0
   '@sanity/util': ^6.24.0
   '@sanity/validation': ^6.24.0
-  '@sanity/client': ^8.16.0
-  '@sanity/codegen': ^8.3.2
+  '@sanity/client': ^8.17.0
+  '@sanity/codegen': ^8.3.3
   '@sanity/sdk': ^3.14.0
   '@sanity/telemetry': ^1.1.0
 
