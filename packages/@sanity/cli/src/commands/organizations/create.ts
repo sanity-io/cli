@@ -3,12 +3,9 @@ import {type FlagInput} from '@oclif/core/interfaces'
 import {exitCodes, SanityCommand, subdebug} from '@sanity/cli-core'
 import {getErrorMessage} from '@sanity/cli-core/errors'
 import {requiredWhenUnattended} from '@sanity/cli-core/flags'
+import {type ImageFile, readImageFile} from '@sanity/cli-core/images'
 import {spinner} from '@sanity/cli-core/ux'
 
-import {
-  type OrganizationLogo,
-  readOrganizationLogo,
-} from '../../actions/organizations/readOrganizationLogo.js'
 import {validateOrganizationName} from '../../actions/organizations/validateOrganizationName.js'
 import {promptForOrganizationName} from '../../prompts/promptForOrganizationName.js'
 import {
@@ -74,7 +71,7 @@ export class CreateOrganizationCommand extends SanityCommand<typeof CreateOrgani
     }
 
     // Read the logo before creating anything, so a bad file doesn't leave an organization without it.
-    let logo: OrganizationLogo | undefined
+    let logo: ImageFile | undefined
     if (logoPath === '') {
       this.error(
         '--logo needs the path to an image file. To create the organization without a logo, leave out --logo.',
@@ -82,7 +79,7 @@ export class CreateOrganizationCommand extends SanityCommand<typeof CreateOrgani
       )
     } else if (logoPath !== undefined) {
       try {
-        logo = await readOrganizationLogo(logoPath)
+        logo = await readImageFile(logoPath)
       } catch (error) {
         this.error(getErrorMessage(error), {exit: exitCodes.RUNTIME_ERROR})
       }

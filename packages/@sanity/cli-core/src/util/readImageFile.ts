@@ -2,9 +2,9 @@ import {type Stats} from 'node:fs'
 import {readFile, stat} from 'node:fs/promises'
 import {extname} from 'node:path'
 
-// The image formats populus accepts as an organization logo. It needs an image Content-Type, and
-// the CLI has no other source for one.
-const LOGO_CONTENT_TYPES: Record<string, string> = {
+// The image formats Sanity accepts for uploaded images, such as organization logos. Uploads need
+// an image Content-Type, and the CLI has no other source for one.
+const IMAGE_CONTENT_TYPES: Record<string, string> = {
   '.avif': 'image/avif',
   '.bmp': 'image/bmp',
   '.gif': 'image/gif',
@@ -19,20 +19,22 @@ const LOGO_CONTENT_TYPES: Record<string, string> = {
   '.webp': 'image/webp',
 }
 
-// Matches populus's limit, so a large file fails here instead of after uploading it.
-const MAX_LOGO_BYTES = 5 * 1024 * 1024
+// Matches the upload limit, so a large file fails here instead of after uploading it.
+const MAX_IMAGE_BYTES = 5 * 1024 * 1024
 
-export interface OrganizationLogo {
+/** @public */
+export interface ImageFile {
   contentType: string
   image: Buffer
 }
 
 /**
- * Read an image file to upload as an organization's logo. Throws an error a user can act on when
- * the file is missing, isn't a supported image type, or is over 5 MB.
+ * Read an image file to upload, such as an organization's logo. Throws an error a user can act on
+ * when the file is missing, isn't a supported image type, or is over 5 MB.
+ * @public
  */
-export async function readOrganizationLogo(filePath: string): Promise<OrganizationLogo> {
-  const contentType = LOGO_CONTENT_TYPES[extname(filePath).toLowerCase()]
+export async function readImageFile(filePath: string): Promise<ImageFile> {
+  const contentType = IMAGE_CONTENT_TYPES[extname(filePath).toLowerCase()]
   if (!contentType) {
     throw new Error(
       `"${filePath}" isn't a supported image type. Use a PNG, JPEG, GIF, WebP, SVG, BMP, TIFF, HEIF or AVIF file.`,
@@ -49,8 +51,8 @@ export async function readOrganizationLogo(filePath: string): Promise<Organizati
     throw error
   }
 
-  if (stats.size > MAX_LOGO_BYTES) {
-    throw new Error(`"${filePath}" is larger than 5 MB, the limit for a logo. Use a smaller image.`)
+  if (stats.size > MAX_IMAGE_BYTES) {
+    throw new Error(`"${filePath}" is larger than 5 MB, the upload limit. Use a smaller image.`)
   }
 
   return {contentType, image: await readFile(filePath)}

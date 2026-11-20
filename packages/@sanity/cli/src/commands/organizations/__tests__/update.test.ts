@@ -143,7 +143,7 @@ describe('organizations update', () => {
       largeLogo,
     ])
 
-    expect(error?.message).toContain('is larger than 5 MB, the limit for a logo')
+    expect(error?.message).toContain('is larger than 5 MB, the upload limit')
     expect(error?.oclif?.exit).toBe(1)
     expect(mockRequest).not.toHaveBeenCalled()
   })

@@ -2,13 +2,10 @@ import {Args, Flags} from '@oclif/core'
 import {type FlagInput} from '@oclif/core/interfaces'
 import {exitCodes, SanityCommand, subdebug} from '@sanity/cli-core'
 import {getErrorMessage} from '@sanity/cli-core/errors'
+import {type ImageFile, readImageFile} from '@sanity/cli-core/images'
 import {spinner} from '@sanity/cli-core/ux'
 import {isHttpError} from '@sanity/client'
 
-import {
-  type OrganizationLogo,
-  readOrganizationLogo,
-} from '../../actions/organizations/readOrganizationLogo.js'
 import {validateOrganizationName} from '../../actions/organizations/validateOrganizationName.js'
 import {validateOrganizationSlug} from '../../actions/organizations/validateOrganizationSlug.js'
 import {
@@ -116,12 +113,12 @@ export class UpdateOrganizationCommand extends SanityCommand<typeof UpdateOrgani
     }
 
     // undefined leaves the logo as it is, null removes it.
-    let logo: OrganizationLogo | null | undefined
+    let logo: ImageFile | null | undefined
     if (logoPath === '') {
       logo = null
     } else if (logoPath !== undefined) {
       try {
-        logo = await readOrganizationLogo(logoPath)
+        logo = await readImageFile(logoPath)
       } catch (error) {
         this.error(getErrorMessage(error), {exit: exitCodes.RUNTIME_ERROR})
       }
