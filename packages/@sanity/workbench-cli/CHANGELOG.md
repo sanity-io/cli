@@ -1,5 +1,21 @@
 # @sanity/workbench-cli
 
+## 2.19.0
+
+[Compare changes](https://github.com/sanity-io/cli/compare/workbench-cli-v2.18.0...workbench-cli-v2.19.0)
+
+_2026-11-20_
+
+### Features
+
+- use any image as app.icon in sanity.cli.ts ([#2252](https://github.com/sanity-io/cli/pull/2252)) ([d888323](https://github.com/sanity-io/cli/commit/d88832341bedb1ad198b57026039d28fdb2037ce))
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/cli-core bumped to 3.16.0
+
 ## 2.18.0
 
 [Compare changes](https://github.com/sanity-io/cli/compare/workbench-cli-v2.17.0...workbench-cli-v2.18.0)

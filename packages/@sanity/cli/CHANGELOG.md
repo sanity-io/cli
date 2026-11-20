@@ -1,5 +1,31 @@
 # Change Log
 
+## 8.33.0
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-v8.32.1...cli-v8.33.0)
+
+_2026-11-20_
+
+### Features
+
+- **cli:** add an agent setup map to template AGENTS.md ([#2237](https://github.com/sanity-io/cli/pull/2237)) ([f4de245](https://github.com/sanity-io/cli/commit/f4de245984545058439fdbb1b3c898e2ee0dd1bf))
+- use any image as app.icon in sanity.cli.ts ([#2252](https://github.com/sanity-io/cli/pull/2252)) ([d888323](https://github.com/sanity-io/cli/commit/d88832341bedb1ad198b57026039d28fdb2037ce))
+
+### Bug Fixes
+
+- **deps:** update dependency skills to ^1.9.0 ([#2245](https://github.com/sanity-io/cli/pull/2245)) ([9c3119d](https://github.com/sanity-io/cli/commit/9c3119d835de5b819f9cb5139a99c020514d3499))
+- **deps:** update dependency valibot to ^1.5.0 ([#2246](https://github.com/sanity-io/cli/pull/2246)) ([8ee45de](https://github.com/sanity-io/cli/commit/8ee45de0874ec2cb1fb3825c398ab9b5fcdd54f6))
+- **deps:** update sanity-tooling ([#2247](https://github.com/sanity-io/cli/pull/2247)) ([181ee1e](https://github.com/sanity-io/cli/commit/181ee1ee4ed4ac03d6f96fce36ab27c1491b2af0))
+- **cli-core:** add readImageFile for image uploads ([#2251](https://github.com/sanity-io/cli/pull/2251)) ([4cd18e4](https://github.com/sanity-io/cli/commit/4cd18e4e10c050379f110ad5d779744a3ccc05cb))
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/cli-core bumped to 3.16.0
+    - @sanity/cli-build bumped to 7.5.0
+    - @sanity/workbench-cli bumped to 2.19.0
+
 ## 8.32.1
 
 [Compare changes](https://github.com/sanity-io/cli/compare/cli-v8.32.0...cli-v8.32.1)

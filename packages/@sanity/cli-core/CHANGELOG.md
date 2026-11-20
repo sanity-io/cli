@@ -1,5 +1,15 @@
 # Changelog
 
+## 3.16.0
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-core-v3.15.1...cli-core-v3.16.0)
+
+_2026-11-20_
+
+### Features
+
+- **cli-core:** add readImageFile for image uploads ([#2251](https://github.com/sanity-io/cli/pull/2251)) ([4cd18e4](https://github.com/sanity-io/cli/commit/4cd18e4e10c050379f110ad5d779744a3ccc05cb))
+
 ## 3.15.1
 
 [Compare changes](https://github.com/sanity-io/cli/compare/cli-core-v3.15.0...cli-core-v3.15.1)
