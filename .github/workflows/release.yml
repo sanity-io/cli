@@ -20,7 +20,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       published: ${{ steps.changesets.outputs.published }}
-      publishedPackages: ${{ steps.changesets.outputs.publishedPackages }}
+      publishedPackages: ${{ steps.changesets.outputs.published-packages }}
 
     env:
       TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
@@ -68,12 +68,12 @@ jobs:
         id: changesets
         uses: changesets/action@ae32849d5ba541f9ae29e40e22a623bc13562f51 # v2.1.2
         with:
-          version: pnpm version-packages
-          publish: pnpm publish-packages
-          title: 'chore: version packages'
-          commit: 'chore: version packages'
-          createGithubReleases: true
-          setupGitUser: false
+          github-token: ${{ steps.generate_token.outputs.token }}
+          version-script: pnpm version-packages
+          publish-script: pnpm publish-packages
+          pr-title: 'chore: version packages'
+          commit-message: 'chore: version packages'
+          create-github-releases: true
         env:
           GITHUB_TOKEN: ${{ steps.generate_token.outputs.token }}
           NPM_CONFIG_PROVENANCE: true
@@ -81,7 +81,7 @@ jobs:
       - name: Summary
         if: ${{ steps.changesets.outputs.published == 'true' }}
         env:
-          PUBLISHED_PACKAGES: ${{ steps.changesets.outputs.publishedPackages }}
+          PUBLISHED_PACKAGES: ${{ steps.changesets.outputs.published-packages }}
         run: |
           echo "## Published Packages 🚀" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
