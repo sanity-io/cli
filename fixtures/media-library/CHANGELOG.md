@@ -1,5 +1,13 @@
 # media-library-fixture
 
+## 1.0.62
+
+### Patch Changes
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/cli bumped to 8.32.1
+
 ## 1.0.61
 
 ### Patch Changes
