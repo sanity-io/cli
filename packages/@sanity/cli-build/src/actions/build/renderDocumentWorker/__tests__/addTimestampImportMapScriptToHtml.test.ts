@@ -1,3 +1,4 @@
+import {JSDOM} from 'jsdom'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
 import {addTimestampedImportMapScriptToHtml} from '../addTimestampImportMapScriptToHtml.js'
@@ -22,6 +23,7 @@ const importMap = {
 
 describe('addTimestampedImportMapScriptToHtml', () => {
   afterEach(() => {
+    vi.useRealTimers()
     vi.clearAllMocks()
   })
   test('does not modify html when no importMap is provided', () => {
@@ -45,6 +47,34 @@ describe('addTimestampedImportMapScriptToHtml', () => {
       'beforeend',
       expect.stringContaining('auto-generated script to add import map with timestamp'),
     )
+  })
+
+  test('rounds the runtime timestamp down to the current minute', () => {
+    vi.useFakeTimers({now: 1_800_000_037_000, toFake: ['Date']})
+    addTimestampedImportMapScriptToHtml(baseHtml, importMap)
+
+    const injectedScript = mockInsert.mock.calls
+      .map(([, html]) => html as string)
+      .find((html) => html.includes('auto-generated script to add import map with timestamp'))
+    const scriptContent = injectedScript?.match(/^<script>([\s\S]*)<\/script>$/)?.[1]
+    const dom = new JSDOM(
+      `<script type="application/json" id="__imports">${JSON.stringify(importMap)}</script>`,
+      {runScripts: 'outside-only'},
+    )
+    dom.window.Date.now = Date.now
+    Object.defineProperty(dom.window.navigator, 'userAgent', {value: 'Firefox'})
+    dom.window.eval(scriptContent!)
+
+    const runtimeImportMap = JSON.parse(
+      dom.window.document.querySelector<HTMLScriptElement>('script[type="importmap"]')!
+        .textContent!,
+    )
+    expect(runtimeImportMap.imports.sanity).toBe(
+      'https://sanity-cdn.com/v1/modules/sanity/default/%5E3.2.0/t1800000000',
+    )
+    expect(
+      dom.window.document.querySelector<HTMLLinkElement>('link[rel="modulepreload"]')!.href,
+    ).toBe(runtimeImportMap.imports.sanity)
   })
 
   test('includes CSS URLs as a css array in the __imports JSON if provided', () => {
