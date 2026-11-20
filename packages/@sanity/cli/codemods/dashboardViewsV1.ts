@@ -40,7 +40,7 @@ function migrateView(
   api: API,
   exportDefault: ExportDefaultDeclaration,
   call: CallExpression,
-): Import[] | undefined {
+): boolean {
   const [surface, components] = call.arguments
   const surfaceName = j.StringLiteral.check(surface) ? surface.value : ''
   const view = VIEWS[surfaceName]
@@ -66,7 +66,7 @@ function migrateView(
     api.report(
       'Left `unstable_defineView` unchanged: only tile and asset_source views with an inline component are migrated.',
     )
-    return undefined
+    return false
   }
 
   const body = j.BlockStatement.check(fn.body)
@@ -78,27 +78,29 @@ function migrateView(
         j.variableDeclarator(props, j.callExpression(j.identifier(view.hook), [])),
       ]),
     )
+    addImport(j, root, {kind: 'value', name: view.hook, source: '@sanity/sdk-react/dashboard'})
   }
 
   const id =
     j.FunctionExpression.check(fn) && fn.id ? fn.id : j.identifier(uniqueName(j, root, view.name))
   exportDefault.declaration = j.functionDeclaration(id, [], body)
 
-  return props ? [{kind: 'value', name: view.hook, source: '@sanity/sdk-react/dashboard'}] : []
+  return true
 }
 
 function migrateWebWorker(
   j: JSCodeshift,
+  root: Collection,
   api: API,
   exportDefault: ExportDefaultDeclaration,
   call: CallExpression,
   isTypeScript: boolean,
   sdkPackage: string,
-): Import[] | undefined {
+): boolean {
   const [, fn] = call.arguments
   if (!j.ArrowFunctionExpression.check(fn) && !j.FunctionExpression.check(fn)) {
     api.report('Left `unstable_defineService` unchanged: only an inline function is migrated.')
-    return undefined
+    return false
   }
 
   const [props] = fn.params
@@ -124,11 +126,12 @@ function migrateWebWorker(
 
   exportDefault.declaration = fn
 
-  if (!isTypeScript || !(j.ObjectPattern.check(props) || j.Identifier.check(props))) return []
+  if (isTypeScript && (j.ObjectPattern.check(props) || j.Identifier.check(props))) {
+    props.typeAnnotation = j.tsTypeAnnotation(j.tsTypeReference(j.identifier('WebWorkerProps')))
+    addImport(j, root, {kind: 'type', name: 'WebWorkerProps', source: `${sdkPackage}/dashboard`})
+  }
 
-  props.typeAnnotation = j.tsTypeAnnotation(j.tsTypeReference(j.identifier('WebWorkerProps')))
-
-  return [{kind: 'type', name: 'WebWorkerProps', source: `${sdkPackage}/dashboard`}]
+  return true
 }
 
 function addImport(j: JSCodeshift, root: Collection, {kind, name, source}: Import): void {
@@ -180,8 +183,6 @@ export default function dashboardViewsV1(
   const j = api.jscodeshift
   const root = j(file.source)
   const isTypeScript = /\.tsx?$/.test(file.path)
-  const imports: Import[] = []
-  let isMigrated = false
 
   const defines = ['unstable_defineService', 'unstable_defineView'].flatMap((defineName) =>
     root
@@ -190,35 +191,29 @@ export default function dashboardViewsV1(
       .map((specifier) => ({defineName, specifier})),
   )
 
-  for (const {defineName, specifier} of defines) {
+  const migrated = defines.flatMap(({defineName, specifier}) => {
     const {local} = specifier.node
-    if (!j.Identifier.check(local)) continue
+    if (!j.Identifier.check(local)) return []
 
-    const calls = root.find(j.CallExpression, {callee: {name: local.name}}).paths()
+    return root
+      .find(j.CallExpression, {callee: {name: local.name}})
+      .paths()
+      .map((path) => {
+        const exportDefault = path.parent.node
+        if (!j.ExportDefaultDeclaration.check(exportDefault)) {
+          api.report(
+            `Left \`${defineName}\` unchanged: only \`export default ${defineName}(...)\` is migrated.`,
+          )
+          return false
+        }
 
-    for (const path of calls) {
-      const exportDefault = path.parent.node
-      if (!j.ExportDefaultDeclaration.check(exportDefault)) {
-        api.report(
-          `Left \`${defineName}\` unchanged: only \`export default ${defineName}(...)\` is migrated.`,
-        )
-        continue
-      }
-
-      const added =
-        defineName === 'unstable_defineView'
+        return defineName === 'unstable_defineView'
           ? migrateView(j, root, api, exportDefault, path.node)
-          : migrateWebWorker(j, api, exportDefault, path.node, isTypeScript, sdkPackage)
-      if (!added) continue
+          : migrateWebWorker(j, root, api, exportDefault, path.node, isTypeScript, sdkPackage)
+      })
+  })
+  if (!migrated.includes(true)) return undefined
 
-      imports.push(...added)
-      isMigrated = true
-    }
-  }
-
-  if (!isMigrated) return undefined
-
-  for (const added of imports) addImport(j, root, added)
   for (const {specifier} of defines) removeUnusedImport(j, root, specifier)
 
   return root.toSource()
