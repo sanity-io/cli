@@ -1,5 +1,17 @@
 # Change Log
 
+## 8.32.1
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-v8.32.0...cli-v8.32.1)
+
+_2026-11-20_
+
+### Bug Fixes
+
+- **deps:** use typegen type fixes from @sanity/codegen 8.3.2 and groq-js 2.0.3 ([#2234](https://github.com/sanity-io/cli/pull/2234)) ([ba74c13](https://github.com/sanity-io/cli/commit/ba74c13e36beb0dddd318f39f841dae07e2c7999))
+
+  `select()` at the query root is typed, and `select()` with no fallback is nullable.
+
 ## 8.32.0
 
 [Compare changes](https://github.com/sanity-io/cli/compare/cli-v8.31.0...cli-v8.32.0)
