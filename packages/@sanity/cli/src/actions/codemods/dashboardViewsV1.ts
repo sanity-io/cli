@@ -1,10 +1,13 @@
 import path from 'node:path'
 
-import {getCliConfig, getLocalPackageVersion} from '@sanity/cli-core'
+import {getCliConfig, getLocalPackageVersion, isInteractive} from '@sanity/cli-core'
+import {confirm} from '@sanity/cli-core/ux'
 import {isWorkbenchApp} from '@sanity/workbench-cli'
-import {lt} from 'semver'
 
+import {installNewPackages} from '../../util/packageManager/installPackages.js'
+import {getPackageManagerChoice} from '../../util/packageManager/packageManagerChoice.js'
 import {type CodeMod} from './types.js'
+import {upgradeRequiredPackages} from './upgradeRequiredPackages.js'
 
 const MIN_SANITY_VERSION = '6.24.0'
 const MIN_SDK_VERSION = '3.15.0'
@@ -17,14 +20,15 @@ props with \`useTile\` and \`useAssetSource\` from \`@sanity/sdk-react/dashboard
 receive \`{bus, worker}\`, typed with \`WebWorkerProps\` from \`@sanity/sdk/dashboard\`. Panel views
 are left unchanged.
 
-The migrated files need sanity ${MIN_SANITY_VERSION} or later, and @sanity/sdk-react (views) or
-@sanity/sdk (web workers) ${MIN_SDK_VERSION} or later.
+Installs @sanity/sdk-react (views) and @sanity/sdk (web workers) when they are missing, and
+offers to upgrade sanity (older than ${MIN_SANITY_VERSION}) and those SDK packages (older than
+${MIN_SDK_VERSION}).
 `.trim()
 
 export const dashboardViewsV1: CodeMod = {
   description,
   filename: 'dashboardViewsV1.ts',
-  prepare: async ({output, workDir}) => {
+  prepare: async ({dry, output, workDir}) => {
     const config = await getCliConfig(workDir)
     if (!isWorkbenchApp(config.app)) {
       throw new Error(
@@ -39,19 +43,37 @@ export const dashboardViewsV1: CodeMod = {
       throw new Error('sanity.cli.ts declares no views or web workers to migrate.')
     }
 
-    const required = [
-      ['sanity', MIN_SANITY_VERSION],
-      ...(views.length > 0 ? [['@sanity/sdk-react', MIN_SDK_VERSION]] : []),
-      ...(webWorkers.length > 0 ? [['@sanity/sdk', MIN_SDK_VERSION]] : []),
+    const sdkPackages = [
+      ...(views.length > 0 ? ['@sanity/sdk-react'] : []),
+      ...(webWorkers.length > 0 ? ['@sanity/sdk'] : []),
     ]
-    for (const [name, min] of required) {
-      const version = await getLocalPackageVersion(name, workDir)
-      if (!version || lt(version, min)) {
-        output.warn(
-          `The migrated files need ${name} ${min} or later. Install or upgrade it before you run \`sanity dev\`.`,
-        )
+    const installed = await Promise.all(
+      sdkPackages.map((name) => getLocalPackageVersion(name, workDir)),
+    )
+    const missing = sdkPackages
+      .filter((_, index) => !installed[index])
+      .map((name) => `${name}@^${MIN_SDK_VERSION}`)
+    const listOnly = dry || !isInteractive()
+
+    if (missing.length > 0) {
+      const packages = missing.join(', ')
+
+      if (listOnly || !(await confirm({default: true, message: `Install ${packages} now?`}))) {
+        output.log(`Install ${packages} before you run \`sanity dev\`.`)
+      } else {
+        const {chosen} = await getPackageManagerChoice(workDir, {interactive: false})
+        await installNewPackages({packageManager: chosen, packages: missing}, {output, workDir})
       }
     }
+
+    const neededBy = 'the migrated files need'
+    await upgradeRequiredPackages(
+      [
+        {min: MIN_SANITY_VERSION, name: 'sanity', neededBy},
+        ...sdkPackages.map((name) => ({min: MIN_SDK_VERSION, name, neededBy})),
+      ],
+      {dry: listOnly, output, workDir},
+    )
 
     return {options: {}, paths}
   },
