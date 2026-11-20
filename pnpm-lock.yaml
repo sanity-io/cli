@@ -1043,8 +1043,8 @@ snapshots:
 				"rxjs": "catalog:",
 				"semver": "catalog:",
 				"skills": {
-					"specifier": "^1.8.1",
-					"version": "1.8.1",
+					"specifier": "^1.9.0",
+					"version": "1.9.0",
 				},
 				"smol-toml": {
 					"specifier": "^1.9.1",
@@ -20502,8 +20502,8 @@ snapshots:
 			"integrity": "sha512-bLGGlR1QxBcynn2d5YmDX4MGjlZvy2MRBDRNHLJ8VI6l6+9FUiyTFNJ0IveOSP0bcXgVDPRcfGqA0pjaqUpfVg==",
 		},
 
-		"skills@1.8.1": {
-			"integrity": "sha512-QK3wlZ5j8wcpLPUOXt7+1Gu1f9JKpv7lBpO0zmqKa5VBrt45/woVo8Max1x4wha3pCNafNHiiodYK6Xi/0alQQ==",
+		"skills@1.9.0": {
+			"integrity": "sha512-8p27fa6SnpDLrGIpqbhNIHg8+uukR2lg/0qDoKPk85pU3/zyXiU67tEjvXHLrzybBefIAWpWZ2Oc+enlvSSVqg==",
 			"engines": {"node": ">=22.20.0"},
 			"hasBin": true,
 			"dependencies": {
