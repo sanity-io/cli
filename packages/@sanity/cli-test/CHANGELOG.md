@@ -1,5 +1,21 @@
 # Changelog
 
+## 26.0.0
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-test-v25.0.2...cli-test-v26.0.0)
+
+_2026-11-20_
+
+### Bug Fixes
+
+- use any image as app.icon in sanity.cli.ts ([#2252](https://github.com/sanity-io/cli/pull/2252)) ([d888323](https://github.com/sanity-io/cli/commit/d88832341bedb1ad198b57026039d28fdb2037ce))
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/cli-core bumped to 3.16.0
+
 ## 25.0.2
 
 [Compare changes](https://github.com/sanity-io/cli/compare/cli-test-v25.0.1...cli-test-v25.0.2)

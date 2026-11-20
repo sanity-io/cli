@@ -1,5 +1,22 @@
 # Changelog
 
+## 7.5.0
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-build-v7.4.0...cli-build-v7.5.0)
+
+_2026-11-20_
+
+### Features
+
+- use any image as app.icon in sanity.cli.ts ([#2252](https://github.com/sanity-io/cli/pull/2252)) ([d888323](https://github.com/sanity-io/cli/commit/d88832341bedb1ad198b57026039d28fdb2037ce))
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/cli-core bumped to 3.16.0
+    - @sanity/workbench-cli bumped to 2.19.0
+
 ## 7.4.0
 
 [Compare changes](https://github.com/sanity-io/cli/compare/cli-build-v7.3.0...cli-build-v7.4.0)
