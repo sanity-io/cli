@@ -1,3 +1,5 @@
+// jscodeshift runs transforms from its own install; `Collection#find(j.X)` reads as an array call
+/* oxlint-disable n-js/no-unpublished-import, unicorn/no-array-callback-reference, unicorn/no-array-method-this-argument */
 import {
   type API,
   type ASTPath,
