@@ -74,6 +74,7 @@ function isLightBackground(reply: string): boolean {
 function probeTerminal(): Promise<string> {
   const {stdin, stdout} = process
   const wasRaw = stdin.isRaw
+  const wasFlowing = stdin.readableFlowing
 
   return new Promise((resolve) => {
     let reply = ''
@@ -81,7 +82,7 @@ function probeTerminal(): Promise<string> {
       clearTimeout(timeout)
       stdin.off('data', onData)
       stdin.setRawMode(wasRaw)
-      stdin.pause()
+      if (wasFlowing === false) stdin.pause()
       resolve(reply)
     }
     const onData = (data: Buffer) => {
