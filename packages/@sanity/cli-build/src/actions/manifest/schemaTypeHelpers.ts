@@ -14,7 +14,10 @@ const DEFAULT_SLUG_FIELDS = new Set(['current', 'source'])
 
 type InternalOwnProps = {fields?: unknown[]; name?: string; type?: string}
 
-export function getCustomFields(type: ObjectSchemaType): (ObjectField & {fieldset?: string})[] {
+export function getCustomFields(
+  type: ObjectSchemaType,
+  coreFieldNames: ReadonlyMap<string, ReadonlySet<string>>,
+): (ObjectField & {fieldset?: string})[] {
   const fields = type.fieldsets
     ? type.fieldsets.flatMap((fs) => {
         if (fs.single) {
@@ -42,7 +45,24 @@ export function getCustomFields(type: ObjectSchemaType): (ObjectField & {fieldse
   if (isType(type, 'file')) {
     return fields.filter((f) => !DEFAULT_FILE_FIELDS.has(f.name))
   }
+  const redefinedCoreFields = findCoreFieldNames(type, coreFieldNames)
+  if (redefinedCoreFields) {
+    return fields.filter((f) => !redefinedCoreFields.has(f.name))
+  }
   return fields
+}
+
+function findCoreFieldNames(
+  schemaType: SchemaType,
+  coreFieldNames: ReadonlyMap<string, ReadonlySet<string>>,
+): ReadonlySet<string> | undefined {
+  for (let current: SchemaType | undefined = schemaType; current; current = current.type) {
+    const names = coreFieldNames.get(current.name)
+    if (names) {
+      return names
+    }
+  }
+  return undefined
 }
 
 export function isReference(type: SchemaType): type is ReferenceSchemaType {
@@ -65,7 +85,10 @@ function isObjectField(maybeOjectField: unknown): boolean {
   )
 }
 
-export function isCustomized(maybeCustomized: SchemaType): boolean {
+export function isCustomized(
+  maybeCustomized: SchemaType,
+  coreFieldNames: ReadonlyMap<string, ReadonlySet<string>>,
+): boolean {
   const internalOwnProps = getSchemaTypeInternalOwnProps(maybeCustomized)
 
   const hasFieldsArray =
@@ -84,7 +107,7 @@ export function isCustomized(maybeCustomized: SchemaType): boolean {
     return false
   }
 
-  const fields = getCustomFields(maybeCustomized)
+  const fields = getCustomFields(maybeCustomized, coreFieldNames)
   return fields.length > 0
 }
 

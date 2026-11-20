@@ -13,7 +13,7 @@ const defaultTypeNames = new Set(
  */
 export function extractTypes(types: unknown[]): ManifestSchemaType[] {
   const schema = Schema.compile({name: 'test', types})
-  const context = {schema}
+  const context = {coreFieldNames: new Map(), schema}
   return (schema.getTypeNames() as string[])
     .filter((name: string) => !defaultTypeNames.has(name))
     .map((name: string) => transformType(schema.get(name), context))

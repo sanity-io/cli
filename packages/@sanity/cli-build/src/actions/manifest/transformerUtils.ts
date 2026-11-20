@@ -7,6 +7,11 @@ import {type ManifestSerializable} from './types.js'
  * Context object passed to transformer functions
  */
 export interface Context {
+  /**
+   * Core field names of the built-in types the schema redefines, keyed by type name.
+   * The manifest carries only the fields the schema added to them.
+   */
+  coreFieldNames: ReadonlyMap<string, ReadonlySet<string>>
   schema: Schema
 }
 

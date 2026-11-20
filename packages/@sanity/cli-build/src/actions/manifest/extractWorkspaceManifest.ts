@@ -62,17 +62,37 @@ export async function extractManifestSchemaTypes(
   workDir: string,
 ): Promise<ManifestSchemaType[]> {
   const typeNames = schema.getTypeNames()
-  const context = {schema}
 
   const {createSchema} = await resolveLocalPackage<typeof import('sanity')>('sanity', workDir)
 
-  const studioDefaultTypeNames = createSchema({name: 'default', types: []}).getTypeNames()
+  const defaultSchema = createSchema({name: 'default', types: []})
+  const studioDefaultTypeNames = defaultSchema.getTypeNames()
+  // A schema's local types include a built-in type it redefines, like an extended
+  // `sanity.releaseMetadata`. A root schema also lists the core types as local.
+  const localTypeNames = new Set(schema.parent ? schema.getLocalTypeNames() : [])
+  const context = {coreFieldNames: getCoreFieldNames(defaultSchema, localTypeNames), schema}
 
   return typeNames
-    .filter((typeName) => !studioDefaultTypeNames.includes(typeName))
+    .filter(
+      (typeName) => localTypeNames.has(typeName) || !studioDefaultTypeNames.includes(typeName),
+    )
     .map((typeName) => schema.get(typeName))
     .filter((type): type is NonNullable<typeof type> => type !== undefined)
     .map((type) => transformType(type, context))
+}
+
+function getCoreFieldNames(
+  defaultSchema: Schema,
+  localTypeNames: ReadonlySet<string>,
+): Map<string, Set<string>> {
+  const coreFieldNames = new Map<string, Set<string>>()
+  for (const typeName of localTypeNames) {
+    const defaultType = defaultSchema.get(typeName)
+    if (defaultType && 'fields' in defaultType && Array.isArray(defaultType.fields)) {
+      coreFieldNames.set(typeName, new Set(defaultType.fields.map((field) => field.name)))
+    }
+  }
+  return coreFieldNames
 }
 
 /**
