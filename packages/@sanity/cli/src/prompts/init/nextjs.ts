@@ -1,12 +1,5 @@
 import {confirm, input, select} from '@sanity/cli-core/ux'
 
-export function promptForEmbeddedStudio(): Promise<boolean> {
-  return confirm({
-    default: true,
-    message: `Would you like an embedded Sanity Studio?`,
-  })
-}
-
 export function promptForStudioPath(): Promise<string> {
   return input({
     default: '/studio',
@@ -57,7 +50,6 @@ export function promptForAppendEnv(envFilename: string): Promise<boolean> {
 export function promptForConfigFiles() {
   return confirm({
     default: true,
-    message:
-      'Would you like to add configuration files for a Sanity project in this Next.js folder?',
+    message: 'Add a Sanity Studio to this project?',
   })
 }

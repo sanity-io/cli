@@ -36,7 +36,7 @@ export interface InitOptions {
   env?: string
   git?: boolean | string
   importDataset?: boolean
-  nextjsAddConfigFiles?: boolean
+  inPlaceStudio?: boolean
   nextjsAppendEnv?: boolean
   nextjsEmbedStudio?: boolean
   organization?: string
@@ -77,6 +77,8 @@ interface InitCommandFlags {
   env?: string
   git?: string
   'import-dataset'?: boolean
+  'in-place-studio'?: boolean
+  /** Deprecated alias for `--[no-]in-place-studio`, kept for existing scripts. */
   'nextjs-add-config-files'?: boolean
   'nextjs-append-env'?: boolean
   'nextjs-embed-studio'?: boolean
@@ -132,9 +134,9 @@ export function flagsToInitOptions(
     fromCreate: flags['from-create'],
     git: flags['no-git'] ? false : flags.git,
     importDataset: flags['import-dataset'],
+    inPlaceStudio: flags['in-place-studio'] ?? flags['nextjs-add-config-files'],
     install: flags.install,
     mcpMode,
-    nextjsAddConfigFiles: flags['nextjs-add-config-files'],
     nextjsAppendEnv: flags['nextjs-append-env'],
     nextjsEmbedStudio: flags['nextjs-embed-studio'],
     organization: flags.organization,

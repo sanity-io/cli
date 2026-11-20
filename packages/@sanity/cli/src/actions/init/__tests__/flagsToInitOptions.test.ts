@@ -62,16 +62,38 @@ describe('flagsToInitOptions', () => {
   test('maps Next.js specific flags', () => {
     const result = toOptions(
       defaultFlags({
-        'nextjs-add-config-files': true,
         'nextjs-append-env': false,
         'nextjs-embed-studio': true,
       }),
       false,
     )
 
-    expect(result.nextjsAddConfigFiles).toBe(true)
     expect(result.nextjsAppendEnv).toBe(false)
     expect(result.nextjsEmbedStudio).toBe(true)
+  })
+
+  test('maps --[no-]in-place-studio, including an explicit false', () => {
+    expect(toOptions(defaultFlags({'in-place-studio': true}), false).inPlaceStudio).toBe(true)
+    expect(toOptions(defaultFlags({'in-place-studio': false}), false).inPlaceStudio).toBe(false)
+    expect(toOptions(defaultFlags(), false).inPlaceStudio).toBeUndefined()
+  })
+
+  test('maps the deprecated --nextjs-add-config-files alias to inPlaceStudio', () => {
+    expect(toOptions(defaultFlags({'nextjs-add-config-files': true}), false).inPlaceStudio).toBe(
+      true,
+    )
+    expect(toOptions(defaultFlags({'nextjs-add-config-files': false}), false).inPlaceStudio).toBe(
+      false,
+    )
+  })
+
+  test('prefers --in-place-studio over the deprecated alias when both are set', () => {
+    const result = toOptions(
+      defaultFlags({'in-place-studio': false, 'nextjs-add-config-files': true}),
+      false,
+    )
+
+    expect(result.inPlaceStudio).toBe(false)
   })
 
   test('resolves --no-git to git: false', () => {

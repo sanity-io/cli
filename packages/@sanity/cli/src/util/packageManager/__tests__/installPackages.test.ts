@@ -424,6 +424,29 @@ describe('pnpm ignored build scripts', () => {
   const approveBuildsNotice =
     'pnpm skipped build scripts for some dependencies. Run "pnpm approve-builds" in the project directory to pick which dependencies should be allowed to run scripts.'
 
+  test('treats ignored esbuild builds as success when adding a package', async () => {
+    // Output shape from `pnpm add` on pnpm 10+, with the error on its own line
+    const mockResult: Partial<Result> = {
+      exitCode: 1,
+      failed: true,
+      stderr: [
+        'Error: ERR_PNPM_IGNORED_BUILDS',
+        '',
+        '  × adding a new package',
+        '  ╰─▶ Ignored build scripts: esbuild@0.28.2',
+        '  help: Run "pnpm approve-builds" to pick which dependencies should be allowed to run scripts.',
+      ].join('\n'),
+      stdout: 'dependencies:\n+ next-sanity 13.4.0',
+    }
+    mockExeca.mockResolvedValueOnce(mockResult as Result)
+
+    await installNewPackages({packageManager: 'pnpm', packages: ['next-sanity@13']}, context)
+
+    expect(mockSpinnerInstance.succeed).toHaveBeenCalled()
+    expect(mockSpinnerInstance.fail).not.toHaveBeenCalled()
+    expect(mockOutput.warn).not.toHaveBeenCalled()
+  })
+
   test('treats ignored esbuild build script as success without notice', async () => {
     const mockResult: Partial<Result> = {
       exitCode: 1,
