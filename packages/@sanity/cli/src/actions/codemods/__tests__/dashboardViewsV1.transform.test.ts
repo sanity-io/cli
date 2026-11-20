@@ -64,6 +64,20 @@ export default unstable_defineView("tile", {
     `)
   })
 
+  test('renames a named tile function whose name the module already declares', () => {
+    expect(
+      migrate(`${VIEW}import { OverviewTile } from "./OverviewTile";
+
+export const preview = <OverviewTile />;
+
+export default unstable_defineView("tile", {
+  tile: function OverviewTile() {
+    return null;
+  },
+});`),
+    ).toContain('export default function Tile()')
+  })
+
   test('reads asset source props with useAssetSource and avoids a taken name', () => {
     expect(
       migrate(`import { Button } from "@sanity/ui";
@@ -114,6 +128,21 @@ export default unstable_defineService("worker", ({ bus, service }) => {
 
         return () => clearInterval(interval);
       };"
+    `)
+  })
+
+  test('renames service in a web worker with defaulted props', () => {
+    expect(
+      migrate(
+        `import { unstable_defineService } from "sanity/dashboard";
+export default unstable_defineService("worker", ({ service } = defaults) => service.name);`,
+        'src/worker.ts',
+      ),
+    ).toMatchInlineSnapshot(`
+      "import type { WebWorkerProps } from "@sanity/sdk-react/dashboard";
+      export default ({
+        worker: service
+      }: WebWorkerProps = defaults) => service.name;"
     `)
   })
 

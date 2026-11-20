@@ -71,6 +71,9 @@ function migrateView(
     return false
   }
 
+  const name = j.FunctionExpression.check(fn) && j.Identifier.check(fn.id) ? fn.id.name : ''
+  const isNameFree = name && !root.find(j.Program).paths()[0]?.scope?.declares(name)
+  const id = j.identifier(isNameFree ? name : uniqueName(j, root, view.name))
   const body = j.BlockStatement.check(fn.body)
     ? fn.body
     : j.blockStatement([j.returnStatement(fn.body)])
@@ -83,8 +86,6 @@ function migrateView(
     addImport(j, root, {kind: 'value', name: view.hook, source: '@sanity/sdk-react/dashboard'})
   }
 
-  const id =
-    j.FunctionExpression.check(fn) && fn.id ? fn.id : j.identifier(uniqueName(j, root, view.name))
   exportDefault.declaration = j.functionDeclaration(id, [], body)
 
   return true
@@ -105,7 +106,8 @@ function migrateWebWorker(
     return false
   }
 
-  const [props] = fn.params
+  const [param] = fn.params
+  const props = j.AssignmentPattern.check(param) ? param.left : param
   if (j.ObjectPattern.check(props)) {
     for (const property of props.properties) {
       if (j.ObjectProperty.check(property) && j.Identifier.check(property.key)) {
