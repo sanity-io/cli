@@ -6,9 +6,8 @@ import {
   type MessageBusErrorCode,
   type MessageBusMessage,
   type MessageBusMeta,
+  type WebWorkerProps,
 } from '@sanity/sdk/dashboard'
-
-import {type WebWorkerBus} from '../../../webWorker.js'
 
 const DEFAULT_TIMEOUT_MS = 5000
 
@@ -70,7 +69,7 @@ export function createWorkerBus(): {
    * The web worker author's API. The host owns the connection, opening it and ending it when
    * it terminates the worker, so the worker cannot end it.
    */
-  bus: WebWorkerBus
+  bus: WebWorkerProps['bus']
   /**
    * The generated entry's terminate hook, not the author's. It sends nothing to
    * the host, which has already disconnected; it only marks the client closed so
@@ -214,7 +213,7 @@ export function createWorkerBus(): {
 
   return {
     // The topic generics only exist at the call site; the wire carries plain strings.
-    bus: bus as unknown as WebWorkerBus,
+    bus: bus as unknown as WebWorkerProps['bus'],
     close: () => {
       closed = true
       subscriptions.clear()
