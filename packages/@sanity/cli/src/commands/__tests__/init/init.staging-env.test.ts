@@ -61,6 +61,7 @@ vi.mock(import('@sanity/cli-core'), async (importOriginal) => {
         request: client.request,
       }
     }),
+    isCi: vi.fn().mockReturnValue(false),
   }
 })
 

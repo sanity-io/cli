@@ -6,6 +6,7 @@ import {InitCommand} from '../../init.js'
 
 const mockInitAction = vi.hoisted(() => vi.fn())
 const mockIsInteractive = vi.hoisted(() => vi.fn().mockReturnValue(true))
+const mockIsCi = vi.hoisted(() => vi.fn().mockReturnValue(false))
 
 vi.mock('../../../actions/init/initAction.js', () => ({
   initAction: mockInitAction,
@@ -15,6 +16,7 @@ vi.mock('@sanity/cli-core', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@sanity/cli-core')>()
   return {
     ...actual,
+    isCi: mockIsCi,
     isInteractive: mockIsInteractive,
   }
 })
@@ -23,6 +25,7 @@ describe('mcpMode resolution', () => {
   afterEach(() => {
     vi.clearAllMocks()
     mockIsInteractive.mockReturnValue(true)
+    mockIsCi.mockReturnValue(false)
   })
 
   test('sets mcpMode to "prompt" by default (interactive, no --yes)', async () => {
@@ -67,17 +70,23 @@ describe('mcpMode resolution', () => {
     )
   })
 
-  test('sets mcpMode to "skip" when not interactive (CI)', async () => {
-    mockIsInteractive.mockReturnValue(false)
+  test.each([
+    {args: [], ci: true, expected: 'skip', name: 'non-interactive CI'},
+    {args: [], ci: false, expected: 'auto', name: 'non-interactive outside CI'},
+    {args: ['--no-mcp'], ci: false, expected: 'skip', name: 'non-interactive with --no-mcp'},
+    {args: ['--yes'], ci: true, expected: 'skip', interactive: true, name: 'CI with a TTY'},
+  ])('sets mcpMode to "$expected" in $name', async ({args, ci, expected, interactive = false}) => {
+    mockIsInteractive.mockReturnValue(interactive)
+    mockIsCi.mockReturnValue(ci)
     mockInitAction.mockResolvedValue(undefined)
 
-    const {error} = await testCommand(InitCommand, [], {
-      mocks: {isInteractive: false, token: 'test-token'},
+    const {error} = await testCommand(InitCommand, args, {
+      mocks: {isInteractive: interactive, token: 'test-token'},
     })
 
     if (error) throw error
     expect(mockInitAction).toHaveBeenCalledWith(
-      expect.objectContaining({mcpMode: 'skip'}),
+      expect.objectContaining({mcpMode: expected}),
       expect.any(Object),
     )
   })
