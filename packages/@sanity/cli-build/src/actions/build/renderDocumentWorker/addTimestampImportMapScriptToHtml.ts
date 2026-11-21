@@ -20,7 +20,11 @@ const TIMESTAMPED_IMPORTMAP_INJECTOR_SCRIPT = `<script>
   const { imports = {}, css = [], ...rest } = importsJson ? JSON.parse(importsJson) : {};
   const importMapEl = document.createElement('script');
   importMapEl.type = 'importmap';
-  const newTimestamp = \`/t\${Math.floor(Date.now() / 1000)}\`;
+  // The Studio team decides the final bucket size.
+  const TIMESTAMP_BUCKET_SECONDS = 60;
+  const newTimestamp = \`/t\${
+    Math.floor(Date.now() / 1000 / TIMESTAMP_BUCKET_SECONDS) * TIMESTAMP_BUCKET_SECONDS
+  }\`;
 
   function isSanityCdnHost(hostname) {
     return /^sanity-cdn\\.[a-zA-Z]+$/.test(hostname);
