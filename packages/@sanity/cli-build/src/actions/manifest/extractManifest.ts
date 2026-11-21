@@ -1,6 +1,7 @@
-import {getTimer, studioWorkerTask} from '@sanity/cli-core'
+import {getTimer} from '@sanity/cli-core'
 import {spinner} from '@sanity/cli-core/ux'
 
+import {studioWorkerTask} from '../../loaders/studio/studioWorkerTask.js'
 import {type ExtractSchemaWorkerError} from '../schema/types.js'
 import {SchemaExtractionError} from '../schema/utils/SchemaExtractionError.js'
 import {manifestDebug} from './debug.js'

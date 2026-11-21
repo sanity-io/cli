@@ -2,7 +2,7 @@ import {styleText} from 'node:util'
 
 import {Flags} from '@oclif/core'
 import {type CliConfig, exitCodes, SanityCommand} from '@sanity/cli-core'
-import {isWorkbenchApp} from '@sanity/workbench-cli'
+import {isWorkbenchApp} from '@sanity/cli-core/workbench'
 
 import {devAction} from '../actions/dev/devAction.js'
 import {devDebug} from '../actions/dev/devDebug.js'

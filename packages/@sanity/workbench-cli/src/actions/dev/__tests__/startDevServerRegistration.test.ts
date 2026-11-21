@@ -2,9 +2,9 @@ import {mkdir, mkdtemp, rm, writeFile} from 'node:fs/promises'
 import {tmpdir} from 'node:os'
 import {dirname, join} from 'node:path'
 
+import {unstable_defineMediaLibrary} from '@sanity/cli-core/workbench'
 import {afterEach, beforeEach, describe, expect, onTestFinished, test, vi} from 'vitest'
 
-import {unstable_defineMediaLibrary} from '../../../defineApp.js'
 import {type DevServerManifest, getRegisteredServers} from '../registry.js'
 import {startDevServerRegistration} from '../startDevServerRegistration.js'
 import {createMockOutput, workbenchApp, workbenchCliConfig} from './devTestHelpers.js'

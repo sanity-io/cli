@@ -15,7 +15,7 @@ vi.mock('@sanity/cli-build/_internal/build', () => ({
   writeSanityRuntime: mockWriteSanityRuntime,
 }))
 
-vi.mock('@sanity/cli-build/_internal/env', () => ({
+vi.mock('@sanity/cli-core/env', () => ({
   getAppEnvironmentVariables: vi.fn(() => ({})),
   getStudioEnvironmentVariables: vi.fn(() => ({})),
 }))

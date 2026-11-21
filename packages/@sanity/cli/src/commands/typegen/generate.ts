@@ -5,15 +5,7 @@ import {Flags} from '@oclif/core'
 import {CLIError} from '@oclif/core/errors'
 import {exitCodes, SanityCommand} from '@sanity/cli-core'
 import {spinner, type SpinnerInstance} from '@sanity/cli-core/ux'
-import {
-  readConfig,
-  runTypegenGenerate,
-  runTypegenWatcher,
-  type TypeGenConfig,
-  type TypegenProgressEvent,
-  TypegenWatchModeTrace,
-  TypesGeneratedTrace,
-} from '@sanity/codegen'
+import {type TypeGenConfig, type TypegenProgressEvent} from '@sanity/codegen'
 import omit from 'lodash-es/omit.js'
 import once from 'lodash-es/once.js'
 
@@ -23,6 +15,7 @@ import {
   type ResolvedResource,
   resolveResourceSchemas,
 } from '../../actions/typegen/generateResourceTypes.js'
+import {loadCodegen} from '../../actions/typegen/loadCodegen.js'
 import {parseTypegenConfig} from '../../actions/typegen/parseTypegenConfig.js'
 import {
   getResourceKey,
@@ -100,6 +93,7 @@ export class TypegenGenerateCommand extends SanityCommand<typeof TypegenGenerate
     type: 'cli' | 'legacy'
     workDir: string
   }> {
+    const {readConfig} = await loadCodegen()
     const spin = spinner({}).start('Loading config…')
 
     try {
@@ -143,9 +137,9 @@ export class TypegenGenerateCommand extends SanityCommand<typeof TypegenGenerate
           ),
         )
 
-        const resources = parseTypegenResources(config.typegen, workDir)
+        const resources = await parseTypegenResources(config.typegen, workDir)
         return {
-          config: resources?.config ?? parseTypegenConfig(config.typegen || {}),
+          config: resources?.config ?? (await parseTypegenConfig(config.typegen || {})),
           path: rootDir.path,
           resources,
           type: 'cli',
@@ -170,11 +164,11 @@ export class TypegenGenerateCommand extends SanityCommand<typeof TypegenGenerate
         }
       }
 
-      const resources = parseTypegenResources(config.typegen, workDir)
+      const resources = await parseTypegenResources(config.typegen, workDir)
       spin.succeed(`Config loaded from sanity.cli.ts`)
 
       return {
-        config: resources?.config ?? parseTypegenConfig(config.typegen || {}),
+        config: resources?.config ?? (await parseTypegenConfig(config.typegen || {})),
         path: rootDir.path,
         resources,
         type: 'cli',
@@ -244,6 +238,7 @@ export class TypegenGenerateCommand extends SanityCommand<typeof TypegenGenerate
   }
 
   private async runSingle(): Promise<void> {
+    const {runTypegenGenerate, TypesGeneratedTrace} = await loadCodegen()
     const trace = this.telemetry.trace(TypesGeneratedTrace)
     let spin: SpinnerInstance | undefined
 
@@ -313,7 +308,7 @@ export class TypegenGenerateCommand extends SanityCommand<typeof TypegenGenerate
   }
 
   private async runWatcher(): Promise<void> {
-    const trace = this.telemetry.trace(TypegenWatchModeTrace)
+    const trace = this.telemetry.trace((await loadCodegen()).TypegenWatchModeTrace)
     let spin: SpinnerInstance | undefined
 
     try {
@@ -332,7 +327,7 @@ export class TypegenGenerateCommand extends SanityCommand<typeof TypegenGenerate
       spin = watchSpin
       const typegenWatcher = resources
         ? await this.startResourceWatcher(typegenConfig, resources, watchSpin, workDir)
-        : this.startSchemaWatcher(typegenConfig, watchSpin, workDir)
+        : await this.startSchemaWatcher(typegenConfig, watchSpin, workDir)
 
       const stop = once(async () => {
         process.off('SIGINT', stop)
@@ -405,11 +400,12 @@ export class TypegenGenerateCommand extends SanityCommand<typeof TypegenGenerate
     })
   }
 
-  private startSchemaWatcher(
+  private async startSchemaWatcher(
     config: TypeGenConfig,
     spin: SpinnerInstance,
     workDir: string,
-  ): ReturnType<typeof runTypegenWatcher> {
+  ): Promise<ReturnType<typeof import('@sanity/codegen').runTypegenWatcher>> {
+    const {runTypegenWatcher} = await loadCodegen()
     spin.start('Loading schema…')
     const rendererContext = {
       formatGeneratedCode: config.formatGeneratedCode,

@@ -2,16 +2,16 @@ import path from 'node:path'
 
 import {type CliConfig, getSanityEnvVar, type Output} from '@sanity/cli-core'
 import {logSymbols, spinner} from '@sanity/cli-core/ux'
-import {isWorkbenchApp} from '@sanity/workbench-cli'
-import {resolveAppEntry, resolveWorkbenchConfig} from '@sanity/workbench-cli/build'
+import {isWorkbenchApp} from '@sanity/cli-core/workbench'
 
 import {type DevServerOptions} from '../../../server/devServer.js'
 import {determineIsApp} from '../../../util/determineIsApp.js'
 import {getSharedServerConfig} from '../../../util/getSharedServerConfig.js'
+import {loadWorkbench} from '../../../util/loadWorkbench.js'
 import {resolveReactStrictMode} from '../../../util/resolveReactStrictMode.js'
 import {type DevFlags} from '../types.js'
 
-export function getDevServerConfig({
+export async function getDevServerConfig({
   cliConfig,
   flags,
   httpPort,
@@ -23,7 +23,8 @@ export function getDevServerConfig({
   httpPort?: number
   output: Output
   workDir: string
-}): Omit<DevServerOptions, 'spinner'> {
+}): Promise<Omit<DevServerOptions, 'spinner'>> {
+  const {resolveAppEntry, resolveWorkbenchConfig} = await loadWorkbench('build')
   const configSpinner = spinner('Checking configuration files...')
 
   const baseConfig = getSharedServerConfig({

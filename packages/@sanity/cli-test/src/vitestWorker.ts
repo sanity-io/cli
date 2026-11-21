@@ -23,9 +23,8 @@ function esbuildOptions(filePath: string, outputFile: string): BuildOptions {
     bundle: true,
     conditions: ['node', 'import'],
     entryPoints: [filePath],
-    // Marks cli-core as external to avoid bundling it inline
-    // this is mostly necessary for the monorepo.
-    external: ['@sanity/cli-core'],
+    // Keep these packages external even when TypeScript paths point to workspace source.
+    external: ['@sanity/cli-build', '@sanity/cli-core'],
     format: 'esm',
     loader: {'.json': 'json'},
     logLevel: 'warning',

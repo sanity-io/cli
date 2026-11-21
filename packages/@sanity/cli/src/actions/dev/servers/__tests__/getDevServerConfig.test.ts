@@ -17,8 +17,8 @@ describe('getDevServerConfig', () => {
     vi.unstubAllEnvs()
   })
 
-  test("inlines the workbench app's slug as its id, and omits it for a plain project", () => {
-    const workbench = getDevServerConfig({
+  test("inlines the workbench app's slug as its id, and omits it for a plain project", async () => {
+    const workbench = await getDevServerConfig({
       cliConfig: {app: workbenchApp()} as CliConfig,
       flags: FLAGS,
       httpPort: 3333,
@@ -27,7 +27,7 @@ describe('getDevServerConfig', () => {
     })
     expect(workbench.workbenchAppId).toBe('test-app')
 
-    const plain = getDevServerConfig({
+    const plain = await getDevServerConfig({
       cliConfig: {},
       flags: FLAGS,
       output: createMockOutput(),
@@ -36,8 +36,8 @@ describe('getDevServerConfig', () => {
     expect(plain.workbenchAppId).toBeUndefined()
   })
 
-  test("serves a window view's src as the app entry when `entry` is omitted", () => {
-    const config = getDevServerConfig({
+  test("serves a window view's src as the app entry when `entry` is omitted", async () => {
+    const config = await getDevServerConfig({
       cliConfig: {
         app: workbenchApp({
           views: [{name: 'main', src: './src/window.tsx', surface: 'window', title: 'Main'}],
@@ -50,12 +50,12 @@ describe('getDevServerConfig', () => {
     expect(config.entry).toBe('./src/window.tsx')
   })
 
-  test('should warn when both SANITY_STUDIO_BASEPATH env var and config basePath are set', () => {
+  test('should warn when both SANITY_STUDIO_BASEPATH env var and config basePath are set', async () => {
     vi.stubEnv('SANITY_STUDIO_BASEPATH', '/env-base')
     const output = createMockOutput()
     const cliConfig: CliConfig = {project: {basePath: '/config-base'}}
 
-    getDevServerConfig({
+    await getDevServerConfig({
       cliConfig,
       flags: FLAGS,
       output,
@@ -67,12 +67,12 @@ describe('getDevServerConfig', () => {
     )
   })
 
-  test('should warn when both SANITY_APP_BASEPATH env var and config basePath are set for apps', () => {
+  test('should warn when both SANITY_APP_BASEPATH env var and config basePath are set for apps', async () => {
     vi.stubEnv('SANITY_APP_BASEPATH', '/env-base')
     const output = createMockOutput()
     const cliConfig: CliConfig = {app: {}, project: {basePath: '/config-base'}}
 
-    getDevServerConfig({
+    await getDevServerConfig({
       cliConfig,
       flags: FLAGS,
       output,
@@ -84,11 +84,11 @@ describe('getDevServerConfig', () => {
     )
   })
 
-  test('should not warn when only config basePath is set', () => {
+  test('should not warn when only config basePath is set', async () => {
     const output = createMockOutput()
     const cliConfig: CliConfig = {project: {basePath: '/config-base'}}
 
-    getDevServerConfig({
+    await getDevServerConfig({
       cliConfig,
       flags: FLAGS,
       output,
@@ -98,11 +98,11 @@ describe('getDevServerConfig', () => {
     expect(output.warn).not.toHaveBeenCalled()
   })
 
-  test('should not warn when only env var is set', () => {
+  test('should not warn when only env var is set', async () => {
     vi.stubEnv('SANITY_STUDIO_BASEPATH', '/env-base')
     const output = createMockOutput()
 
-    getDevServerConfig({
+    await getDevServerConfig({
       cliConfig: {},
       flags: FLAGS,
       output,
@@ -112,11 +112,11 @@ describe('getDevServerConfig', () => {
     expect(output.warn).not.toHaveBeenCalled()
   })
 
-  test('should not warn when env var is set and cliConfig is undefined', () => {
+  test('should not warn when env var is set and cliConfig is undefined', async () => {
     vi.stubEnv('SANITY_STUDIO_BASEPATH', '/env-base')
     const output = createMockOutput()
 
-    getDevServerConfig({
+    await getDevServerConfig({
       cliConfig: undefined,
       flags: FLAGS,
       output,
@@ -126,11 +126,11 @@ describe('getDevServerConfig', () => {
     expect(output.warn).not.toHaveBeenCalled()
   })
 
-  test('should resolve reactStrictMode to true when SANITY_STUDIO_REACT_STRICT_MODE env var is "true"', () => {
+  test('should resolve reactStrictMode to true when SANITY_STUDIO_REACT_STRICT_MODE env var is "true"', async () => {
     vi.stubEnv('SANITY_STUDIO_REACT_STRICT_MODE', 'true')
     const output = createMockOutput()
 
-    const config = getDevServerConfig({
+    const config = await getDevServerConfig({
       cliConfig: {},
       flags: FLAGS,
       output,
@@ -140,11 +140,11 @@ describe('getDevServerConfig', () => {
     expect(config.reactStrictMode).toBe(true)
   })
 
-  test('should resolve reactStrictMode to false when SANITY_STUDIO_REACT_STRICT_MODE env var is "false"', () => {
+  test('should resolve reactStrictMode to false when SANITY_STUDIO_REACT_STRICT_MODE env var is "false"', async () => {
     vi.stubEnv('SANITY_STUDIO_REACT_STRICT_MODE', 'false')
     const output = createMockOutput()
 
-    const config = getDevServerConfig({
+    const config = await getDevServerConfig({
       cliConfig: {},
       flags: FLAGS,
       output,
@@ -154,11 +154,11 @@ describe('getDevServerConfig', () => {
     expect(config.reactStrictMode).toBe(false)
   })
 
-  test('should resolve reactStrictMode to false when env var is absent and cliConfig opts out explicitly', () => {
+  test('should resolve reactStrictMode to false when env var is absent and cliConfig opts out explicitly', async () => {
     const output = createMockOutput()
     const cliConfig: CliConfig = {reactStrictMode: false}
 
-    const config = getDevServerConfig({
+    const config = await getDevServerConfig({
       cliConfig,
       flags: FLAGS,
       output,
@@ -168,11 +168,11 @@ describe('getDevServerConfig', () => {
     expect(config.reactStrictMode).toBe(false)
   })
 
-  test('should resolve reactStrictMode to true when env var is absent and cliConfig opts in explicitly', () => {
+  test('should resolve reactStrictMode to true when env var is absent and cliConfig opts in explicitly', async () => {
     const output = createMockOutput()
     const cliConfig: CliConfig = {reactStrictMode: true}
 
-    const config = getDevServerConfig({
+    const config = await getDevServerConfig({
       cliConfig,
       flags: FLAGS,
       output,
@@ -182,10 +182,10 @@ describe('getDevServerConfig', () => {
     expect(config.reactStrictMode).toBe(true)
   })
 
-  test('should leave reactStrictMode undefined when env var is absent and cliConfig is unset', () => {
+  test('should leave reactStrictMode undefined when env var is absent and cliConfig is unset', async () => {
     const output = createMockOutput()
 
-    const config = getDevServerConfig({
+    const config = await getDevServerConfig({
       cliConfig: {},
       flags: FLAGS,
       output,
@@ -197,8 +197,8 @@ describe('getDevServerConfig', () => {
     expect(config.reactStrictMode).toBeUndefined()
   })
 
-  test('binds the explicit httpPort over the flag-resolved one (workbench claimed the configured port)', () => {
-    const withOverride = getDevServerConfig({
+  test('binds the explicit httpPort over the flag-resolved one (workbench claimed the configured port)', async () => {
+    const withOverride = await getDevServerConfig({
       cliConfig: {},
       flags: FLAGS,
       httpPort: 4001,
@@ -207,7 +207,7 @@ describe('getDevServerConfig', () => {
     })
     expect(withOverride.httpPort).toBe(4001)
 
-    const withoutOverride = getDevServerConfig({
+    const withoutOverride = await getDevServerConfig({
       cliConfig: {},
       flags: FLAGS,
       output: createMockOutput(),
@@ -217,8 +217,8 @@ describe('getDevServerConfig', () => {
   })
 
   describe('experimental bundled dev mode', () => {
-    test('enables bundledDev when unstable_bundledDev is set in sanity.cli.ts', () => {
-      const config = getDevServerConfig({
+    test('enables bundledDev when unstable_bundledDev is set in sanity.cli.ts', async () => {
+      const config = await getDevServerConfig({
         cliConfig: {unstable_bundledDev: true},
         flags: FLAGS,
         output: createMockOutput(),
@@ -228,8 +228,8 @@ describe('getDevServerConfig', () => {
       expect(config.bundledDev).toBe(true)
     })
 
-    test('respects an explicit unstable_bundledDev: false', () => {
-      const config = getDevServerConfig({
+    test('respects an explicit unstable_bundledDev: false', async () => {
+      const config = await getDevServerConfig({
         cliConfig: {unstable_bundledDev: false},
         flags: FLAGS,
         output: createMockOutput(),
@@ -239,8 +239,8 @@ describe('getDevServerConfig', () => {
       expect(config.bundledDev).toBe(false)
     })
 
-    test('defaults bundledDev to false when the config option is absent', () => {
-      const config = getDevServerConfig({
+    test('defaults bundledDev to false when the config option is absent', async () => {
+      const config = await getDevServerConfig({
         cliConfig: {},
         flags: FLAGS,
         output: createMockOutput(),
@@ -250,10 +250,10 @@ describe('getDevServerConfig', () => {
       expect(config.bundledDev).toBe(false)
     })
 
-    test('logs a notice when bundled dev mode is enabled', () => {
+    test('logs a notice when bundled dev mode is enabled', async () => {
       const output = createMockOutput()
 
-      getDevServerConfig({
+      await getDevServerConfig({
         cliConfig: {unstable_bundledDev: true},
         flags: FLAGS,
         output,
@@ -265,10 +265,10 @@ describe('getDevServerConfig', () => {
       )
     })
 
-    test('does not log the notice when bundled dev mode is off', () => {
+    test('does not log the notice when bundled dev mode is off', async () => {
       const output = createMockOutput()
 
-      getDevServerConfig({
+      await getDevServerConfig({
         cliConfig: {},
         flags: FLAGS,
         output,
@@ -281,8 +281,8 @@ describe('getDevServerConfig', () => {
 
   test.each([undefined, true, false])(
     'forwards unstable_documentComponent=%s as documentComponent',
-    (unstable_documentComponent) => {
-      const config = getDevServerConfig({
+    async (unstable_documentComponent) => {
+      const config = await getDevServerConfig({
         cliConfig: {unstable_documentComponent},
         flags: FLAGS,
         output: createMockOutput(),

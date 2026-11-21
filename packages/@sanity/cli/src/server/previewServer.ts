@@ -2,10 +2,11 @@ import {readFile} from 'node:fs/promises'
 import path from 'node:path'
 import {styleText} from 'node:util'
 
-import {extendViteConfigWithUserConfig} from '@sanity/cli-build/_internal/build'
 import {getLocalPackageVersion, type UserViteConfig} from '@sanity/cli-core'
-import {type InlineConfig, preview} from 'vite'
+import {type InlineConfig} from 'vite'
 
+import {loadCliBuild} from '../util/loadCliBuild.js'
+import {loadVite} from '../util/loadVite.js'
 import {serverDebug} from './serverDebug.js'
 import {sanityBasePathRedirectPlugin} from './vite/plugin-sanity-basepath-redirect.js'
 
@@ -40,6 +41,8 @@ interface PreviewServerOptions {
  * @internal
  */
 export async function startPreviewServer(options: PreviewServerOptions): Promise<PreviewServer> {
+  const {preview} = await loadVite()
+  const {extendViteConfigWithUserConfig} = await loadCliBuild('build')
   const {httpHost, httpPort, isApp, root, vite: extendViteConfig, workDir} = options
   const startTime = Date.now()
 

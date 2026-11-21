@@ -1,6 +1,6 @@
 import {type CliConfig, getCliConfigUncached, type Output, subdebug} from '@sanity/cli-core'
+import {isWorkbenchApp, isWorkbenchConfig} from '@sanity/cli-core/workbench'
 
-import {isWorkbenchApp, isWorkbenchConfig} from '../../defineApp.js'
 import {watchCliConfig} from './watchCliConfig.js'
 
 const devDebug = subdebug('dev')

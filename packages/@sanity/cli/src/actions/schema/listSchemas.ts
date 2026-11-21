@@ -1,11 +1,12 @@
 import {styleText} from 'node:util'
 
 import {type StoredWorkspaceSchema} from '@sanity/cli-build/_internal/manifest'
-import {type Output, studioWorkerTask} from '@sanity/cli-core'
+import {type Output} from '@sanity/cli-core'
 import {logSymbols} from '@sanity/cli-core/ux'
 import {type Workspace} from 'sanity'
 
 import {getSchemas} from '../../services/schemas.js'
+import {loadCliBuild} from '../../util/loadCliBuild.js'
 import {Table} from '../../util/responsiveTable.js'
 import {isDefined} from './schemaTypeHelpers.js'
 import {type UniqWorkspaceWorkerData} from './types.js'
@@ -35,6 +36,7 @@ class DatasetError extends Error {
 export async function listSchemas(options: ListSchemasOptions): Promise<void> {
   const {configPath, id, json, output, workDir} = options
 
+  const {studioWorkerTask} = await loadCliBuild('worker')
   const projectDatasets = await studioWorkerTask<(Workspace & {key: string})[]>(
     new URL('uniqueWorkspaces.worker.js', import.meta.url),
     {

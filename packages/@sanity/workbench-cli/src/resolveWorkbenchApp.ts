@@ -6,9 +6,13 @@
 // extraction, so the discrimination lives in exactly one place.
 
 import {type AppVisibility, type CliConfig} from '@sanity/cli-core'
+import {
+  type DefineAppInput,
+  defineWindowView,
+  isWorkbenchApp,
+  type WorkbenchConfigValue,
+} from '@sanity/cli-core/workbench'
 
-import {defineWindowView, type WorkbenchConfigValue} from './contract.js'
-import {type DefineAppInput, isWorkbenchApp} from './defineApp.js'
 import {formatWorkbenchAppErrors, validateWorkbenchApp} from './validateWorkbenchApp.js'
 
 /**

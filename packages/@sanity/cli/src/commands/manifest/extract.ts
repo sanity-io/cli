@@ -1,9 +1,9 @@
 import {Flags} from '@oclif/core'
-import {formatSchemaValidation, SchemaExtractionError} from '@sanity/cli-build/_internal/extract'
 import {exitCodes, findProjectRoot, SanityCommand} from '@sanity/cli-core'
 
 import {manifestDebug} from '../../actions/manifest/debug.js'
 import {extractManifest} from '../../actions/manifest/extractManifest.js'
+import {loadCliBuild} from '../../util/loadCliBuild.js'
 import {defineCommandTelemetry} from '../../util/telemetry/commandTelemetry.js'
 
 const description = `
@@ -36,6 +36,7 @@ export class ExtractManifestCommand extends SanityCommand<typeof ExtractManifest
   static telemetry = defineCommandTelemetry(this.flags, {redact: ['path']})
 
   public async run(): Promise<void> {
+    const {formatSchemaValidation, SchemaExtractionError} = await loadCliBuild('extract')
     const {flags} = await this.parse(ExtractManifestCommand)
 
     try {

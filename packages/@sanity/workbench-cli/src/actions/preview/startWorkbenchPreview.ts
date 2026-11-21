@@ -3,9 +3,9 @@ import path from 'node:path'
 import {styleText} from 'node:util'
 
 import {type CliConfig, findProjectRoot, type Output} from '@sanity/cli-core'
+import {isWorkbenchApp} from '@sanity/cli-core/workbench'
 
 import {buildAppId, SANITY_APP_ID_FILE} from '../../appId.js'
-import {isWorkbenchApp} from '../../defineApp.js'
 import {deriveInterfaces} from '../../deriveInterfaces.js'
 import {readAppIcon, toUrlPath} from '../../readAppIcon.js'
 import {resolveWorkbenchApp} from '../../resolveWorkbenchApp.js'

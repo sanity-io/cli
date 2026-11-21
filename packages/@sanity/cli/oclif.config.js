@@ -1,3 +1,5 @@
+import pjson from './package.json' with {type: 'json'}
+
 export default {
   additionalVersionFlags: ['-v'],
   bin: 'sanity',
@@ -7,20 +9,27 @@ export default {
   hooks: {
     command_not_found: ['./dist/hooks/commandNotFound/topicAliases.js'],
     init: ['./dist/hooks/init/checkForUpdates.js'],
+    jit_plugin_not_installed: ['./dist/hooks/jitPluginNotInstalled/installPlugin.js'],
     prerun: [
       './dist/hooks/prerun/injectEnvVariables.js',
       './dist/hooks/prerun/setupTelemetry.js',
       './dist/hooks/prerun/warnings.js',
     ],
   },
-  plugins: ['@oclif/plugin-help', '@sanity/runtime-cli', '@sanity/workflows-cli'],
+  jitPlugins: {
+    '@sanity/runtime-cli': pjson.devDependencies['@sanity/runtime-cli'],
+    '@sanity/workflows-cli': pjson.devDependencies['@sanity/workflows-cli'],
+  },
+  plugins: ['@oclif/plugin-help'],
   topics: {
     backups: {description: 'Manage dataset backups'},
+    blueprints: {description: 'Local Blueprint and remote Stack management commands'},
     context: {description: 'Manage Context knowledge bases and MCP endpoints'},
     cors: {description: 'Manage CORS origins for your project'},
     datasets: {description: 'Manage datasets in your project'},
     docs: {description: 'Browse and search Sanity documentation'},
     documents: {description: 'Manage documents in a dataset'},
+    functions: {description: 'Sanity Function development and management commands'},
     graphql: {description: 'Manage GraphQL APIs for your project'},
     hooks: {description: 'Manage webhooks for your project'},
     manifest: {description: 'Extract studio configuration as JSON manifests'},
@@ -36,6 +45,7 @@ export default {
     tokens: {description: 'Manage API tokens for your project'},
     typegen: {description: 'Generate TypeScript types for schema and GROQ'},
     users: {description: 'Manage project users and invitations'},
+    workflows: {description: 'Deploy, inspect, and administer Workflows definitions and instances'},
   },
   topicSeparator: ' ',
 }

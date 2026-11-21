@@ -1,5 +1,6 @@
 import path, {isAbsolute} from 'node:path'
 
+import {formatSchemaValidation} from '@sanity/cli-core/schemas'
 import {type CLITelemetryStore} from '@sanity/cli-core/types'
 import {logSymbols} from '@sanity/cli-core/ux'
 import debounce from 'lodash-es/debounce.js'
@@ -11,7 +12,6 @@ import {
   SchemaExtractedTrace,
   SchemaExtractionWatchModeTrace,
 } from '../../../telemetry/extractSchema.telemetry.js'
-import {formatSchemaValidation} from '../formatSchemaValidation.js'
 import {createSchemaPatternMatcher} from '../matchSchemaPattern.js'
 import {runSchemaExtraction} from '../runSchemaExtraction.js'
 import {SchemaExtractionError} from '../utils/SchemaExtractionError.js'

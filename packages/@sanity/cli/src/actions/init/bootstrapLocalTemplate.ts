@@ -5,7 +5,7 @@ import {styleText} from 'node:util'
 
 import {Output, subdebug} from '@sanity/cli-core'
 import {spinner} from '@sanity/cli-core/ux'
-import {toAppSlug} from '@sanity/workbench-cli/init'
+import {toAppSlug} from '@sanity/cli-core/workbench'
 import deburr from 'lodash-es/deburr.js'
 
 import {copy} from '../../util/copy.js'

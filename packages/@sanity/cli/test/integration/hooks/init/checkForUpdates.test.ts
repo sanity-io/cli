@@ -105,6 +105,21 @@ describe('#checkForUpdates', () => {
     process.argv[1] = originalArgv1
   })
 
+  test('does not check for updates again when a deferred plugin initializes', async () => {
+    const {config} = await getCommandAndConfig('help')
+
+    await testHook<'init'>(checkForUpdates, {config})
+    await testHook<'init'>(
+      async function (options) {
+        const pluginInit = {...options, deferredPlugin: '@sanity/runtime-cli'}
+        await checkForUpdates.call(this, pluginInit)
+      },
+      {config},
+    )
+
+    expect(mockSpawn).toHaveBeenCalledTimes(1)
+  })
+
   test('returns early if running on CI', async () => {
     const {config} = await getCommandAndConfig('help')
     mockIsCi.mockReturnValue(true)

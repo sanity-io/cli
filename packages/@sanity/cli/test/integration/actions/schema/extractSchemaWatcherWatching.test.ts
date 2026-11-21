@@ -12,11 +12,10 @@ import {startExtractSchemaWatcher} from '../../../../src/actions/schema/extractS
 // the watcher watched nothing: every pattern was handed to chokidar as a literal path, and
 // chokidar 4 and later do not expand globs. These tests assert that an edit reaches the watcher.
 
-const mockStudioWorkerTask = vi.hoisted(() => vi.fn())
+const mockRunSchemaExtraction = vi.hoisted(() => vi.fn())
 
-vi.mock('@sanity/cli-core/tasks', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@sanity/cli-core')>()
-  return {...actual, studioWorkerTask: mockStudioWorkerTask}
+vi.mock(import('@sanity/cli-build/_internal/extract'), async (importOriginal) => {
+  return {...(await importOriginal()), runSchemaExtraction: mockRunSchemaExtraction}
 })
 
 vi.mock('@sanity/cli-core/ux', async (importOriginal) => {
@@ -71,7 +70,7 @@ describe('extractSchemaWatcher watching', () => {
 
   test('re-extracts when a file matching a glob pattern changes', {timeout: 20_000}, async () => {
     const cwd = await testFixture('basic-studio')
-    mockStudioWorkerTask.mockResolvedValue({schema: [], type: 'success'})
+    mockRunSchemaExtraction.mockResolvedValue([])
     const onExtraction = vi.fn()
 
     const patterns = ['sanity.config.{js,jsx,ts,tsx,mjs}', 'schema*/**/*.{js,jsx,ts,tsx,mjs}']
@@ -100,7 +99,7 @@ describe('extractSchemaWatcher watching', () => {
 
   test('ignores a file no pattern matches', {timeout: 20_000}, async () => {
     const cwd = await testFixture('basic-studio')
-    mockStudioWorkerTask.mockResolvedValue({schema: [], type: 'success'})
+    mockRunSchemaExtraction.mockResolvedValue([])
     const onExtraction = vi.fn()
 
     const patterns = ['schema*/**/*.{js,jsx,ts,tsx,mjs}']

@@ -145,10 +145,10 @@ describe('deploymentPlanToJson', () => {
 })
 
 describe('reportInterfaces', () => {
-  test('reports views and web workers and returns them for deployment', () => {
+  test('reports views and web workers and returns them for deployment', async () => {
     const reporter = createCollectingReporter<DeployCheck>()
 
-    const interfaces = reportInterfaces(reporter, {
+    const interfaces = await reportInterfaces(reporter, {
       views: [{name: 'edit', src: './edit.ts', surface: 'panel', title: 'Edit'}],
       webWorkers: [{name: 'sync', src: './sync.ts', title: 'sync', type: 'worker'}],
     })
@@ -160,9 +160,9 @@ describe('reportInterfaces', () => {
     expect(reporter.results.every((check) => check.status === 'pass')).toBe(true)
   })
 
-  test('reports nothing and returns empty without views or web workers', () => {
+  test('reports nothing and returns empty without views or web workers', async () => {
     const reporter = createCollectingReporter<DeployCheck>()
-    expect(reportInterfaces(reporter, {})).toEqual({services: [], views: []})
+    expect(await reportInterfaces(reporter, {})).toEqual({services: [], views: []})
     expect(reporter.results).toEqual([])
   })
 })

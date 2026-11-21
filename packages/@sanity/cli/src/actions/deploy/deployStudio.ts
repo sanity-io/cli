@@ -2,29 +2,17 @@ import {basename, dirname, relative} from 'node:path'
 import {styleText} from 'node:util'
 import {createGzip, type Gzip} from 'node:zlib'
 
-import {formatSchemaValidation, SchemaExtractionError} from '@sanity/cli-build/_internal/extract'
 import {exitCodes} from '@sanity/cli-core'
 import {spinner} from '@sanity/cli-core/ux'
-import {
-  type BrettAccess,
-  type BrettWorkspace,
-  createStudio,
-  deployWorkbenchApp,
-  fetchDeploySummaryDetails,
-  formatDeploySummary,
-  getApplicationUrl,
-  getWorkbench,
-  getWorkbenchUrl,
-  readAppIcon,
-  selectWorkbenchAppId,
-  toWorkbenchPayload,
-} from '@sanity/workbench-cli/deploy'
+import {type BrettAccess, type BrettWorkspace} from '@sanity/workbench-cli/deploy'
 import {type StudioManifest} from 'sanity'
 import {c as createTar} from 'tar'
 
 import {createDeployment, type UserApplication} from '../../services/userApplications.js'
 import {getAppId} from '../../util/appId.js'
 import {NO_ORGANIZATION_ID, NO_PROJECT_ID} from '../../util/errorMessages.js'
+import {loadCliBuild} from '../../util/loadCliBuild.js'
+import {loadWorkbench} from '../../util/loadWorkbench.js'
 import {buildStudio} from '../build/buildStudio.js'
 import {checkBlueprintManaged} from './blueprintManaged.js'
 import {createStudioUserApplication} from './createUserApplication.js'
@@ -60,6 +48,17 @@ async function runStudioDeployment(
   options: DeployAppOptions,
   reporter: DeployCheckReporter,
 ): Promise<DeployResult | void> {
+  const {
+    createStudio,
+    deployWorkbenchApp,
+    fetchDeploySummaryDetails,
+    formatDeploySummary,
+    getApplicationUrl,
+    getWorkbench,
+    readAppIcon,
+    selectWorkbenchAppId,
+    toWorkbenchPayload,
+  } = await loadWorkbench('deploy')
   const {cliConfig, flags, output, sourceDir} = options
   const workDir = options.projectRoot.directory
   const isExternal = !!flags.external
@@ -200,7 +199,7 @@ async function runStudioDeployment(
       mfManifest = await verifyOutputDir({isWorkbenchApp, reporter, sourceDir})
     }
 
-    const interfaces = workbench ? reportInterfaces(reporter, workbench) : null
+    const interfaces = workbench ? await reportInterfaces(reporter, workbench) : null
 
     const payload: DeployPayload = {
       appId: appId ?? null,
@@ -270,7 +269,7 @@ async function runStudioDeployment(
         }),
       )
       if (isExternallyHosted)
-        logExternalHost({built: flags.build, organizationId, output, sourceDir})
+        await logExternalHost({built: flags.build, organizationId, output, sourceDir})
       return {
         action: applicationCreated ? 'create' : 'update',
         application: workbenchApp ?? null,
@@ -368,6 +367,7 @@ async function uploadStudioSchema(
   options: DeployAppOptions,
   {applicationId, isExternal}: {applicationId?: string; isExternal: boolean},
 ): Promise<StudioManifest | null> {
+  const {formatSchemaValidation, SchemaExtractionError} = await loadCliBuild('extract')
   const {flags, output, projectRoot, sourceDir} = options
 
   let studioManifest: StudioManifest | null = null
@@ -495,7 +495,7 @@ function toWorkspaces(manifest: StudioManifest | null): BrettWorkspace[] {
 }
 
 /** Tells the customer what their host must do for the Dashboard to load the studio from it. */
-function logExternalHost({
+async function logExternalHost({
   built,
   organizationId,
   output,
@@ -505,7 +505,8 @@ function logExternalHost({
   organizationId: string
   output: DeployAppOptions['output']
   sourceDir: string
-}): void {
+}): Promise<void> {
+  const {getWorkbenchUrl} = await loadWorkbench('deploy')
   const dir = `${relative(process.cwd(), sourceDir) || '.'}/`
   output.log(`
 The Dashboard loads this studio from your host, which must:

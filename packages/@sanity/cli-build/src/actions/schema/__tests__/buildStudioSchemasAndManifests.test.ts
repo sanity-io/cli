@@ -19,8 +19,11 @@ const mockTrace = vi.hoisted(() =>
 
 vi.mock('@sanity/cli-core', () => ({
   getCliTelemetry: () => ({trace: mockTrace}),
-  studioWorkerTask: mockStudioWorkerTask,
   subdebug: () => vi.fn(),
+}))
+
+vi.mock('../../../loaders/studio/studioWorkerTask.js', () => ({
+  studioWorkerTask: mockStudioWorkerTask,
 }))
 
 const originalIsTTY = process.stdout.isTTY

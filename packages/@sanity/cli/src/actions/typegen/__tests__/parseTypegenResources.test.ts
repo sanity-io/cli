@@ -25,13 +25,13 @@ describe('getResourceKey', () => {
 })
 
 describe('parseTypegenResources', () => {
-  test('returns undefined when resources is not set', () => {
-    expect(parseTypegenResources(undefined, workDir)).toBeUndefined()
-    expect(parseTypegenResources({generates: './sanity.types.ts'}, workDir)).toBeUndefined()
+  test('returns undefined when resources is not set', async () => {
+    expect(await parseTypegenResources(undefined, workDir)).toBeUndefined()
+    expect(await parseTypegenResources({generates: './sanity.types.ts'}, workDir)).toBeUndefined()
   })
 
-  test('returns the resources and the shared settings', () => {
-    const parsed = parseTypegenResources(
+  test('returns the resources and the shared settings', async () => {
+    const parsed = await parseTypegenResources(
       {
         path: './app/**/*.ts',
         resources: [production, staging],
@@ -45,14 +45,15 @@ describe('parseTypegenResources', () => {
     expect(parsed?.warnings).toEqual([])
   })
 
-  test('defaults overloadClientMethods to false', () => {
+  test('defaults overloadClientMethods to false', async () => {
     expect(
-      parseTypegenResources({resources: [production]}, workDir)?.config.overloadClientMethods,
+      (await parseTypegenResources({resources: [production]}, workDir))?.config
+        .overloadClientMethods,
     ).toBe(false)
   })
 
-  test('keeps an explicit overloadClientMethods', () => {
-    const parsed = parseTypegenResources(
+  test('keeps an explicit overloadClientMethods', async () => {
+    const parsed = await parseTypegenResources(
       {overloadClientMethods: true, resources: [production]},
       workDir,
     )
@@ -60,8 +61,8 @@ describe('parseTypegenResources', () => {
     expect(parsed?.warnings).toEqual([])
   })
 
-  test('warns when overloadClientMethods is enabled for more than one resource', () => {
-    const parsed = parseTypegenResources(
+  test('warns when overloadClientMethods is enabled for more than one resource', async () => {
+    const parsed = await parseTypegenResources(
       {
         overloadClientMethods: true,
         resources: [production, staging],
@@ -71,19 +72,19 @@ describe('parseTypegenResources', () => {
     expect(parsed?.warnings).toEqual([expect.stringContaining('TS2717')])
   })
 
-  test('rejects a resource listed twice', () => {
-    expect(() =>
+  test('rejects a resource listed twice', async () => {
+    await expect(
       parseTypegenResources(
         {
           resources: [production, {...production, generates: './other.ts'}],
         },
         workDir,
       ),
-    ).toThrow(/"abc123\.production" is listed more than once/)
+    ).rejects.toThrow(/"abc123\.production" is listed more than once/)
   })
 
-  test('rejects two resources writing the same file, comparing normalized paths', () => {
-    expect(() =>
+  test('rejects two resources writing the same file, comparing normalized paths', async () => {
+    await expect(
       parseTypegenResources(
         {
           resources: [
@@ -93,11 +94,13 @@ describe('parseTypegenResources', () => {
         },
         workDir,
       ),
-    ).toThrow(/"abc123\.production" and "abc123\.staging" both generate "src\/sanity\.types\.ts"/)
+    ).rejects.toThrow(
+      /"abc123\.production" and "abc123\.staging" both generate "src\/sanity\.types\.ts"/,
+    )
   })
 
-  test('rejects a relative and an absolute path to the same file', () => {
-    expect(() =>
+  test('rejects a relative and an absolute path to the same file', async () => {
+    await expect(
       parseTypegenResources(
         {
           resources: [
@@ -107,11 +110,11 @@ describe('parseTypegenResources', () => {
         },
         workDir,
       ),
-    ).toThrow(/both generate/)
+    ).rejects.toThrow(/both generate/)
   })
 
-  test('rejects output paths that differ only in case', () => {
-    expect(() =>
+  test('rejects output paths that differ only in case', async () => {
+    await expect(
       parseTypegenResources(
         {
           resources: [
@@ -121,11 +124,11 @@ describe('parseTypegenResources', () => {
         },
         workDir,
       ),
-    ).toThrow(/both generate/)
+    ).rejects.toThrow(/both generate/)
   })
 
-  test('warns about top-level schema and generates, which resources replace', () => {
-    const parsed = parseTypegenResources(
+  test('warns about top-level schema and generates, which resources replace', async () => {
+    const parsed = await parseTypegenResources(
       {generates: './sanity.types.ts', resources: [production], schema: './schema.json'},
       workDir,
     )
@@ -135,8 +138,8 @@ describe('parseTypegenResources', () => {
     ])
   })
 
-  test('warns that enforceRequiredFields does nothing for a local schema file', () => {
-    const parsed = parseTypegenResources(
+  test('warns that enforceRequiredFields does nothing for a local schema file', async () => {
+    const parsed = await parseTypegenResources(
       {
         resources: [
           {...production, enforceRequiredFields: true},
@@ -150,33 +153,33 @@ describe('parseTypegenResources', () => {
     ])
   })
 
-  test('rejects an empty list', () => {
-    expect(() => parseTypegenResources({resources: []}, workDir)).toThrow(
+  test('rejects an empty list', async () => {
+    await expect(parseTypegenResources({resources: []}, workDir)).rejects.toThrow(
       /resources: List at least one resource/,
     )
   })
 
-  test('names the field of an invalid resource', () => {
-    expect(() =>
+  test('names the field of an invalid resource', async () => {
+    await expect(
       parseTypegenResources({resources: [production, {...staging, projectId: ''}]}, workDir),
-    ).toThrow(/resources\.1\.projectId: Must not be empty/)
-    expect(() =>
+    ).rejects.toThrow(/resources\.1\.projectId: Must not be empty/)
+    await expect(
       // @ts-expect-error -- `generates` is missing
       parseTypegenResources({resources: [{dataset: 'production', projectId: 'abc123'}]}, workDir),
-    ).toThrow(/resources\.0\.generates: /)
+    ).rejects.toThrow(/resources\.0\.generates: /)
   })
 
-  test('rejects unknown resource fields', () => {
-    expect(() =>
+  test('rejects unknown resource fields', async () => {
+    await expect(
       // @ts-expect-error -- `schemaPath` is not a resource field
       parseTypegenResources({resources: [{...production, schemaPath: './schema.json'}]}, workDir),
-    ).toThrow(/resources\.0\.schemaPath: /)
+    ).rejects.toThrow(/resources\.0\.schemaPath: /)
   })
 
-  test('throws a TypeError with the validation error as its cause', () => {
+  test('throws a TypeError with the validation error as its cause', async () => {
     try {
       // @ts-expect-error -- `resources` must be an array
-      parseTypegenResources({resources: 'abc123.production'}, workDir)
+      await parseTypegenResources({resources: 'abc123.production'}, workDir)
       throw new Error('expected parseTypegenResources to throw')
     } catch (error) {
       expect(error).toBeInstanceOf(TypeError)

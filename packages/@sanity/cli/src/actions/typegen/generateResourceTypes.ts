@@ -2,14 +2,10 @@ import {readFile} from 'node:fs/promises'
 import {isAbsolute, join} from 'node:path'
 
 import {type TypeGenResource} from '@sanity/cli-core/types'
-import {
-  type GenerationResult,
-  runTypegenGenerate,
-  type TypeGenConfig,
-  type TypegenProgressEvent,
-} from '@sanity/codegen'
+import {type GenerationResult, type TypeGenConfig, type TypegenProgressEvent} from '@sanity/codegen'
 
 import {type ExtractedSchema, fetchResourceSchema} from './fetchResourceSchema.js'
+import {loadCodegen} from './loadCodegen.js'
 import {getResourceKey} from './parseTypegenResources.js'
 
 /**
@@ -86,6 +82,7 @@ export async function generateResourceTypes(options: {
   resolved: ResolvedResource[]
   workDir: string
 }): Promise<{key: string; result: GenerationResult}[]> {
+  const {runTypegenGenerate} = await loadCodegen()
   const {config, onProgress, resolved, workDir} = options
   const results: {key: string; result: GenerationResult}[] = []
 

@@ -1,15 +1,12 @@
 import {styleText} from 'node:util'
 
-import {
-  compareDependencyVersions,
-  buildStudio as internalBuildStudio,
-} from '@sanity/cli-build/_internal/build'
 import {exitCodes} from '@sanity/cli-core'
 import {confirm, logSymbols, select, spinner} from '@sanity/cli-core/ux'
-import {buildAppId, resolveWorkbenchApp} from '@sanity/workbench-cli/build'
 
 import {getAppId} from '../../util/appId.js'
 import {determineIsApp} from '../../util/determineIsApp.js'
+import {loadCliBuild} from '../../util/loadCliBuild.js'
+import {loadWorkbench} from '../../util/loadWorkbench.js'
 import {getPackageManagerChoice} from '../../util/packageManager/packageManagerChoice.js'
 import {upgradePackages} from '../../util/packageManager/upgradePackages.js'
 import {warnAboutMissingAppId} from '../../util/warnAboutMissingAppId.js'
@@ -28,6 +25,8 @@ import {type BuildOptions} from './types.js'
 export async function buildStudio(
   options: BuildOptions,
 ): Promise<{mfManifest: Record<string, unknown> | undefined}> {
+  const {buildAppId, resolveWorkbenchApp} = await loadWorkbench('build')
+  const {buildStudio: internalBuildStudio, compareDependencyVersions} = await loadCliBuild('build')
   const {calledFromDeploy, cliConfig, flags, outDir, output, workDir} = options
 
   // `views`/`webWorkers` live on the branded `defineApplication` result — resolve

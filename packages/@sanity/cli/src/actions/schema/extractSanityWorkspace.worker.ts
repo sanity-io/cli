@@ -1,11 +1,13 @@
 import {isMainThread, parentPort, workerData} from 'node:worker_threads'
 
-import {extractValidationFromSchemaError} from '@sanity/cli-build/_internal/extract'
-import {extractManifestSchemaTypes} from '@sanity/cli-build/_internal/manifest'
 import {getStudioWorkspaces, safeStructuredClone} from '@sanity/cli-core'
 import {type Schema} from '@sanity/types'
 
+import {loadCliBuild} from '../../util/loadCliBuild.js'
 import {extractWorkspaceWorkerData} from './types.js'
+
+const {extractManifestSchemaTypes} = await loadCliBuild('manifest')
+const {extractValidationFromSchemaError} = await loadCliBuild('extract')
 
 if (isMainThread || !parentPort) {
   throw new Error('Should only be run in a worker!')

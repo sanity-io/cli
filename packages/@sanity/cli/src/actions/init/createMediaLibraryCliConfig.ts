@@ -1,4 +1,4 @@
-import {workbenchMediaLibraryConfigTemplate} from '@sanity/workbench-cli/init'
+import {workbenchMediaLibraryConfigTemplate} from '@sanity/cli-core/workbench'
 
 import {processTemplate} from './processTemplate.js'
 

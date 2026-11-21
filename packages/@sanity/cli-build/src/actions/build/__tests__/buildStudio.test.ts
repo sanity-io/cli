@@ -100,7 +100,7 @@ vi.mock(import('../../../telemetry/build.telemetry.js'), () => ({
   >,
 }))
 
-vi.mock(import('../getEnvironmentVariables.js'), () => ({
+vi.mock(import('@sanity/cli-core/env'), () => ({
   getStudioEnvironmentVariables: mockGetStudioEnvironmentVariables,
 }))
 

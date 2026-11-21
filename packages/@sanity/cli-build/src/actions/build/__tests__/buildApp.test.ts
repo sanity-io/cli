@@ -64,7 +64,7 @@ vi.mock('../buildDebug', () => ({
   buildDebug: vi.fn(),
 }))
 
-vi.mock(import('../getEnvironmentVariables.js'), () => ({
+vi.mock(import('@sanity/cli-core/env'), () => ({
   getAppEnvironmentVariables: mockGetAppEnvironmentVariables,
 }))
 

@@ -1,10 +1,9 @@
 import {writeFileSync} from 'node:fs'
 
-import {formatSchemaValidation, getAggregatedSeverity} from '@sanity/cli-build/_internal/extract'
-import {studioWorkerTask} from '@sanity/cli-core/tasks'
 import {type Output} from '@sanity/cli-core/types'
 import {logSymbols, spinner} from '@sanity/cli-core/ux'
 
+import {loadCliBuild} from '../../util/loadCliBuild.js'
 import {generateMetafile} from './metafile.js'
 import {
   type ValidateSchemaWorkerData,
@@ -22,6 +21,7 @@ interface Options {
 }
 
 export async function validateAction(options: Options): Promise<void> {
+  const {formatSchemaValidation, getAggregatedSeverity} = await loadCliBuild('extract')
   const {debugMetafilePath, format, level, output, workDir, workspace} = options
 
   let spin
@@ -32,6 +32,7 @@ export async function validateAction(options: Options): Promise<void> {
     ).start()
   }
 
+  const {studioWorkerTask} = await loadCliBuild('worker')
   const {serializedDebug, validation} = await studioWorkerTask<ValidateSchemaWorkerResult>(
     new URL('validateSchema.worker.js', import.meta.url),
     {

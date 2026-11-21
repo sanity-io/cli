@@ -74,7 +74,7 @@ describe('sanityTypegenPlugin', () => {
   })
 
   it('does not generate when typegen.resources is set, and says why', async () => {
-    const plugin = sanityTypegenPlugin({
+    const plugin = await sanityTypegenPlugin({
       config: {
         resources: [{dataset: 'production', generates: './production.ts', projectId: 'abc123'}],
       },
@@ -95,7 +95,7 @@ describe('sanityTypegenPlugin', () => {
   })
 
   it('runs initial generation when httpServer emits listening event', async () => {
-    const plugin = sanityTypegenPlugin({
+    const plugin = await sanityTypegenPlugin({
       config: {},
       output,
       workDir: TEST_PROJECT_DIR,
@@ -128,7 +128,7 @@ describe('sanityTypegenPlugin', () => {
   })
 
   it('generates types when a matching query file changes', async () => {
-    const plugin = sanityTypegenPlugin({
+    const plugin = await sanityTypegenPlugin({
       config: {
         path: ['./src/**/*.ts'],
       },
@@ -165,7 +165,7 @@ describe('sanityTypegenPlugin', () => {
   })
 
   it('generates types when schema.json changes', async () => {
-    const plugin = sanityTypegenPlugin({
+    const plugin = await sanityTypegenPlugin({
       config: {
         schema: 'schema.json',
       },
@@ -196,7 +196,7 @@ describe('sanityTypegenPlugin', () => {
   it('logs error when schema.json does not exist', async () => {
     existsSync.mockReturnValue(false)
 
-    const plugin = sanityTypegenPlugin({
+    const plugin = await sanityTypegenPlugin({
       config: {},
       output,
       workDir: TEST_PROJECT_DIR,
@@ -236,7 +236,7 @@ describe('sanityTypegenPlugin', () => {
     runTypegenGenerate.mockResolvedValueOnce(errorResult)
     runTypegenGenerate.mockResolvedValueOnce(errorResult)
 
-    const plugin = sanityTypegenPlugin({
+    const plugin = await sanityTypegenPlugin({
       config: {},
       output,
       workDir: TEST_PROJECT_DIR,
@@ -267,7 +267,7 @@ describe('sanityTypegenPlugin', () => {
   it('generates types during build via buildEnd hook', async () => {
     vi.useRealTimers()
 
-    const plugin = sanityTypegenPlugin({
+    const plugin = await sanityTypegenPlugin({
       config: {
         generates: 'sanity.types.ts',
         path: ['./src/**/*.ts'],
@@ -297,7 +297,7 @@ describe('sanityTypegenPlugin', () => {
   it('applies the same default config values as `sanity typegen generate`', async () => {
     vi.useRealTimers()
 
-    const plugin = sanityTypegenPlugin({
+    const plugin = await sanityTypegenPlugin({
       config: {},
       output,
       workDir: TEST_PROJECT_DIR,
@@ -310,13 +310,13 @@ describe('sanityTypegenPlugin', () => {
     await buildEnd()
 
     expect(runTypegenGenerate).toHaveBeenCalledWith({
-      config: parseTypegenConfig({}),
+      config: await parseTypegenConfig({}),
       workDir: TEST_PROJECT_DIR,
     })
   })
 
   it('calls telemetry logger during watch mode', async () => {
-    const plugin = sanityTypegenPlugin({
+    const plugin = await sanityTypegenPlugin({
       config: {},
       output,
       telemetryLogger: telemetryLogger,
@@ -345,7 +345,7 @@ describe('sanityTypegenPlugin', () => {
   })
 
   it('debounces rapid file changes', async () => {
-    const plugin = sanityTypegenPlugin({
+    const plugin = await sanityTypegenPlugin({
       config: {
         path: ['./src/**/*.ts'],
       },

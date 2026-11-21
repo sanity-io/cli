@@ -1,11 +1,9 @@
 import {isMainThread, parentPort, workerData} from 'node:worker_threads'
 
+import {getStudioWorkspaces} from '@sanity/cli-core/config'
+import {subdebug} from '@sanity/cli-core/debug'
+import {doImport, safeStructuredClone} from '@sanity/cli-core/util'
 import {z} from 'zod/mini'
-
-import {subdebug} from '../../_exports/debug.js'
-import {doImport} from '../../util/doImport.js'
-import {safeStructuredClone} from '../../util/safeStructuredClone.js'
-import {getStudioWorkspaces} from './getStudioWorkspaces.js'
 
 if (isMainThread || !parentPort) {
   throw new Error('Should only be run in a worker!')

@@ -3,19 +3,14 @@ import path from 'node:path'
 
 import {type CliConfig, CLITelemetryStore} from '@sanity/cli-core'
 import {logSymbols} from '@sanity/cli-core/ux'
-import {
-  type GenerationResult,
-  runTypegenGenerate,
-  type TypeGenConfig,
-  TypegenWatchModeTrace,
-  TypesGeneratedTrace,
-} from '@sanity/codegen'
+import {type GenerationResult, type TypeGenConfig} from '@sanity/codegen'
 import debounce from 'lodash-es/debounce.js'
 import mean from 'lodash-es/mean.js'
 import once from 'lodash-es/once.js'
 import picomatch from 'picomatch'
 import {type Plugin} from 'vite'
 
+import {loadCodegen} from '../../actions/typegen/loadCodegen.js'
 import {parseTypegenConfig} from '../../actions/typegen/parseTypegenConfig.js'
 import {toForwardSlashes} from '../../util/toForwardSlashes.js'
 
@@ -77,7 +72,7 @@ interface TypegenPluginOptions {
  *
  * @internal
  */
-export function sanityTypegenPlugin(options: TypegenPluginOptions): Plugin {
+export async function sanityTypegenPlugin(options: TypegenPluginOptions): Promise<Plugin> {
   const {config: inputConfig, output = console, telemetryLogger, workDir} = options
 
   // Generating per resource is not supported here yet. Without this check the plugin would
@@ -96,7 +91,8 @@ export function sanityTypegenPlugin(options: TypegenPluginOptions): Plugin {
 
   // Apply defaults through the same schema as `sanity typegen generate`,
   // so watch mode and manual generation produce identical output
-  const config: TypeGenConfig = parseTypegenConfig(inputConfig)
+  const config: TypeGenConfig = await parseTypegenConfig(inputConfig)
+  const {runTypegenGenerate, TypegenWatchModeTrace, TypesGeneratedTrace} = await loadCodegen()
 
   // Build query patterns from config
   const queryPatterns = Array.isArray(config.path) ? config.path : [config.path]

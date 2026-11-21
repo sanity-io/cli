@@ -16,7 +16,7 @@ vi.mock('@sanity/cli-build/_internal/extract', () => ({
   formatSchemaValidation: mockFormatValidation,
   getAggregatedSeverity: mockAggregateSev,
 }))
-vi.mock('@sanity/cli-core/tasks', () => import('@sanity/cli-test/mocks/cli-core/tasks'))
+vi.mock('@sanity/cli-build/_internal/worker', () => import('@sanity/cli-test/mocks/cli-core/tasks'))
 vi.mock('@sanity/cli-core/ux', () => import('@sanity/cli-test/mocks/cli-core/ux'))
 vi.mock('../metafile.js', () => ({
   generateMetafile: mockGenMetafile,

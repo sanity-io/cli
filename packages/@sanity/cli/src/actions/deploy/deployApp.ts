@@ -2,32 +2,11 @@ import {basename, dirname} from 'node:path'
 import {styleText} from 'node:util'
 import {createGzip} from 'node:zlib'
 
-import {
-  type CoreAppManifest,
-  extractCoreAppManifest,
-  resolveTitleUpdate,
-} from '@sanity/cli-build/_internal/manifest'
+import {type CoreAppManifest} from '@sanity/cli-build/_internal/manifest'
 import {type AppVisibility, exitCodes} from '@sanity/cli-core'
 import {getErrorMessage} from '@sanity/cli-core/errors'
 import {getCoreAppUrl} from '@sanity/cli-core/util'
 import {confirm, spinner} from '@sanity/cli-core/ux'
-import {resolveAppEntry} from '@sanity/workbench-cli/build'
-import {
-  createCoreApp,
-  deployConfig,
-  deployWorkbenchApp,
-  fetchDeploySummaryDetails,
-  formatDeploySummary,
-  getApplicationUrl,
-  getWorkbench,
-  getWorkbenchUrl,
-  readAppIcon,
-  resolveInstallationId,
-  resolveWorkbenchConfig,
-  selectWorkbenchAppId,
-  summarizeConfig,
-  toWorkbenchPayload,
-} from '@sanity/workbench-cli/deploy'
 import {c as createTar} from 'tar'
 
 import {
@@ -39,6 +18,8 @@ import {
 import {getAppId} from '../../util/appId.js'
 import {runStep} from '../../util/checks.js'
 import {EXTERNAL_APP_NOT_SUPPORTED, NO_ORGANIZATION_ID} from '../../util/errorMessages.js'
+import {loadCliBuild} from '../../util/loadCliBuild.js'
+import {loadWorkbench} from '../../util/loadWorkbench.js'
 import {pluralize} from '../../util/pluralize.js'
 import {buildApp} from '../build/buildApp.js'
 import {
@@ -78,6 +59,24 @@ async function runAppDeployment(
   options: DeployAppOptions,
   reporter: DeployCheckReporter,
 ): Promise<DeployResult | void> {
+  const {
+    createCoreApp,
+    deployConfig,
+    deployWorkbenchApp,
+    fetchDeploySummaryDetails,
+    formatDeploySummary,
+    getApplicationUrl,
+    getWorkbench,
+    getWorkbenchUrl,
+    readAppIcon,
+    resolveInstallationId,
+    resolveWorkbenchConfig,
+    selectWorkbenchAppId,
+    summarizeConfig,
+    toWorkbenchPayload,
+  } = await loadWorkbench('deploy')
+  const {resolveAppEntry} = await loadWorkbench('build')
+  const {extractCoreAppManifest} = await loadCliBuild('manifest')
   const {cliConfig, flags, output, sourceDir} = options
   const workDir = options.projectRoot.directory
   const organizationId = cliConfig.app?.organizationId
@@ -319,7 +318,8 @@ async function runAppDeployment(
       }
     }
 
-    const interfaces = deployApplication && workbench ? reportInterfaces(reporter, workbench) : null
+    const interfaces =
+      deployApplication && workbench ? await reportInterfaces(reporter, workbench) : null
 
     // Applied after the app is live (see below) so a failed deploy never leaves
     // the org's installation config without its application.
@@ -602,6 +602,7 @@ export async function syncApplicationMetadata({
   output: DeployAppOptions['output']
   visibility: AppVisibility | undefined
 }): Promise<UserApplicationResolved> {
+  const {resolveTitleUpdate} = await loadCliBuild('manifest')
   const titleUpdate = resolveTitleUpdate(manifest, application)
   // Treat an unset server value as `default` so a config of `default` is a no-op.
   const visibilityChanged =

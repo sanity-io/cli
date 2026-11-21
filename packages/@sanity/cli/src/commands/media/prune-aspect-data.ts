@@ -10,7 +10,6 @@ import {
 } from '@sanity/cli-core'
 import {getErrorMessage} from '@sanity/cli-core/errors'
 import {logSymbols, spinner} from '@sanity/cli-core/ux'
-import {resolveWorkbenchConfig} from '@sanity/workbench-cli/deploy'
 
 import {VALID_ASPECT_NAME} from '../../actions/media/aspectName.js'
 import {resolveMediaLibraryId} from '../../actions/media/resolveMediaLibraryId.js'
@@ -19,6 +18,7 @@ import {
   getStoredAspectIds,
   unsetAspectData,
 } from '../../services/mediaLibraries.js'
+import {loadWorkbench} from '../../util/loadWorkbench.js'
 import {pluralize} from '../../util/pluralize.js'
 
 const pruneAspectDataDebug = subdebug('media:prune-aspect-data')
@@ -83,6 +83,7 @@ export class MediaPruneAspectDataCommand extends SanityCommand<typeof MediaPrune
   static override hidden = true
 
   public async run(): Promise<void> {
+    const {resolveWorkbenchConfig} = await loadWorkbench('deploy')
     const {aspectName} = this.args
     const {'media-library-id': mediaLibraryIdFlag, yes = false} = this.flags
 

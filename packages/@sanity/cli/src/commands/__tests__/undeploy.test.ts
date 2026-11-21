@@ -1,7 +1,7 @@
 import {exitCodes} from '@sanity/cli-core/ExitCodes'
 import {confirm} from '@sanity/cli-core/ux'
+import {defineApplication, unstable_defineMediaLibrary} from '@sanity/cli-core/workbench'
 import {mockApi, testCommand} from '@sanity/cli-test'
-import {defineApplication, unstable_defineMediaLibrary} from '@sanity/workbench-cli'
 import {cleanAll, pendingMocks} from 'nock'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 

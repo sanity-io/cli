@@ -8,6 +8,8 @@ const mockStudioWorkerTask = vi.hoisted(() => vi.fn())
 
 const mockIsMainThread = vi.hoisted(() => ({value: true}))
 
+vi.mock('@sanity/cli-build/_internal/worker', () => ({studioWorkerTask: mockStudioWorkerTask}))
+
 vi.mock('node:worker_threads', () => ({
   get isMainThread() {
     return mockIsMainThread.value
@@ -18,7 +20,6 @@ vi.mock('@sanity/cli-core', async (importOriginal) => ({
   ...(await importOriginal()),
   findStudioConfigPath: mockFindStudioConfigPath,
   getCliConfig: mockGetCliConfig,
-  studioWorkerTask: mockStudioWorkerTask,
 }))
 
 describe('getGraphQLAPIs', () => {

@@ -1,4 +1,5 @@
-import {WEB_WORKER_CONTRACT_VERSION, type WebWorkerType} from '../../../contract.js'
+import {WEB_WORKER_CONTRACT_VERSION, type WebWorkerType} from '@sanity/cli-core/workbench'
+
 import {type GeneratedArtifact} from '../artifact.js'
 
 /** The worker bus client the generated `worker.js` imports; see the extension-artifacts plugin's alias. */

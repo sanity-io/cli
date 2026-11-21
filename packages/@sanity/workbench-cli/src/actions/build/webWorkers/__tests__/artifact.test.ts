@@ -1,6 +1,6 @@
+import {type ServiceCallback, unstable_defineService} from '@sanity/cli-core/workbench'
 import {describe, expect, test, vi} from 'vitest'
 
-import {type ServiceCallback, unstable_defineService} from '../../../../webWorker.js'
 import {type WebWorkerArtifact, webWorkerArtifacts} from '../artifact.js'
 
 // Test stub for the build-supplied `resolveImport` — turns an app `src` into a

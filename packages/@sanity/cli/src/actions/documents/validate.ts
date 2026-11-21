@@ -1,10 +1,10 @@
 import {getGlobalCliClient} from '@sanity/cli-core/apiClient'
-import {createStudioWorker} from '@sanity/cli-core/tasks'
 import {safeStructuredClone} from '@sanity/cli-core/util'
 import {type ClientConfig} from '@sanity/client'
 import {type ValidationMarker} from '@sanity/types'
 import {WorkerChannelReceiver} from '@sanity/worker-channels'
 
+import {loadCliBuild} from '../../util/loadCliBuild.js'
 import {DOCUMENTS_API_VERSION} from './constants.js'
 import {
   Level,
@@ -91,6 +91,7 @@ export async function validateDocuments(options: ValidateDocumentsOptions): Prom
     useProjectHostname: true,
   }
 
+  const {createStudioWorker} = await loadCliBuild('worker')
   const worker = createStudioWorker(new URL('validateDocuments.worker.js', import.meta.url), {
     name: 'validateDocuments',
     studioRootPath: workDir,

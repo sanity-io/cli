@@ -1,10 +1,4 @@
-import {
-  type Application,
-  getApplication,
-  getApplicationUrl,
-  getWorkbenchUrl,
-  listApplications,
-} from '@sanity/workbench-cli/deploy'
+import {type Application} from '@sanity/workbench-cli/deploy'
 
 import {
   getUserApplication,
@@ -13,6 +7,7 @@ import {
   type UserApplicationResolved,
 } from '../../services/userApplications.js'
 import {APP_ID_NOT_FOUND_IN_ORGANIZATION} from '../../util/errorMessages.js'
+import {loadWorkbench} from '../../util/loadWorkbench.js'
 import {normalizeUrl, validateUrl} from './urlUtils.js'
 
 /** The application fields a deploy-target verdict carries for reporting. */
@@ -192,6 +187,7 @@ export async function resolveWorkbenchApp({
   organizationId?: string
   slug?: string
 }): Promise<AppDeployTargetResolution> {
+  const {getApplicationUrl, getWorkbenchUrl, listApplications} = await loadWorkbench('deploy')
   const getUrl = (application: Application) =>
     hasAppView ? getApplicationUrl(application) : getWorkbenchUrl(application.organizationId)
 
@@ -231,6 +227,7 @@ async function resolveAppById(
   appId: string,
   getUrl: (application: Application) => string,
 ): Promise<CommonDeployTargetResolution<DeployTargetCoreApp>> {
+  const {getApplication} = await loadWorkbench('deploy')
   const application = await getApplication(appId)
   return application
     ? {

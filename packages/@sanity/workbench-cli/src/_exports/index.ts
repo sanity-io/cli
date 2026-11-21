@@ -15,20 +15,20 @@ export type {
   WebWorker,
   WebWorkerType,
   WindowView,
-} from '../contract.js'
+} from '@sanity/cli-core/workbench'
 export {
   defineAssetSourceView,
   definePanelView,
   defineTileView,
   defineWebWorker,
   defineWindowView,
-} from '../contract.js'
+} from '@sanity/cli-core/workbench'
 export {
   defineApplication,
   isWorkbenchApp,
   isWorkbenchConfig,
   unstable_defineMediaLibrary,
-} from '../defineApp.js'
+} from '@sanity/cli-core/workbench'
 export type {
   DefineAppInput,
   DefineAppResult,
@@ -36,8 +36,8 @@ export type {
   MediaLibraryField,
   WorkbenchApp,
   WorkbenchConfig,
-} from '../defineApp.js'
-export {unstable_defineView} from '../defineView.js'
+} from '@sanity/cli-core/workbench'
+export {unstable_defineView} from '@sanity/cli-core/workbench'
 export type {
   AssetSourceComponent,
   AssetSourceViewComponents,
@@ -50,8 +50,8 @@ export type {
   TileViewProps,
   ViewComponentsBySurface,
   WindowViewProps,
-} from '../defineView.js'
-export {unstable_defineService} from '../webWorker.js'
+} from '@sanity/cli-core/workbench'
+export {unstable_defineService} from '@sanity/cli-core/workbench'
 export type {
   DefinedService,
   ServiceBus,
@@ -61,4 +61,4 @@ export type {
   WebWorkerBus,
   WebWorkerInfo,
   WebWorkerProps,
-} from '../webWorker.js'
+} from '@sanity/cli-core/workbench'

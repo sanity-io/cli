@@ -13,6 +13,7 @@
  */
 import {setImmediate} from 'node:timers/promises'
 
+import {unstable_defineMediaLibrary} from '@sanity/cli-core/workbench'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
 import {
@@ -30,7 +31,6 @@ import {
   startWorkbenchDevServer,
   startWorkbenchRemoteCoordinator,
 } from '../../../../src/actions/dev/startWorkbenchDevServer.js'
-import {unstable_defineMediaLibrary} from '../../../../src/defineApp.js'
 
 // A fresh in-memory `node:fs` for this file (see fsMock.ts): the real
 // `registerDevServer`/`getRegisteredServers` read/write path runs with no disk

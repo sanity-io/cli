@@ -78,7 +78,7 @@ export async function offerAspectPull({
   const configPath = path.join(outputPath, 'sanity.cli.ts')
   const entryLines = formatFieldEntries(modules, FIELDS_DIR.replaceAll(path.sep, '/')).split('\n')
 
-  const result = replaceFieldEntries(await readFile(configPath, 'utf8'), entryLines)
+  const result = await replaceFieldEntries(await readFile(configPath, 'utf8'), entryLines)
   if (!result.ok) {
     output.warn(
       `Could not seed the config from the existing aspects (${result.reason}) — the example fields are kept.`,

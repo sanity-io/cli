@@ -1,11 +1,10 @@
-import {describe, expect, expectTypeOf, test} from 'vitest'
-
 import {
   type DefineMediaLibraryInput,
   isWorkbenchApp,
   isWorkbenchConfig,
   unstable_defineMediaLibrary,
-} from '../defineApp.js'
+} from '@sanity/cli-core/workbench'
+import {describe, expect, expectTypeOf, test} from 'vitest'
 
 // A media library is a config, not an app — it carries the distinct config brand.
 const WORKBENCH_CONFIG = Symbol.for('sanity.workbench.defineConfig')

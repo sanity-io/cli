@@ -4,4 +4,4 @@
  * manifest output. Lives under `node_modules/` so it's out of `dist` and
  * ignored by default in typical `.gitignore` files.
  */
-export const SANITY_CACHE_DIR = 'node_modules/.sanity'
+export {SANITY_CACHE_DIR} from '@sanity/cli-core/config'

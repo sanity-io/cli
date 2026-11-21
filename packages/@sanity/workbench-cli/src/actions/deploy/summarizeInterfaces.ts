@@ -1,4 +1,5 @@
-import {type ViewSurface, type WebWorkerType} from '../../contract.js'
+import {type ViewSurface, type WebWorkerType} from '@sanity/cli-core/workbench'
+
 import {type WorkbenchExposes} from '../../resolveWorkbenchApp.js'
 
 interface DeployedInterfaceBase {

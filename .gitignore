@@ -59,3 +59,5 @@ coverage/
 skills-lock.json
 .worktrees/
 /docs/plans
+
+/packages/@sanity/cli/src/generated/deferredVersions.ts

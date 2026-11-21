@@ -4,11 +4,10 @@ import {join} from 'node:path'
 import {Readable} from 'node:stream'
 
 import {getGlobalCliClient} from '@sanity/cli-core'
+import {defineApplication, definePanelView, defineWindowView} from '@sanity/cli-core/workbench'
 import FormData from 'form-data'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
-import {definePanelView, defineWindowView} from '../../../contract.js'
-import {defineApplication} from '../../../defineApp.js'
 import {type BrettAccess, type BrettWorkspace} from '../../../services/applications.js'
 import {createCoreApp, createStudio, deployWorkbenchApp} from '../deployWorkbenchApp.js'
 

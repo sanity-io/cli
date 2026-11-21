@@ -1,4 +1,4 @@
-import {formatSchemaValidation} from '@sanity/cli-build/_internal/extract'
+import {formatSchemaValidation} from '@sanity/cli-core/schemas'
 import {type Output} from '@sanity/cli-core/types'
 import {type SchemaValidationProblemGroup} from '@sanity/types'
 

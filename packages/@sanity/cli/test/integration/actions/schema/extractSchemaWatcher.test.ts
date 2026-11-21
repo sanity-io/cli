@@ -7,7 +7,7 @@ import {startExtractSchemaWatcher} from '../../../../src/actions/schema/extractS
 // Mock dependencies
 const mockWatcherClose = vi.hoisted(() => vi.fn())
 const mockWatcherOn = vi.hoisted(() => vi.fn())
-const mockStudioWorkerTask = vi.hoisted(() => vi.fn())
+const mockRunSchemaExtraction = vi.hoisted(() => vi.fn())
 
 vi.mock('chokidar', () => ({
   watch: vi.fn(() => ({
@@ -16,10 +16,8 @@ vi.mock('chokidar', () => ({
   })),
 }))
 
-// TODO: this mocks out a transitive dependency of cli-build by way of cli-core. no good very bad. we should replace these with unit tests
-vi.mock('@sanity/cli-core/tasks', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@sanity/cli-core')>()
-  return {...actual, studioWorkerTask: mockStudioWorkerTask}
+vi.mock(import('@sanity/cli-build/_internal/extract'), async (importOriginal) => {
+  return {...(await importOriginal()), runSchemaExtraction: mockRunSchemaExtraction}
 })
 
 vi.mock('@sanity/cli-core/ux', async (importOriginal) => {
@@ -53,16 +51,15 @@ describe('extractSchemaWatcher', () => {
 
   test('continues watching after validation errors', async () => {
     const cwd = await testFixture('basic-studio')
-    mockStudioWorkerTask.mockResolvedValue({
-      error: 'Validation failed',
-      type: 'error',
-      validation: [
+    const {SchemaExtractionError} = await import('@sanity/cli-build/_internal/extract')
+    mockRunSchemaExtraction.mockRejectedValue(
+      new SchemaExtractionError('Validation failed', [
         {
           path: [{kind: 'type' as const, name: 'post', type: 'document'}],
           problems: [{message: 'Test validation error', severity: 'error' as const}],
         },
-      ],
-    })
+      ]),
+    )
 
     const {watcher} = await startExtractSchemaWatcher({
       extractOptions: getExtractOptions(cwd),
@@ -78,7 +75,7 @@ describe('extractSchemaWatcher', () => {
 
   test('exits process on non-validation errors', async () => {
     const cwd = await testFixture('basic-studio')
-    mockStudioWorkerTask.mockResolvedValue({error: 'Fatal error', type: 'error', validation: []})
+    mockRunSchemaExtraction.mockRejectedValue(new Error('Fatal error'))
 
     await startExtractSchemaWatcher({
       extractOptions: getExtractOptions(cwd),
@@ -92,7 +89,7 @@ describe('extractSchemaWatcher', () => {
 
   test('close function closes the watcher', async () => {
     const cwd = await testFixture('basic-studio')
-    mockStudioWorkerTask.mockResolvedValue({schema: [], type: 'success'})
+    mockRunSchemaExtraction.mockResolvedValue([])
 
     const {close} = await startExtractSchemaWatcher({
       extractOptions: getExtractOptions(cwd),

@@ -2,12 +2,12 @@ import {mkdtemp, rm, writeFile} from 'node:fs/promises'
 import {tmpdir} from 'node:os'
 import path from 'node:path'
 
+import {getStudioConfig} from '@sanity/cli-build/_internal/worker'
 import {
   type CliConfig,
   findPathForFiles,
   getCliConfig,
   getLocalPackageVersion,
-  getStudioConfig,
   type Output,
   tryFindStudioConfigPath,
 } from '@sanity/cli-core'
@@ -24,12 +24,13 @@ import {
 } from '../../../util/packageManager/packageManagerChoice.js'
 import {dashboard} from '../dashboard.js'
 
+vi.mock('@sanity/cli-build/_internal/worker', () => ({getStudioConfig: vi.fn()}))
+
 vi.mock('@sanity/cli-core', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@sanity/cli-core')>()),
   findPathForFiles: vi.fn(),
   getCliConfig: vi.fn(),
   getLocalPackageVersion: vi.fn(),
-  getStudioConfig: vi.fn(),
   tryFindStudioConfigPath: vi.fn(),
 }))
 vi.mock('@sanity/cli-core/package-manager', async (importOriginal) => ({

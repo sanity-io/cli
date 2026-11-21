@@ -1,12 +1,11 @@
-import {SchemaExtractionError} from '@sanity/cli-build/_internal/extract'
 import {
   type ManifestSchemaType,
   type WorkspaceSchemaInput,
 } from '@sanity/cli-build/_internal/manifest'
-import {studioWorkerTask} from '@sanity/cli-core'
 import {type SchemaValidationProblemGroup} from '@sanity/types'
 import {type Workspace} from 'sanity'
 
+import {loadCliBuild} from '../../util/loadCliBuild.js'
 import {type ExtractWorkspaceWorkerData} from './types.js'
 import {updateWorkspacesSchemas} from './updateWorkspaceSchema.js'
 
@@ -32,8 +31,10 @@ type ExtractWorkspaceWorkerMessage =
     }
 
 export async function deploySchemas(options: DeploySchemasOptions): Promise<void> {
+  const {SchemaExtractionError} = await loadCliBuild('extract')
   const {tag, verbose, workDir, workspaceName} = options
 
+  const {studioWorkerTask} = await loadCliBuild('worker')
   const result = await studioWorkerTask<ExtractWorkspaceWorkerMessage>(
     new URL('extractSanityWorkspace.worker.js', import.meta.url),
     {

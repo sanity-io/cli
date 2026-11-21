@@ -1,10 +1,11 @@
 import {styleText} from 'node:util'
 
 import {CLIError} from '@oclif/core/errors'
-import {type Output, studioWorkerTask} from '@sanity/cli-core'
+import {type Output} from '@sanity/cli-core'
 import {type Workspace} from 'sanity'
 
 import {deleteSchema} from '../../services/schemas.js'
+import {loadCliBuild} from '../../util/loadCliBuild.js'
 import {isDefined} from './schemaTypeHelpers.js'
 import {type UniqWorkspaceWorkerData} from './types.js'
 import {getDatasetsOutString, getStringList} from './utils/schemaStoreOutStrings.js'
@@ -46,6 +47,7 @@ class DeleteIdError extends Error {
 export async function deleteSchemaAction(options: DeleteSchemasOptions): Promise<void> {
   const {configPath, dataset, ids, output, projectId, verbose, workDir} = options
 
+  const {studioWorkerTask} = await loadCliBuild('worker')
   const projectDatasets = await studioWorkerTask<(Workspace & {key: string})[]>(
     new URL('uniqueWorkspaces.worker.js', import.meta.url),
     {

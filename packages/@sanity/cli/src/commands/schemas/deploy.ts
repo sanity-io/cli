@@ -2,12 +2,12 @@ import {styleText} from 'node:util'
 
 import {Flags} from '@oclif/core'
 import {CLIError} from '@oclif/core/errors'
-import {formatSchemaValidation, SchemaExtractionError} from '@sanity/cli-build/_internal/extract'
 import {exitCodes, SanityCommand} from '@sanity/cli-core'
 
 import {deploySchemas} from '../../actions/schema/deploySchemas.js'
 import {schemasDeployDebug} from '../../actions/schema/utils/debug.js'
 import {parseTag} from '../../actions/schema/utils/schemaStoreValidation.js'
+import {loadCliBuild} from '../../util/loadCliBuild.js'
 import {defineCommandTelemetry} from '../../util/telemetry/commandTelemetry.js'
 
 const description = `
@@ -72,6 +72,7 @@ export class DeploySchemaCommand extends SanityCommand<typeof DeploySchemaComman
   static telemetry = defineCommandTelemetry(this.flags, {redact: ['manifest-dir']})
 
   public async run(): Promise<void> {
+    const {formatSchemaValidation, SchemaExtractionError} = await loadCliBuild('extract')
     const {flags} = await this.parse(DeploySchemaCommand)
     const {tag, workspace} = flags
 

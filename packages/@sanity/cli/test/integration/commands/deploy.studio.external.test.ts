@@ -1,4 +1,5 @@
-import {type CliConfig, exitCodes, studioWorkerTask} from '@sanity/cli-core'
+import {studioWorkerTask} from '@sanity/cli-build/_internal/worker'
+import {type CliConfig, exitCodes} from '@sanity/cli-core'
 import {input, select} from '@sanity/cli-core/ux'
 import {mockApi, testCommand, testFixture} from '@sanity/cli-test'
 import {defineApplication} from '@sanity/workbench-cli'
@@ -14,6 +15,8 @@ const mockGetLocalPackageVersion = vi.hoisted(() => vi.fn())
 const mockCreateStudio = vi.hoisted(() => vi.fn())
 const mockDeployWorkbenchApp = vi.hoisted(() => vi.fn())
 const mockReadBuiltManifest = vi.hoisted(() => vi.fn())
+
+vi.mock('@sanity/cli-build/_internal/worker', () => ({studioWorkerTask: vi.fn()}))
 
 vi.mock(import('@sanity/workbench-cli/build'), async (importOriginal) => ({
   ...(await importOriginal()),
@@ -47,7 +50,6 @@ vi.mock('@sanity/cli-core', async (importOriginal) => {
       }),
     }),
     getLocalPackageVersion: mockGetLocalPackageVersion,
-    studioWorkerTask: vi.fn(),
   }
 })
 

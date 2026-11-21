@@ -37,10 +37,6 @@
       "source": "./src/apiClient.ts",
       "default": "./dist/apiClient.js"
     },
-    "./browser": {
-      "source": "./src/_exports/browser.ts",
-      "default": "./dist/_exports/browser.js"
-    },
     "./commandPolicy": {
       "source": "./src/_exports/commandPolicy.ts",
       "default": "./dist/_exports/commandPolicy.js"
@@ -57,9 +53,21 @@
       "source": "./src/_exports/dates.ts",
       "default": "./dist/_exports/dates.js"
     },
+    "./env": {
+      "source": "./src/_exports/env.ts",
+      "default": "./dist/_exports/env.js"
+    },
     "./errors": {
       "source": "./src/_exports/errors.ts",
       "default": "./dist/_exports/errors.js"
+    },
+    "./installDeferredPackage": {
+      "source": "./src/installDeferredPackage.ts",
+      "default": "./dist/installDeferredPackage.js"
+    },
+    "./loadDeferredModule": {
+      "source": "./src/loadDeferredModule.ts",
+      "default": "./dist/loadDeferredModule.js"
     },
     "./images": {
       "source": "./src/_exports/images.ts",
@@ -109,6 +117,10 @@
       "source": "./src/_exports/ux.ts",
       "default": "./dist/_exports/ux.js"
     },
+    "./workbench": {
+      "source": "./src/_exports/workbench.ts",
+      "default": "./dist/_exports/workbench.js"
+    },
     "./SanityCommand": {
       "source": "./src/SanityCommand.ts",
       "default": "./dist/SanityCommand.js"
@@ -139,19 +151,21 @@
     "@inquirer/prompts": "^8.7.5",
     "@oclif/core": "catalog:",
     "@sanity/client": "catalog:",
+    "@sanity/generate-help-url": "^4.0.0",
+    "@sanity/types": "catalog:",
     "boxen": "^8.0.1",
+    "dotenv-expand": "^13.0.0",
     "empathic": "catalog:",
+    "execa": "catalog:",
     "get-it": "catalog:",
     "get-tsconfig": "catalog:",
     "import-meta-resolve": "catalog:",
     "jiti": "^2.7.0",
-    "jsdom": "catalog:",
     "json-lexer": "^1.2.0",
     "log-symbols": "^7.0.1",
     "obug": "catalog:",
     "ora": "catalog:",
     "rxjs": "catalog:",
-    "vite": "catalog:",
     "wrap-ansi": "^9.0.2",
     "zod": "catalog:"
   },
@@ -160,6 +174,7 @@
     "@repo/package.config": "workspace:*",
     "@repo/tsconfig": "workspace:*",
     "@sanity/pkg-utils": "catalog:",
+    "@sanity/sdk": "catalog:",
     "@sanity/telemetry": "catalog:",
     "@swc/cli": "catalog:",
     "@swc/core": "catalog:",
@@ -171,13 +186,22 @@
     "publint": "catalog:",
     "sanity": "catalog:",
     "typescript": "catalog:",
+    "vite": "catalog:",
     "vitest": "catalog:"
   },
   "peerDependencies": {
+    "@sanity/sdk": "*",
     "babel-plugin-react-compiler": "*",
-    "oxc-transform-react": "*"
+    "oxc-transform-react": "*",
+    "vite": ">=8"
   },
   "peerDependenciesMeta": {
+    "@sanity/sdk": {
+      "optional": true
+    },
+    "vite": {
+      "optional": true
+    },
     "babel-plugin-react-compiler": {
       "optional": true
     },

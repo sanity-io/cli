@@ -1,6 +1,11 @@
 import {fileURLToPath, pathToFileURL} from 'node:url'
 import {isMainThread, parentPort} from 'node:worker_threads'
 
+import {getCliConfig} from '@sanity/cli-core/config'
+import {subdebug} from '@sanity/cli-core/debug'
+import {isNotFoundError} from '@sanity/cli-core/errors'
+import {type CliConfig} from '@sanity/cli-core/types'
+import {isRecord} from '@sanity/cli-core/util'
 import {
   createServer,
   createServerModuleRunner,
@@ -10,13 +15,8 @@ import {
   mergeConfig,
 } from 'vite'
 
-import {subdebug} from '../../_exports/debug.js'
-import {getCliConfig} from '../../config/cli/getCliConfig.js'
-import {type CliConfig} from '../../config/cli/types/cliConfig.js'
-import {isNotFoundError} from '../../errors/NotFoundError.js'
 import {getStudioEnvironmentVariables} from '../../util/environment/getStudioEnvironmentVariables.js'
 import {setupBrowserStubs} from '../../util/environment/setupBrowserStubs.js'
-import {isRecord} from '../../util/isRecord.js'
 import {skipDependencySourcemapsPlugin} from './skipDependencySourcemapsPlugin.js'
 import {StudioModuleEvaluator} from './studioModuleEvaluator.js'
 import {createOneShotWorkerLifecycle} from './studioWorkerLifecycle.js'

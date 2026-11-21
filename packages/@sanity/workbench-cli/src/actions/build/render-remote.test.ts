@@ -1,7 +1,7 @@
+import {unstable_defineView} from '@sanity/cli-core/workbench'
 import {memo} from 'react'
 import {afterEach, describe, expect, test} from 'vitest'
 
-import {unstable_defineView} from '../../defineView.js'
 import {renderRemote} from './render-remote.js'
 import {viewArtifacts} from './views/artifact.js'
 

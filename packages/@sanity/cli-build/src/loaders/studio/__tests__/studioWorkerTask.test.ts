@@ -11,7 +11,7 @@ const mockWorker = vi.hoisted(() =>
   }),
 )
 
-vi.mock(import('../../../util/promisifyWorker.js'), () => ({
+vi.mock(import('@sanity/cli-core'), () => ({
   promisifyWorker: mockPromisifyWorker,
 }))
 

@@ -18,7 +18,7 @@ const ApplicationType = z.enum(['coreApp', 'studio', 'canvas', 'dashboard'])
 
 /**
  * Runtime-validation schema for `defineApplication`.
- * @internal
+ * @public
  */
 export const DefineAppInputSchema = z
   .object({

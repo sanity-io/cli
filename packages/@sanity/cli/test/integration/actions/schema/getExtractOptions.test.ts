@@ -14,8 +14,8 @@ describe('getExtractOptions', () => {
     type: 'studio' as const,
   }
 
-  test('should use flag values when provided', () => {
-    const result = getExtractOptions({
+  test('should use flag values when provided', async () => {
+    const result = await getExtractOptions({
       flags: {
         'enforce-required-fields': true,
         format: 'groq-type-nodes',
@@ -43,8 +43,8 @@ describe('getExtractOptions', () => {
     })
   })
 
-  test('should use CLI config values when flags are not provided', () => {
-    const result = getExtractOptions({
+  test('should use CLI config values when flags are not provided', async () => {
+    const result = await getExtractOptions({
       flags: {
         format: 'groq-type-nodes',
         path: undefined,
@@ -71,7 +71,7 @@ describe('getExtractOptions', () => {
     })
   })
 
-  test('should append schema.json when path points to an existing directory', () => {
+  test('should append schema.json when path points to an existing directory', async () => {
     const tempDir = mkdtempSync(join(tmpdir(), 'schema-test-'))
     const projectRoot = {
       directory: tempDir,
@@ -79,7 +79,7 @@ describe('getExtractOptions', () => {
       type: 'studio' as const,
     }
 
-    const result = getExtractOptions({
+    const result = await getExtractOptions({
       flags: {
         format: 'groq-type-nodes',
         path: '.', // current dir - definitely exists
@@ -94,8 +94,8 @@ describe('getExtractOptions', () => {
     expect(result.outputPath).toEqual(join(tempDir, 'schema.json'))
   })
 
-  test('should treat path with .json extension as a file path', () => {
-    const result = getExtractOptions({
+  test('should treat path with .json extension as a file path', async () => {
+    const result = await getExtractOptions({
       flags: {
         format: 'groq-type-nodes',
         path: './schema.json',
@@ -110,8 +110,8 @@ describe('getExtractOptions', () => {
     expect(result.outputPath).toEqual(resolve(join('/test/project', 'schema.json')))
   })
 
-  test('should treat path with .json extension in subdirectory as a file path', () => {
-    const result = getExtractOptions({
+  test('should treat path with .json extension in subdirectory as a file path', async () => {
+    const result = await getExtractOptions({
       flags: {
         format: 'groq-type-nodes',
         path: 'output/my-schema.json',
@@ -126,8 +126,8 @@ describe('getExtractOptions', () => {
     expect(result.outputPath).toEqual(resolve(join('/test/project', 'output', 'my-schema.json')))
   })
 
-  test('should treat path with non-.json extension as a file path', () => {
-    const result = getExtractOptions({
+  test('should treat path with non-.json extension as a file path', async () => {
+    const result = await getExtractOptions({
       flags: {
         format: 'groq-type-nodes',
         path: 'output/my-schema.yaml',
@@ -142,10 +142,10 @@ describe('getExtractOptions', () => {
     expect(result.outputPath).toEqual(resolve(join('/test/project', 'output', 'my-schema.yaml')))
   })
 
-  test('should honor an absolute file path instead of nesting it under the project root', () => {
+  test('should honor an absolute file path instead of nesting it under the project root', async () => {
     const absolutePath = join(tmpdir(), 'absolute-output', 'example-schema.json')
 
-    const result = getExtractOptions({
+    const result = await getExtractOptions({
       flags: {
         format: 'groq-type-nodes',
         path: absolutePath,
@@ -160,10 +160,10 @@ describe('getExtractOptions', () => {
     expect(result.outputPath).toEqual(absolutePath)
   })
 
-  test('should honor an absolute directory path from the CLI config', () => {
+  test('should honor an absolute directory path from the CLI config', async () => {
     const absoluteDirectory = join(tmpdir(), 'absolute-output-dir')
 
-    const result = getExtractOptions({
+    const result = await getExtractOptions({
       flags: {
         format: 'groq-type-nodes',
         path: undefined,
@@ -178,7 +178,7 @@ describe('getExtractOptions', () => {
     expect(result.outputPath).toEqual(join(absoluteDirectory, 'schema.json'))
   })
 
-  test('should respect .json file path when file exists on disk', () => {
+  test('should respect .json file path when file exists on disk', async () => {
     const tempDir = mkdtempSync(join(tmpdir(), 'schema-test-'))
     writeFileSync(join(tempDir, 'schema.json'), '{}')
     const projectRoot = {
@@ -187,7 +187,7 @@ describe('getExtractOptions', () => {
       type: 'studio' as const,
     }
 
-    const result = getExtractOptions({
+    const result = await getExtractOptions({
       flags: {
         format: 'groq-type-nodes',
         path: 'schema.json',
@@ -202,8 +202,8 @@ describe('getExtractOptions', () => {
     expect(result.outputPath).toEqual(join(tempDir, 'schema.json'))
   })
 
-  test('should use default values when neither flags nor CLI config are provided', () => {
-    const result = getExtractOptions({
+  test('should use default values when neither flags nor CLI config are provided', async () => {
+    const result = await getExtractOptions({
       flags: {
         format: 'groq-type-nodes',
         path: undefined,

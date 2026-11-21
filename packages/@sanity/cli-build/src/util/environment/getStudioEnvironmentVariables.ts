@@ -1,5 +1,5 @@
-import {doImport} from '../doImport.js'
-import {resolveLocalPackagePath} from '../resolveLocalPackage.js'
+import {resolveLocalPackagePath} from '@sanity/cli-core'
+import {doImport} from '@sanity/cli-core/util'
 
 /**
  * Loads the `getStudioEnvironmentVariables` function from the studio's

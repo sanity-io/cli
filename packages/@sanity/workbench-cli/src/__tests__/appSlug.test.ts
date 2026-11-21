@@ -1,6 +1,5 @@
+import {toAppSlug} from '@sanity/cli-core/workbench'
 import {describe, expect, test} from 'vitest'
-
-import {toAppSlug} from '../appSlug.js'
 
 describe('toAppSlug', () => {
   test.each([

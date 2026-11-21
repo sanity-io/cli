@@ -1,14 +1,13 @@
-import {type AssetSourceComponentProps} from '@sanity/types'
-import {describe, expect, expectTypeOf, test} from 'vitest'
-
-import {type TileSize} from '../contract.js'
 import {
   type DefinedView,
   type PanelViewProps,
+  type TileSize,
   type TileViewProps,
   unstable_defineView,
   type WindowViewProps,
-} from '../defineView.js'
+} from '@sanity/cli-core/workbench'
+import {type AssetSourceComponentProps} from '@sanity/types'
+import {describe, expect, expectTypeOf, test} from 'vitest'
 
 const app = ({view}: WindowViewProps) => view.name
 const title = ({view}: PanelViewProps) => view.name

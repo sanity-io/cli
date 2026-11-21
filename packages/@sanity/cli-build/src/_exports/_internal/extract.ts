@@ -1,9 +1,5 @@
 export {buildStudioSchemasAndManifests} from '../../actions/schema/buildStudioSchemasAndManifests.js'
 export {workerBuildStudioSchemasAndManifests} from '../../actions/schema/buildStudioSchemasAndManifestsWorker.js'
-export {
-  formatSchemaValidation,
-  getAggregatedSeverity,
-} from '../../actions/schema/formatSchemaValidation.js'
 export {type ExtractOptions, getExtractOptions} from '../../actions/schema/getExtractOptions.js'
 export {createSchemaPatternMatcher} from '../../actions/schema/matchSchemaPattern.js'
 export {runSchemaExtraction} from '../../actions/schema/runSchemaExtraction.js'
@@ -14,3 +10,4 @@ export {
   SchemaExtractedTrace,
   SchemaExtractionWatchModeTrace,
 } from '../../telemetry/extractSchema.telemetry.js'
+export {formatSchemaValidation, getAggregatedSeverity} from '@sanity/cli-core/schemas'

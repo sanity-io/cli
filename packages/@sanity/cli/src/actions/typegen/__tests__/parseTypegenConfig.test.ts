@@ -3,8 +3,8 @@ import {describe, expect, test} from 'vitest'
 import {parseTypegenConfig} from '../parseTypegenConfig.js'
 
 describe('parseTypegenConfig', () => {
-  test('applies schema defaults for an empty config', () => {
-    expect(parseTypegenConfig({})).toEqual({
+  test('applies schema defaults for an empty config', async () => {
+    expect(await parseTypegenConfig({})).toEqual({
       formatGeneratedCode: true,
       generates: './sanity.types.ts',
       overloadClientMethods: true,
@@ -17,13 +17,13 @@ describe('parseTypegenConfig', () => {
     })
   })
 
-  test('applies schema defaults when called without an argument', () => {
-    expect(parseTypegenConfig()).toEqual(parseTypegenConfig({}))
+  test('applies schema defaults when called without an argument', async () => {
+    expect(await parseTypegenConfig()).toEqual(await parseTypegenConfig({}))
   })
 
-  test('honors overrides and keeps remaining defaults', () => {
+  test('honors overrides and keeps remaining defaults', async () => {
     expect(
-      parseTypegenConfig({
+      await parseTypegenConfig({
         generates: './custom.types.ts',
         overloadClientMethods: false,
       }),
@@ -40,16 +40,16 @@ describe('parseTypegenConfig', () => {
     })
   })
 
-  test('throws a TypeError with issue messages for invalid values', () => {
-    expect(() => parseTypegenConfig({generates: 1})).toThrow(TypeError)
-    expect(() => parseTypegenConfig({generates: 1})).toThrow(
+  test('throws a TypeError with issue messages for invalid values', async () => {
+    await expect(parseTypegenConfig({generates: 1})).rejects.toThrow(TypeError)
+    await expect(parseTypegenConfig({generates: 1})).rejects.toThrow(
       /Error in typegen config[\s\S]*Invalid type: Expected string but received 1/,
     )
   })
 
-  test('attaches the original ValiError as the cause', () => {
+  test('attaches the original ValiError as the cause', async () => {
     try {
-      parseTypegenConfig({schema: false})
+      await parseTypegenConfig({schema: false})
       throw new Error('expected parseTypegenConfig to throw')
     } catch (error) {
       expect(error).toBeInstanceOf(TypeError)

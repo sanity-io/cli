@@ -1,12 +1,13 @@
-import {SANITY_CACHE_DIR} from '@sanity/cli-build/_internal/build'
-import {extractCoreAppManifest} from '@sanity/cli-build/_internal/manifest'
 import {type CliConfig, type Output} from '@sanity/cli-core'
-import {isWorkbenchApp} from '@sanity/workbench-cli'
+import {SANITY_CACHE_DIR} from '@sanity/cli-core/config'
+import {isWorkbenchApp} from '@sanity/cli-core/workbench'
 
 import {gracefulServerDeath} from '../../server/gracefulServerDeath.js'
 import {type PreviewServer, startPreviewServer} from '../../server/previewServer.js'
 import {checkForDeprecatedAppId} from '../../util/appId.js'
 import {determineIsApp} from '../../util/determineIsApp.js'
+import {loadCliBuild} from '../../util/loadCliBuild.js'
+import {loadWorkbench} from '../../util/loadWorkbench.js'
 import {resolveReactStrictMode} from '../../util/resolveReactStrictMode.js'
 import {extractStudioManifest} from '../manifest/extractStudioManifest.js'
 import {getPreviewServerConfig} from './getPreviewServerConfig.js'
@@ -23,6 +24,7 @@ interface PreviewActionOptions {
 export async function previewAction(
   options: PreviewActionOptions,
 ): Promise<PreviewServer | {close: () => Promise<void>}> {
+  const {extractCoreAppManifest} = await loadCliBuild('manifest')
   const {cliConfig, flags, outDir, output, workDir} = options
 
   const config = getPreviewServerConfig({cliConfig, flags, rootDir: outDir, workDir})
@@ -32,7 +34,7 @@ export async function previewAction(
     // Lazy so a non-workbench `sanity start` never loads the package. `doImport`
     // is path-based and doesn't apply to a bare specifier.
     // eslint-disable-next-line eslint-js/no-restricted-syntax
-    const {startWorkbenchPreview} = await import('@sanity/workbench-cli/preview')
+    const {startWorkbenchPreview} = await loadWorkbench('preview')
     return startWorkbenchPreview({
       cacheDir: `${SANITY_CACHE_DIR}/vite`,
       checkForDeprecatedAppId: () => checkForDeprecatedAppId({cliConfig, output}),

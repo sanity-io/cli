@@ -14,7 +14,7 @@ import {
   defineTileView,
   defineWebWorker,
   defineWindowView,
-} from '@sanity/workbench-cli'
+} from '@sanity/cli-core/workbench'
 import {beforeEach, describe, expect, test, vi} from 'vitest'
 
 import {installNewPackages} from '../../../util/packageManager/installPackages.js'

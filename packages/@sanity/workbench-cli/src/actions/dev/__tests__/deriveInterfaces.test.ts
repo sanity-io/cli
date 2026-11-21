@@ -1,7 +1,7 @@
 import {type CliConfig} from '@sanity/cli-core'
+import {unstable_defineMediaLibrary} from '@sanity/cli-core/workbench'
 import {describe, expect, test} from 'vitest'
 
-import {unstable_defineMediaLibrary} from '../../../defineApp.js'
 import {deriveInterfaces} from '../../../deriveInterfaces.js'
 import {deriveConfigEntries, deriveConfigs} from '../deriveConfigs.js'
 import {workbenchApp} from './devTestHelpers.js'

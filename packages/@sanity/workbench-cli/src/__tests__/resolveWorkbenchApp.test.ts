@@ -1,8 +1,12 @@
 import {type CliConfig} from '@sanity/cli-core'
+import {
+  defineApplication,
+  definePanelView,
+  defineWindowView,
+  unstable_defineMediaLibrary,
+} from '@sanity/cli-core/workbench'
 import {describe, expect, test} from 'vitest'
 
-import {definePanelView, defineWindowView} from '../contract.js'
-import {defineApplication, unstable_defineMediaLibrary} from '../defineApp.js'
 import {resolveAppEntry, resolveWorkbenchApp} from '../resolveWorkbenchApp.js'
 
 const asConfig = (app: unknown) => ({app}) as CliConfig

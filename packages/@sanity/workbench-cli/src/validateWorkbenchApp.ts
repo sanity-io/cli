@@ -1,4 +1,4 @@
-import {DefineAppInputSchema} from './defineApp.js'
+import {DefineAppInputSchema} from '@sanity/cli-core/workbench'
 
 /**
  * Collect validation errors for a workbench app.

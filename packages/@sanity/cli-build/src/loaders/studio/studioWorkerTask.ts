@@ -1,9 +1,10 @@
 import {fileURLToPath} from 'node:url'
 import {Worker, type WorkerOptions} from 'node:worker_threads'
 
-import {type RequireProps} from '../../types.js'
-import {isRecord} from '../../util/isRecord.js'
-import {promisifyWorker} from '../../util/promisifyWorker.js'
+import {promisifyWorker} from '@sanity/cli-core'
+import {type RequireProps} from '@sanity/cli-core/types'
+import {isRecord} from '@sanity/cli-core/util'
+
 import {
   deserializeStudioWorkerError,
   isStudioWorkerErrorMessage,

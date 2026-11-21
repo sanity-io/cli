@@ -1,4 +1,4 @@
-import {workbenchAppConfigTemplate} from '@sanity/workbench-cli/init'
+import {workbenchAppConfigTemplate} from '@sanity/cli-core/workbench'
 
 import {processTemplate} from './processTemplate.js'
 

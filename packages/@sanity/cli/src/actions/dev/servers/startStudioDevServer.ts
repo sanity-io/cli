@@ -1,20 +1,15 @@
 import {styleText} from 'node:util'
 
-import {
-  checkRequiredDependencies,
-  checkStudioDependencyVersions,
-  compareDependencyVersions,
-  getUnavailableVersionsWarning,
-} from '@sanity/cli-build/_internal/build'
 import {exitCodes, getLocalPackageVersion, isInteractive} from '@sanity/cli-core'
 import {confirm, logSymbols, spinner} from '@sanity/cli-core/ux'
-import {isWorkbenchApp} from '@sanity/workbench-cli'
+import {isWorkbenchApp} from '@sanity/cli-core/workbench'
 import {parse as semverParse} from 'semver'
 
 import {startDevServer} from '../../../server/devServer.js'
 import {gracefulServerDeath} from '../../../server/gracefulServerDeath.js'
 import {getProjectById} from '../../../services/projects.js'
 import {getAppId} from '../../../util/appId.js'
+import {loadCliBuild} from '../../../util/loadCliBuild.js'
 import {getPackageManagerChoice} from '../../../util/packageManager/packageManagerChoice.js'
 import {upgradePackages} from '../../../util/packageManager/upgradePackages.js'
 import {hasLocalUnclaimedProject} from '../../../util/unclaimedProjects.js'
@@ -28,6 +23,12 @@ import {getDevServerConfig} from './getDevServerConfig.js'
 export async function startStudioDevServer(
   options: DevActionOptions,
 ): Promise<StartDevServerResult> {
+  const {
+    checkRequiredDependencies,
+    checkStudioDependencyVersions,
+    compareDependencyVersions,
+    getUnavailableVersionsWarning,
+  } = await loadCliBuild('build')
   const {cliConfig, flags, httpPort, isRestarting, output, quiet = false, workDir} = options
   const projectId = cliConfig?.api?.projectId
   let organizationId: string | undefined
@@ -112,7 +113,7 @@ export async function startStudioDevServer(
     output.log(`${logSymbols.info} Running dev server with schema extraction enabled`)
   }
 
-  const config = getDevServerConfig({cliConfig, flags, httpPort, output, workDir})
+  const config = await getDevServerConfig({cliConfig, flags, httpPort, output, workDir})
 
   if (loadInDashboard) {
     if (!projectId) {

@@ -1,11 +1,11 @@
 import {type CliConfig} from '@sanity/cli-core'
-import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
-
 import {
   defineApplication,
   type MediaLibraryField,
   unstable_defineMediaLibrary,
-} from '../../../defineApp.js'
+} from '@sanity/cli-core/workbench'
+import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
+
 import {
   type ResolvedMediaLibraryConfig,
   resolveWorkbenchConfig,

@@ -95,7 +95,7 @@ export class ExtractSchemaCommand extends SanityCommand<typeof ExtractSchemaComm
     }
 
     const {schemaExtraction} = cliConfig
-    const extractOptions = getExtractOptions({
+    const extractOptions = await getExtractOptions({
       flags,
       projectRoot,
       schemaExtraction,

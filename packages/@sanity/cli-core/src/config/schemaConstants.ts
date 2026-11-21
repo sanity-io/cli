@@ -1,0 +1,2 @@
+export const SANITY_WORKSPACE_SCHEMA_ID_PREFIX = '_.schemas'
+export const CURRENT_WORKSPACE_SCHEMA_VERSION = '2025-05-01'

@@ -1,4 +1,5 @@
-import {findStudioConfigPath} from '../util/findStudioConfigPath.js'
+import {findStudioConfigPath} from '@sanity/cli-core/config'
+
 import {
   type RawStudioConfig,
   readStudioConfig,

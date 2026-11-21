@@ -1,3 +1,4 @@
+import {type CallExpression, type ObjectProperty, type ObjectPropertyKind} from '@oxc-project/types'
 /**
  * Locates and edits the `fields: [...]` array in a Media Library config app's
  * `sanity.cli.ts` — appending entries (`sanity media pull-aspects`) or
@@ -9,8 +10,7 @@
  * turns into a paste-ready fallback.
  */
 
-import {type CallExpression, type ObjectProperty, type ObjectPropertyKind} from '@oxc-project/types'
-import {parseAst} from 'vite'
+import {loadVite} from '../../util/loadVite.js'
 
 export type EditResult = {ok: false; reason: string} | {ok: true; updated: string}
 
@@ -91,7 +91,8 @@ function indexOfTrailingComma(source: string, from: number, to: number): number 
   return -1
 }
 
-function locateFieldsArray(source: string): LocatedArray | {reason: string} {
+async function locateFieldsArray(source: string): Promise<LocatedArray | {reason: string}> {
+  const {parseAst} = await loadVite()
   // Node offsets are UTF-16 string indices, so splicing `source` with them is
   // exact even around non-ASCII content.
   let program: ReturnType<typeof parseAst>
@@ -164,8 +165,11 @@ function locateFieldsArray(source: string): LocatedArray | {reason: string} {
  * the config's `fields` array, preserving the existing entries and adding a
  * trailing comma to the last one when needed.
  */
-export function appendFieldEntries(source: string, entryLines: string[]): EditResult {
-  const located = locateFieldsArray(source)
+export async function appendFieldEntries(
+  source: string,
+  entryLines: string[],
+): Promise<EditResult> {
+  const located = await locateFieldsArray(source)
   if ('reason' in located) return {ok: false, reason: located.reason}
 
   const {indent, lastContentEnd, open} = located
@@ -188,8 +192,11 @@ export function appendFieldEntries(source: string, entryLines: string[]): EditRe
 }
 
 /** Replace the config's `fields` array contents with `entryLines` wholesale. */
-export function replaceFieldEntries(source: string, entryLines: string[]): EditResult {
-  const located = locateFieldsArray(source)
+export async function replaceFieldEntries(
+  source: string,
+  entryLines: string[],
+): Promise<EditResult> {
+  const located = await locateFieldsArray(source)
   if ('reason' in located) return {ok: false, reason: located.reason}
 
   const {close, indent, open} = located

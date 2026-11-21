@@ -1,10 +1,7 @@
-import {
-  extractValidationFromSchemaError,
-  workerBuildStudioSchemasAndManifests,
-} from '@sanity/cli-build/_internal/extract'
 import {subdebug} from '@sanity/cli-core'
 import {spinner} from '@sanity/cli-core/ux'
 
+import {loadCliBuild} from '../../util/loadCliBuild.js'
 import {updateWorkspacesSchemas} from '../schema/updateWorkspaceSchema.js'
 import {
   deployStudioSchemasAndManifestsWorkerData,
@@ -36,6 +33,8 @@ export async function deployStudioSchemasAndManifestsWorker(
   port: DeployStudioSchemasAndManifestsPort,
   workerData: unknown,
 ): Promise<void> {
+  const {extractValidationFromSchemaError, workerBuildStudioSchemasAndManifests} =
+    await loadCliBuild('extract')
   const parsedWorkerData = deployStudioSchemasAndManifestsWorkerData.parse(workerData)
 
   const options: Parameters<typeof workerBuildStudioSchemasAndManifests>[0] = parsedWorkerData

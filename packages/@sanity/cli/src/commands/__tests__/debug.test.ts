@@ -1,7 +1,7 @@
+import {getStudioConfig} from '@sanity/cli-build/_internal/worker'
 import {
   getCliToken,
   getCliTokenInfo,
-  getStudioConfig,
   getUserConfig,
   ProjectRootNotFoundError,
   tryFindStudioConfigPath,
@@ -16,6 +16,8 @@ import {USERS_API_VERSION} from '../../services/user.js'
 import {Debug} from '../debug.js'
 
 // Mock fs/promises for findCliConfigFile
+vi.mock('@sanity/cli-build/_internal/worker', () => ({getStudioConfig: vi.fn()}))
+
 vi.mock('node:fs/promises', async (importOriginal) => {
   const actual = await importOriginal<typeof import('node:fs/promises')>()
   return {
@@ -30,7 +32,6 @@ vi.mock('@sanity/cli-core', async () => {
     ...actual,
     getCliToken: vi.fn(),
     getCliTokenInfo: vi.fn(),
-    getStudioConfig: vi.fn(),
     getUserConfig: vi.fn().mockReturnValue({
       delete: vi.fn(),
       get: vi.fn().mockReturnValue(undefined),

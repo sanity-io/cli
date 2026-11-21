@@ -4,7 +4,6 @@ import path from 'node:path'
 import {
   getCliToken,
   getCliTokenInfo,
-  getStudioConfig,
   getUserConfig,
   tryFindStudioConfigPath,
 } from '@sanity/cli-core'
@@ -12,6 +11,7 @@ import {
 import {getProjectById} from '../../services/projects.js'
 import {getCliUser, getProjectUser} from '../../services/user.js'
 import {getCliVersion} from '../../util/getCliVersion.js'
+import {loadCliBuild} from '../../util/loadCliBuild.js'
 import {detectCliInstallation} from '../../util/packageManager/installationInfo/index.js'
 import {
   type AuthInfo,
@@ -104,6 +104,7 @@ export async function gatherProjectInfo(
 }
 
 export async function gatherStudioWorkspaces(projectDirectory: string): Promise<StudioWorkspace[]> {
+  const {getStudioConfig} = await loadCliBuild('worker')
   const rawConfig = await getStudioConfig(projectDirectory, {resolvePlugins: false})
 
   if (Array.isArray(rawConfig)) {
@@ -130,6 +131,7 @@ export async function gatherResolvedWorkspaces(
   // resolvePlugins: true goes through getStudioWorkspaces() which calls resolveConfig()
   // from the sanity package. resolveConfig() always returns an array of workspaces,
   // so resolvedConfigSchema (z.array(...)) is guaranteed to match.
+  const {getStudioConfig} = await loadCliBuild('worker')
   const resolvedConfig = await getStudioConfig(projectDirectory, {resolvePlugins: true})
 
   const projectMap = await fetchRolesByProject(resolvedConfig, userId)

@@ -2,11 +2,11 @@ import {type CliConfig, exitCodes, getLocalPackageVersion} from '@sanity/cli-cor
 import {getErrorMessage} from '@sanity/cli-core/errors'
 import {getCoreAppUrl} from '@sanity/cli-core/util'
 import {spinner} from '@sanity/cli-core/ux'
-import {readBuiltManifest} from '@sanity/workbench-cli/build'
 
 import {resolveAppIdIssue} from '../../util/appId.js'
 import {type Check, type CheckReporter, runStep} from '../../util/checks.js'
 import {APP_ID_NOT_FOUND_IN_ORGANIZATION} from '../../util/errorMessages.js'
+import {loadWorkbench} from '../../util/loadWorkbench.js'
 import {
   getAutoUpdateIssueMessage,
   getAutoUpdateMigrationHint,
@@ -212,6 +212,7 @@ export async function verifyOutputDir({
   reporter: DeployCheckReporter
   sourceDir: string
 }): Promise<Record<string, unknown> | undefined> {
+  const {readBuiltManifest} = await loadWorkbench('build')
   const spin = spinner('Verifying local content...').start()
   let mfManifest: Record<string, unknown> | undefined
   try {

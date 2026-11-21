@@ -1,16 +1,24 @@
+import {
+  CURRENT_WORKSPACE_SCHEMA_VERSION,
+  type ManifestSchemaType,
+  SANITY_WORKSPACE_SCHEMA_ID_PREFIX,
+} from '@sanity/cli-core/schemas'
 import {type SanityDocumentLike} from '@sanity/types'
 import {type MediaLibraryConfig} from 'sanity'
 import {z} from 'zod/mini'
 
-export const SANITY_WORKSPACE_SCHEMA_ID_PREFIX = '_.schemas'
-export const CURRENT_WORKSPACE_SCHEMA_VERSION = '2025-05-01'
-
-export type ManifestSerializable =
-  | boolean
-  | ManifestSerializable[]
-  | number
-  | string
-  | {[k: string]: ManifestSerializable}
+export {type CoreAppManifest, coreAppManifestSchema, type StudioManifest} from '@sanity/cli-core'
+export {
+  CURRENT_WORKSPACE_SCHEMA_VERSION,
+  type ManifestField,
+  type ManifestFieldset,
+  type ManifestSchemaType,
+  type ManifestSerializable,
+  type ManifestTitledValue,
+  type ManifestValidationGroup,
+  type ManifestValidationRule,
+  SANITY_WORKSPACE_SCHEMA_ID_PREFIX,
+} from '@sanity/cli-core/schemas'
 
 export interface CreateManifest {
   createdAt: string
@@ -18,11 +26,6 @@ export interface CreateManifest {
   version: number
   workspaces: ManifestWorkspaceFile[]
 }
-
-// The studio/app manifest contract lives in `@sanity/cli-core` so the CLI and
-// the workbench dev-server registry validate against the same schemas without
-// depending on each other.
-export {type CoreAppManifest, coreAppManifestSchema, type StudioManifest} from '@sanity/cli-core'
 
 export interface ManifestWorkspaceFile extends Omit<CreateWorkspaceManifest, 'schema' | 'tools'> {
   schema: string // filename
@@ -44,68 +47,6 @@ export interface CreateWorkspaceManifest {
   mediaLibrary?: MediaLibraryConfig
   subtitle?: string
   title?: string
-}
-
-export interface ManifestSchemaType {
-  name: string
-  type: string
-
-  deprecated?: {
-    reason: string
-  }
-  fields?: ManifestField[]
-  fieldsets?: ManifestFieldset[]
-  hidden?: 'conditional' | boolean
-  lists?: ManifestTitledValue[]
-  //portable text
-  marks?: {
-    annotations?: ManifestArrayMember[]
-    decorators?: ManifestTitledValue[]
-  }
-  of?: ManifestArrayMember[]
-  options?: Record<string, ManifestSerializable>
-  preview?: {
-    select: Record<string, string>
-  }
-  readOnly?: 'conditional' | boolean
-  styles?: ManifestTitledValue[]
-  title?: string
-  to?: ManifestReferenceMember[]
-  validation?: ManifestValidationGroup[]
-
-  // userland (assignable to ManifestSerializable | undefined)
-  // not included to add some typesafty to extractManifest
-  // [index: string]: unknown
-}
-
-export interface ManifestFieldset {
-  [index: string]: ManifestSerializable | undefined
-  name: string
-
-  title?: string
-}
-
-export interface ManifestTitledValue {
-  value: string
-
-  title?: string
-}
-
-type ManifestArrayMember = Omit<ManifestSchemaType, 'name'> & {name?: string}
-type ManifestReferenceMember = Omit<ManifestSchemaType, 'name'> & {name?: string}
-export type ManifestField = ManifestSchemaType & {fieldset?: string}
-
-export interface ManifestValidationGroup {
-  rules: ManifestValidationRule[]
-
-  level?: 'error' | 'info' | 'warning'
-  message?: string
-}
-
-export type ManifestValidationRule = {
-  [index: string]: ManifestSerializable | undefined
-  constraint?: ManifestSerializable
-  flag: string
 }
 
 export interface ManifestTool {

@@ -1,11 +1,11 @@
+import {resolveLocalPackagePath} from '@sanity/cli-core'
+import {doImport} from '@sanity/cli-core/util'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
-import {doImport} from '../../doImport.js'
-import {resolveLocalPackagePath} from '../../resolveLocalPackage.js'
 import {getStudioEnvironmentVariables} from '../getStudioEnvironmentVariables.js'
 
-vi.mock('../../doImport.js', () => ({doImport: vi.fn()}))
-vi.mock('../../resolveLocalPackage.js', () => ({resolveLocalPackagePath: vi.fn()}))
+vi.mock('@sanity/cli-core/util', () => ({doImport: vi.fn()}))
+vi.mock('@sanity/cli-core', () => ({resolveLocalPackagePath: vi.fn()}))
 
 const mockedDoImport = vi.mocked(doImport)
 const mockedResolveLocalPackagePath = vi.mocked(resolveLocalPackagePath)

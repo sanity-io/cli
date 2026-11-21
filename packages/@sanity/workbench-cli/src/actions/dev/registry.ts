@@ -15,11 +15,14 @@ import {
   studioManifestSchema,
   subdebug,
 } from '@sanity/cli-core'
+import {
+  TileInterfaceMetadataSchema,
+  ViewPlacementMetadataSchema,
+  type WorkbenchApp,
+} from '@sanity/cli-core/workbench'
 import {z} from 'zod/mini'
 
 import {applicationReference} from '../../applicationReference.js'
-import {TileInterfaceMetadataSchema, ViewPlacementMetadataSchema} from '../../contract.js'
-import {type WorkbenchApp} from '../../defineApp.js'
 import {canonicalizeWatchDir} from './canonicalizeWatchDir.js'
 import {getProcessStartTime, isOurProcess} from './processLiveness.js'
 

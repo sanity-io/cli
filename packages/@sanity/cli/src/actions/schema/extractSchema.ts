@@ -1,14 +1,9 @@
 import {exit} from '@oclif/core/errors'
-import {
-  type ExtractOptions,
-  formatSchemaValidation,
-  runSchemaExtraction,
-  SchemaExtractedTrace,
-  SchemaExtractionError,
-} from '@sanity/cli-build/_internal/extract'
+import {type ExtractOptions} from '@sanity/cli-build/_internal/extract'
 import {exitCodes, getCliTelemetry, type Output} from '@sanity/cli-core'
 import {spinner} from '@sanity/cli-core/ux'
 
+import {loadCliBuild} from '../../util/loadCliBuild.js'
 import {schemasExtractDebug} from './utils/debug.js'
 
 interface ExtractSchemaActionOptions {
@@ -17,6 +12,8 @@ interface ExtractSchemaActionOptions {
 }
 
 export async function extractSchema(options: ExtractSchemaActionOptions): Promise<void> {
+  const {formatSchemaValidation, runSchemaExtraction, SchemaExtractedTrace, SchemaExtractionError} =
+    await loadCliBuild('extract')
   const {extractOptions, output} = options
   const {enforceRequiredFields, format, outputPath} = extractOptions
 

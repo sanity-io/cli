@@ -2,10 +2,10 @@ import {isMainThread, type MessagePort} from 'node:worker_threads'
 
 import {findStudioConfigPath, getCliConfig} from '@sanity/cli-core/config'
 import {subdebug} from '@sanity/cli-core/debug'
-import {studioWorkerTask} from '@sanity/cli-core/tasks'
 import {type CliConfig} from '@sanity/cli-core/types'
 
 import {isSchemaError} from '../../util/isSchemaError.js'
+import {loadCliBuild} from '../../util/loadCliBuild.js'
 import {extractFromSanitySchema} from './extractFromSanitySchema.js'
 import {resolveGraphQLApis, type Workspace} from './resolveGraphQLApisFromWorkspaces.js'
 import {SchemaError} from './SchemaError.js'
@@ -33,6 +33,7 @@ export async function extractGraphQLAPIs(
     findStudioConfigPath(workDir),
   ])
 
+  const {studioWorkerTask} = await loadCliBuild('worker')
   const result = await studioWorkerTask<GraphQLWorkerResult>(
     new URL('extractGraphQLAPIs.worker.js', import.meta.url),
     {

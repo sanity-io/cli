@@ -6,10 +6,11 @@ import {type Output} from '@sanity/cli-core'
 import {
   type DeployedView,
   type DeployedWebWorker,
-  summarizeInterfaces,
+  type summarizeInterfaces,
 } from '@sanity/workbench-cli/deploy'
 
 import {checkStatusIcon, nestLines, renderIssues} from '../../util/checks.js'
+import {loadWorkbench} from '../../util/loadWorkbench.js'
 import {pluralize} from '../../util/pluralize.js'
 import {type DeployCheck, type DeployCheckReporter, type DeployTarget} from './deployChecks.js'
 import {type DeployPayload} from './deployRunner.js'
@@ -113,10 +114,11 @@ export function deploymentPlanToJson(plan: DeploymentPlan): {
   }
 }
 
-export function reportInterfaces(
+export async function reportInterfaces(
   reporter: DeployCheckReporter,
   app: Parameters<typeof summarizeInterfaces>[0],
-): {services: DeployedWebWorker[]; views: DeployedView[]} {
+): Promise<{services: DeployedWebWorker[]; views: DeployedView[]}> {
+  const {summarizeInterfaces} = await loadWorkbench('deploy')
   const {lines, services, views} = summarizeInterfaces(app)
   for (const message of lines) reporter.report({message, status: 'pass'})
   return {services, views}

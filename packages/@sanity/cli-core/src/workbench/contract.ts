@@ -28,7 +28,7 @@ export interface ViewComponentBaseProps<TView> {
   view: TView
 }
 
-/** Component slots per view surface; windows load outside the component artifact path. @internal */
+/** Component slots per view surface; windows load outside the component artifact path. @public */
 export const VIEW_COMPONENTS = {
   asset_source: ['asset_source'],
   panel: ['title', 'panel'],
@@ -229,7 +229,7 @@ export function defineTileView(view: DefineTileViewInput): TileView {
   return {...view, surface: 'tile'}
 }
 
-/** @internal */
+/** @public */
 export const InterfaceDeclarationSchema = z.discriminatedUnion('surface', [
   WindowViewSchema,
   PanelViewSchema,

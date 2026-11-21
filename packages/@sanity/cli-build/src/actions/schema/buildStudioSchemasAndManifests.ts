@@ -1,7 +1,8 @@
-import {getCliTelemetry, studioWorkerTask, subdebug} from '@sanity/cli-core'
+import {getCliTelemetry, subdebug} from '@sanity/cli-core'
 import {type SchemaValidationProblemGroup} from '@sanity/types'
 import {type StudioManifest} from 'sanity'
 
+import {studioWorkerTask} from '../../loaders/studio/studioWorkerTask.js'
 import {SchemaBuild} from '../../telemetry/extractSchema.telemetry.js'
 import {WorkspaceSchemaInput} from '../manifest/types.js'
 import {type BuildStudioSchemasAndManifestsWorkerData} from './types.js'

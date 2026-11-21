@@ -1,5 +1,5 @@
 import {type CliConfig} from '@sanity/cli-core'
-import {defineApplication, type DefineAppResult} from '@sanity/workbench-cli'
+import {defineApplication, type DefineAppResult} from '@sanity/cli-core/workbench'
 import {describe, expect, expectTypeOf, test} from 'vitest'
 
 import {defineCliConfig} from '../defineCliConfig.js'

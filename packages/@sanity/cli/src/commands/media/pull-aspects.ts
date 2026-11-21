@@ -11,7 +11,6 @@ import {
   subdebug,
 } from '@sanity/cli-core'
 import {confirm, logSymbols, spinner} from '@sanity/cli-core/ux'
-import {resolveWorkbenchConfig} from '@sanity/workbench-cli/deploy'
 
 import {appendFieldEntries} from '../../actions/media/cliConfigFields.js'
 import {
@@ -22,6 +21,7 @@ import {
 } from '../../actions/media/pullAspects.js'
 import {resolveMediaLibraryId} from '../../actions/media/resolveMediaLibraryId.js'
 import {getAspects} from '../../services/mediaLibraries.js'
+import {loadWorkbench} from '../../util/loadWorkbench.js'
 import {pluralize} from '../../util/pluralize.js'
 import {defineCommandTelemetry} from '../../util/telemetry/commandTelemetry.js'
 
@@ -86,6 +86,7 @@ export class MediaPullAspectsCommand extends SanityCommand<typeof MediaPullAspec
   static telemetry = defineCommandTelemetry(flags, {redact: ['out-dir']})
 
   public async run(): Promise<void> {
+    const {resolveWorkbenchConfig} = await loadWorkbench('deploy')
     const {
       'media-library-id': mediaLibraryIdFlag,
       'out-dir': outDir,
@@ -282,7 +283,7 @@ export class MediaPullAspectsCommand extends SanityCommand<typeof MediaPullAspec
     if (!shouldUpdate) return 'declined'
 
     const source = await readFile(configPath, 'utf8')
-    const result = appendFieldEntries(source, entryLines)
+    const result = await appendFieldEntries(source, entryLines)
     if (!result.ok) return {reason: result.reason}
     await writeFile(configPath, result.updated)
     return 'added'

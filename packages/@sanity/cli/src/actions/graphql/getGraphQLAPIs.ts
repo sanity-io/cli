@@ -1,7 +1,8 @@
 import {isMainThread} from 'node:worker_threads'
 
-import {findStudioConfigPath, getCliConfig, studioWorkerTask} from '@sanity/cli-core'
+import {findStudioConfigPath, getCliConfig} from '@sanity/cli-core'
 
+import {loadCliBuild} from '../../util/loadCliBuild.js'
 import {type ExtractedGraphQLAPI} from './types.js'
 
 export async function getGraphQLAPIs(workDir: string): Promise<ExtractedGraphQLAPI[]> {
@@ -14,6 +15,7 @@ export async function getGraphQLAPIs(workDir: string): Promise<ExtractedGraphQLA
     findStudioConfigPath(workDir),
   ])
 
+  const {studioWorkerTask} = await loadCliBuild('worker')
   return studioWorkerTask<ExtractedGraphQLAPI[]>(
     new URL('getGraphQLAPIs.worker.js', import.meta.url),
     {

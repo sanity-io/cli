@@ -1,9 +1,9 @@
 import {relative} from 'node:path'
 
 import {type CliConfig, getCliConfigUncached, type Output} from '@sanity/cli-core'
+import {isWorkbenchApp, isWorkbenchConfig} from '@sanity/cli-core/workbench'
 import {type ViteDevServer} from 'vite'
 
-import {isWorkbenchApp, isWorkbenchConfig} from '../../defineApp.js'
 import {deriveInterfaces} from '../../deriveInterfaces.js'
 import {readAppIcon, toUrlPath} from '../../readAppIcon.js'
 import {resolveWorkbenchConfig} from '../../resolveWorkbenchConfig.js'

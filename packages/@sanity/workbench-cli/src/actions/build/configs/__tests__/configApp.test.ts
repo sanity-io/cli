@@ -1,6 +1,6 @@
+import {type WorkbenchConfigValue} from '@sanity/cli-core/workbench'
 import {describe, expect, test} from 'vitest'
 
-import {type WorkbenchConfigValue} from '../../../../contract.js'
 import {isMediaLibraryConfigApp} from '../configApp.js'
 
 describe('isMediaLibraryConfigApp', () => {

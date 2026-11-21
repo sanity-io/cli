@@ -2,11 +2,11 @@ import {fileURLToPath} from 'node:url'
 
 import {type CliConfig, type Output, subdebug} from '@sanity/cli-core'
 import {isStaging} from '@sanity/cli-core/util'
+import {isWorkbenchApp, isWorkbenchConfig} from '@sanity/cli-core/workbench'
 import viteReact from '@vitejs/plugin-react'
 import {createServer, type InlineConfig, type Plugin, type ViteDevServer} from 'vite'
 import {z} from 'zod/mini'
 
-import {isWorkbenchApp, isWorkbenchConfig} from '../../defineApp.js'
 import {createExposesTracker} from './exposesSetId.js'
 import {
   acquireWorkbenchLock,

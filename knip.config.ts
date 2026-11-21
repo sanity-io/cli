@@ -70,6 +70,8 @@ const baseConfig = {
         'src/**/*.worker.ts',
         'package.config.ts',
       ],
+      // The manifest generator reads the plugins’ published command metadata.
+      ignoreDependencies: ['@sanity/runtime-cli', '@sanity/workflows-cli'],
       oclif: {
         config: ['oclif.config.js'],
       },

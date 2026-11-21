@@ -1,18 +1,13 @@
 import {basename, dirname, isAbsolute, relative, resolve} from 'node:path'
 
-import {
-  createSchemaPatternMatcher,
-  type ExtractOptions,
-  formatSchemaValidation,
-  runSchemaExtraction,
-  SchemaExtractionError,
-} from '@sanity/cli-build/_internal/extract'
+import {type ExtractOptions} from '@sanity/cli-build/_internal/extract'
 import {exitCodes, type Output} from '@sanity/cli-core'
 import {spinner} from '@sanity/cli-core/ux'
 import {watch as chokidarWatch, type FSWatcher} from 'chokidar'
 import debounce from 'lodash-es/debounce.js'
 import picomatch from 'picomatch'
 
+import {loadCliBuild} from '../../util/loadCliBuild.js'
 import {schemasExtractDebug} from './utils/debug.js'
 
 /** Default glob patterns to watch for schema changes */
@@ -135,6 +130,12 @@ function createExtractionRunner(onExtract: () => Promise<void>): ExtractionRunne
 export async function startExtractSchemaWatcher(
   options: ExtractSchemaWatcherOptions,
 ): Promise<ExtractSchemaWatcher> {
+  const {
+    createSchemaPatternMatcher,
+    formatSchemaValidation,
+    runSchemaExtraction,
+    SchemaExtractionError,
+  } = await loadCliBuild('extract')
   const {extractOptions, onExtraction, output, watchPatterns} = options
 
   const {configPath, enforceRequiredFields, outputPath} = extractOptions

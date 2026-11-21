@@ -1,7 +1,7 @@
 import {ProjectRootNotFoundError} from '@sanity/cli-core'
 import {exitCodes} from '@sanity/cli-core/ExitCodes'
+import {unstable_defineMediaLibrary} from '@sanity/cli-core/workbench'
 import {convertToSystemPath, createTestToken, mockApi, testCommand} from '@sanity/cli-test'
-import {unstable_defineMediaLibrary} from '@sanity/workbench-cli'
 import {cleanAll, pendingMocks} from 'nock'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 

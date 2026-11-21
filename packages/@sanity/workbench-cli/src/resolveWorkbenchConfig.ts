@@ -5,9 +5,11 @@
 // second resolver; app-only callers keep using `resolveWorkbenchApp`.
 
 import {type CliConfig} from '@sanity/cli-core'
-
-import {ConfigSchema, type WorkbenchConfigValue} from './contract.js'
-import {isWorkbenchConfig} from './defineApp.js'
+import {
+  ConfigSchema,
+  isWorkbenchConfig,
+  type WorkbenchConfigValue,
+} from '@sanity/cli-core/workbench'
 
 /** @public */
 export interface ResolvedMediaLibraryConfig {

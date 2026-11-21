@@ -1,11 +1,11 @@
 import {type CliConfig} from '@sanity/cli-core'
-import {describe, expect, test} from 'vitest'
-
 import {
   type DefineAppInput,
   defineApplication,
   unstable_defineMediaLibrary,
-} from '../../../defineApp.js'
+} from '@sanity/cli-core/workbench'
+import {describe, expect, test} from 'vitest'
+
 import {getWorkbench} from '../getWorkbench.js'
 
 // Resolve a capability from a real branded app — the only way to a non-null

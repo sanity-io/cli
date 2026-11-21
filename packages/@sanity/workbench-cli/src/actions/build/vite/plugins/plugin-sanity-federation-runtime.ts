@@ -1,9 +1,9 @@
 import fs from 'node:fs'
 import path from 'node:path'
 
+import {WINDOW_CONTRACT_VERSION} from '@sanity/cli-core/workbench'
 import {type EnvironmentModuleNode, type Plugin} from 'vite'
 
-import {WINDOW_CONTRACT_VERSION} from '../../../../contract.js'
 import {renderRemote} from '../../render-remote.js'
 import {
   RESOURCE_BINDINGS_ENTRY_IMPORT,

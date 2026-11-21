@@ -1,22 +1,19 @@
 import {type ApplicationType, type AppVisibility} from '@sanity/cli-core'
-import {describe, expect, expectTypeOf, test} from 'vitest'
-
 import {
+  type DefineAppInput,
+  DefineAppInputSchema,
+  defineApplication,
+  type DefineAppResult,
   defineAssetSourceView,
   definePanelView,
   defineTileView,
   defineWebWorker,
   defineWindowView,
   type DockGroup,
-} from '../contract.js'
-import {
-  type DefineAppInput,
-  DefineAppInputSchema,
-  defineApplication,
-  type DefineAppResult,
   isWorkbenchApp,
   type WorkbenchApp,
-} from '../defineApp.js'
+} from '@sanity/cli-core/workbench'
+import {describe, expect, expectTypeOf, test} from 'vitest'
 
 // The brand is a global-registry symbol; re-derive it the way the CLI loader
 // (`@sanity/cli-core`) does, rather than reaching for a module-private const.

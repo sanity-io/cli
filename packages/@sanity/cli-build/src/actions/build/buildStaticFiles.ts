@@ -1,5 +1,6 @@
 import path from 'node:path'
 
+import {getAppEnvironmentVariables, getStudioEnvironmentVariables} from '@sanity/cli-core/env'
 import {type CliConfig, type UserViteConfig} from '@sanity/cli-core/types'
 import {buildFederatedApp, type WorkbenchExposes} from '@sanity/workbench-cli/build'
 import {build} from 'vite'
@@ -7,10 +8,6 @@ import {build} from 'vite'
 import {copyDir} from '../../util/copyDir.js'
 import {type AutoUpdatesBuildConfig} from './autoUpdates.js'
 import {buildDebug} from './buildDebug.js'
-import {
-  getAppEnvironmentVariables,
-  getStudioEnvironmentVariables,
-} from './getEnvironmentVariables.js'
 import {extendViteConfigWithUserConfig, finalizeViteConfig, getViteConfig} from './getViteConfig.js'
 import {writeFavicons} from './writeFavicons.js'
 import {resolveEntries, writeSanityRuntime} from './writeSanityRuntime.js'

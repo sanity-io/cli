@@ -1,6 +1,6 @@
 import {type CliConfig} from '@sanity/cli-core'
+import {MEDIA_LIBRARY_CONFIG_CONTRACT_VERSION} from '@sanity/cli-core/workbench'
 
-import {MEDIA_LIBRARY_CONFIG_CONTRACT_VERSION} from '../../contract.js'
 import {resolveWorkbenchConfig} from '../../resolveWorkbenchConfig.js'
 import {type DevServerManifest} from './registry.js'
 

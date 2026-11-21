@@ -16,15 +16,15 @@ export default defineCliConfig({
 })
 `
 
-function unwrap(result: ReturnType<typeof appendFieldEntries>): string {
+function unwrap(result: Awaited<ReturnType<typeof appendFieldEntries>>): string {
   if (!result.ok) throw new Error(`expected ok, got: ${result.reason}`)
   return result.updated
 }
 
 describe('appendFieldEntries', () => {
-  test('appends after the last entry of the scaffolded config', () => {
+  test('appends after the last entry of the scaffolded config', async () => {
     const updated = unwrap(
-      appendFieldEntries(SCAFFOLD, [
+      await appendFieldEntries(SCAFFOLD, [
         `{name: 'credit', src: './src/fields/credit.ts', title: 'Credit'},`,
       ]),
     )
@@ -46,10 +46,10 @@ describe('appendFieldEntries', () => {
     `)
   })
 
-  test('fills an empty fields array', () => {
+  test('fills an empty fields array', async () => {
     const source = SCAFFOLD.replace(/fields: \[[^]*?\]/, 'fields: []')
     const updated = unwrap(
-      appendFieldEntries(source, [
+      await appendFieldEntries(source, [
         `{name: 'credit', src: './src/fields/credit.ts', title: 'Credit'},`,
       ]),
     )
@@ -59,13 +59,13 @@ describe('appendFieldEntries', () => {
     )
   })
 
-  test('adds the missing trailing comma to the previous last entry', () => {
+  test('adds the missing trailing comma to the previous last entry', async () => {
     const source = SCAFFOLD.replace(
       `{name: 'notes', src: './src/fields/notes.tsx', title: 'Notes'},`,
       `{name: 'notes', src: './src/fields/notes.tsx', title: 'Notes'}`,
     )
     const updated = unwrap(
-      appendFieldEntries(source, [
+      await appendFieldEntries(source, [
         `{name: 'credit', src: './src/fields/credit.ts', title: 'Credit'},`,
       ]),
     )
@@ -75,13 +75,13 @@ describe('appendFieldEntries', () => {
     )
   })
 
-  test('brackets inside strings and comments do not derail the scan', () => {
+  test('brackets inside strings and comments do not derail the scan', async () => {
     const source = SCAFFOLD.replace(
       `title: 'Notes'},`,
       `title: 'Notes ][ tricky'}, // trailing ] comment\n      /* block ] comment */`,
     )
     const updated = unwrap(
-      appendFieldEntries(source, [`{name: 'x', src: './src/fields/x.ts', title: 'X'},`]),
+      await appendFieldEntries(source, [`{name: 'x', src: './src/fields/x.ts', title: 'X'},`]),
     )
 
     // Inserted after the last *entry* (not after the trailing comments, which
@@ -92,19 +92,19 @@ describe('appendFieldEntries', () => {
     expect(updated).toContain('/* block ] comment */')
   })
 
-  test('bails on a comment-only fields array rather than deleting the comment', () => {
+  test('bails on a comment-only fields array rather than deleting the comment', async () => {
     const source = SCAFFOLD.replace(
       /fields: \[[^]*?\]/,
       'fields: [\n      // add fields here\n    ]',
     )
-    const result = appendFieldEntries(source, ['{}'])
+    const result = await appendFieldEntries(source, ['{}'])
     expect(result).toEqual({ok: false, reason: 'the `fields` array contains only comments'})
   })
 
-  test('appends alongside a spread entry', () => {
+  test('appends alongside a spread entry', async () => {
     const source = SCAFFOLD.replace(/fields: \[[^]*?\]/, 'fields: [...sharedFields]')
     const updated = unwrap(
-      appendFieldEntries(source, [`{name: 'x', src: './src/fields/x.ts', title: 'X'},`]),
+      await appendFieldEntries(source, [`{name: 'x', src: './src/fields/x.ts', title: 'X'},`]),
     )
 
     expect(updated).toContain(
@@ -112,48 +112,48 @@ describe('appendFieldEntries', () => {
     )
   })
 
-  test('template literals with ${...} holes are skipped correctly', () => {
+  test('template literals with ${...} holes are skipped correctly', async () => {
     const source = SCAFFOLD.replace(`title: 'Notes'},`, 'title: `Notes ${["]"][0]} end`},')
     const updated = unwrap(
-      appendFieldEntries(source, [`{name: 'x', src: './src/fields/x.ts', title: 'X'},`]),
+      await appendFieldEntries(source, [`{name: 'x', src: './src/fields/x.ts', title: 'X'},`]),
     )
 
     expect(updated).toContain("end`},\n      {name: 'x'")
   })
 
-  test('bails when there is no unstable_defineMediaLibrary call', () => {
-    const result = appendFieldEntries(`export default {fields: []}`, ['{}'])
+  test('bails when there is no unstable_defineMediaLibrary call', async () => {
+    const result = await appendFieldEntries(`export default {fields: []}`, ['{}'])
     expect(result).toEqual({ok: false, reason: 'no `unstable_defineMediaLibrary(...)` call found'})
   })
 
-  test('bails when the fields value is not an array literal', () => {
+  test('bails when the fields value is not an array literal', async () => {
     const source = SCAFFOLD.replace(/fields: \[[^]*?\],/, 'fields: sharedFields,')
-    const result = appendFieldEntries(source, ['{}'])
+    const result = await appendFieldEntries(source, ['{}'])
     expect(result).toEqual({
       ok: false,
       reason: 'the `fields` value is not an array literal',
     })
   })
 
-  test('bails when the config has no fields property', () => {
+  test('bails when the config has no fields property', async () => {
     const source = SCAFFOLD.replace(/fields: \[[^]*?\],\n/, '')
-    const result = appendFieldEntries(source, ['{}'])
+    const result = await appendFieldEntries(source, ['{}'])
     expect(result).toEqual({
       ok: false,
       reason: 'no `fields` property in the `unstable_defineMediaLibrary({...})` config',
     })
   })
 
-  test('bails when the config is not an object literal', () => {
+  test('bails when the config is not an object literal', async () => {
     const source = `export default unstable_defineMediaLibrary(sharedConfig)`
-    const result = appendFieldEntries(source, ['{}'])
+    const result = await appendFieldEntries(source, ['{}'])
     expect(result).toEqual({
       ok: false,
       reason: 'the `unstable_defineMediaLibrary(...)` argument is not an object literal',
     })
   })
 
-  test('a commented-out fields array next to a computed value is not edited', () => {
+  test('a commented-out fields array next to a computed value is not edited', async () => {
     // The dangerous shape: a locator that is not comment-aware would "edit"
     // the comment, report success, and deploy would still delete the stored
     // aspects.
@@ -161,17 +161,17 @@ describe('appendFieldEntries', () => {
       /fields: \[[^]*?\],/,
       '// fields: [{name: "old", src: "./old.tsx"}],\n    fields: computedFields,',
     )
-    const result = appendFieldEntries(source, ['{}'])
+    const result = await appendFieldEntries(source, ['{}'])
     expect(result).toEqual({
       ok: false,
       reason: 'the `fields` value is not an array literal',
     })
   })
 
-  test('a fields array outside the call does not shadow or block the real one', () => {
+  test('a fields array outside the call does not shadow or block the real one', async () => {
     const source = `const preset = {fields: []}\n${SCAFFOLD}`
     const updated = unwrap(
-      appendFieldEntries(source, [`{name: 'x', src: './src/fields/x.tsx', title: 'X'},`]),
+      await appendFieldEntries(source, [`{name: 'x', src: './src/fields/x.tsx', title: 'X'},`]),
     )
 
     // The helper's array is untouched; the entry lands in the call's array.
@@ -181,37 +181,37 @@ describe('appendFieldEntries', () => {
     )
   })
 
-  test('the call name inside comments or strings does not count as a second call site', () => {
+  test('the call name inside comments or strings does not count as a second call site', async () => {
     const source = SCAFFOLD.replace(
       `organizationId: 'org-1',`,
       `// also used by unstable_defineMediaLibrary(legacy)\n    note: 'see unstable_defineMediaLibrary(docs)',\n    organizationId: 'org-1',`,
     )
     const updated = unwrap(
-      appendFieldEntries(source, [`{name: 'x', src: './src/fields/x.tsx', title: 'X'},`]),
+      await appendFieldEntries(source, [`{name: 'x', src: './src/fields/x.tsx', title: 'X'},`]),
     )
     expect(updated).toContain(`{name: 'x', src: './src/fields/x.tsx', title: 'X'},`)
   })
 
-  test('a fields: [ inside a string literal does not count as an array', () => {
+  test('a fields: [ inside a string literal does not count as an array', async () => {
     const source = SCAFFOLD.replace(
       `organizationId: 'org-1',`,
       `note: 'legacy fields: [a, b] syntax',\n    organizationId: 'org-1',`,
     )
     const updated = unwrap(
-      appendFieldEntries(source, [`{name: 'x', src: './src/fields/x.tsx', title: 'X'},`]),
+      await appendFieldEntries(source, [`{name: 'x', src: './src/fields/x.tsx', title: 'X'},`]),
     )
     expect(updated).toContain(
       `title: 'Notes'},\n      {name: 'x', src: './src/fields/x.tsx', title: 'X'},`,
     )
   })
 
-  test('a fields array nested inside another config value is neither edited nor blocking', () => {
+  test('a fields array nested inside another config value is neither edited nor blocking', async () => {
     const source = SCAFFOLD.replace(
       `organizationId: 'org-1',`,
       `extra: {fields: []},\n    organizationId: 'org-1',`,
     )
     const updated = unwrap(
-      appendFieldEntries(source, [`{name: 'x', src: './src/fields/x.tsx', title: 'X'},`]),
+      await appendFieldEntries(source, [`{name: 'x', src: './src/fields/x.tsx', title: 'X'},`]),
     )
 
     expect(updated).toContain('extra: {fields: []},')
@@ -220,21 +220,21 @@ describe('appendFieldEntries', () => {
     )
   })
 
-  test('bails on duplicate fields keys rather than guessing which one deploy reads', () => {
+  test('bails on duplicate fields keys rather than guessing which one deploy reads', async () => {
     const source = SCAFFOLD.replace(
       `organizationId: 'org-1',`,
       `fields: [],\n    organizationId: 'org-1',`,
     )
-    const result = appendFieldEntries(source, ['{}'])
+    const result = await appendFieldEntries(source, ['{}'])
     expect(result).toEqual({
       ok: false,
       reason: 'more than one `fields` property in the `unstable_defineMediaLibrary({...})` config',
     })
   })
 
-  test('bails when the config does not parse', () => {
+  test('bails when the config does not parse', async () => {
     const source = `export default unstable_defineMediaLibrary({fields: [`
-    const result = appendFieldEntries(source, ['{}'])
+    const result = await appendFieldEntries(source, ['{}'])
     expect(result).toEqual({
       ok: false,
       reason: 'the config does not parse as TypeScript',
@@ -243,9 +243,9 @@ describe('appendFieldEntries', () => {
 })
 
 describe('replaceFieldEntries', () => {
-  test('swaps the example entries for the provided ones', () => {
+  test('swaps the example entries for the provided ones', async () => {
     const updated = unwrap(
-      replaceFieldEntries(SCAFFOLD, [
+      await replaceFieldEntries(SCAFFOLD, [
         `{name: 'alt', src: './src/fields/alt.ts', title: 'Alt text'},`,
         `{name: 'credit', src: './src/fields/credit.ts', title: 'Credit', public: true},`,
       ]),

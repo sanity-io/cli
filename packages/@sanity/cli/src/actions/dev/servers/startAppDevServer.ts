@@ -4,7 +4,7 @@ import {exitCodes} from '@sanity/cli-core'
 import {
   isWorkbenchApp as determineIsWorkbenchApp,
   isWorkbenchConfig as determineIsWorkbenchConfig,
-} from '@sanity/workbench-cli'
+} from '@sanity/cli-core/workbench'
 
 import {startDevServer} from '../../../server/devServer.js'
 import {gracefulServerDeath} from '../../../server/gracefulServerDeath.js'
@@ -49,7 +49,7 @@ export async function startAppDevServer(options: DevActionOptions): Promise<Star
     return {reason: 'missing-organization-id', started: false}
   }
 
-  const config = getDevServerConfig({cliConfig, flags, httpPort, output, workDir})
+  const config = await getDevServerConfig({cliConfig, flags, httpPort, output, workDir})
 
   try {
     if (!quiet) output.log('Starting dev server')

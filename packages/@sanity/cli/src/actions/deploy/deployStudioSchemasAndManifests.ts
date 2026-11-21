@@ -1,9 +1,9 @@
 import {styleText} from 'node:util'
 
-import {SchemaDeploy, SchemaExtractionError} from '@sanity/cli-build/_internal/extract'
-import {getCliTelemetry, type Output, studioWorkerTask, subdebug} from '@sanity/cli-core'
+import {getCliTelemetry, type Output, subdebug} from '@sanity/cli-core'
 import {type StudioManifest} from 'sanity'
 
+import {loadCliBuild} from '../../util/loadCliBuild.js'
 import {
   type DeployStudioSchemasAndManifestsWorkerData,
   type DeployStudioSchemasAndManifestsWorkerMessage,
@@ -20,6 +20,7 @@ export async function deployStudioSchemasAndManifests(
   options: DeployStudioSchemasAndManifestsWorkerData & {applicationId?: string},
   output: Output,
 ): Promise<StudioManifest | null> {
+  const {SchemaDeploy, SchemaExtractionError} = await loadCliBuild('extract')
   const {applicationId, configPath, isExternal, outPath, schemaRequired, verbose, workDir} = options
 
   const trace = getCliTelemetry().trace(SchemaDeploy, {
@@ -31,6 +32,7 @@ export async function deployStudioSchemasAndManifests(
 
   try {
     trace.start()
+    const {studioWorkerTask} = await loadCliBuild('worker')
     const result = await studioWorkerTask<DeployStudioSchemasAndManifestsWorkerMessage>(
       new URL('deployStudioSchemasAndManifests.worker.js', import.meta.url),
       {

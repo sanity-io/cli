@@ -1,8 +1,6 @@
 import {Args, Flags} from '@oclif/core'
 import {type CliConfig, exitCodes, SanityCommand} from '@sanity/cli-core'
 import {type UndeployAdapter} from '@sanity/cli-core/undeploy'
-import {getWorkbench, resolveWorkbenchConfig} from '@sanity/workbench-cli/deploy'
-import {createWorkbenchUndeployAdapter} from '@sanity/workbench-cli/undeploy'
 
 import {
   createAppUndeployAdapter,
@@ -11,6 +9,7 @@ import {
 import {runUndeploy} from '../actions/undeploy/runUndeploy.js'
 import {getAppId} from '../util/appId.js'
 import {determineIsApp} from '../util/determineIsApp.js'
+import {loadWorkbench} from '../util/loadWorkbench.js'
 
 export class UndeployCommand extends SanityCommand<typeof UndeployCommand> {
   static override args = {
@@ -62,6 +61,8 @@ export class UndeployCommand extends SanityCommand<typeof UndeployCommand> {
   }
 
   public async run(): Promise<void> {
+    const {getWorkbench, resolveWorkbenchConfig} = await loadWorkbench('deploy')
+    const {createWorkbenchUndeployAdapter} = await loadWorkbench('undeploy')
     const {args, flags} = await this.parse(UndeployCommand)
 
     const projectConfig = await this.getCliConfig()

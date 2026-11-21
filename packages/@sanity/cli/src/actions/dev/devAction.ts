@@ -1,11 +1,11 @@
-import {SANITY_CACHE_DIR} from '@sanity/cli-build/_internal/build'
-import {extractCoreAppManifest} from '@sanity/cli-build/_internal/manifest'
-import {isWorkbenchApp, isWorkbenchConfig} from '@sanity/workbench-cli'
-import {startWorkbenchDev, watchForWorkbenchOptIn} from '@sanity/workbench-cli/dev'
+import {SANITY_CACHE_DIR} from '@sanity/cli-core/config'
+import {isWorkbenchApp, isWorkbenchConfig} from '@sanity/cli-core/workbench'
 
 import {checkForDeprecatedAppId} from '../../util/appId.js'
 import {determineIsApp} from '../../util/determineIsApp.js'
 import {getSharedServerConfig} from '../../util/getSharedServerConfig.js'
+import {loadCliBuild} from '../../util/loadCliBuild.js'
+import {loadWorkbench} from '../../util/loadWorkbench.js'
 import {resolveReactStrictMode} from '../../util/resolveReactStrictMode.js'
 import {extractStudioManifest} from '../manifest/extractStudioManifest.js'
 import {startAppDevServer} from './servers/startAppDevServer.js'
@@ -22,6 +22,7 @@ const noop = async () => {}
  * extraction, app id).
  */
 export async function devAction(options: DevActionOptions): Promise<{close: () => Promise<void>}> {
+  const {watchForWorkbenchOptIn} = await loadWorkbench('dev')
   const {cliConfig, output, workDir} = options
 
   // A workbench app (an app to render) or a workbench config (config-only, like
@@ -43,7 +44,9 @@ export async function devAction(options: DevActionOptions): Promise<{close: () =
   })
 }
 
-function startWorkbench(options: DevActionOptions): Promise<{close: () => Promise<void>}> {
+async function startWorkbench(options: DevActionOptions): Promise<{close: () => Promise<void>}> {
+  const {startWorkbenchDev} = await loadWorkbench('dev')
+  const {extractCoreAppManifest} = await loadCliBuild('manifest')
   const {cliConfig, flags, isApp, output, workDir} = options
   const {httpHost, httpPort} = getSharedServerConfig({
     cliConfig,

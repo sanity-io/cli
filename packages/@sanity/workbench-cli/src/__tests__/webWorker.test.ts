@@ -1,8 +1,10 @@
+import {
+  unstable_defineService,
+  WEB_WORKER_CONTRACT_VERSION,
+  WebWorkerDeclarationSchema,
+} from '@sanity/cli-core/workbench'
 import {type NavigationLocation} from '@sanity/sdk/dashboard'
 import {describe, expect, expectTypeOf, test} from 'vitest'
-
-import {WEB_WORKER_CONTRACT_VERSION, WebWorkerDeclarationSchema} from '../contract.js'
-import {unstable_defineService} from '../webWorker.js'
 
 const run = () => {}
 

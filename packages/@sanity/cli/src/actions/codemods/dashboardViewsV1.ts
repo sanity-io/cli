@@ -2,7 +2,7 @@ import path from 'node:path'
 
 import {getCliConfig, getLocalPackageVersion, isInteractive} from '@sanity/cli-core'
 import {confirm} from '@sanity/cli-core/ux'
-import {isWorkbenchApp} from '@sanity/workbench-cli'
+import {isWorkbenchApp} from '@sanity/cli-core/workbench'
 
 import {installNewPackages} from '../../util/packageManager/installPackages.js'
 import {getPackageManagerChoice} from '../../util/packageManager/packageManagerChoice.js'

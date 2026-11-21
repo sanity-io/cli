@@ -12,16 +12,15 @@ import {startExtractSchemaWatcher} from '../extractSchemaWatcher.js'
 // end behavior; these pin the pattern shapes cheaply.
 
 const mockWatch = vi.hoisted(() => vi.fn())
-const mockStudioWorkerTask = vi.hoisted(() => vi.fn())
+const mockRunSchemaExtraction = vi.hoisted(() => vi.fn())
 
 vi.mock(import('chokidar'), async (importOriginal) => ({
   ...(await importOriginal()),
   watch: mockWatch,
 }))
 
-vi.mock('@sanity/cli-core/tasks', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@sanity/cli-core')>()
-  return {...actual, studioWorkerTask: mockStudioWorkerTask}
+vi.mock(import('@sanity/cli-build/_internal/extract'), async (importOriginal) => {
+  return {...(await importOriginal()), runSchemaExtraction: mockRunSchemaExtraction}
 })
 
 vi.mock('@sanity/cli-core/ux', async (importOriginal) => {
@@ -66,7 +65,7 @@ const ignored = () => mockWatch.mock.calls[0][1].ignored as (filePath: string) =
 describe('extractSchemaWatcher', () => {
   beforeEach(() => {
     mockWatch.mockReturnValue({close: vi.fn(), on: vi.fn()})
-    mockStudioWorkerTask.mockResolvedValue({schema: [], type: 'success'})
+    mockRunSchemaExtraction.mockResolvedValue([])
   })
 
   afterEach(() => vi.clearAllMocks())

@@ -25,7 +25,7 @@ vi.mock('node:worker_threads', () => ({
   },
 }))
 vi.mock('@sanity/cli-core/config', () => import('@sanity/cli-test/mocks/cli-core/config'))
-vi.mock('@sanity/cli-core/tasks', () => import('@sanity/cli-test/mocks/cli-core/tasks'))
+vi.mock('@sanity/cli-build/_internal/worker', () => import('@sanity/cli-test/mocks/cli-core/tasks'))
 vi.mock('../../../util/isSchemaError.js', () => ({
   isSchemaError: mockIsSchemaError,
 }))

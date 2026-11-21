@@ -1,5 +1,7 @@
-import {configDefinition, type TypeGenConfig} from '@sanity/codegen'
+import {type TypeGenConfig} from '@sanity/codegen'
 import {isValiError, parse} from 'valibot'
+
+import {loadCodegen} from './loadCodegen.js'
 
 /**
  * Applies `@sanity/codegen` schema defaults to a partial typegen config.
@@ -7,7 +9,8 @@ import {isValiError, parse} from 'valibot'
  * `@sanity/codegen` 8.1.0 moved `configDefinition` from Zod to Valibot, so the
  * schema is no longer callable as `configDefinition.parse()`.
  */
-export function parseTypegenConfig(input: unknown = {}): TypeGenConfig {
+export async function parseTypegenConfig(input: unknown = {}): Promise<TypeGenConfig> {
+  const {configDefinition} = await loadCodegen()
   try {
     return parse(configDefinition, input)
   } catch (error) {

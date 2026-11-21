@@ -1,19 +1,13 @@
 import path from 'node:path'
 
-import {
-  extendViteConfigWithUserConfig,
-  getViteConfig,
-  writeSanityRuntime,
-} from '@sanity/cli-build/_internal/build'
-import {
-  getAppEnvironmentVariables,
-  getStudioEnvironmentVariables,
-} from '@sanity/cli-build/_internal/env'
 import {CliConfig, getCliTelemetry, type UserViteConfig} from '@sanity/cli-core'
+import {getAppEnvironmentVariables, getStudioEnvironmentVariables} from '@sanity/cli-core/env'
 import {type WorkbenchExposes} from '@sanity/workbench-cli/build'
 import {type FSWatcher} from 'chokidar'
-import {createServer, type InlineConfig, type ViteDevServer} from 'vite'
+import {type InlineConfig, type ViteDevServer} from 'vite'
 
+import {loadCliBuild} from '../util/loadCliBuild.js'
+import {loadVite} from '../util/loadVite.js'
 import {serverDebug} from './serverDebug.js'
 import {sanityTypegenPlugin} from './vite/plugin-typegen.js'
 
@@ -55,6 +49,9 @@ interface DevServer {
 }
 
 export async function startDevServer(options: DevServerOptions): Promise<DevServer> {
+  const {extendViteConfigWithUserConfig, getViteConfig, writeSanityRuntime} =
+    await loadCliBuild('build')
+  const {createServer} = await loadVite()
   const {
     appTitle,
     basePath,
@@ -101,7 +98,7 @@ export async function startDevServer(options: DevServerOptions): Promise<DevServ
     // Add typegen when enabled
     additionalPlugins: typegen?.enabled
       ? [
-          sanityTypegenPlugin({
+          await sanityTypegenPlugin({
             config: typegen,
             telemetryLogger: getCliTelemetry(),
             workDir: cwd,

@@ -1,17 +1,17 @@
 import {type CliConfig} from '@sanity/cli-core'
-
-import {FEDERATION_FILE_NAME, RUNTIME_DIR} from './actions/build/vite/constants.js'
 import {
   type Dock,
   interfaceContractVersion,
   type InterfaceKind,
   interfaceModuleId,
+  isWorkbenchApp,
   type PanelView,
   type TileInterfaceMetadata,
   type ViewPlacementMetadata,
   type WindowView,
-} from './contract.js'
-import {isWorkbenchApp} from './defineApp.js'
+} from '@sanity/cli-core/workbench'
+
+import {FEDERATION_FILE_NAME, RUNTIME_DIR} from './actions/build/vite/constants.js'
 
 /** What a studio exposes as `./App` — the generated entry that renders `sanity.config.ts`. */
 const GENERATED_ENTRY = `./${RUNTIME_DIR}/${FEDERATION_FILE_NAME}.jsx`

@@ -1,15 +1,6 @@
-import {
-  compareDependencyVersions,
-  buildApp as internalBuildApp,
-} from '@sanity/cli-build/_internal/build'
-import {
-  buildAppId,
-  resolveAppEntry,
-  resolveWorkbenchApp,
-  resolveWorkbenchConfig,
-} from '@sanity/workbench-cli/build'
-
 import {getAppId} from '../../util/appId.js'
+import {loadCliBuild} from '../../util/loadCliBuild.js'
+import {loadWorkbench} from '../../util/loadWorkbench.js'
 import {warnAboutMissingAppId} from '../../util/warnAboutMissingAppId.js'
 import {determineBasePath} from './determineBasePath.js'
 import {preReleaseEventListenerFactory} from './eventListenerFactory.js'
@@ -23,6 +14,9 @@ import {type BuildOptions} from './types.js'
 export async function buildApp(
   options: BuildOptions,
 ): Promise<{mfManifest: Record<string, unknown> | undefined}> {
+  const {buildAppId, resolveAppEntry, resolveWorkbenchApp, resolveWorkbenchConfig} =
+    await loadWorkbench('build')
+  const {buildApp: internalBuildApp, compareDependencyVersions} = await loadCliBuild('build')
   const {cliConfig, flags, outDir, output, workDir} = options
 
   const app = cliConfig && 'app' in cliConfig ? cliConfig.app : undefined

@@ -1,4 +1,4 @@
-import {mockBrowserEnvironment} from '@sanity/cli-core'
+import {loadCliBuild} from '../../util/loadCliBuild.js'
 
 // This script is meant to be used with Node's --import flag to preload
 // the Sanity Studio environment before executing user scripts.
@@ -6,6 +6,7 @@ import {mockBrowserEnvironment} from '@sanity/cli-core'
 
 const rootPath = process.env.SANITY_BASE_PATH || process.cwd()
 
+const {mockBrowserEnvironment} = await loadCliBuild('worker')
 const cleanup = await mockBrowserEnvironment(rootPath)
 const signals = ['exit', 'beforeExit', 'SIGINT', 'SIGTERM'] as const
 for (const signal of signals) {

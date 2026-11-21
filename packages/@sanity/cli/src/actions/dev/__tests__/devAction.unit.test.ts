@@ -1,5 +1,5 @@
 import {type CliConfig} from '@sanity/cli-core'
-import {unstable_defineMediaLibrary} from '@sanity/workbench-cli'
+import {unstable_defineMediaLibrary} from '@sanity/cli-core/workbench'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
 import {devAction} from '../devAction.js'

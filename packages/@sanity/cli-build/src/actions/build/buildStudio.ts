@@ -1,6 +1,7 @@
 import {rm} from 'node:fs/promises'
 import path from 'node:path'
 
+import {getStudioEnvironmentVariables} from '@sanity/cli-core/env'
 import {getLocalPackageVersion} from '@sanity/cli-core/package-manager'
 import {getCliTelemetry} from '@sanity/cli-core/telemetry'
 import {type CliConfig, type Output, type UserViteConfig} from '@sanity/cli-core/types'
@@ -22,7 +23,6 @@ import {checkRequiredDependencies} from './checkRequiredDependencies.js'
 import {checkStudioDependencyVersions} from './checkStudioDependencyVersions.js'
 import {type BuildEventListener, type MessageFunc} from './eventListener.js'
 import {getAutoUpdatesCssUrls, getAutoUpdatesImportMap} from './getAutoUpdatesImportMap.js'
-import {getStudioEnvironmentVariables} from './getEnvironmentVariables.js'
 import {handlePrereleaseVersions} from './handlePrereleaseVersions.js'
 import {resolveVendorBuildConfig} from './resolveVendorBuildConfig.js'
 

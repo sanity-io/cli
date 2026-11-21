@@ -1,7 +1,7 @@
 import {type CliConfig} from '@sanity/cli-core'
+import {defineApplication, unstable_defineMediaLibrary} from '@sanity/cli-core/workbench'
 import {describe, expect, test} from 'vitest'
 
-import {defineApplication, unstable_defineMediaLibrary} from '../defineApp.js'
 import {resolveWorkbenchConfig} from '../resolveWorkbenchConfig.js'
 
 const asConfig = (app: unknown) => ({app}) as CliConfig

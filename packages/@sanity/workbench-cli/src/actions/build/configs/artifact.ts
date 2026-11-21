@@ -1,4 +1,8 @@
-import {INSTALLATION_CONFIG_TYPE, MEDIA_LIBRARY_CONFIG_CONTRACT_VERSION} from '../../../contract.js'
+import {
+  INSTALLATION_CONFIG_TYPE,
+  MEDIA_LIBRARY_CONFIG_CONTRACT_VERSION,
+} from '@sanity/cli-core/workbench'
+
 import {type GeneratedArtifact} from '../artifact.js'
 import {MEDIA_LIBRARY_ISLAND_RUNTIME_MODULE} from './mediaLibraryIslandRuntime.js'
 

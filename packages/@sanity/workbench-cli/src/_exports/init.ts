@@ -4,5 +4,5 @@ export {
   workbenchAppConfigTemplate,
   workbenchMediaLibraryConfigTemplate,
   workbenchStudioConfigTemplate,
-} from '../actions/init/cliConfig.js'
-export {toAppSlug} from '../appSlug.js'
+} from '@sanity/cli-core/workbench'
+export {toAppSlug} from '@sanity/cli-core/workbench'

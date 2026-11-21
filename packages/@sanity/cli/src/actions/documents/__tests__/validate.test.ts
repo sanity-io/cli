@@ -14,7 +14,7 @@ const mockClientConfig = vi.hoisted(() => vi.fn())
 vi.mock('@sanity/cli-core/apiClient', () => ({
   getGlobalCliClient: mockGetGlobalCliClient,
 }))
-vi.mock('@sanity/cli-core/tasks', () => ({
+vi.mock('@sanity/cli-build/_internal/worker', () => ({
   createStudioWorker: mockCreateStudioWorker,
 }))
 vi.mock('@sanity/worker-channels', () => ({

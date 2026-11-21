@@ -29,7 +29,6 @@ export {type UserViteConfig} from '../config/cli/types/userViteConfig.js'
 export {type ApplicationType, isWorkbenchApp} from '../config/cli/workbenchApp.js'
 export {findProjectRoot} from '../config/findProjectRoot.js'
 export {findProjectRootSync} from '../config/findProjectRootSync.js'
-export {getStudioConfig} from '../config/studio/getStudioConfig.js'
 export {getStudioWorkspaces} from '../config/studio/getStudioWorkspaces.js'
 export {isStudioConfig} from '../config/studio/isStudioConfig.js'
 export {findPathForFiles} from '../config/util/findConfigsPaths.js'
@@ -42,7 +41,6 @@ export {
   ProjectRootNotFoundError,
 } from '../errors/ProjectRootNotFoundError.js'
 export {exitCodes} from '../exitCodes.js'
-export {createStudioWorker, studioWorkerTask} from '../loaders/studio/studioWorkerTask.js'
 export {tsxWorkerTask} from '../loaders/tsx/tsxWorkerTask.js'
 export {SanityCommand, type SanityCommandInterface} from '../SanityCommand.js'
 export {
@@ -61,7 +59,6 @@ export {
 } from '../telemetry/types.js'
 export {type Output, type RequireProps, type SanityOrgUser} from '../types.js'
 export {doImport} from '../util/doImport.js'
-export {mockBrowserEnvironment} from '../util/environment/mockBrowserEnvironment.js'
 export {getLocalPackageDir, getLocalPackageVersion} from '../util/getLocalPackageVersion.js'
 export {getSanityConfigDir, getSanityDataDir} from '../util/getSanityConfigDir.js'
 export {getSanityEnvVar} from '../util/getSanityEnvVar.js'

@@ -28,6 +28,10 @@
   "type": "module",
   "sideEffects": false,
   "exports": {
+    "./_internal/worker": {
+      "source": "./src/_exports/_internal/worker.ts",
+      "default": "./dist/_exports/_internal/worker.js"
+    },
     "./_internal/build": {
       "source": "./src/_exports/_internal/build.ts",
       "default": "./dist/_exports/_internal/build.js"
@@ -65,7 +69,6 @@
     "@oclif/core": "catalog:",
     "@rolldown/plugin-babel": "^0.3.1",
     "@sanity/cli-core": "workspace:^",
-    "@sanity/generate-help-url": "^4.0.0",
     "@sanity/schema": "catalog:",
     "@sanity/telemetry": "catalog:",
     "@sanity/types": "catalog:",

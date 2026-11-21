@@ -1,4 +1,5 @@
-import {VIEW_COMPONENTS, VIEW_CONTRACT_VERSION, type ViewSurface} from '../../../contract.js'
+import {VIEW_COMPONENTS, VIEW_CONTRACT_VERSION, type ViewSurface} from '@sanity/cli-core/workbench'
+
 import {type GeneratedArtifact} from '../artifact.js'
 import {renderRemote} from '../render-remote.js'
 

@@ -55,7 +55,11 @@ export default class SanityHelp extends Help {
   }
 
   async showCommandHelp(command: Command.Loadable): Promise<void> {
-    return super.showCommandHelp(await resolveCommandHelpFlags(command, this.unattended))
+    const helpCommand =
+      command.pluginType === 'jit'
+        ? command
+        : await resolveCommandHelpFlags(command, this.unattended)
+    return super.showCommandHelp(helpCommand)
   }
 
   async showHelp(argv: string[]): Promise<void> {

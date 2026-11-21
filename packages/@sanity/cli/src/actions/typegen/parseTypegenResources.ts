@@ -64,10 +64,10 @@ export function getResourceKey(resource: Pick<TypeGenResource, 'dataset' | 'proj
  *
  * @param workDir - The project root that `generates` paths are relative to.
  */
-export function parseTypegenResources(
+export async function parseTypegenResources(
   typegen: CliConfig['typegen'],
   workDir: string,
-): TypegenResourcesConfig | undefined {
+): Promise<TypegenResourcesConfig | undefined> {
   if (typegen?.resources === undefined) return undefined
 
   let resources: TypeGenResource[]
@@ -107,7 +107,7 @@ export function parseTypegenResources(
     outputs.set(output, key)
   }
 
-  const config = parseTypegenConfig({
+  const config = await parseTypegenConfig({
     ...typegen,
     overloadClientMethods: typegen.overloadClientMethods ?? false,
   })

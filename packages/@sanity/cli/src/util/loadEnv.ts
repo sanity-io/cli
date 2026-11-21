@@ -1,1 +1,0 @@
-export {loadEnv} from 'vite'

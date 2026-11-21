@@ -1,5 +1,5 @@
 import {CLIError} from '@oclif/core/errors'
-import {SANITY_WORKSPACE_SCHEMA_ID_PREFIX} from '@sanity/cli-build/_internal/manifest'
+import {SANITY_WORKSPACE_SCHEMA_ID_PREFIX} from '@sanity/cli-core/schemas'
 import uniqBy from 'lodash-es/uniqBy.js'
 
 import {isDefined} from '../schemaTypeHelpers.js'

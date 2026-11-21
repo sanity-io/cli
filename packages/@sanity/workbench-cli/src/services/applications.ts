@@ -4,9 +4,9 @@ import {type Gzip} from 'node:zlib'
 import {type AppVisibility, getGlobalCliClient} from '@sanity/cli-core'
 import {type ImageFile} from '@sanity/cli-core/images'
 import {isStaging} from '@sanity/cli-core/util'
+import {type TileInterfaceMetadata, type ViewPlacementMetadata} from '@sanity/cli-core/workbench'
 import FormData from 'form-data'
 
-import {type TileInterfaceMetadata, type ViewPlacementMetadata} from '../contract.js'
 import {APP_WORKBENCH_API_VERSION} from './apiVersion.js'
 
 export type ApplicationType = 'coreApp' | 'studio'

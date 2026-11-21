@@ -3,7 +3,6 @@ import path from 'node:path'
 import {Args, Flags} from '@oclif/core'
 import {exitCodes, SanityCommand} from '@sanity/cli-core'
 import {confirm} from '@sanity/cli-core/ux'
-import {getWorkbench, resolveWorkbenchConfig} from '@sanity/workbench-cli/deploy'
 
 import {deployApp} from '../actions/deploy/deployApp.js'
 import {deployDebug} from '../actions/deploy/deployDebug.js'
@@ -11,6 +10,7 @@ import {deployStudio} from '../actions/deploy/deployStudio.js'
 import {getAppId} from '../util/appId.js'
 import {determineIsApp} from '../util/determineIsApp.js'
 import {dirIsEmptyOrNonExistent} from '../util/dirIsEmptyOrNonExistent.js'
+import {loadWorkbench} from '../util/loadWorkbench.js'
 import {defineCommandTelemetry} from '../util/telemetry/commandTelemetry.js'
 
 export class DeployCommand extends SanityCommand<typeof DeployCommand> {
@@ -134,6 +134,7 @@ export class DeployCommand extends SanityCommand<typeof DeployCommand> {
   static telemetry = defineCommandTelemetry(this.flags, {redact: ['title', 'url']})
 
   public async run(): Promise<void> {
+    const {getWorkbench, resolveWorkbenchConfig} = await loadWorkbench('deploy')
     const {flags} = await this.parse(DeployCommand)
 
     const cliConfig = await this.getCliConfig()

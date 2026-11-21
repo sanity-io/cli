@@ -1,5 +1,5 @@
 import {type CliConfig, type Output} from '@sanity/cli-core'
-import {defineApplication} from '@sanity/workbench-cli'
+import {defineApplication} from '@sanity/cli-core/workbench'
 // eslint-disable-next-line import-js/no-extraneous-dependencies
 import {afterEach, beforeEach, type Mock, vi} from 'vitest'
 

@@ -1,9 +1,10 @@
 import {readFile} from 'node:fs/promises'
 import {join, resolve} from 'node:path'
 
-import {SANITY_CACHE_DIR} from '@sanity/cli-build/_internal/build'
-import {MANIFEST_FILENAME, type StudioManifest} from '@sanity/cli-build/_internal/manifest'
+import {type StudioManifest} from '@sanity/cli-build/_internal/manifest'
+import {SANITY_CACHE_DIR} from '@sanity/cli-core/config'
 
+import {loadCliBuild} from '../../util/loadCliBuild.js'
 import {extractManifest} from './extractManifest.js'
 
 /**
@@ -29,6 +30,7 @@ export async function extractStudioManifest(options: {
 
   workDir: string
 }): Promise<StudioManifest | undefined> {
+  const {MANIFEST_FILENAME} = await loadCliBuild('manifest')
   const outPath = resolve(options.workDir, MANIFEST_DIR)
   await extractManifest({
     applicationId: options.applicationId,

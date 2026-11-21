@@ -1,15 +1,16 @@
-import {getStudioConfig} from '@sanity/cli-core'
+import {getStudioConfig} from '@sanity/cli-build/_internal/worker'
 import {testCommand} from '@sanity/cli-test'
 import open from 'open'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
 import {ManageCommand} from '../manage.js'
 
+vi.mock('@sanity/cli-build/_internal/worker', () => ({getStudioConfig: vi.fn()}))
+
 vi.mock('@sanity/cli-core', async () => {
   const actual = await vi.importActual<typeof import('@sanity/cli-core')>('@sanity/cli-core')
   return {
     ...actual,
-    getStudioConfig: vi.fn(),
   }
 })
 

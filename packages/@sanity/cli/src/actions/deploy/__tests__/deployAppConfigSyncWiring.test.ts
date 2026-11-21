@@ -28,7 +28,8 @@ vi.mock('@sanity/cli-core/ux', async () => import('@sanity/cli-test/mocks/cli-co
 const mockDeployConfig = vi.hoisted(() => vi.fn())
 const mockResolveInstallationId = vi.hoisted(() => vi.fn())
 const mockResolveWorkbenchConfig = vi.hoisted(() => vi.fn())
-vi.mock('@sanity/workbench-cli/deploy', () => ({
+vi.mock('@sanity/workbench-cli/deploy', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@sanity/workbench-cli/deploy')>()),
   createCoreApp: vi.fn(),
   deployConfig: mockDeployConfig,
   deployWorkbenchApp: vi.fn(),

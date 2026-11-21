@@ -1,10 +1,10 @@
 import {EventEmitter} from 'node:events'
 
 import {type CliConfig, type Output} from '@sanity/cli-core'
+import {defineApplication, unstable_defineMediaLibrary} from '@sanity/cli-core/workbench'
 // eslint-disable-next-line import-js/no-extraneous-dependencies
 import {vi} from 'vitest'
 
-import {defineApplication, unstable_defineMediaLibrary} from '../../../defineApp.js'
 import {type DevServerInterface} from '../deriveConfigs.js'
 import {type DevServerManifest, devServerManifestSchema} from '../registry.js'
 import {type StartWorkbenchOptions} from '../startWorkbenchDevServer.js'

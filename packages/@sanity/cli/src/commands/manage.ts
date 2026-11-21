@@ -1,8 +1,9 @@
 import {type FlagInput} from '@oclif/core/interfaces'
-import {getStudioConfig, SanityCommand} from '@sanity/cli-core'
+import {SanityCommand} from '@sanity/cli-core'
 import open from 'open'
 
 import {getManageUrl} from '../actions/projects/getManageUrl.js'
+import {loadCliBuild} from '../util/loadCliBuild.js'
 
 export class ManageCommand extends SanityCommand<typeof ManageCommand> {
   static override description = 'Open project settings in your browser'
@@ -18,6 +19,7 @@ export class ManageCommand extends SanityCommand<typeof ManageCommand> {
 
     if (!projectId) {
       const projectRoot = await this.getProjectRoot()
+      const {getStudioConfig} = await loadCliBuild('worker')
       const config = await getStudioConfig(projectRoot.directory, {resolvePlugins: false})
       if (!Array.isArray(config) && config.projectId) {
         projectId = config.projectId

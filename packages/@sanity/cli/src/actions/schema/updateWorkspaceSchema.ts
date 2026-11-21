@@ -2,7 +2,6 @@ import {styleText} from 'node:util'
 
 import {ux} from '@oclif/core/ux'
 import {
-  CURRENT_WORKSPACE_SCHEMA_VERSION,
   type StoredWorkspaceSchema,
   type WorkspaceSchemaInput,
 } from '@sanity/cli-build/_internal/manifest'
@@ -10,6 +9,7 @@ import {spinner} from '@sanity/cli-core/ux'
 import partition from 'lodash-es/partition.js'
 
 import {updateSchemas} from '../../services/schemas.js'
+import {loadCliBuild} from '../../util/loadCliBuild.js'
 import {SCHEMA_PERMISSION_HELP_TEXT} from './utils/schemaStoreValidation.js'
 import {getWorkspaceSchemaId} from './utils/workspaceSchemaId.js'
 
@@ -56,6 +56,7 @@ async function updateWorkspaceSchema(args: {
   verbose: boolean
   workspace: WorkspaceSchemaInput
 }) {
+  const {CURRENT_WORKSPACE_SCHEMA_VERSION} = await loadCliBuild('manifest')
   const {tag, verbose, workspace} = args
 
   const {dataset, manifestSchema, projectId} = workspace

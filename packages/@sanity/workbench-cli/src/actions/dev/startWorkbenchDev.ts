@@ -1,8 +1,8 @@
 import {styleText} from 'node:util'
 
 import {type CliConfig, type Output} from '@sanity/cli-core'
+import {isWorkbenchApp} from '@sanity/cli-core/workbench'
 
-import {isWorkbenchApp} from '../../defineApp.js'
 import {createServerLifecycle, toDisplayHost} from '../../util/serverOrchestration.js'
 import {formatSummary} from '../summary.js'
 import {type AppServerResult, startAppServerSupervisor} from './appServerSupervisor.js'

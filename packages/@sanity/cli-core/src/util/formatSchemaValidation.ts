@@ -1,9 +1,10 @@
 import {isatty} from 'node:tty'
 import {styleText} from 'node:util'
 
-import {logSymbols} from '@sanity/cli-core/ux'
 import {generateHelpUrl} from '@sanity/generate-help-url'
 import {type SchemaValidationProblemGroup, type SchemaValidationProblemPath} from '@sanity/types'
+
+import {logSymbols} from '../ux/logSymbols.js'
 
 const isTty = isatty(1)
 

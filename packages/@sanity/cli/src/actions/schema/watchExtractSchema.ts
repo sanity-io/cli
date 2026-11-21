@@ -1,11 +1,9 @@
-import {
-  type ExtractOptions,
-  SchemaExtractionWatchModeTrace,
-} from '@sanity/cli-build/_internal/extract'
+import {type ExtractOptions} from '@sanity/cli-build/_internal/extract'
 import {getCliTelemetry, type Output} from '@sanity/cli-core'
 import mean from 'lodash-es/mean.js'
 import once from 'lodash-es/once.js'
 
+import {loadCliBuild} from '../../util/loadCliBuild.js'
 import {DEFAULT_WATCH_PATTERNS, startExtractSchemaWatcher} from './extractSchemaWatcher.js'
 
 interface WatchExtractSchemaOptions {
@@ -16,6 +14,7 @@ interface WatchExtractSchemaOptions {
 export async function watchExtractSchema(
   options: WatchExtractSchemaOptions,
 ): Promise<{close: () => Promise<void>}> {
+  const {SchemaExtractionWatchModeTrace} = await loadCliBuild('extract')
   const {extractOptions, output} = options
 
   // Keep the start time + some simple stats for extractions as they happen

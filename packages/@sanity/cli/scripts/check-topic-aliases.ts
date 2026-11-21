@@ -41,7 +41,7 @@ const knownTopicsWithoutAliases: Set<string> = new Set([
   'typegen',
 ])
 
-// Topics provided by oclif plugins (not in our manifest, but resolved at runtime).
+// Topics provided by oclif plugins, including those listed in our manifest.
 // The checker skips manifest validation for these - the hook handles them.
 const pluginTopics: Set<string> = new Set(['blueprints', 'functions', 'workflows'])
 
@@ -139,7 +139,7 @@ function main(): void {
   // commands must have hiddenAliases for backwards compatibility.
   // (Topics not yet renamed are handled by the command_not_found hook at runtime.)
   for (const [canonical, aliases] of Object.entries(topicAliases)) {
-    if (aliases.length === 0) continue
+    if (aliases.length === 0 || pluginTopics.has(canonical)) continue
 
     // Only enforce hiddenAliases if the canonical topic has commands in the manifest
     // (meaning the directory has been renamed)

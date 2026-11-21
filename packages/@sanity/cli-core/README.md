@@ -19,14 +19,6 @@ Authenticated Sanity API client factories.
 | `GlobalCliClientOptions`       | Options type for `getGlobalCliClient`.         |
 | `ProjectCliClientOptions`      | Options type for `getProjectCliClient`.        |
 
-## `@sanity/cli-core/browser`
-
-Browser environment mock. Note this depends on `jsdom` (~46 MB) and so has non-trivial performance implications.
-
-| Export                     | Description                                    |
-| -------------------------- | ---------------------------------------------- |
-| `mockBrowserEnvironment()` | Set up a mocked browser environment via JSDOM. |
-
 ## `@sanity/cli-core/commandPolicy`
 
 The contract for exposing commands to programmatic invocation sources, such as the remote MCP server.
@@ -61,7 +53,6 @@ CLI, studio, and workspace configuration helpers.
 | `setCliUserConfig(key, value)`    | Write a value to the CLI user config.                             |
 | `findProjectRoot(cwd)`            | Resolve the nearest project root directory.                       |
 | `findProjectRootSync(cwd)`        | Synchronously resolve the nearest project root.                   |
-| `getStudioConfig(options)`        | Load the studio configuration.                                    |
 | `getStudioWorkspaces(options)`    | Resolve the list of studio workspaces.                            |
 | `isStudioConfig(config)`          | Type-guard for studio config objects.                             |
 | `findStudioConfigPath(cwd)`       | Find the studio config file path.                                 |
@@ -143,11 +134,9 @@ Zod schemas for CLI configuration and app manifests.
 
 Worker-based task runners.
 
-| Export                   | Description                        |
-| ------------------------ | ---------------------------------- |
-| `studioWorkerTask(task)` | Run a task in the studio worker.   |
-| `createStudioWorker()`   | Create a studio worker instance.   |
-| `tsxWorkerTask(task)`    | Run a TypeScript task in a worker. |
+| Export                | Description                        |
+| --------------------- | ---------------------------------- |
+| `tsxWorkerTask(task)` | Run a TypeScript task in a worker. |
 
 ## `@sanity/cli-core/telemetry`
 

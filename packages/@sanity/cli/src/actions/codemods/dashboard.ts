@@ -1,16 +1,16 @@
 import {
   findPathForFiles,
   getCliConfig,
-  getStudioConfig,
   isWorkbenchApp,
   tryFindStudioConfigPath,
 } from '@sanity/cli-core'
 import {input, select} from '@sanity/cli-core/ux'
-import {toAppSlug} from '@sanity/workbench-cli/init'
+import {toAppSlug} from '@sanity/cli-core/workbench'
 
 import {getOrganizationGrants, listOrganizations} from '../../services/organizations.js'
 import {getProjectById} from '../../services/projects.js'
 import {determineIsApp} from '../../util/determineIsApp.js'
+import {loadCliBuild} from '../../util/loadCliBuild.js'
 import {getManageUrl} from '../projects/getManageUrl.js'
 import {type CodeMod} from './types.js'
 import {upgradeRequiredPackages} from './upgradeRequiredPackages.js'
@@ -79,6 +79,7 @@ export const dashboard: CodeMod = {
 
     let suggestedTitle = config.app?.title
     if (!suggestedTitle && (await tryFindStudioConfigPath(workDir))) {
+      const {getStudioConfig} = await loadCliBuild('worker')
       const studioConfig = await getStudioConfig(workDir, {resolvePlugins: false})
       suggestedTitle = Array.isArray(studioConfig) ? undefined : studioConfig.title
     }

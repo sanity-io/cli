@@ -176,7 +176,7 @@ describe('setupTelemetry integration test', () => {
       new Set(['@sanity/runtime-cli', '@sanity/workflows-cli']),
     )
     for (const command of config.commands) {
-      const {id} = await command.load()
+      const id = command.pluginType === 'jit' ? command.id : (await command.load()).id
       const [groupOrCommand, ...commandArguments] = id.split(':')
       const expected = {commandArguments, groupOrCommand}
       expect(commandIdentity(id, ['private-input']), id).toEqual(expected)

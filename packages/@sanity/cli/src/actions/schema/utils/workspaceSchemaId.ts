@@ -1,8 +1,8 @@
 import {
   type DefaultWorkspaceSchemaId,
-  SANITY_WORKSPACE_SCHEMA_ID_PREFIX,
   type WorkspaceSchemaId,
 } from '@sanity/cli-build/_internal/manifest'
+import {SANITY_WORKSPACE_SCHEMA_ID_PREFIX} from '@sanity/cli-core/schemas'
 
 import {validForNamesChars, validForNamesPattern} from './schemaStoreValidation.js'
 

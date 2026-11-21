@@ -16,9 +16,10 @@ const mockTrace = vi.hoisted(() =>
   })),
 )
 
+vi.mock('@sanity/cli-build/_internal/worker', () => ({studioWorkerTask: mockStudioWorkerTask}))
+
 vi.mock('@sanity/cli-core', () => ({
   getCliTelemetry: () => ({trace: mockTrace}),
-  studioWorkerTask: mockStudioWorkerTask,
   subdebug: () => vi.fn(),
 }))
 

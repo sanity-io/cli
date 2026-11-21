@@ -1,7 +1,10 @@
 import {extname} from 'node:path'
 
 import {doImport} from '@sanity/cli-core'
-import {runnerImport} from 'vite'
+
+import {loadVite} from '../../util/loadVite.js'
+
+const {runnerImport} = await loadVite()
 
 const scriptPath = process.argv[2]
 const scriptArguments = process.argv.slice(3)
