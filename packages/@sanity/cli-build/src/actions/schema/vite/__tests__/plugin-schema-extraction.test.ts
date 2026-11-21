@@ -1,8 +1,11 @@
+import {mkdir, mkdtemp, rm, writeFile} from 'node:fs/promises'
+import {tmpdir} from 'node:os'
 import path from 'node:path'
 
 import {CLITelemetryStore} from '@sanity/cli-core/types'
 import {createMockHttpServer, createMockWatcher} from '@sanity/cli-test/test/util'
 import {type SchemaValidationProblemGroup} from 'sanity'
+import {createServer} from 'vite'
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest'
 
 import {SchemaExtractionError} from '../../utils/SchemaExtractionError.js'
@@ -236,4 +239,60 @@ describe('sanitySchemaExtractionPlugin', () => {
 
     watcher.emit('close')
   })
+})
+
+describe('sanitySchemaExtractionPlugin with a real Vite watcher', () => {
+  let tempDir: string
+
+  beforeEach(async () => {
+    mockRunSchemaExtraction.mockReset()
+    mockRunSchemaExtraction.mockResolvedValue([])
+    tempDir = await mkdtemp(path.join(tmpdir(), 'sanity-schema-watch-'))
+  })
+
+  afterEach(async () => {
+    await rm(tempDir, {force: true, recursive: true})
+  })
+
+  it('re-extracts when a shared schema outside the Studio directory changes', async () => {
+    const studioDir = path.join(tempDir, 'studio')
+    const sharedDir = path.join(tempDir, 'shared')
+    await mkdir(studioDir, {recursive: true})
+    await mkdir(sharedDir, {recursive: true})
+    const sharedFile = path.join(sharedDir, 'post.ts')
+    await writeFile(sharedFile, 'export const a = 1\n')
+
+    const server = await createServer({
+      configFile: false,
+      logLevel: 'silent',
+      plugins: [
+        sanitySchemaExtractionPlugin({
+          additionalPatterns: ['../shared/**/*.ts'],
+          configPath: path.join(studioDir, 'sanity.config.ts'),
+          debounceMs: 50,
+          output,
+          workDir: studioDir,
+        }),
+      ],
+      root: studioDir,
+      server: {port: 0},
+    })
+
+    try {
+      await server.listen()
+      await vi.waitFor(() => expect(mockRunSchemaExtraction).toHaveBeenCalledTimes(1), {
+        timeout: 5000,
+      })
+
+      // Give the watcher time to finish its initial scan before editing
+      await new Promise((resolve) => setTimeout(resolve, 500))
+      await writeFile(sharedFile, 'export const a = 2\n')
+
+      await vi.waitFor(() => expect(mockRunSchemaExtraction).toHaveBeenCalledTimes(2), {
+        timeout: 5000,
+      })
+    } finally {
+      await server.close()
+    }
+  }, 15_000)
 })
