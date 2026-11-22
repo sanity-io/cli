@@ -11,6 +11,10 @@ import {ConfigureMcpCommand} from '../configure.js'
 
 const mockIsInteractive = vi.hoisted(() => vi.fn().mockReturnValue(true))
 
+vi.mock('../../../actions/mcp/protectLegacyMCPConfig.js', () => ({
+  protectLegacyMCPConfig: vi.fn().mockResolvedValue(false),
+}))
+
 vi.mock('@sanity/cli-core/ux', async () => {
   const actual = await vi.importActual<typeof import('@sanity/cli-core/ux')>('@sanity/cli-core/ux')
   return {
