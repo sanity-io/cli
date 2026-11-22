@@ -268,13 +268,30 @@ export async function getIssue(
 /** The configuration of an MCP endpoint, as create and update return it */
 export type McpEndpoint = Context.Response<'POST /organizations/{organizationId}/mcp'>
 
+/**
+ * An organization's document store only exists once something in Context has created it, so
+ * querying an organization that never has answers 404 for its `org:<id>` dataset.
+ */
+function isMissingDocumentStore(error: unknown): boolean {
+  return (
+    isHttpError(error) &&
+    error.statusCode === 404 &&
+    /^Dataset for id "org:.+" not found/.test(error.message)
+  )
+}
+
 /** List an organization's MCP endpoints, oldest first */
 export async function listMcpEndpoints(organizationId: string): Promise<McpEndpoint[]> {
   const client = await getContextClient(organizationId)
-  const docs = await client.context.fetch<Context.McpDoc[]>(
-    `*[_type == "sanity.context.mcp" && organizationId == $org] | order(_createdAt asc, _id asc) [0...${MCP_LIST_LIMIT}]`,
-    {org: organizationId},
-  )
+  const docs = await client.context
+    .fetch<Context.McpDoc[]>(
+      `*[_type == "sanity.context.mcp" && organizationId == $org] | order(_createdAt asc, _id asc) [0...${MCP_LIST_LIMIT}]`,
+      {org: organizationId},
+    )
+    .catch((error: unknown) => {
+      if (isMissingDocumentStore(error)) return []
+      throw error
+    })
   const connectClient = client.withConfig({apiVersion: MCP_CONNECT_API_VERSION})
   return docs.map((doc) => toMcpEndpoint(connectClient, doc))
 }
