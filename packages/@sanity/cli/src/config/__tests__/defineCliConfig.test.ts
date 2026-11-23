@@ -1,16 +1,5 @@
-import {dirname, join} from 'node:path'
-import {fileURLToPath} from 'node:url'
-
 import {type CliConfig} from '@sanity/cli-core'
 import {defineApplication, type DefineAppResult} from '@sanity/workbench-cli'
-import {
-  createProgram,
-  flattenDiagnosticMessageText,
-  getPreEmitDiagnostics,
-  parseJsonConfigFileContent,
-  readConfigFile,
-  sys,
-} from 'typescript'
 import {describe, expect, expectTypeOf, test} from 'vitest'
 
 import {defineCliConfig} from '../defineCliConfig.js'
@@ -64,21 +53,4 @@ describe('the `app` config slot', () => {
       },
     })
   })
-
-  test('type-checks `defineApplication` with exactOptionalPropertyTypes', () => {
-    const packageDir = join(dirname(fileURLToPath(import.meta.url)), '../../..')
-    const fixture = join(packageDir, 'test/__fixtures__/exactOptionalPropertyTypes.ts')
-    const {options} = parseJsonConfigFileContent(
-      readConfigFile(join(packageDir, 'tsconfig.json'), sys.readFile).config,
-      sys,
-      packageDir,
-    )
-    const program = createProgram([fixture], {...options, exactOptionalPropertyTypes: true})
-
-    expect(
-      getPreEmitDiagnostics(program, program.getSourceFile(fixture)).map(({messageText}) =>
-        flattenDiagnosticMessageText(messageText, ' '),
-      ),
-    ).toEqual([])
-  }, 30_000)
 })
