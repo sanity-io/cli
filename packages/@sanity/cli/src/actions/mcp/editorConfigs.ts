@@ -3,6 +3,7 @@ import os from 'node:os'
 import path from 'node:path'
 
 import {execa} from 'execa'
+import {gte as semverGte, valid as semverValid} from 'semver'
 
 import {MCP_SERVER_URL} from '../../services/mcp.js'
 
@@ -14,8 +15,8 @@ import {MCP_SERVER_URL} from '../../services/mcp.js'
  */
 export interface DetectionEnv {
   env: Record<string, string | undefined>
-  /** Run a CLI command to check if a tool is installed. Rejects on failure. */
-  execCommand: (cmd: string, args: string[]) => Promise<void>
+  /** Run a CLI command and return its stdout. Rejects on failure. */
+  execCommand: (cmd: string, args: string[]) => Promise<string>
   existsSync: (p: string) => boolean
   homedir: string
   platform: NodeJS.Platform
@@ -25,7 +26,8 @@ export interface DetectionEnv {
 export function createDetectionEnv(): DetectionEnv {
   return {
     env: process.env,
-    execCommand: (cmd, args) => execa(cmd, args, {stdio: 'pipe', timeout: 5000}).then(() => {}),
+    execCommand: (cmd, args) =>
+      execa(cmd, args, {stdio: 'pipe', timeout: 5000}).then((res) => res.stdout),
     existsSync,
     homedir: os.homedir(),
     platform: process.platform,
@@ -149,6 +151,19 @@ async function detectOpenCode(ctx: DetectionEnv): Promise<string | null> {
   try {
     await ctx.execCommand('opencode', ['--version'])
     return path.join(ctx.homedir, '.config/opencode/opencode.json')
+  } catch {
+    return null
+  }
+}
+
+async function detectPi(ctx: DetectionEnv): Promise<string | null> {
+  try {
+    const stdout = await ctx.execCommand('pi', ['--version'])
+    const version = semverValid(stdout.trim())
+    // Built-in MCP support was introduced in Pi v1
+    if (!version || !semverGte(version, '1.0.0')) return null
+    const piDir = ctx.env.PI_CODING_AGENT_DIR || path.join(ctx.homedir, '.pi/agent')
+    return path.join(piDir, 'mcp.json')
   } catch {
     return null
   }
@@ -351,6 +366,13 @@ export const EDITOR_CONFIGS = {
     detect: detectOpenCode,
     skillsCliAgent: 'opencode',
   },
+  // Doc: https://github.com/earendil-works/pi/blob/main/packages/coding-agent/docs/mcp.md
+  // Path: $PI_CODING_AGENT_DIR || ~/.pi/agent/mcp.json  Key: mcpServers
+  Pi: {
+    ...EDITOR_DEFAULTS,
+    detect: detectPi,
+    skillsCliAgent: 'pi',
+  },
   // Doc: https://code.visualstudio.com/docs/copilot/chat/mcp-servers
   // Path: <VS Code User dir>/mcp.json  Key: servers
   // VS Code uses GitHub Copilot for AI features; skills are installed via the
@@ -405,6 +427,7 @@ const SKILLS_CLI_AGENT_DISPLAY_NAMES: Record<string, string> = {
   'gemini-cli': 'Gemini CLI',
   'github-copilot': 'GitHub Copilot',
   opencode: 'OpenCode',
+  pi: 'Pi',
 }
 
 export function isUniversalSkillsCliAgentByEditorName(editorName: EditorName): boolean {

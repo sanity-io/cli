@@ -72,16 +72,20 @@ interface EditorTestCase {
   platform?: NodeJS.Platform
 }
 
-const EXECA_SUCCESS = {
-  command: 'test --version',
-  exitCode: 0,
-  failed: false,
-  killed: false,
-  signal: undefined,
-  stderr: '',
-  stdout: '1.0.0',
-  timedOut: false,
-} as never
+function execaSuccess(stdout = '1.0.0'): never {
+  return {
+    command: 'test --version',
+    exitCode: 0,
+    failed: false,
+    killed: false,
+    signal: undefined,
+    stderr: '',
+    stdout,
+    timedOut: false,
+  } as never
+}
+
+const EXECA_SUCCESS = execaSuccess()
 
 /** Shared helper: sets up mocks, runs command, asserts outputs for a single editor. */
 async function runEditorTest(tc: EditorTestCase): Promise<void> {
@@ -286,6 +290,24 @@ const editorTestCases: EditorTestCase[] = [
     platform: 'darwin',
   },
   {
+    detect: {cliCommands: ['pi']},
+    expectedConfigPath: '.pi/agent/mcp.json',
+    name: 'Pi',
+  },
+  {
+    detect: {
+      cliCommands: ['pi'],
+      env: {
+        PI_CODING_AGENT_DIR:
+          process.platform === 'win32'
+            ? String.raw`C:\tmp\custom-pi-agent`
+            : '/tmp/custom-pi-agent',
+      },
+    },
+    expectedConfigPath: convertToSystemPath('/tmp/custom-pi-agent/mcp.json'),
+    name: 'Pi',
+  },
+  {
     detect: {cliCommands: ['codex']},
     expectedConfigPath: '.codex/config.toml',
     expectedContentChecks: ['[mcp_servers.Sanity]'],
@@ -412,6 +434,25 @@ describe('#mcp:configure', {concurrent: false}, () => {
           name: 'MCPorter',
         }))
     }
+  })
+
+  // -------------------------------------------------------------------------
+  // Pi: versions below v1 are skipped
+  // -------------------------------------------------------------------------
+
+  test('does not detect Pi when installed version is below v1', async () => {
+    mockExeca.mockImplementation((async (command: string | URL) => {
+      if (command === 'pi') return execaSuccess('0.67.2')
+      throw new Error('Not installed')
+    }) as never)
+
+    const {error, stderr} = await testCommand(ConfigureMcpCommand, [])
+
+    if (error) throw error
+
+    expect(mockCheckbox).not.toHaveBeenCalled()
+    expect(mockWriteFile).not.toHaveBeenCalled()
+    expect(stderr).toContain("Couldn't auto-configure Sanity MCP server for your editor")
   })
 
   // -------------------------------------------------------------------------

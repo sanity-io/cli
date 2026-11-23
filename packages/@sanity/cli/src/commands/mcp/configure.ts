@@ -6,7 +6,7 @@ import {MCPConfigureTrace} from '../../telemetry/mcp.telemetry.js'
 
 export class ConfigureMcpCommand extends SanityCommand<typeof ConfigureMcpCommand> {
   static override description =
-    'Configure Sanity MCP server for AI editors (Antigravity, Claude Code, Cline, Codex CLI, Cursor, Gemini CLI, GitHub Copilot CLI, MCPorter, OpenCode, VS Code, VS Code Insiders, Zed)'
+    'Configure Sanity MCP server for AI editors (Antigravity, Claude Code, Cline, Codex CLI, Cursor, Gemini CLI, GitHub Copilot CLI, MCPorter, OpenCode, Pi, VS Code, VS Code Insiders, Zed)'
   static override examples = [
     {
       command: '<%= config.bin %> <%= command.id %>',

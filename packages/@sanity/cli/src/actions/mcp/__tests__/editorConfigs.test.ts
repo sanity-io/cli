@@ -57,6 +57,7 @@ describe('buildServerConfig', () => {
     'GitHub Copilot CLI': {tools: ['*'], type: 'http', url: 'https://mcp.sanity.io'},
     MCPorter: {auth: 'oauth', type: 'http', url: 'https://mcp.sanity.io'},
     OpenCode: {type: 'remote', url: 'https://mcp.sanity.io'},
+    Pi: {type: 'http', url: 'https://mcp.sanity.io'},
     'VS Code': {type: 'http', url: 'https://mcp.sanity.io'},
     'VS Code Insiders': {type: 'http', url: 'https://mcp.sanity.io'},
     Zed: {enabled: true, url: 'https://mcp.sanity.io'},
@@ -358,7 +359,7 @@ describe('detect', () => {
 
   describe('Claude Code', () => {
     test('returns config path when CLI is available', async () => {
-      const ctx = createMockEnv({execCommand: () => Promise.resolve()})
+      const ctx = createMockEnv({execCommand: () => Promise.resolve('1.0.0')})
       const result = await EDITOR_CONFIGS['Claude Code'].detect(ctx)
       expectPath(result, '.claude.json')
     })
@@ -371,7 +372,7 @@ describe('detect', () => {
 
   describe('Codex CLI', () => {
     test('returns config path when CLI is available', async () => {
-      const ctx = createMockEnv({execCommand: () => Promise.resolve()})
+      const ctx = createMockEnv({execCommand: () => Promise.resolve('1.0.0')})
       const result = await EDITOR_CONFIGS['Codex CLI'].detect(ctx)
       expectPath(result, '.codex/config.toml')
     })
@@ -379,7 +380,7 @@ describe('detect', () => {
     test('uses CODEX_HOME env var when set', async () => {
       const ctx = createMockEnv({
         env: {CODEX_HOME: '/custom/codex'},
-        execCommand: () => Promise.resolve(),
+        execCommand: () => Promise.resolve('1.0.0'),
       })
       const result = await EDITOR_CONFIGS['Codex CLI'].detect(ctx)
       expectPath(result, 'custom/codex/config.toml')
@@ -393,7 +394,7 @@ describe('detect', () => {
 
   describe('OpenCode', () => {
     test('returns config path when CLI is available', async () => {
-      const ctx = createMockEnv({execCommand: () => Promise.resolve()})
+      const ctx = createMockEnv({execCommand: () => Promise.resolve('1.0.0')})
       const result = await EDITOR_CONFIGS.OpenCode.detect(ctx)
       expectPath(result, '.config/opencode/opencode.json')
     })
@@ -401,6 +402,44 @@ describe('detect', () => {
     test('returns null when CLI is not installed', async () => {
       const ctx = createMockEnv()
       expect(await EDITOR_CONFIGS.OpenCode.detect(ctx)).toBeNull()
+    })
+  })
+
+  describe('Pi', () => {
+    test('returns config path when CLI is v1 or newer', async () => {
+      const ctx = createMockEnv({execCommand: () => Promise.resolve('1.6.0\n')})
+      const result = await EDITOR_CONFIGS.Pi.detect(ctx)
+      expectPath(result, '.pi/agent/mcp.json')
+    })
+
+    test('uses PI_CODING_AGENT_DIR env var when set', async () => {
+      const ctx = createMockEnv({
+        env: {PI_CODING_AGENT_DIR: '/custom/pi-agent'},
+        execCommand: () => Promise.resolve('1.0.0'),
+      })
+      const result = await EDITOR_CONFIGS.Pi.detect(ctx)
+      expectPath(result, 'custom/pi-agent/mcp.json')
+    })
+
+    test.each(['0.67.2', '0.99.0', '1.0.0-rc.1'])(
+      'returns null when CLI version (%s) is below v1',
+      async (version) => {
+        const ctx = createMockEnv({execCommand: () => Promise.resolve(version)})
+        expect(await EDITOR_CONFIGS.Pi.detect(ctx)).toBeNull()
+      },
+    )
+
+    test.each(['', '3.141592653589793', 'not-a-version'])(
+      'returns null when CLI outputs non-semver text (%j)',
+      async (output) => {
+        const ctx = createMockEnv({execCommand: () => Promise.resolve(output)})
+        expect(await EDITOR_CONFIGS.Pi.detect(ctx)).toBeNull()
+      },
+    )
+
+    test('returns null when CLI is not installed', async () => {
+      const ctx = createMockEnv()
+      expect(await EDITOR_CONFIGS.Pi.detect(ctx)).toBeNull()
     })
   })
 
