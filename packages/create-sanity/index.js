@@ -1,30 +1,64 @@
 #!/usr/bin/env node
-import {spawn} from 'node:child_process'
-import {readFile} from 'node:fs/promises'
-import {dirname, resolve} from 'node:path'
-import {fileURLToPath} from 'node:url'
+import {resolve} from 'node:path'
+import {parseArgs} from 'node:util'
 
 const args = process.argv.slice(2)
 
-let cliBin
 try {
-  const cliPkgDir = fileURLToPath(import.meta.resolve('@sanity/cli/package.json'))
-  const cliDir = dirname(cliPkgDir)
-
-  // Read the package.json file and extract the bin path
-  const pJson = await readFile(cliPkgDir, 'utf8')
-  const pkgJson = JSON.parse(pJson)
-  const binPath = pkgJson.bin?.['sanity']
-  if (!binPath) {
-    throw new Error('Failed to resolve `@sanity/cli` package')
+  const options = getBlueprintOptions(args, process.env.SANITY_AUTH_TOKEN)
+  if (options) {
+    // eslint-disable-next-line eslint-js/no-restricted-syntax -- load Blueprint setup after routing
+    const {bootstrapBlueprint} = await import('./bootstrapBlueprint.js')
+    await bootstrapBlueprint(options, (message) => process.stdout.write(`${message}\n`))
+  } else {
+    // eslint-disable-next-line eslint-js/no-restricted-syntax -- load the full CLI installer on demand
+    const {runInit} = await import('./runInit.js')
+    process.exitCode = await runInit(args)
   }
-
-  cliBin = resolve(cliDir, binPath)
 } catch (err) {
-  throw new Error('Failed to resolve `@sanity/cli` package', {cause: err})
+  process.stderr.write(`${err instanceof Error ? err.message : String(err)}\n`)
+  process.exitCode = 1
 }
 
-const proc = spawn('node', [cliBin, 'init', ...args, '--from-create'], {stdio: 'inherit'})
-proc.on('exit', (code) => {
-  process.exitCode = code
-})
+function getBlueprintOptions(argv, authToken) {
+  const token = authToken?.trim()
+  if (!token || !argv.includes('--with-blueprints')) return
+
+  let values
+  try {
+    values = parseArgs({
+      args: argv,
+      options: {
+        dataset: {type: 'string'},
+        organization: {type: 'string'},
+        'output-path': {type: 'string'},
+        project: {short: 'p', type: 'string'},
+        'project-name': {type: 'string'},
+        visibility: {type: 'string'},
+        'with-blueprints': {type: 'boolean'},
+        yes: {short: 'y', type: 'boolean'},
+      },
+    }).values
+  } catch {
+    return
+  }
+
+  const {dataset, organization, project, visibility} = values
+  const projectName = values['project-name']?.trim()
+  if (!values.yes || !values['with-blueprints'] || !dataset) return
+  if (visibility !== undefined && visibility !== 'public') return
+  const existingProject =
+    project && values['project-name'] === undefined && organization === undefined
+  const newProject = project === undefined && projectName && organization
+  if (!existingProject && !newProject) return
+
+  return {
+    dataset,
+    organization,
+    outputPath: resolve(values['output-path'] ?? '.'),
+    project,
+    projectName,
+    token,
+    visibility,
+  }
+}

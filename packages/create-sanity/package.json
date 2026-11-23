@@ -23,17 +23,27 @@
   },
   "bin": "./index.js",
   "files": [
-    "index.js"
+    "index.js",
+    "bootstrapBlueprint.js",
+    "runInit.js",
+    "dist/studio-cli-version.json",
+    "npm-shrinkwrap.json"
   ],
   "type": "module",
   "scripts": {
+    "build": "node scripts/record-studio-cli-version.mjs",
+    "prepack": "node scripts/record-studio-cli-version.mjs",
+    "prepublishOnly": "node scripts/prepare-release.mjs",
     "publint": "publint",
     "test": "vitest"
   },
   "dependencies": {
-    "@sanity/cli": "workspace:*"
+    "@sanity/blueprints": "^0.34.1",
+    "@sanity/cli-setup": "workspace:*",
+    "@sanity/client": "catalog:"
   },
   "devDependencies": {
+    "@sanity/cli": "workspace:*",
     "@types/node": "catalog:",
     "publint": "catalog:",
     "vitest": "catalog:"
