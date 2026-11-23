@@ -104,8 +104,8 @@ export async function detectAvailableEditors(env?: DetectionEnv): Promise<Editor
   const ctx = env ?? createDetectionEnv()
 
   // Detect all editors in parallel to avoid stacking timeouts —
-  // CLI-based editors (Claude Code, Codex CLI, OpenCode) each have a
-  // 5s execa timeout, so sequential detection can add ~15s on machines
+  // CLI-based editors (Claude Code, Codex CLI, OpenCode, Pi) each have a
+  // 5s execa timeout, so sequential detection can add ~20s on machines
   // where none are installed.
   const results = await Promise.all(
     Object.entries(EDITOR_CONFIGS).map(async ([name, config]) => {

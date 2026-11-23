@@ -50,6 +50,7 @@ const editor = oneOf(
   'GitHub Copilot CLI',
   'MCPorter',
   'OpenCode',
+  'Pi',
   'VS Code',
   'VS Code Insiders',
   'Zed',
@@ -63,6 +64,7 @@ const agent = oneOf(
   'gemini-cli',
   'github-copilot',
   'opencode',
+  'pi',
 )
 const yesNo = oneOf('yes', 'no')
 const errorName = oneOf(
