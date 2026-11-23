@@ -1,14 +1,20 @@
+import {mkdtemp, rm, writeFile} from 'node:fs/promises'
+import {tmpdir} from 'node:os'
+import path from 'node:path'
+
 import {exitCodes} from '@sanity/cli-core/ExitCodes'
 import {mocks} from '@sanity/cli-test/mocks/cli-core/SanityCommand'
 import * as uxMocks from '@sanity/cli-test/mocks/cli-core/ux'
-import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
+import {afterAll, afterEach, beforeAll, beforeEach, describe, expect, test, vi} from 'vitest'
 
+import {parseArguments} from '../../../util/parseArguments.js'
 import {CreateProjectCommand} from '../create.js'
 
 const mockCreateDataset = vi.hoisted(() => vi.fn())
 const mockValidateDatasetName = vi.hoisted(() => vi.fn())
 const mockGetOrganization = vi.hoisted(() => vi.fn())
 const mockCreateProject = vi.hoisted(() => vi.fn())
+const mockSetProjectLogo = vi.hoisted(() => vi.fn())
 const mockGetProjectFeatures = vi.hoisted(() => vi.fn())
 const mockListDatasets = vi.hoisted(() => vi.fn())
 const mockGetManageUrl = vi.hoisted(() => vi.fn())
@@ -51,6 +57,7 @@ vi.mock('../../../services/getProjectFeatures.js', () => ({
 }))
 vi.mock('../../../services/projects.js', () => ({
   createProject: mockCreateProject,
+  setProjectLogo: mockSetProjectLogo,
 }))
 vi.mock('../../../services/user.js', () => ({
   getCliUser: vi.fn(),
@@ -64,6 +71,21 @@ const mockProject = {
 }
 const mockDataset = {aclMode: 'private', datasetName: 'dataset'}
 const mockManageUrl = 'sanity.lol'
+const logoUrl = 'https://cdn.sanity.io/projects/proj-123/images/abc-64x64.png'
+
+let dir: string
+let logoPath: string
+
+beforeAll(async () => {
+  dir = await mkdtemp(path.join(tmpdir(), 'project-create-'))
+  logoPath = path.join(dir, 'logo.png')
+  await writeFile(logoPath, 'png bytes')
+  await writeFile(path.join(dir, 'large.png'), Buffer.alloc(5 * 1024 * 1024 + 1))
+})
+
+afterAll(async () => {
+  await rm(dir, {force: true, recursive: true})
+})
 
 describe('#projects:create', () => {
   beforeEach(() => {
@@ -285,5 +307,83 @@ describe('#projects:create', () => {
     expect(mocks.SanityCmdOutput.logJson).toHaveBeenCalledExactlyOnceWith(mockProject)
     expect(mocks.SanityCmdOutput.log).not.toHaveBeenCalled()
     expect(mockCreateDataset).toHaveBeenCalledWith(expect.objectContaining({silent: true}))
+  })
+
+  describe('with a logo', () => {
+    test('redacts the logo path from command telemetry', () => {
+      const result = parseArguments(
+        ['node', 'sanity', 'projects', 'create', '--logo=/Users/test/acme/logo.png'],
+        CreateProjectCommand,
+      )
+
+      expect(result.extraArguments).toEqual(['--logo'])
+    })
+
+    test('creates the project, then sets its logo', async () => {
+      mockSetProjectLogo.mockResolvedValue({logoUrl})
+
+      await CreateProjectCommand.run(['My Project', '--organization=org-1', '--logo', logoPath])
+
+      expect(mocks.SanityCmdOutput.error).not.toHaveBeenCalled()
+      expect(mockSetProjectLogo).toHaveBeenCalledExactlyOnceWith('proj-123', {
+        contentType: 'image/png',
+        image: Buffer.from('png bytes'),
+      })
+      expect(mockCreateProject.mock.invocationCallOrder[0]).toBeLessThan(
+        mockSetProjectLogo.mock.invocationCallOrder[0],
+      )
+      expect(mocks.SanityCmdOutput.log).toHaveBeenCalledWith(`Logo: ${logoUrl}`)
+    })
+
+    test('includes the logo URL in JSON output', async () => {
+      mockSetProjectLogo.mockResolvedValue({logoUrl})
+
+      await CreateProjectCommand.run([
+        'My Project',
+        '--organization=org-1',
+        '--logo',
+        logoPath,
+        '--json',
+      ])
+
+      expect(mocks.SanityCmdOutput.logJson).toHaveBeenCalledExactlyOnceWith({
+        ...mockProject,
+        logoUrl,
+      })
+    })
+
+    test('keeps the project and warns why when the API rejects the logo', async () => {
+      mockSetProjectLogo.mockRejectedValue(new Error('The image could not be processed'))
+
+      await CreateProjectCommand.run(['My Project', '--organization=org-1', '--logo', logoPath])
+
+      expect(mocks.SanityCmdOutput.error).not.toHaveBeenCalled()
+      expect(mocks.SanityCmdOutput.logDiagnostic).toHaveBeenCalledWith(
+        `Warning: Project created but its logo wasn't set: The image could not be processed\nTo set it, go to ${mockManageUrl}`,
+      )
+      expect(mocks.SanityCmdOutput.log).toHaveBeenCalledWith(
+        expect.stringContaining('Project created successfully'),
+      )
+      expect(mocks.SanityCmdOutput.log).not.toHaveBeenCalledWith(expect.stringContaining('Logo:'))
+    })
+
+    test.each([
+      ['a file that does not exist', () => path.join(dir, 'missing.png'), "Couldn't find"],
+      ['an unsupported file type', () => './logo.psd', "isn't a supported image type"],
+      ['an empty logo path', () => '', '--logo needs the path to an image file'],
+      [
+        'a file over 5 MB',
+        () => path.join(dir, 'large.png'),
+        'is larger than 5 MB, the upload limit',
+      ],
+    ])('creates nothing when given %s', async (_label, getPath, message) => {
+      await CreateProjectCommand.run(['My Project', '--organization=org-1', '--logo', getPath()])
+
+      expect(mocks.SanityCmdOutput.error).toHaveBeenCalledWith(expect.stringContaining(message), {
+        exit: exitCodes.RUNTIME_ERROR,
+      })
+      expect(mockCreateProject).not.toHaveBeenCalled()
+      expect(mockSetProjectLogo).not.toHaveBeenCalled()
+    })
   })
 })
