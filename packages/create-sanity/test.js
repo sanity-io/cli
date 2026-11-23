@@ -1,6 +1,7 @@
 import {spawn} from 'node:child_process'
 import {join} from 'node:path'
 
+// eslint-disable-next-line import-js/no-extraneous-dependencies -- Vitest is a test-only dependency
 import {expect, test} from 'vitest'
 
 const createSanityScript = join(import.meta.dirname, 'index.js')
@@ -42,31 +43,17 @@ test('create-sanity --help returns exit code 0 and help text', async () => {
 
   expect(result.code, 'Exit code should be 0 for --help').toBe(0)
   expect(result.output, 'Output should contain help-related text').toMatch(/help|usage|options/i)
-  expect(
-    result.output,
-    "Output should mention init command since that's what create-sanity runs",
-  ).toMatch(/init/i)
+  expect(result.output, 'Output should explain how to initialize a Blueprint').toMatch(
+    /Blueprint options/,
+  )
 })
 
-test('create-sanity passes through arguments to sanity init', async () => {
-  // Test with --help to verify arguments are passed through
-  const result = await runCreateSanity(['--help'])
+test('unattended Blueprint setup validates flags before loading Studio', async () => {
+  const result = await runCreateSanity(['--yes', '--project-name', 'Example'])
 
-  // Since create-sanity runs `sanity init --from-create --help`,
-  // the help should be for the init command
-  expect(result.code, 'Should successfully pass through --help to init command').toBe(0)
-  expect(result.output, 'Should show init command help').toMatch(/init/i)
-})
-
-test('create-sanity adds --from-create flag', async () => {
-  // We can't easily test this directly without mocking, but we can verify
-  // that the script runs without error when called properly
-  const result = await runCreateSanity(['--help'])
-
-  expect(result.code, 'Script should run successfully').toBe(0)
-  // The --from-create flag should be added internally but we can't directly observe it
-  // without more complex mocking. The fact that it runs successfully indicates
-  // the flag is being added correctly.
+  expect(result.code).toBe(1)
+  expect(result.stderr).toContain('Pass --organization <id> to create a project.')
+  expect(result.stdout).toBe('')
 })
 
 test('create-sanity handles multiple arguments', async () => {
@@ -98,7 +85,7 @@ test.skip('create-sanity script is executable', async () => {
   expect(typeof result.code, 'Should return a numeric exit code').toBe('number')
 })
 
-test.skip('should reference `npm create sanity@latest` in help text, not `sanity init`', async () => {
+test('should reference `npm create sanity@latest` in help text', async () => {
   const result = await runCreateSanity(['--help'])
 
   expect(result.output, 'Should reference `npm create sanity` in help text').toMatch(

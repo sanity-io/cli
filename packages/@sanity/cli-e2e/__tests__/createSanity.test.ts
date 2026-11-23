@@ -12,6 +12,6 @@ describe.skipIf(!createSanityBinary)('create-sanity', () => {
     })
 
     if (error) throw error
-    expect(stdout).toContain('Initialize a new Sanity Studio')
+    expect(stdout).toMatch(/Initialize a (?:new )?Sanity (?:Studio|project)/)
   })
 })

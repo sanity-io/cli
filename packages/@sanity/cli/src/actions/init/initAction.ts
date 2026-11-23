@@ -6,7 +6,8 @@ import {
   subdebug,
   type TelemetryUserProperties,
 } from '@sanity/cli-core'
-import {logSymbols, spinner} from '@sanity/cli-core/ux'
+import {logSymbols, select, spinner} from '@sanity/cli-core/ux'
+import {checkBlueprintDestination, initBlueprint} from '@sanity/cli-setup'
 import {type TelemetryTrace} from '@sanity/telemetry'
 import {type Framework, frameworks} from '@vercel/frameworks'
 import deburr from 'lodash-es/deburr.js'
@@ -28,11 +29,8 @@ import {checkNextJsReactCompatibility} from './checkNextJsReactCompatibility.js'
 import {determineAppTemplate} from './determineAppTemplate.js'
 import {determineMediaLibraryTemplate} from './determineMediaLibraryTemplate.js'
 import {createOrAppendEnvVars} from './env/createOrAppendEnvVars.js'
-import {initApp} from './initApp.js'
 import {InitError} from './initError.js'
 import {flagOrDefault, shouldPrompt, writeStagingEnvIfNeeded} from './initHelpers.js'
-import {initNextJs} from './initNextJs.js'
-import {initStudio} from './initStudio.js'
 import {getPlan} from './plan/getPlan.js'
 import {createProjectFromName} from './project/createProjectFromName.js'
 import {getProjectDetails} from './project/getProjectDetails.js'
@@ -42,7 +40,7 @@ import {type InitContext, type InitOptions} from './types.js'
 
 const debug = subdebug('init')
 
-export async function initAction(options: InitOptions, context: InitContext): Promise<void> {
+export async function initAction(options: InitOptions, context: InitContext) {
   const {output, workDir} = context
 
   if (options.argType) {
@@ -89,6 +87,36 @@ export async function initAction(options: InitOptions, context: InitContext): Pr
   })
   const isNextJs = detectedFramework?.slug === 'nextjs'
 
+  let isBlueprint = options.template === 'blueprint' && !options.env
+  if (
+    options.fromCreate &&
+    !options.template &&
+    !options.bare &&
+    !options.env &&
+    !options.dashboard &&
+    !options.packageManager &&
+    options.importDataset === undefined &&
+    options.typescript === undefined &&
+    options.nextjsAddConfigFiles === undefined &&
+    options.nextjsAppendEnv === undefined &&
+    options.nextjsEmbedStudio === undefined &&
+    !detectedFramework
+  ) {
+    isBlueprint =
+      options.unattended ||
+      (await select({
+        choices: [
+          {name: 'Blueprint', value: 'blueprint'},
+          {name: 'Sanity Studio', value: 'studio'},
+        ],
+        message: 'What do you want to set up?',
+      })) === 'blueprint'
+  }
+
+  if (isBlueprint && (options.outputPath || options.unattended)) {
+    checkBlueprintDestination(options.outputPath || workDir)
+  }
+
   let remoteTemplateInfo: RepoInfo | undefined
   if (options.template && checkIsRemoteTemplate(options.template)) {
     remoteTemplateInfo = await getGitHubRepoInfo(options.template, options.templateToken)
@@ -119,7 +147,11 @@ export async function initAction(options: InitOptions, context: InitContext): Pr
   }
 
   if (options.unattended) {
-    checkFlagsInUnattendedMode(options, {isAppTemplate, isMediaLibraryTemplate, isNextJs})
+    checkFlagsInUnattendedMode(options, {
+      isAppTemplate,
+      isMediaLibraryTemplate,
+      useCurrentPath: isNextJs || isBlueprint,
+    })
   }
 
   trace.start()
@@ -136,6 +168,10 @@ export async function initAction(options: InitOptions, context: InitContext): Pr
     },
     step: 'start',
   })
+
+  if (isBlueprint) {
+    output.log('Setting up a Blueprint')
+  }
 
   const planId = await getPlan(options, output, trace)
 
@@ -200,6 +236,20 @@ export async function initAction(options: InitOptions, context: InitContext): Pr
     )
     trace.complete()
     return
+  }
+
+  if (isBlueprint) {
+    const outputPath = await getProjectOutputPath({
+      initFramework: false,
+      outputPath: options.outputPath,
+      sluggedName: projectId,
+      unattended: options.unattended,
+      useEnv: false,
+      workDir,
+    })
+    const result = await initBlueprint({datasetName, output, outputPath, projectId})
+    trace.complete()
+    return result
   }
 
   // Detect editors once, then share the result with MCP and skills setup so
@@ -308,6 +358,8 @@ export async function initAction(options: InitOptions, context: InitContext): Pr
     if (options.dashboard) {
       output.warn('--dashboard is ignored for Next.js projects')
     }
+    // eslint-disable-next-line eslint-js/no-restricted-syntax -- static relative import, not a user file path
+    const {initNextJs} = await import('./initNextJs.js')
     await initNextJs({
       datasetName,
       detectedFramework,
@@ -359,15 +411,15 @@ export async function initAction(options: InitOptions, context: InitContext): Pr
     workDir,
   }
 
-  await (isAppTemplate
-    ? initApp({...sharedParams, datasetName, projectId})
-    : initStudio({
-        ...sharedParams,
-        datasetName,
-        displayName,
-        isFirstProject,
-        projectId,
-      }))
+  if (isAppTemplate) {
+    // eslint-disable-next-line eslint-js/no-restricted-syntax -- static relative import, not a user file path
+    const {initApp} = await import('./initApp.js')
+    await initApp({...sharedParams, datasetName, projectId})
+  } else {
+    // eslint-disable-next-line eslint-js/no-restricted-syntax -- static relative import, not a user file path
+    const {initStudio} = await import('./initStudio.js')
+    await initStudio({...sharedParams, datasetName, displayName, isFirstProject, projectId})
+  }
 
   trace.complete()
 }
@@ -377,8 +429,8 @@ function checkFlagsInUnattendedMode(
   {
     isAppTemplate,
     isMediaLibraryTemplate,
-    isNextJs,
-  }: {isAppTemplate: boolean; isMediaLibraryTemplate: boolean; isNextJs: boolean},
+    useCurrentPath,
+  }: {isAppTemplate: boolean; isMediaLibraryTemplate: boolean; useCurrentPath: boolean},
 ): void {
   debug('Unattended mode, validating required options')
 
@@ -410,7 +462,7 @@ function checkFlagsInUnattendedMode(
       )
     }
   } else {
-    if (!isNextJs && !options.bare && !options.outputPath) {
+    if (!useCurrentPath && !options.bare && !options.outputPath) {
       errors.push(
         'Output path is required in unattended mode. Pass it with `--output-path <path>`.',
       )

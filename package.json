@@ -37,6 +37,7 @@
     "lint:fix": "turbo run lint -- --fix",
     "pre:enter": "changeset pre enter",
     "pre:exit": "changeset pre exit",
+    "preview:create": "node scripts/preview-create-sanity.mjs",
     "prepare": "husky",
     "publint": "turbo run publint",
     "publish-packages": "changeset publish",

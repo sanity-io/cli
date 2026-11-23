@@ -10,7 +10,7 @@ import {defineCommandTelemetry} from '../util/telemetry/commandTelemetry.js'
 
 export class InitCommand extends SanityCommand<typeof InitCommand> {
   static override args = {type: Args.string({hidden: true})}
-  static override description = 'Initialize a new Sanity Studio, project and/or app'
+  static override description = 'Initialize a new Sanity Studio, Blueprint, project, or app'
   static override enableJsonFlag = true
 
   static override examples = [
@@ -196,7 +196,7 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
       description: 'Install Sanity agent skills globally for detected AI editors',
     }),
     template: Flags.string({
-      description: 'Project template to use [default: "clean"]',
+      description: 'Project template to use. Choose "blueprint" or a Studio or app template.',
       exclusive: ['bare'],
       helpValue: '<template>',
     }),
@@ -238,7 +238,7 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
     ],
   })
 
-  public async run(): Promise<void> {
+  public async run() {
     let mcpMode: 'auto' | 'prompt' | 'skip' = 'prompt'
     if (!this.flags.mcp || !this.resolveIsInteractive()) {
       mcpMode = 'skip'
@@ -255,7 +255,7 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
     }
 
     try {
-      await initAction(
+      return await initAction(
         flagsToInitOptions(this.flags, this.isUnattended(), this.args, mcpMode, skillsMode),
         {
           output: this.output,

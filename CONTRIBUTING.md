@@ -631,6 +631,39 @@ Commands should call services, not make API requests directly.
 
 ## Testing Preview Packages
 
+### Local Blueprint initializer preview
+
+From a checkout of the feature branch, install the workspace dependencies and use
+an existing Sanity login or `SANITY_AUTH_TOKEN`. Use a test project because each
+successful initialization creates a Stack.
+
+```bash
+pnpm install --frozen-lockfile
+pnpm preview:create -- --yes --project "$PROJECT_ID" --dataset production
+```
+
+The script prints the path to the temporary workspace and times the first
+Blueprint status line and successful exit. It starts the clock after building
+and packing the branch and uses an empty npm cache. It invokes
+`npm create --yes sanity@blueprints` against a local registry.
+
+Use the same command with `--template clean --output-path . --package-manager npm`
+to test classic Studio setup. To talk to staging, set
+`SANITY_INTERNAL_ENV=staging` and use a staging project and credentials.
+
+Run `pnpm preview:create` without arguments to leave the local registry running.
+The script prints the exact npm command to run in a second terminal.
+
+For a shared npm snapshot, run **Snapshot Release** on the branch with
+`tag=blueprints` and the default `forceBump=false`. Once that workflow publishes,
+run the following from an empty directory with access to the test project:
+
+```bash
+npm create --yes sanity@blueprints -- --yes --project "$PROJECT_ID" --dataset production
+```
+
+### Pull request previews
+
 We use [pkg.pr.new](https://pkg.pr.new) to generate preview packages for pull requests. This allows you to test changes before they're merged and published to npm.
 
 ### Requesting Preview Packages

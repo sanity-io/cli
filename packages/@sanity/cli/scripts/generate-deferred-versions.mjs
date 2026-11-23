@@ -1,6 +1,12 @@
 import {readFile, writeFile} from 'node:fs/promises'
 
-const packages = ['@sanity/cli-build', '@sanity/codegen', '@sanity/workbench-cli', 'vite']
+const packages = [
+  '@sanity/cli-build',
+  '@sanity/codegen',
+  '@sanity/workbench-cli',
+  'tar-stream',
+  'vite',
+]
 const versions = Object.fromEntries(
   await Promise.all(
     packages.map(async (name) => {

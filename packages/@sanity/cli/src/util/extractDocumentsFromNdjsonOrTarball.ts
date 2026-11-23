@@ -3,9 +3,10 @@ import readline from 'node:readline'
 import {Readable} from 'node:stream'
 import zlib from 'node:zlib'
 
+import {loadDeferredModule} from '@sanity/cli-core/loadDeferredModule'
 import {type SanityDocument} from '@sanity/types'
-import tar from 'tar-stream'
 
+import {deferredVersions} from '../generated/deferredVersions.js'
 import {isTar} from './isTar.js'
 
 const HEADER_SIZE = 300
@@ -79,6 +80,14 @@ async function* maybeExtractNdjson(stream: AsyncIterable<Buffer>): AsyncIterable
     }
 
     if (isTar(fileHeader)) {
+      const {default: tar} = await loadDeferredModule(
+        'tar-stream',
+        deferredVersions['tar-stream'],
+        'tar-stream',
+        import.meta.url,
+        // eslint-disable-next-line eslint-js/no-restricted-syntax, import-js/no-extraneous-dependencies -- The archive reader is installed on demand.
+        () => import('tar-stream'),
+      )
       for await (const entry of extract(restOfStream(), tar.extract())) {
         const filename = path.basename(entry.header.name)
         const extname = path.extname(filename).toLowerCase()

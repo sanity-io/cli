@@ -23,17 +23,24 @@
   },
   "bin": "./index.js",
   "files": [
-    "index.js"
+    "index.js",
+    "npm-shrinkwrap.json",
+    "dist/studio-cli-version.json"
   ],
   "type": "module",
   "scripts": {
+    "build": "node scripts/record-studio-cli-version.mjs",
+    "prepack": "node scripts/record-studio-cli-version.mjs",
+    "prepublishOnly": "node scripts/prepare-release.mjs",
     "publint": "publint",
     "test": "vitest"
   },
   "dependencies": {
-    "@sanity/cli": "workspace:*"
+    "@sanity/cli-core": "workspace:*",
+    "@sanity/cli-setup": "workspace:*"
   },
   "devDependencies": {
+    "@sanity/cli": "workspace:*",
     "@types/node": "catalog:",
     "publint": "catalog:",
     "vitest": "catalog:"
