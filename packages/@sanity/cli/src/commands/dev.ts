@@ -54,7 +54,9 @@ export class DevCommand extends SanityCommand<typeof DevCommand> {
     const isApp = determineIsApp(cliConfig)
 
     if (shouldWarnDashboardFlagIgnored(cliConfig, flags['load-in-dashboard'])) {
-      this.output.warn('Ignoring --load-in-dashboard: this app already runs in the local Dashboard')
+      this.output.warn(
+        'Apps using `defineApplication` always run in the local Dashboard. Remove the --load-in-dashboard flag from your command.',
+      )
     }
 
     // load-in-dashboard is defaulted to true for apps.
