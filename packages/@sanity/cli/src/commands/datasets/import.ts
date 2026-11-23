@@ -8,10 +8,12 @@ import {spinner} from '@sanity/cli-core/ux'
 import {sanityImport} from '@sanity/import'
 import prettyMs from 'pretty-ms'
 
+import {getBlueprintForProject} from '../../actions/blueprints/prepareResource.js'
 import {NEW_DATASET_VALUE, promptForDataset} from '../../prompts/promptForDataset.js'
 import {promptForDatasetName} from '../../prompts/promptForDatasetName.js'
 import {promptForProject} from '../../prompts/promptForProject.js'
 import {createDataset, listDatasets} from '../../services/datasets.js'
+import {datasetRequiredMessage, getBlueprintDataset} from '../../util/blueprintCliContext.js'
 import {getDatasetFlag, getProjectIdFlag} from '../../util/sharedFlags.js'
 import {defineCommandTelemetry} from '../../util/telemetry/commandTelemetry.js'
 
@@ -195,16 +197,26 @@ export class ImportDatasetCommand extends SanityCommand<typeof ImportDatasetComm
       )
     }
 
-    let dataset = datasetFlag ?? targetDatasetArg
+    let dataset = datasetFlag ?? targetDatasetArg ?? (await getBlueprintDataset(projectId))
     if (!dataset) {
       if (this.isUnattended()) {
-        return this.output.error('Dataset is required. Pass it with `--dataset <name>`.', {
-          exit: exitCodes.USAGE_ERROR,
-        })
+        return this.output.error(
+          datasetRequiredMessage('Dataset is required. Pass it with `--dataset <name>`.'),
+          {
+            exit: exitCodes.USAGE_ERROR,
+          },
+        )
       }
 
+      const blueprint = await getBlueprintForProject(projectId)
       const datasets = await listDatasets(projectId)
-      dataset = await promptForDataset({allowCreation: true, datasets})
+      if (blueprint && datasets.length === 0) {
+        return this.output.error(
+          `No datasets found. Declare a dataset in ${blueprint.path ?? 'your Blueprint manifest'} and deploy the Blueprint before importing content.`,
+          {exit: exitCodes.USAGE_ERROR},
+        )
+      }
+      dataset = await promptForDataset({allowCreation: !blueprint, datasets})
 
       if (dataset === NEW_DATASET_VALUE) {
         const newDatasetName = await promptForDatasetName()

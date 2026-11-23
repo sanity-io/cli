@@ -9,6 +9,7 @@ import {assertDatasetExists} from '../../actions/backup/assertDatasetExist.js'
 import {promptForProject} from '../../prompts/promptForProject.js'
 import {setBackup} from '../../services/backup.js'
 import {listDatasets} from '../../services/datasets.js'
+import {getBlueprintDataset} from '../../util/blueprintCliContext.js'
 import {getProjectIdFlag} from '../../util/sharedFlags.js'
 
 const disableBackupDebug = subdebug('backup:disable')
@@ -56,6 +57,8 @@ export class DisableBackupCommand extends SanityCommand<typeof DisableBackupComm
           ],
         }),
     })
+
+    dataset ||= await getBlueprintDataset(projectId)
 
     let datasets: DatasetsResponse
 

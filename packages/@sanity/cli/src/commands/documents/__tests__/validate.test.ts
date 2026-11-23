@@ -12,7 +12,8 @@ const mockReporters = vi.hoisted(() => ({json: vi.fn(), ndjson: vi.fn(), pretty:
 const mockRootError = vi.hoisted(() => class extends Error {}) // TODO: consider adding to a cli-core/errors mock, as cli-core/errors pulls in @sanity/client, which is huge
 const mockStat = vi.hoisted(() => vi.fn())
 
-vi.mock('node:fs/promises', () => ({
+vi.mock(import('node:fs/promises'), async (importOriginal) => ({
+  ...(await importOriginal()),
   stat: mockStat,
 }))
 vi.mock(
@@ -20,7 +21,10 @@ vi.mock(
   () => import('@sanity/cli-test/mocks/cli-core/SanityCommand'),
 )
 vi.mock('@sanity/cli-core/ux', () => import('@sanity/cli-test/mocks/cli-core/ux'))
-vi.mock('@sanity/cli-core/errors', () => ({ProjectRootNotFoundError: mockRootError}))
+vi.mock('@sanity/cli-core/errors', () => ({
+  isProjectRootNotFoundError: (error: unknown) => error instanceof mockRootError,
+  ProjectRootNotFoundError: mockRootError,
+}))
 vi.mock('../../../actions/documents/types.js', () => ({}))
 vi.mock('../../../actions/documents/validate.js', () => ({
   validateDocuments: mockValidateDocuments,

@@ -12,6 +12,7 @@ import {confirm, logSymbols} from '@sanity/cli-core/ux'
 import {type Level} from '../../actions/documents/types.js'
 import {validateDocuments} from '../../actions/documents/validate.js'
 import {reporters} from '../../actions/documents/validation/reporters/index.js'
+import {requireLocalConfig} from '../../util/blueprintCliContext.js'
 import {getDatasetFlag, getProjectIdFlag} from '../../util/sharedFlags.js'
 import {defineCommandTelemetry} from '../../util/telemetry/commandTelemetry.js'
 
@@ -105,7 +106,7 @@ export class ValidateDocumentsCommand extends SanityCommand<typeof ValidateDocum
     let workDir: string
     let cliConfig: CliConfig
     try {
-      const root = await this.getProjectRoot()
+      const root = await requireLocalConfig(() => this.getProjectRoot(), 'Studio')
       workDir = root.directory
       cliConfig = await this.getCliConfig()
     } catch (err) {

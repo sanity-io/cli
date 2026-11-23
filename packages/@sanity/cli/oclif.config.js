@@ -8,6 +8,7 @@ export default {
     command_not_found: ['./dist/hooks/commandNotFound/topicAliases.js'],
     init: ['./dist/hooks/init/checkForUpdates.js'],
     prerun: [
+      './dist/hooks/prerun/configureBlueprintTarget.js',
       './dist/hooks/prerun/injectEnvVariables.js',
       './dist/hooks/prerun/setupTelemetry.js',
       './dist/hooks/prerun/warnings.js',

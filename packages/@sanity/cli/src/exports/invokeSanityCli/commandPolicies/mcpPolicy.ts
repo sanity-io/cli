@@ -114,6 +114,9 @@ export const mcpPolicy: CommandPolicySet = {
   'backups:enable': allow,
   'backups:list': allow,
 
+  // Writes targeting configuration to the local user's profile directory.
+  'blueprints:profiles:set': deny,
+
   // Requires a local Studio project and writes build output to disk.
   build: deny,
 

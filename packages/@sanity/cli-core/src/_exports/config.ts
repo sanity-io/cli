@@ -1,6 +1,12 @@
 // Exports related to retrieving CLI, studio, app or workbench configuration or paths.
 
 export {
+  getBlueprintProfile,
+  isBlueprintMode,
+  runWithBlueprintProfile,
+  saveBlueprintProfile,
+} from '../config/cli/blueprintProfile.js'
+export {
   clearCliTokenCache,
   type CliTokenInfo,
   getCliToken,

@@ -9,17 +9,19 @@ import {
   getCliConfig,
   setCliTelemetry,
 } from '@sanity/cli-core'
+import {getBlueprintProfile} from '@sanity/cli-core/config'
 import {createSessionId} from '@sanity/telemetry'
 
 import {resolveConsent} from '../../actions/telemetry/resolveConsent.js'
 import {telemetryDebug} from '../../actions/telemetry/telemetryDebug.js'
 import {telemetryDisclosure} from '../../actions/telemetry/telemetryDisclosure.js'
 import {CliCommandTelemetry, type CLITraceData} from '../../telemetry/cli.telemetry.js'
+import {usesLocalCliConfig} from '../../util/blueprintCliContext.js'
 import {detectRuntime} from '../../util/detectRuntime.js'
 import {parseArguments} from '../../util/parseArguments.js'
 import {createTelemetryStore} from '../../util/telemetry/createTelemetryStore.js'
 
-export const setupTelemetry: Hook.Prerun = async function ({Command, config}) {
+export const setupTelemetry: Hook.Prerun = async function ({argv, Command, config}) {
   // Show telemetry disclosure
   telemetryDisclosure({logToStderr: (message) => process.stderr.write(`${message}\n`)})
 
@@ -31,8 +33,13 @@ export const setupTelemetry: Hook.Prerun = async function ({Command, config}) {
 
   let cliConfig: CliConfig | undefined
   try {
-    const projectRoot = await findProjectRoot(process.cwd())
-    cliConfig = await getCliConfig(projectRoot.directory)
+    const profile = await getBlueprintProfile()
+    if (profile) {
+      cliConfig = {api: {dataset: profile.dataset, projectId: profile.projectId}}
+    } else if (usesLocalCliConfig(Command?.id, argv)) {
+      const projectRoot = await findProjectRoot(process.cwd())
+      cliConfig = await getCliConfig(projectRoot.directory)
+    }
   } catch {
     // Accept not finding a project root and/or CLI config
   }

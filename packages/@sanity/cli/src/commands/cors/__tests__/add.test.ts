@@ -17,11 +17,16 @@ vi.mock('@sanity/cli-core/ux', async () => {
   }
 })
 
-vi.mock('node:fs', () => ({
-  default: {
-    existsSync: vi.fn(),
-  },
-}))
+vi.mock(import('node:fs'), async (importOriginal) => {
+  const actual = await importOriginal()
+  return {
+    ...actual,
+    default: {
+      ...actual.default,
+      existsSync: vi.fn(),
+    },
+  }
+})
 
 const defaultMocks = {
   cliConfig: {api: {projectId: 'test-project'}},

@@ -12,6 +12,7 @@ import {confirm, spinner} from '@sanity/cli-core/ux'
 
 import {type UndeployCommand} from '../../commands/undeploy.js'
 import {
+  type Check,
   type CheckReporter,
   createCollectingReporter,
   createFailFastReporter,
@@ -33,6 +34,8 @@ export interface UndeployOptions {
   flags: UndeployFlags
   isUnattended: boolean
   output: Output
+
+  checkTarget?: (target: UndeployTarget | undefined) => Promise<Check | undefined>
 }
 
 /** What a real undeploy produced — the payload `--json` reports. */
@@ -69,7 +72,7 @@ export async function runUndeploy(
   try {
     if (flags['dry-run']) {
       const reporter = createCollectingReporter()
-      const resolution = await resolveTarget(adapter, reporter)
+      const resolution = await resolveTarget(adapter, reporter, options.checkTarget)
       const plan: UndeployPlan = {
         checks: reporter.results,
         reason: resolution?.type === 'none' ? resolution.message : null,
@@ -115,7 +118,11 @@ async function undeployApp(
 ): Promise<UndeployResult | undefined> {
   const {flags, output} = options
 
-  const resolution = await resolveTarget(adapter, createFailFastReporter(output))
+  const resolution = await resolveTarget(
+    adapter,
+    createFailFastReporter(output),
+    options.checkTarget,
+  )
   // A resolve failure never lands here: the fail-fast reporter already exited.
   if (!resolution) return undefined
   if (resolution.type === 'none') {
@@ -174,12 +181,15 @@ async function undeployApp(
 async function resolveTarget(
   adapter: UndeployAdapter,
   reporter: CheckReporter,
+  checkTarget?: UndeployOptions['checkTarget'],
 ): Promise<UndeployTargetResolution | null> {
   const spin = spinner('Checking application info').start()
 
   let resolution: UndeployTargetResolution
+  let check: Check | undefined
   try {
     resolution = await adapter.resolveTarget()
+    check = await checkTarget?.(resolution.type === 'found' ? resolution.target : undefined)
   } catch (error) {
     spin.fail()
     undeployDebug('Failed to resolve undeploy target', error)
@@ -191,6 +201,7 @@ async function resolveTarget(
   }
 
   spin[resolution.type === 'found' ? 'succeed' : 'fail']()
+  if (check) reporter.report(check)
   reporter.report(describeUndeployTarget(resolution))
   return resolution
 }

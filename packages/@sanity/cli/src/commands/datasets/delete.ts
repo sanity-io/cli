@@ -5,6 +5,10 @@ import {exitCodes, SanityCommand, subdebug} from '@sanity/cli-core'
 import {requiredWhenUnattended} from '@sanity/cli-core/flags'
 import {input, logSymbols} from '@sanity/cli-core/ux'
 
+import {
+  guardBlueprintDataset,
+  reportBlueprintManagedError,
+} from '../../actions/blueprints/guardResource.js'
 import {validateDatasetName} from '../../actions/dataset/validateDatasetName.js'
 import {promptForProject} from '../../prompts/promptForProject.js'
 import {deleteDataset} from '../../services/datasets.js'
@@ -66,6 +70,8 @@ export class DeleteDatasetCommand extends SanityCommand<typeof DeleteDatasetComm
       this.error(dsError, {exit: exitCodes.USAGE_ERROR})
     }
 
+    await guardBlueprintDataset(this.output, projectId, datasetName, 'delete')
+
     if (force) {
       this.warn(`'--force' used: skipping confirmation, deleting dataset "${datasetName}"`)
     } else {
@@ -99,6 +105,7 @@ export class DeleteDatasetCommand extends SanityCommand<typeof DeleteDatasetComm
       await deleteDataset({datasetName, projectId})
       this.log('Dataset deleted successfully')
     } catch (error) {
+      reportBlueprintManagedError(this.output, error, `dataset "${datasetName}"`, 'delete')
       const err = error instanceof Error ? error : new Error(`${error}`)
       deleteDatasetDebug(`Error deleting dataset ${datasetName}`, err)
       this.error(`Dataset deletion failed: ${err.message}`, {exit: exitCodes.RUNTIME_ERROR})

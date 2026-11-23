@@ -24,12 +24,17 @@ vi.mock('@sanity/cli-core/ux', async () => {
   }
 })
 
-vi.mock('node:fs/promises', () => ({
-  default: {
-    mkdir: vi.fn().mockResolvedValue(undefined),
-    stat: vi.fn(),
-  },
-}))
+vi.mock(import('node:fs/promises'), async (importOriginal) => {
+  const actual = await importOriginal()
+  return {
+    ...actual,
+    default: {
+      ...actual.default,
+      mkdir: vi.fn().mockResolvedValue(undefined),
+      stat: vi.fn(),
+    },
+  }
+})
 
 const mockExportDataset = vi.mocked(exportDataset)
 const mockInput = vi.mocked(input)

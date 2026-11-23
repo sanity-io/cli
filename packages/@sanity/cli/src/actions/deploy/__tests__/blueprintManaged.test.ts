@@ -25,9 +25,9 @@ function mockBlueprint(resources: Record<string, unknown>[]) {
   mockReadBlueprint.mockResolvedValue({resources} as unknown as BlueprintInfo)
 }
 
-async function check(kind: 'coreApp' | 'studio'): Promise<DeployCheck[]> {
+async function check(kind: 'coreApp' | 'studio', id?: string): Promise<DeployCheck[]> {
   const reporter = createCollectingReporter<DeployCheck>()
-  await checkBlueprintManaged(reporter, {kind, projectRootDir: '/root'})
+  await checkBlueprintManaged(reporter, {id, kind, projectRootDir: '/root'})
   return reporter.results
 }
 
@@ -72,6 +72,19 @@ describe('checkBlueprintManaged', () => {
     mockBlueprint([{name: 'app', root: './packages/app', type: 'sanity.application'}])
 
     expect(await check('coreApp')).toEqual([])
+  })
+
+  test('an attached application still protects its source directory', async () => {
+    mockBlueprint([
+      {
+        lifecycle: {ownershipAction: {id: 'attached-app', type: 'attach'}},
+        name: 'app',
+        root: '.',
+        type: 'sanity.application',
+      },
+    ])
+
+    expect(await check('coreApp', 'another-app')).toMatchObject([{status: 'fail'}])
   })
 
   test('a resource of the other kind at the same root does not block the deploy', async () => {

@@ -1,6 +1,7 @@
 import {exitCodes, getSanityUrl, SanityCommand, subdebug} from '@sanity/cli-core'
 import open from 'open'
 
+import {getBlueprintForProject} from '../../actions/blueprints/prepareResource.js'
 import {promptForProject} from '../../prompts/promptForProject.js'
 import {getProjectById} from '../../services/projects.js'
 import {getProjectIdFlag} from '../../util/sharedFlags.js'
@@ -34,6 +35,15 @@ export class CreateHookCommand extends SanityCommand<typeof CreateHookCommand> {
       fallback: () =>
         promptForProject({requiredPermissions: [{grant: 'read', permission: 'sanity.project'}]}),
     })
+
+    const blueprint = await getBlueprintForProject(projectId)
+    if (blueprint) {
+      this.log(
+        `Add a document webhook to ${blueprint.path ?? 'your Blueprint manifest'} for project "${projectId}", then run \`sanity blueprints plan\`.`,
+      )
+      this.log('https://www.sanity.io/docs/blueprints/blueprints-webhook')
+      return
+    }
 
     let projectInfo: {organizationId?: string | null}
     try {

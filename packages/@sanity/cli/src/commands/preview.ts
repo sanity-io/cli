@@ -5,6 +5,7 @@ import {exitCodes, SanityCommand, subdebug} from '@sanity/cli-core'
 
 import {previewAction} from '../actions/preview/previewAction.js'
 import {type PreviewServer} from '../server/previewServer.js'
+import {requireLocalConfig} from '../util/blueprintCliContext.js'
 
 export const previewDebug = subdebug('preview')
 
@@ -36,8 +37,9 @@ export class PreviewCommand extends SanityCommand<typeof PreviewCommand> {
   public async run(): Promise<PreviewServer | {close: () => Promise<void>} | void> {
     const {args, flags} = await this.parse(PreviewCommand)
 
-    const workDir = (await this.getProjectRoot()).directory
-    const cliConfig = await this.getCliConfig()
+    const workDir = (await requireLocalConfig(() => this.getProjectRoot(), 'Studio or app'))
+      .directory
+    const cliConfig = await requireLocalConfig(() => this.getCliConfig(), 'Studio or app')
 
     const {outputDir} = args
 

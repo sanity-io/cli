@@ -6,6 +6,7 @@ import {confirm} from '@sanity/cli-core/ux'
 import {getGraphQLAPIs} from '../../actions/graphql/getGraphQLAPIs.js'
 import {promptForProject} from '../../prompts/promptForProject.js'
 import {deleteGraphQLAPI} from '../../services/graphql.js'
+import {datasetRequiredMessage, getBlueprintDataset} from '../../util/blueprintCliContext.js'
 import {getDatasetFlag, getProjectIdFlag} from '../../util/sharedFlags.js'
 
 const undeployGraphqlDebug = subdebug('graphql:undeploy')
@@ -106,15 +107,16 @@ export class Undeploy extends SanityCommand<typeof Undeploy> {
       })
     }
 
-    // Get dataset from CLI config if not specified
     if (!dataset) {
       const cliConfig = await this.tryGetCliConfig()
-      dataset = cliConfig.api?.dataset
+      dataset = cliConfig.api?.dataset || (await getBlueprintDataset(projectId))
     }
 
     if (!dataset) {
       this.error(
-        'Dataset is required. Pass it with `--dataset <name>` or configure it in your project.',
+        datasetRequiredMessage(
+          'Dataset is required. Pass it with `--dataset <name>` or configure it in your project.',
+        ),
         {
           exit: exitCodes.USAGE_ERROR,
         },

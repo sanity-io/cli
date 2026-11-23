@@ -145,8 +145,14 @@ async function runAppDeployment(
 
   checkAppId(reporter, {cliConfig})
 
-  await checkBlueprintManaged(reporter, {kind: 'coreApp', projectRootDir: workDir})
+  await checkBlueprintManaged(reporter, {
+    id: config ? undefined : appId,
+    kind: config ? 'mediaLibrary' : 'coreApp',
+    projectRootDir: workDir,
+    scope: organizationId ? {id: organizationId, type: 'organization'} : undefined,
+  })
 
+  let installationId: string | undefined
   let application: UserApplicationResolved | null = null
   let appCreated = false
   let workbenchApp: object | undefined
@@ -262,11 +268,10 @@ async function runAppDeployment(
 
     // Resolve the installation in both modes so the report — dry-run and real —
     // shows whether the config is deployable; a missing one fails the deploy here.
-    let installationId: string | undefined
     let configSummary: string | undefined
     const configAppType = config?.appType
     if (deployConfigOnly && organizationId && config && configAppType) {
-      installationId = await resolveInstallationId({appType: configAppType, organizationId})
+      installationId ??= await resolveInstallationId({appType: configAppType, organizationId})
       configSummary = summarizeConfig(config)
       reporter.report(
         installationId

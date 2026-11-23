@@ -15,6 +15,7 @@ import json5 from 'json5'
 import {DOCUMENTS_API_VERSION} from '../../actions/documents/constants.js'
 import {getEditor, registerUnlinkOnSigInt} from '../../actions/documents/editor.js'
 import {promptForProject} from '../../prompts/promptForProject.js'
+import {datasetRequiredMessage, getBlueprintDataset} from '../../util/blueprintCliContext.js'
 import {isIdentifiedSanityDocument, isSanityDocumentish} from '../../util/isSanityDocumentish.js'
 import {getDatasetFlag, getProjectIdFlag} from '../../util/sharedFlags.js'
 
@@ -119,16 +120,20 @@ export class CreateDocumentCommand extends SanityCommand<typeof CreateDocumentCo
 
     const cliConfig = await this.tryGetCliConfig()
 
-    const projectId = await this.getProjectId({fallback: () => promptForProject({})})
+    const projectId = await this.getProjectId({
+      fallback: () => promptForProject({}),
+    })
 
-    if (!cliConfig.api?.dataset && !dataset) {
+    const targetDataset =
+      dataset || cliConfig.api?.dataset || (await getBlueprintDataset(projectId))
+    if (!targetDataset) {
       this.error(
-        'Dataset is required. Pass it with `--dataset <name>` or configure it in `sanity.cli.ts`.',
+        datasetRequiredMessage(
+          'Dataset is required. Pass it with `--dataset <name>` or configure it in `sanity.cli.ts`.',
+        ),
         {exit: exitCodes.USAGE_ERROR},
       )
     }
-
-    const targetDataset = dataset || cliConfig.api?.dataset
 
     this.client = await getProjectCliClient({
       apiVersion: DOCUMENTS_API_VERSION,

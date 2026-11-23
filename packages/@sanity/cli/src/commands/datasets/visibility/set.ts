@@ -2,6 +2,10 @@ import {Args} from '@oclif/core'
 import {exitCodes, SanityCommand, subdebug} from '@sanity/cli-core'
 import {DatasetsResponse} from '@sanity/client'
 
+import {
+  guardBlueprintDataset,
+  reportBlueprintManagedError,
+} from '../../../actions/blueprints/guardResource.js'
 import {validateDatasetName} from '../../../actions/dataset/validateDatasetName.js'
 import {promptForProject} from '../../../prompts/promptForProject.js'
 import {editDatasetAcl, listDatasets} from '../../../services/datasets.js'
@@ -84,6 +88,8 @@ export class DatasetVisibilitySetCommand extends SanityCommand<typeof DatasetVis
       return
     }
 
+    await guardBlueprintDataset(this.output, projectId, dataset, 'edit')
+
     if (mode === 'private') {
       this.log(
         'Please note that while documents are private, assets (files and images) are still public',
@@ -97,6 +103,7 @@ export class DatasetVisibilitySetCommand extends SanityCommand<typeof DatasetVis
         projectId,
       })
     } catch (error) {
+      reportBlueprintManagedError(this.output, error, `dataset "${dataset}"`, 'edit')
       const message = error instanceof Error ? error.message : String(error)
       setDatasetVisibilityDebug(`Failed to edit dataset: ${message}`, error)
       this.error(`Failed to edit dataset: ${message}`, {exit: exitCodes.RUNTIME_ERROR})

@@ -25,8 +25,14 @@ if (!isSupportedNodeVersion(majorVersion, minorVersion)) {
 module.enableCompileCache()
 setTimeout(() => module.flushCompileCache(), 10 * 1000).unref()
 
-const {execute, settings} = module.createRequire(import.meta.url)('@oclif/core')
+const require = module.createRequire(import.meta.url)
+const {execute, settings} = require('@oclif/core')
 
 settings.enableAutoTranspile = false
 
-await execute({dir: import.meta.url})
+if (process.env.SANITY_BLUEPRINT_PROFILE || process.env.SANITY_CLI_MODE === 'blueprints') {
+  const {runWithBlueprintProfile} = require('@sanity/cli-core/config')
+  await runWithBlueprintProfile(() => execute({dir: import.meta.url}))
+} else {
+  await execute({dir: import.meta.url})
+}

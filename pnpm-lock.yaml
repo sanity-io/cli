@@ -943,10 +943,7 @@ snapshots:
 					"specifier": "^8.0.5",
 					"version": "8.0.5",
 				},
-				"@sanity/runtime-cli": {
-					"specifier": "^17.21.6",
-					"version": "17.21.6",
-				},
+				"@sanity/runtime-cli": "17.21.6-blueprint-profiles.g5e51dba",
 				"@sanity/schema": "catalog:",
 				"@sanity/schema-descriptor-utils": {
 					"specifier": "^1.4.0",
@@ -9229,21 +9226,13 @@ snapshots:
 					"peerDependencies": {
 						"@sanity/cli-build": {
 							"version": "7.3.0",
-							"with": {
-								"oxc-transform-react": "0.156.0",
-								"xstate": "5.33.4",
-							},
 						},
 					},
 				},
 				{
 					"peerDependencies": {
 						"@sanity/cli-build": {
-							"version": "7.3.0",
-							"with": {
-								"oxc-transform-react": "0.158.0",
-								"xstate": "5.33.2",
-							},
+							"version": "7.5.1",
 						},
 					},
 				},
@@ -9304,6 +9293,7 @@ snapshots:
 				},
 				"oxc-transform-react": {
 					"specifier": "*",
+					"version": "0.156.0",
 					"optional": true,
 				},
 				"rolldown": {
@@ -9331,11 +9321,16 @@ snapshots:
 					"version": "5.1.1",
 					"below": true,
 				},
+				"xstate": {
+					"version": "5.33.4",
+					"below": true,
+				},
 				"yaml": {
 					"version": "2.9.1",
 					"below": true,
 				},
 			},
+			"optional": true,
 			"dependencies": {
 				"@oclif/core": "4.14.0",
 				"@rolldown/plugin-babel": "0.3.1",
@@ -9362,31 +9357,114 @@ snapshots:
 				"vite": "8.3.8",
 				"zod": "4.6.7",
 			},
-			"snapshots": [
-				{
-					"peerDependencies": {
-						"oxc-transform-react": {
-							"version": "0.156.0",
-						},
-						"xstate": {
-							"version": "5.33.4",
-							"below": true,
-						},
-					},
+		},
+
+		"@sanity/cli-build@7.5.1": {
+			"integrity": "sha512-grc7SJhumnUbN0izkSoTHa00omh/fqpBl2Ya7ngKGf0roumKW8s2LY6HzNNqAJykkFdy6DQOUbVF6Yti7kAz7A==",
+			"engines": {"node": ">=22.12"},
+			"peerDependencies": {
+				"@babel/core": {
+					"version": "7.29.7",
+					"below": true,
+				},
+				"@babel/runtime": {
+					"version": "7.29.7",
+					"below": true,
+				},
+				"@noble/hashes": {
+					"version": "2.4.0",
+					"below": true,
+				},
+				"@types/node": {
+					"version": "22.20.5",
+					"below": true,
+				},
+				"@types/react": {
+					"version": "19.3.0",
+					"below": true,
+				},
+				"babel-plugin-react-compiler": {
+					"specifier": "*",
+					"version": "1.0.0",
 					"optional": true,
 				},
-				{
-					"peerDependencies": {
-						"oxc-transform-react": {
-							"version": "0.158.0",
-						},
-						"xstate": {
-							"version": "5.33.2",
-							"below": true,
-						},
-					},
+				"esbuild": {
+					"version": "0.28.2",
+					"below": true,
 				},
-			],
+				"immer": {
+					"version": "11.1.18",
+					"below": true,
+				},
+				"jiti": {
+					"version": "2.7.0",
+					"below": true,
+				},
+				"oxc-transform-react": {
+					"specifier": "*",
+					"version": "0.158.0",
+					"optional": true,
+				},
+				"rolldown": {
+					"version": "1.2.19",
+					"below": true,
+				},
+				"sanity": {
+					"specifier": "^6.24.0",
+					"version": "6.24.0",
+					"optional": true,
+				},
+				"tsx": {
+					"version": "4.23.15",
+					"below": true,
+				},
+				"typescript": {
+					"version": "6.0.3",
+					"below": true,
+				},
+				"use-sync-external-store": {
+					"version": "1.7.0",
+					"below": true,
+				},
+				"vitest": {
+					"version": "5.1.1",
+					"below": true,
+				},
+				"xstate": {
+					"version": "5.33.2",
+					"below": true,
+				},
+				"yaml": {
+					"version": "2.9.1",
+					"below": true,
+				},
+			},
+			"dependencies": {
+				"@oclif/core": "4.14.0",
+				"@rolldown/plugin-babel": "0.3.1",
+				"@sanity/cli-core": "3.16.0",
+				"@sanity/generate-help-url": "4.0.0",
+				"@sanity/schema": "6.24.0",
+				"@sanity/telemetry": "1.1.0",
+				"@sanity/types": "6.24.0",
+				"@sanity/workbench-cli": "2.19.1",
+				"@vitejs/plugin-react": "6.3.0",
+				"chokidar": "5.0.0",
+				"cjs-module-lexer": "2.3.0",
+				"dompurify": "3.4.18",
+				"empathic": "2.1.0",
+				"jsdom": "29.1.1",
+				"lightningcss": "1.33.0",
+				"lodash-es": "4.18.1",
+				"node-html-parser": "7.1.0",
+				"oneline": "2.0.0",
+				"picomatch": "4.0.7",
+				"react": "19.3.1",
+				"react-is": "19.3.1",
+				"semver": "7.8.6",
+				"vite": "8.3.8",
+				"zod": "4.6.7",
+			},
 		},
 
 		"@sanity/cli-core@3.15.1": {
@@ -9412,6 +9490,70 @@ snapshots:
 				},
 				"oxc-transform-react": {
 					"specifier": "*",
+					"version": "0.156.0",
+					"optional": true,
+				},
+				"tsx": {
+					"version": "4.23.15",
+					"below": true,
+				},
+				"vitest": {
+					"version": "5.1.1",
+					"below": true,
+				},
+				"yaml": {
+					"version": "2.9.1",
+					"below": true,
+				},
+			},
+			"optional": true,
+			"dependencies": {
+				"@inquirer/core": "12.0.6",
+				"@inquirer/prompts": "8.7.5",
+				"@oclif/core": "4.14.0",
+				"@sanity/client": "8.17.0",
+				"boxen": "8.0.1",
+				"empathic": "2.1.0",
+				"get-it": "9.7.0",
+				"get-tsconfig": "4.14.3",
+				"import-meta-resolve": "4.2.0",
+				"jiti": "2.7.0",
+				"jsdom": "29.1.1",
+				"json-lexer": "1.2.0",
+				"log-symbols": "7.0.1",
+				"obug": "3.0.0",
+				"ora": "9.4.1",
+				"rxjs": "7.8.2",
+				"vite": "8.3.8",
+				"wrap-ansi": "9.0.2",
+				"zod": "4.6.7",
+			},
+		},
+
+		"@sanity/cli-core@3.16.0": {
+			"integrity": "sha512-ZpWdR+6C4JwJsQTe+CEXJvYCXZJ9cGdYaMw5GeE8nL/Cxf7Pjslg9RLSpp7/xe2BC+BUenVU/3eDT6QwCLchnA==",
+			"engines": {"node": ">=22.12"},
+			"peerDependencies": {
+				"@noble/hashes": {
+					"version": "2.4.0",
+					"below": true,
+				},
+				"@types/node": {
+					"version": "22.20.5",
+					"below": true,
+				},
+				"babel-plugin-react-compiler": {
+					"specifier": "*",
+					"version": "1.0.0",
+					"optional": true,
+				},
+				"esbuild": {
+					"version": "0.28.2",
+					"below": true,
+				},
+				"oxc-transform-react": {
+					"specifier": "*",
+					"version": "0.158.0",
 					"optional": true,
 				},
 				"tsx": {
@@ -9448,23 +9590,6 @@ snapshots:
 				"wrap-ansi": "9.0.2",
 				"zod": "4.6.7",
 			},
-			"snapshots": [
-				{
-					"peerDependencies": {
-						"oxc-transform-react": {
-							"version": "0.156.0",
-						},
-					},
-					"optional": true,
-				},
-				{
-					"peerDependencies": {
-						"oxc-transform-react": {
-							"version": "0.158.0",
-						},
-					},
-				},
-			],
 		},
 
 		"@sanity/client@7.26.2": {
@@ -10234,8 +10359,8 @@ snapshots:
 			},
 		},
 
-		"@sanity/runtime-cli@17.21.6": {
-			"integrity": "sha512-WaCaEjkvgPZSPvrzPh/2pF8kuqpbHT/tRpeXTzUhB/bGCoXETS/MhXBoqs2XO+bbDrtpr8mJxLXnJH05MV6sMg==",
+		"@sanity/runtime-cli@17.21.6-blueprint-profiles.g5e51dba": {
+			"integrity": "sha512-CCGD4u993z5UayFyqWaUeV0qohphyja6rNECuEYxZwu0tqg9iK63VJIyV22bFoO2aIbk+F4QbJwFXWfOdEegrQ==",
 			"engines": {"node": ">=22.12"},
 			"hasBin": true,
 			"peerDependencies": {
@@ -10317,21 +10442,10 @@ snapshots:
 				"@oclif/core": "4.14.0",
 				"@oclif/plugin-help": "6.3.0",
 				"@sanity-labs/oclif-plugin-skills-flag": "0.2.1",
-				"@sanity/blueprints": {
-					"version": "0.34.1",
-					"with": {
-						"@sanity/cli-build": {
-							"version": "7.3.0",
-							"with": {
-								"oxc-transform-react": "0.158.0",
-								"xstate": "5.33.2",
-							},
-						},
-					},
-				},
+				"@sanity/blueprints": "0.34.1",
 				"@sanity/blueprints-parser": "0.5.0",
-				"@sanity/cli-build": "7.3.0",
-				"@sanity/cli-core": "3.15.1",
+				"@sanity/cli-build": "7.5.1",
+				"@sanity/cli-core": "3.16.0",
 				"@sanity/client": "8.17.0",
 				"adm-zip": "0.6.1",
 				"array-treeify": "0.2.0",
@@ -11376,6 +11490,10 @@ snapshots:
 					"version": "2.7.0",
 					"below": true,
 				},
+				"oxc-transform-react": {
+					"version": "0.156.0",
+					"below": true,
+				},
 				"react": {
 					"version": "19.3.1",
 					"below": true,
@@ -11396,11 +11514,16 @@ snapshots:
 					"version": "5.1.1",
 					"below": true,
 				},
+				"xstate": {
+					"version": "5.33.4",
+					"below": true,
+				},
 				"yaml": {
 					"version": "2.9.1",
 					"below": true,
 				},
 			},
+			"optional": true,
 			"dependencies": {
 				"@module-federation/runtime": "2.9.3",
 				"@module-federation/vite": "1.24.0",
@@ -11416,33 +11539,92 @@ snapshots:
 				"vite": "8.3.8",
 				"zod": "4.6.7",
 			},
-			"snapshots": [
-				{
-					"peerDependencies": {
-						"oxc-transform-react": {
-							"version": "0.156.0",
-							"below": true,
-						},
-						"xstate": {
-							"version": "5.33.4",
-							"below": true,
-						},
-					},
-					"optional": true,
+		},
+
+		"@sanity/workbench-cli@2.19.1": {
+			"integrity": "sha512-vMPu7BRVaBVeLBAMz9a0JnmRpB6CBp65Q8V7ZlfVya0CUOblJAkvjdsdj3HC3GhI+OeXpoO95SIM+eTi9sUMlw==",
+			"engines": {"node": ">=22.12"},
+			"peerDependencies": {
+				"@noble/hashes": {
+					"version": "2.4.0",
+					"below": true,
 				},
-				{
-					"peerDependencies": {
-						"oxc-transform-react": {
-							"version": "0.158.0",
-							"below": true,
-						},
-						"xstate": {
-							"version": "5.33.2",
-							"below": true,
-						},
-					},
+				"@rolldown/plugin-babel": {
+					"version": "0.3.1",
+					"below": true,
 				},
-			],
+				"@types/node": {
+					"version": "22.20.5",
+					"below": true,
+				},
+				"@types/react": {
+					"version": "19.3.0",
+					"below": true,
+				},
+				"babel-plugin-react-compiler": {
+					"version": "1.0.0",
+					"below": true,
+				},
+				"esbuild": {
+					"version": "0.28.2",
+					"below": true,
+				},
+				"immer": {
+					"version": "11.1.18",
+					"below": true,
+				},
+				"jiti": {
+					"version": "2.7.0",
+					"below": true,
+				},
+				"oxc-transform-react": {
+					"version": "0.158.0",
+					"below": true,
+				},
+				"react": {
+					"version": "19.3.1",
+					"below": true,
+				},
+				"tsx": {
+					"version": "4.23.15",
+					"below": true,
+				},
+				"typescript": {
+					"version": "6.0.3",
+					"below": true,
+				},
+				"use-sync-external-store": {
+					"version": "1.7.0",
+					"below": true,
+				},
+				"vitest": {
+					"version": "5.1.1",
+					"below": true,
+				},
+				"xstate": {
+					"version": "5.33.2",
+					"below": true,
+				},
+				"yaml": {
+					"version": "2.9.1",
+					"below": true,
+				},
+			},
+			"dependencies": {
+				"@module-federation/runtime": "2.9.3",
+				"@module-federation/vite": "1.24.0",
+				"@sanity/cli-core": "3.16.0",
+				"@sanity/sdk": "3.15.0",
+				"@sanity/types": "6.24.0",
+				"@vitejs/plugin-react": "6.3.0",
+				"form-data": "4.0.6",
+				"open": "11.0.4",
+				"rxjs": "7.8.2",
+				"semver": "7.8.6",
+				"tar": "7.5.23",
+				"vite": "8.3.8",
+				"zod": "4.6.7",
+			},
 		},
 
 		"@sanity/worker-channels@2.0.0": {

@@ -47,7 +47,7 @@ export function undeployPlanToJson(plan: UndeployPlan): UndeployPlanJson {
     deletes: plan.target?.deletes ?? null,
     errors,
     payload: plan.target?.payload ?? null,
-    reason: plan.reason ?? plan.checks.find((check) => check.status === 'fail')?.message ?? null,
+    reason: plan.checks.find((check) => check.status === 'fail')?.message ?? plan.reason ?? null,
     url: plan.target?.url ?? null,
     warnings,
   }

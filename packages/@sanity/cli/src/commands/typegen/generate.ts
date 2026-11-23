@@ -35,6 +35,7 @@ import {
   watchResourceTypes,
 } from '../../actions/typegen/watchResourceTypes.js'
 import {TypegenResourcesTrace} from '../../telemetry/typegen.telemetry.js'
+import {requireLocalConfig} from '../../util/blueprintCliContext.js'
 import {defineCommandTelemetry} from '../../util/telemetry/commandTelemetry.js'
 
 const description = `Sanity TypeGen
@@ -104,7 +105,7 @@ export class TypegenGenerateCommand extends SanityCommand<typeof TypegenGenerate
 
     try {
       const {flags} = await this.parse(TypegenGenerateCommand)
-      const rootDir = await this.getProjectRoot()
+      const rootDir = await requireLocalConfig(() => this.getProjectRoot(), 'Studio')
       const config = await this.getCliConfig()
 
       const configPath = flags['config-path']

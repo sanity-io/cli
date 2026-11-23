@@ -14,6 +14,7 @@ import {
   type DoctorResults,
   type MessageType,
 } from '../actions/doctor/types.js'
+import {getBlueprintCliContext} from '../util/blueprintCliContext.js'
 
 const STATUS_SYMBOLS: Record<CheckResultStatus, string> = {
   error: logSymbols.error,
@@ -82,15 +83,22 @@ export class DoctorCommand extends SanityCommand<typeof DoctorCommand> {
     }
 
     const results = await runDoctorChecks({cwd}, checks)
+    const blueprint = await getBlueprintCliContext()
 
     if (flags.json) {
-      this.logJson(results)
+      this.logJson(blueprint ? {...results, blueprint} : results)
     } else {
       for (const check of results.checks) {
         this.printCheck(check)
       }
 
       this.printSummary(results.summary)
+      if (blueprint) {
+        this.log(blueprint.name ? `Blueprint profile "${blueprint.name}"` : 'Blueprint mode')
+        if (blueprint.blueprintPath) this.log(`Manifest ${blueprint.blueprintPath}`)
+        if (blueprint.stackId) this.log(`Stack ${blueprint.stackId}`)
+        this.log('Run `sanity blueprints info` to check the Stack connection.')
+      }
     }
 
     // Exit with error code if any checks failed

@@ -4,6 +4,7 @@ import {exitCodes} from '@sanity/cli-core/ExitCodes'
 import {SanityCommand} from '@sanity/cli-core/SanityCommand'
 
 import {validateAction} from '../../actions/schema/validateAction.js'
+import {requireLocalConfig} from '../../util/blueprintCliContext.js'
 import {defineCommandTelemetry} from '../../util/telemetry/commandTelemetry.js'
 
 const debug = subdebug('schema:validate')
@@ -58,7 +59,7 @@ export class SchemaValidate extends SanityCommand<typeof SchemaValidate> {
   public async run(): Promise<void> {
     const {flags} = await this.parse(SchemaValidate)
 
-    const workDir = (await this.getProjectRoot()).directory
+    const workDir = (await requireLocalConfig(() => this.getProjectRoot(), 'Studio')).directory
 
     const options = {
       debugMetafilePath: flags['debug-metafile-path'],

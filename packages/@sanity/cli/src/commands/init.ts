@@ -220,7 +220,6 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
     'with-blueprints': Flags.boolean({
       description: 'Set up a Blueprint workspace',
       exclusive: ['bare', 'dashboard', 'env', 'template'],
-      hidden: true,
     }),
     yes: Flags.boolean({
       char: 'y',
@@ -260,7 +259,7 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
     }
 
     try {
-      await initAction(
+      const result = await initAction(
         flagsToInitOptions(this.flags, this.isUnattended(), this.args, mcpMode, skillsMode),
         {
           output: this.output,
@@ -268,6 +267,7 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
           workDir: process.cwd(),
         },
       )
+      if (result && !this.flags['from-create'] && this.jsonEnabled()) this.logJson(result)
     } catch (error) {
       if (error instanceof InitError) {
         this.error(error.message, {exit: error.exitCode})

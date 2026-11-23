@@ -1,9 +1,11 @@
-import {getGlobalCliClient, subdebug} from '@sanity/cli-core'
-import {type Context, EXPERIMENTAL_API_WARNING, isHttpError} from '@sanity/client'
+import {CLIError} from '@oclif/core/errors'
+import {exitCodes, getGlobalCliClient, subdebug} from '@sanity/cli-core'
+import {type Context, isHttpError} from '@sanity/client'
+
+import {getBlueprintCliContext} from '../util/blueprintCliContext.js'
+import {lookupBlueprintOwnership} from './blueprintOwnership.js'
 
 const CONTEXT_API_VERSION = 'v2026-08-25'
-const BLUEPRINTS_API_VERSION = 'vX'
-const BLUEPRINTS_LOOKUP_TIMEOUT_MS = 5000
 // The version in the URLs the Context API returns for agents to connect to MCP endpoints
 const MCP_CONNECT_API_VERSION = 'v2026-11-03'
 // Documents per page while a GROQ list read drains the store
@@ -404,62 +406,34 @@ export function getMcpEndpointBlueprintOwnership(
 }
 
 /**
- * Looks the resource up in the Blueprints resource search. Fails open: a
- * failed lookup answers not managed, so a Blueprints outage never blocks a
- * command. A resource that doesn't exist isn't managed either.
+ * Looks up the resource's Stack ownership. Enrolled workspaces require a
+ * verified result for their own scope. A missing resource has no owner.
  */
 async function getBlueprintOwnership(
   type: string,
   resolveResource: () => Promise<{organizationId: string; publicId: string} | null>,
 ): Promise<BlueprintOwnership> {
+  const workspace = await getBlueprintCliContext()
+  let resource: Awaited<ReturnType<typeof resolveResource>>
   try {
-    const resource = await resolveResource()
-    if (!resource) return {managed: false}
-    const {organizationId, publicId} = resource
-    const client = await getGlobalCliClient({
-      apiVersion: BLUEPRINTS_API_VERSION,
-      // The Blueprints API has no stable version yet, and the warning would interrupt command output.
-      // The client splits the warning header on commas, so its second clause is matched separately.
-      ignoreWarnings: [EXPERIMENTAL_API_WARNING, 'which will change without warning'],
-      // The lookup fails open, so an unreachable Blueprints API must not hold the command for the client's defaults.
-      maxRetries: 0,
-      requireUser: true,
-      timeout: BLUEPRINTS_LOOKUP_TIMEOUT_MS,
-    })
-    const headers = {
-      'x-sanity-scope-id': organizationId,
-      'x-sanity-scope-type': 'organization',
-    }
-    const matches = await client.request<{stackId?: string}[]>({
-      headers,
-      query: {id: publicId, type},
-      url: '/blueprints/resources/search',
-    })
-    const stackId = matches.find((match) => typeof match.stackId === 'string')?.stackId
-    if (!stackId) return {managed: false}
-    const stackName = await client
-      .request<{name?: string}>({
-        headers,
-        url: `/blueprints/stacks/${encodeURIComponent(stackId)}`,
-      })
-      .then((stack) => stack.name ?? null)
-      .catch(() => null)
-    return {managed: true, stackName}
+    resource = await resolveResource()
   } catch (error) {
-    if (isHttpError(error)) {
-      if (error.statusCode === 403 && errorCode(error) === 'RESOURCE_MANAGED') {
-        return {managed: true, stackName: null}
-      }
-      if (error.statusCode === 404 && errorCode(error) === 'RESOURCE_NOT_MANAGED') {
-        return {managed: false}
-      }
-    }
-    blueprintOwnershipDebug('Blueprint ownership lookup failed, treating as not managed', error)
+    if (workspace && !(isHttpError(error) && error.statusCode === 404)) throw error
+    blueprintOwnershipDebug('Could not resolve Context resource for ownership lookup', error)
     return {managed: false}
   }
-}
+  if (!resource) return {managed: false}
 
-function errorCode(error: {response: {body: unknown}}): unknown {
-  const {body} = error.response
-  return body && typeof body === 'object' && 'errorCode' in body ? body.errorCode : undefined
+  const {organizationId, publicId} = resource
+  const scope = {id: organizationId, type: 'organization'} as const
+  const ownership = await lookupBlueprintOwnership(scope, {id: publicId, type})
+  if (ownership.status === 'unknown' && workspace) {
+    throw new CLIError(
+      'Could not verify Blueprint ownership. Check your Stack access and run `sanity debug` to verify the active target.',
+      {exit: exitCodes.RUNTIME_ERROR},
+    )
+  }
+  return ownership.status === 'managed'
+    ? {managed: true, stackName: ownership.stackName}
+    : {managed: false}
 }

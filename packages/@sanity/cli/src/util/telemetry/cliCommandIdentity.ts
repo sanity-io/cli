@@ -22,6 +22,7 @@ const commandPaths = new Set([
   'blueprints logs',
   'blueprints mint-deploy-token',
   'blueprints plan',
+  'blueprints profiles set',
   'blueprints promote',
   'blueprints stacks',
   'build',

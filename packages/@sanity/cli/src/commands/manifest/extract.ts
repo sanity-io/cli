@@ -4,6 +4,7 @@ import {exitCodes, findProjectRoot, SanityCommand} from '@sanity/cli-core'
 
 import {manifestDebug} from '../../actions/manifest/debug.js'
 import {extractManifest} from '../../actions/manifest/extractManifest.js'
+import {requireLocalConfig} from '../../util/blueprintCliContext.js'
 import {defineCommandTelemetry} from '../../util/telemetry/commandTelemetry.js'
 
 const description = `
@@ -39,7 +40,7 @@ export class ExtractManifestCommand extends SanityCommand<typeof ExtractManifest
     const {flags} = await this.parse(ExtractManifestCommand)
 
     try {
-      const projectRoot = await findProjectRoot(process.cwd())
+      const projectRoot = await requireLocalConfig(() => findProjectRoot(process.cwd()), 'Studio')
       await extractManifest({
         outPath: flags.path,
         path: projectRoot.path,

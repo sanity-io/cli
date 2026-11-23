@@ -3,11 +3,17 @@ import path from 'node:path'
 import {styleText} from 'node:util'
 
 import {Args, Flags} from '@oclif/core'
+import {defineCorsOrigin} from '@sanity/blueprints'
 import {exitCodes, SanityCommand, subdebug} from '@sanity/cli-core'
 import {getCliExecutionContext} from '@sanity/cli-core/executionContext'
 import {confirm, logSymbols} from '@sanity/cli-core/ux'
 import {oneline} from 'oneline'
 
+import {
+  blueprintResourceName,
+  getBlueprintForProject,
+  printBlueprintResource,
+} from '../../actions/blueprints/prepareResource.js'
 import {filterAndValidateOrigin} from '../../actions/cors/filterAndValidateOrigin.js'
 import {promptForProject} from '../../prompts/promptForProject.js'
 import {createCorsOrigin} from '../../services/cors.js'
@@ -113,6 +119,21 @@ export class Add extends SanityCommand<typeof Add> {
 
     if (filteredOrigin !== origin) {
       this.log(`Normalized origin to: ${filteredOrigin}`)
+    }
+
+    const blueprint = await getBlueprintForProject(projectId)
+    if (blueprint) {
+      printBlueprintResource(
+        this.output,
+        blueprint.path,
+        defineCorsOrigin({
+          allowCredentials,
+          name: blueprintResourceName('cors', `${projectId}/${filteredOrigin}`),
+          origin: filteredOrigin,
+          project: projectId,
+        }),
+      )
+      return
     }
 
     try {

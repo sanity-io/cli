@@ -13,6 +13,7 @@ import {
 } from '../actions/debug/gatherDebugInfo.js'
 import {formatKeyValue, sectionHeader} from '../actions/debug/output.js'
 import {type StudioWorkspace, type UserInfo} from '../actions/debug/types.js'
+import {getBlueprintCliContext} from '../util/blueprintCliContext.js'
 
 type ConfigLoadResult<T> = {error: Error; value?: never} | {error?: never; value: T}
 
@@ -56,7 +57,8 @@ export class Debug extends SanityCommand<typeof Debug> {
       }
     }
 
-    const projectId = cliConfigLoad?.value?.api?.projectId
+    const blueprint = await getBlueprintCliContext()
+    const projectId = cliConfigLoad?.value?.api?.projectId ?? blueprint?.projectId
 
     // Gather project info once, shared between Project and Studio sections
     const project = projectDirectory ? await gatherProjectInfo(projectDirectory) : undefined
@@ -83,6 +85,16 @@ export class Debug extends SanityCommand<typeof Debug> {
 
     // Section 4: Project
     this.printProjectSection(project, cliConfigLoad, studioLoad)
+    if (blueprint) {
+      this.log(sectionHeader('Blueprint mode'))
+      if (blueprint.name) this.log(formatKeyValue('Profile', blueprint.name))
+      if (blueprint.blueprintPath) this.log(formatKeyValue('Manifest', blueprint.blueprintPath))
+      if (blueprint.projectId) this.log(formatKeyValue('Project', blueprint.projectId))
+      if (blueprint.organizationId)
+        this.log(formatKeyValue('Organization', blueprint.organizationId))
+      if (blueprint.dataset) this.log(formatKeyValue('Dataset', blueprint.dataset))
+      if (blueprint.stackId) this.log(formatKeyValue('Stack', blueprint.stackId))
+    }
 
     // Section 5: Studio (when studio config file exists)
     if (projectDirectory && project?.studioConfigPath && studioLoad) {

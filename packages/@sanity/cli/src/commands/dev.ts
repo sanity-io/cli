@@ -6,6 +6,7 @@ import {isWorkbenchApp} from '@sanity/workbench-cli'
 
 import {devAction} from '../actions/dev/devAction.js'
 import {devDebug} from '../actions/dev/devDebug.js'
+import {requireLocalConfig} from '../util/blueprintCliContext.js'
 import {determineIsApp} from '../util/determineIsApp.js'
 
 /**
@@ -49,7 +50,8 @@ export class DevCommand extends SanityCommand<typeof DevCommand> {
   public async run(): Promise<{close?: () => Promise<void>}> {
     const {flags} = await this.parse(DevCommand)
 
-    const workDir = (await this.getProjectRoot()).directory
+    const workDir = (await requireLocalConfig(() => this.getProjectRoot(), 'Studio or app'))
+      .directory
     const cliConfig = await this.getCliConfig()
     const isApp = determineIsApp(cliConfig)
 

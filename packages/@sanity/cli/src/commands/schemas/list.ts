@@ -1,9 +1,12 @@
 import {Flags} from '@oclif/core'
 import {exitCodes, SanityCommand} from '@sanity/cli-core'
+import {isProjectRootNotFoundError} from '@sanity/cli-core/errors'
 
 import {listSchemas} from '../../actions/schema/listSchemas.js'
 import {schemasListDebug} from '../../actions/schema/utils/debug.js'
 import {parseWorkspaceSchemaId} from '../../actions/schema/utils/schemaStoreValidation.js'
+import {getBlueprintCliContext} from '../../util/blueprintCliContext.js'
+import {getDatasetFlag, getProjectIdFlag} from '../../util/sharedFlags.js'
 import {defineCommandTelemetry} from '../../util/telemetry/commandTelemetry.js'
 
 const description = `
@@ -39,6 +42,8 @@ export class ListSchemaCommand extends SanityCommand<typeof ListSchemaCommand> {
   ]
 
   static override flags = {
+    ...getProjectIdFlag({description: 'Project ID to list schemas for', semantics: 'specify'}),
+    ...getDatasetFlag({description: 'Dataset to list schemas for', semantics: 'specify'}),
     'extract-manifest': Flags.boolean({
       allowNo: true,
       default: true,
@@ -72,14 +77,13 @@ export class ListSchemaCommand extends SanityCommand<typeof ListSchemaCommand> {
     }
 
     try {
-      const projectRoot = await this.getProjectRoot()
+      const source = await this.getSchemaSource(flags.project, flags.dataset)
 
       await listSchemas({
-        configPath: projectRoot.path,
+        ...source,
         id,
         json: !!flags.json,
         output: this.output,
-        workDir: projectRoot.directory,
       })
     } catch (error) {
       schemasListDebug('Failed to list schemas', error)
@@ -87,5 +91,30 @@ export class ListSchemaCommand extends SanityCommand<typeof ListSchemaCommand> {
       const errorMessage = error instanceof Error ? error.message : String(error)
       this.error(`Failed to list schemas:\n${errorMessage}`, {exit: exitCodes.RUNTIME_ERROR})
     }
+  }
+
+  private async getSchemaSource(projectFlag: string | undefined, datasetFlag: string | undefined) {
+    if (projectFlag && datasetFlag) return {dataset: {dataset: datasetFlag, projectId: projectFlag}}
+    if (!projectFlag && !datasetFlag) {
+      try {
+        const projectRoot = await this.getProjectRoot()
+        return {configPath: projectRoot.path, workDir: projectRoot.directory}
+      } catch (error) {
+        if (!isProjectRootNotFoundError(error)) throw error
+        const workspace = await getBlueprintCliContext()
+        if (!workspace) throw error
+        if (workspace.projectId && workspace.dataset) {
+          return {dataset: {dataset: workspace.dataset, projectId: workspace.projectId}}
+        }
+      }
+    }
+    const workspace = await getBlueprintCliContext()
+    const projectId = projectFlag || workspace?.projectId
+    const dataset =
+      datasetFlag || (workspace?.projectId === projectId ? workspace?.dataset : undefined)
+    if (projectId && dataset) return {dataset: {dataset, projectId}}
+    throw new Error(
+      'Pass both `--project <id>` and `--dataset <name>` to list schemas for a dataset.',
+    )
   }
 }

@@ -94,7 +94,12 @@ async function runStudioDeployment(
         },
   )
 
-  await checkBlueprintManaged(reporter, {kind: 'studio', projectRootDir: workDir})
+  await checkBlueprintManaged(reporter, {
+    id: appId,
+    kind: 'studio',
+    projectRootDir: workDir,
+    scope: projectId ? {id: projectId, type: 'project'} : undefined,
+  })
 
   // Workbench studios deploy to Brett (which needs the org); plain studios
   // resolve/create on user-applications, unchanged.
