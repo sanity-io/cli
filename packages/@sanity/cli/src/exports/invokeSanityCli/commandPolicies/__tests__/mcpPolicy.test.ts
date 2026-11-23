@@ -110,3 +110,13 @@ describe('mcpPolicy organization logos', () => {
     expect(validate('organizations:create', {flags: {name: 'Acme'}})).toBe(true)
   })
 })
+
+describe('mcpPolicy project logos', () => {
+  test('refuses a logo file on create, which reads from the host', () => {
+    expect(validate('projects:create', {flags: {logo: './logo.png'}})).toBe(false)
+  })
+
+  test('allows creating a project without a logo', () => {
+    expect(validate('projects:create', {flags: {organization: 'acme'}})).toBe(true)
+  })
+})

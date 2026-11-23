@@ -269,7 +269,8 @@ export const mcpPolicy: CommandPolicySet = {
   // Serves a local production build.
   preview: deny,
 
-  'projects:create': allow,
+  // --logo reads an image from the machine running the command.
+  'projects:create': conditionalDenyFlags('logo'),
   'projects:list': allow,
   // Reads locally stored claim URLs and robot tokens.
   'projects:unclaimed': deny,
