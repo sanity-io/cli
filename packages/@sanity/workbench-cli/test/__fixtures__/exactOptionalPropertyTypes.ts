@@ -1,3 +1,4 @@
+// Compiled with `exactOptionalPropertyTypes` by `defineApp.test.ts`; lives outside `src` so the default type check skips it.
 import {type CliConfig} from '@sanity/cli-core'
 
 import {defineApplication} from '../../src/_exports/index.js'
