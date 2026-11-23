@@ -70,9 +70,13 @@ interface ProbeDiagnostic {
  * `./userViteConfig` is always blocked: it drags in vite's large type graph,
  * and `UserViteConfig` is unrelated to `ReactCompilerConfig`.
  */
-function compileProbe(blockedModules: string[], probeSource: string): ProbeDiagnostic[] {
+function compileProbe(
+  blockedModules: string[],
+  probeSource: string,
+  compilerOptions: CompilerOptions = COMPILER_OPTIONS,
+): ProbeDiagnostic[] {
   const blocked = new Set([...blockedModules, './userViteConfig'])
-  const host = createCompilerHost(COMPILER_OPTIONS)
+  const host = createCompilerHost(compilerOptions)
   const {fileExists, getSourceFile, readFile} = host
 
   host.fileExists = (fileName) => isProbePath(fileName) || fileExists.call(host, fileName)
@@ -86,12 +90,12 @@ function compileProbe(blockedModules: string[], probeSource: string): ProbeDiagn
     moduleLiterals.map((literal) =>
       blocked.has(literal.text)
         ? {resolvedModule: undefined}
-        : resolveModuleName(literal.text, containingFile, COMPILER_OPTIONS, host),
+        : resolveModuleName(literal.text, containingFile, compilerOptions, host),
     )
 
   const program = createProgram({
     host,
-    options: COMPILER_OPTIONS,
+    options: compilerOptions,
     rootNames: [PROBE_PATH],
   })
 
@@ -239,4 +243,26 @@ describe('ReactCompilerConfig static shape (compiled against installed peers)', 
 
     expect([babelExcess, babelValue, oxcValue]).toHaveLength(3)
   })
+})
+
+describe('CliConfig `app` with exactOptionalPropertyTypes', () => {
+  const probeSource = `import {type CliConfig} from './cliConfig'
+type Loose<T> = {[K in keyof T]?: T[K] | undefined}
+declare const loose: Loose<NonNullable<CliConfig['app']>>
+export const goodUndefinedFields: CliConfig['app'] = loose
+export const badVisibility: CliConfig['app'] = {visibility: 'hidden'} /* bad */
+`
+
+  test(
+    'accepts `undefined` for every optional field',
+    () => {
+      const diagnostics = compileProbe([], probeSource, {
+        ...COMPILER_OPTIONS,
+        exactOptionalPropertyTypes: true,
+      })
+
+      expectDiagnosticsOnMarkedLinesOnly(diagnostics, probeSource)
+    },
+    COMPILE_TIMEOUT_MS,
+  )
 })

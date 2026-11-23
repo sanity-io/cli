@@ -115,20 +115,20 @@ export interface CliConfig {
   /** Configuration for custom Sanity apps built with the App SDK */
   app?: {
     /** The entrypoint for your custom app. By default, `src/App.tsx` */
-    entry?: string
+    entry?: string | undefined
     /**
      * Path to an icon file relative to project root.
      * The file must be an SVG.
      */
-    icon?: string
+    icon?: string | undefined
     /** @deprecated Use deployment.appId */
-    id?: string
+    id?: string | undefined
     /** The ID for the Sanity organization that manages this application */
-    organizationId?: string
+    organizationId?: string | undefined
     /** The title of the custom app, as it is seen in Dashboard UI */
-    title?: string
+    title?: string | undefined
     /** Dashboard visibility of the application. Defaults to `default`. */
-    visibility?: AppVisibility
+    visibility?: AppVisibility | undefined
   }
 
   /** @deprecated Use deployment.autoUpdates */
