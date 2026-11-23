@@ -4,10 +4,9 @@ import {fileURLToPath} from 'node:url'
 import {type CliConfig} from '@sanity/cli-core'
 import {defineApplication, type DefineAppResult} from '@sanity/workbench-cli'
 import {
-  createCompilerHost,
   createProgram,
-  createSourceFile,
   flattenDiagnosticMessageText,
+  getPreEmitDiagnostics,
   parseJsonConfigFileContent,
   readConfigFile,
   sys,
@@ -66,38 +65,20 @@ describe('the `app` config slot', () => {
     })
   })
 
-  test('under `exactOptionalPropertyTypes`, accepts a `defineApplication` result and rejects `entry: undefined` written by hand', () => {
+  test('type-checks `defineApplication` with exactOptionalPropertyTypes', () => {
     const packageDir = join(dirname(fileURLToPath(import.meta.url)), '../../..')
-    const probePath = join(packageDir, 'src/exports/probe.ts').replaceAll('\\', '/')
-    const probeSource = `import {defineApplication, defineCliConfig} from './index'
-const app = {organizationId: 'org', slug: 'app', title: 'App'}
-defineCliConfig({app: defineApplication(app)})
-defineCliConfig({app: defineApplication({...app, entry: undefined})})
-defineCliConfig({app: defineApplication({...app, entry: './src/App.tsx'})})
-defineCliConfig({app: {entry: undefined}})
-`
+    const fixture = join(packageDir, 'test/__fixtures__/exactOptionalPropertyTypes.ts')
     const {options} = parseJsonConfigFileContent(
       readConfigFile(join(packageDir, 'tsconfig.json'), sys.readFile).config,
       sys,
       packageDir,
     )
-    const compilerOptions = {...options, exactOptionalPropertyTypes: true}
-    const host = createCompilerHost(compilerOptions)
-    const isProbe = (fileName: string) => fileName.replaceAll('\\', '/') === probePath
-    const {getSourceFile} = host
-
-    host.getSourceFile = (fileName, languageVersion, ...rest) =>
-      isProbe(fileName)
-        ? createSourceFile(fileName, probeSource, languageVersion, true)
-        : getSourceFile.call(host, fileName, languageVersion, ...rest)
-
-    const program = createProgram({host, options: compilerOptions, rootNames: [probePath]})
-    const probe = program.getSourceFile(probePath)!
-    const diagnostics = program.getSemanticDiagnostics(probe)
+    const program = createProgram([fixture], {...options, exactOptionalPropertyTypes: true})
 
     expect(
-      diagnostics.map(({start}) => probe.getLineAndCharacterOfPosition(start!).line + 1),
-      diagnostics.map(({messageText}) => flattenDiagnosticMessageText(messageText, ' ')).join('\n'),
-    ).toEqual([6])
+      getPreEmitDiagnostics(program, program.getSourceFile(fixture)).map(({messageText}) =>
+        flattenDiagnosticMessageText(messageText, ' '),
+      ),
+    ).toEqual([])
   }, 30_000)
 })
