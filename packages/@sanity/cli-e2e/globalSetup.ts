@@ -2,6 +2,7 @@ import {mkdtempSync, rmSync} from 'node:fs'
 import {tmpdir} from 'node:os'
 import {join} from 'node:path'
 
+import setupPackage from '@sanity/cli-setup/package.json' with {type: 'json'}
 import {setup as setupFixtures, teardown as teardownFixtures} from '@sanity/cli-test/vitest'
 import {type TestProject} from 'vitest/node'
 
@@ -31,6 +32,9 @@ export async function setup(project: TestProject): Promise<void> {
     console.log('Packing @sanity/cli-core...')
     const cliCoreTarball = packPackage('@sanity/cli-core')
 
+    console.log('Packing @sanity/cli-setup...')
+    const cliSetupTarball = packPackage(setupPackage.name)
+
     console.log('Packing @sanity/cli-build...')
     const cliBuildTarball = packPackage('@sanity/cli-build')
 
@@ -48,6 +52,7 @@ export async function setup(project: TestProject): Promise<void> {
     const createSanityTarball = packPackage('create-sanity')
     tarballPaths = [
       cliCoreTarball,
+      cliSetupTarball,
       cliBuildTarball,
       workbenchCliTarball,
       cliTarball,

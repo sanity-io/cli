@@ -916,6 +916,7 @@ snapshots:
 				},
 				"@sanity/cli-build": "workspace:^",
 				"@sanity/cli-core": "workspace:^",
+				"@sanity/cli-setup": "workspace:^",
 				"@sanity/client": "catalog:",
 				"@sanity/codegen": "catalog:",
 				"@sanity/descriptors": {
@@ -1320,6 +1321,7 @@ snapshots:
 				"@sanity/cli": "workspace:*",
 				"@sanity/cli-build": "workspace:*",
 				"@sanity/cli-core": "workspace:*",
+				"@sanity/cli-setup": "workspace:*",
 				"@sanity/cli-test": "workspace:*",
 				"@types/node": {
 					"specifier": "^22.20.5",
@@ -1329,6 +1331,26 @@ snapshots:
 				"node-pty": "catalog:",
 				"oxlint": "catalog:",
 				"strip-ansi": "catalog:",
+				"typescript": "catalog:",
+				"vitest": "catalog:",
+			},
+		},
+
+		"packages/@sanity/cli-setup": {
+			"name": "@sanity/cli-setup",
+			"dependencies": {
+				"@sanity/blueprints": {
+					"specifier": "^0.34.1",
+					"version": "0.34.1",
+				},
+			},
+			"devDependencies": {
+				"@swc/cli": "catalog:",
+				"@swc/core": "catalog:",
+				"@types/node": {
+					"specifier": "^22.20.5",
+					"version": "22.20.5",
+				},
 				"typescript": "catalog:",
 				"vitest": "catalog:",
 			},
@@ -9198,6 +9220,21 @@ snapshots:
 					"peerDependencies": {
 						"@sanity/cli-build": {
 							"version": "7.3.0",
+							"with": {
+								"oxc-transform-react": "0.156.0",
+								"xstate": "5.33.4",
+							},
+						},
+					},
+				},
+				{
+					"peerDependencies": {
+						"@sanity/cli-build": {
+							"version": "7.3.0",
+							"with": {
+								"oxc-transform-react": "0.158.0",
+								"xstate": "5.33.2",
+							},
 						},
 					},
 				},
@@ -9258,7 +9295,6 @@ snapshots:
 				},
 				"oxc-transform-react": {
 					"specifier": "*",
-					"version": "0.158.0",
 					"optional": true,
 				},
 				"rolldown": {
@@ -9284,10 +9320,6 @@ snapshots:
 				},
 				"vitest": {
 					"version": "5.1.1",
-					"below": true,
-				},
-				"xstate": {
-					"version": "5.33.2",
 					"below": true,
 				},
 				"yaml": {
@@ -9321,6 +9353,31 @@ snapshots:
 				"vite": "8.3.8",
 				"zod": "4.6.7",
 			},
+			"snapshots": [
+				{
+					"peerDependencies": {
+						"oxc-transform-react": {
+							"version": "0.156.0",
+						},
+						"xstate": {
+							"version": "5.33.4",
+							"below": true,
+						},
+					},
+					"optional": true,
+				},
+				{
+					"peerDependencies": {
+						"oxc-transform-react": {
+							"version": "0.158.0",
+						},
+						"xstate": {
+							"version": "5.33.2",
+							"below": true,
+						},
+					},
+				},
+			],
 		},
 
 		"@sanity/cli-core@3.15.1": {
@@ -9346,7 +9403,6 @@ snapshots:
 				},
 				"oxc-transform-react": {
 					"specifier": "*",
-					"version": "0.158.0",
 					"optional": true,
 				},
 				"tsx": {
@@ -9383,6 +9439,23 @@ snapshots:
 				"wrap-ansi": "9.0.2",
 				"zod": "4.6.7",
 			},
+			"snapshots": [
+				{
+					"peerDependencies": {
+						"oxc-transform-react": {
+							"version": "0.156.0",
+						},
+					},
+					"optional": true,
+				},
+				{
+					"peerDependencies": {
+						"oxc-transform-react": {
+							"version": "0.158.0",
+						},
+					},
+				},
+			],
 		},
 
 		"@sanity/client@7.26.2": {
@@ -10235,7 +10308,18 @@ snapshots:
 				"@oclif/core": "4.14.0",
 				"@oclif/plugin-help": "6.3.0",
 				"@sanity-labs/oclif-plugin-skills-flag": "0.2.1",
-				"@sanity/blueprints": "0.34.1",
+				"@sanity/blueprints": {
+					"version": "0.34.1",
+					"with": {
+						"@sanity/cli-build": {
+							"version": "7.3.0",
+							"with": {
+								"oxc-transform-react": "0.158.0",
+								"xstate": "5.33.2",
+							},
+						},
+					},
+				},
 				"@sanity/blueprints-parser": "0.5.0",
 				"@sanity/cli-build": "7.3.0",
 				"@sanity/cli-core": "3.15.1",
@@ -11283,10 +11367,6 @@ snapshots:
 					"version": "2.7.0",
 					"below": true,
 				},
-				"oxc-transform-react": {
-					"version": "0.158.0",
-					"below": true,
-				},
 				"react": {
 					"version": "19.3.1",
 					"below": true,
@@ -11305,10 +11385,6 @@ snapshots:
 				},
 				"vitest": {
 					"version": "5.1.1",
-					"below": true,
-				},
-				"xstate": {
-					"version": "5.33.2",
 					"below": true,
 				},
 				"yaml": {
@@ -11331,6 +11407,33 @@ snapshots:
 				"vite": "8.3.8",
 				"zod": "4.6.7",
 			},
+			"snapshots": [
+				{
+					"peerDependencies": {
+						"oxc-transform-react": {
+							"version": "0.156.0",
+							"below": true,
+						},
+						"xstate": {
+							"version": "5.33.4",
+							"below": true,
+						},
+					},
+					"optional": true,
+				},
+				{
+					"peerDependencies": {
+						"oxc-transform-react": {
+							"version": "0.158.0",
+							"below": true,
+						},
+						"xstate": {
+							"version": "5.33.2",
+							"below": true,
+						},
+					},
+				},
+			],
 		},
 
 		"@sanity/worker-channels@2.0.0": {
@@ -13059,6 +13162,17 @@ snapshots:
 							"version": "0.158.0",
 						},
 					},
+				},
+				{
+					"peerDependencies": {
+						"@rolldown/plugin-babel": {
+							"version": "0.3.1",
+						},
+						"oxc-transform-react": {
+							"version": "0.156.0",
+						},
+					},
+					"optional": true,
 				},
 				{
 					"peerDependencies": {

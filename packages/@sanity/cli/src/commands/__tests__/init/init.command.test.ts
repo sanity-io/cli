@@ -19,6 +19,36 @@ vi.mock('@sanity/cli-core', async (importOriginal) => {
   }
 })
 
+describe('Blueprint setup', () => {
+  afterEach(() => vi.clearAllMocks())
+
+  test.each([
+    {argv: [], withBlueprints: undefined},
+    {argv: ['--with-blueprints'], withBlueprints: true},
+  ])('sets Blueprint mode from $argv', async ({argv, withBlueprints}) => {
+    mockInitAction.mockResolvedValue(undefined)
+
+    const {error} = await testCommand(InitCommand, argv, {
+      mocks: {isInteractive: true, token: 'test-token'},
+    })
+
+    if (error) throw error
+    expect(mockInitAction).toHaveBeenCalledWith(
+      expect.objectContaining({withBlueprints}),
+      expect.any(Object),
+    )
+  })
+
+  test('rejects a Studio template with --with-blueprints', async () => {
+    const {error} = await testCommand(InitCommand, ['--with-blueprints', '--template', 'clean'], {
+      mocks: {isInteractive: true, token: 'test-token'},
+    })
+
+    expect(error?.message).toMatch(/cannot also be provided/)
+    expect(mockInitAction).not.toHaveBeenCalled()
+  })
+})
+
 describe('mcpMode resolution', () => {
   afterEach(() => {
     vi.clearAllMocks()
