@@ -98,16 +98,15 @@ export const DefineAppInputSchema = z
     }),
   )
 
-type PublicAppInput = Omit<z.output<typeof DefineAppInputSchema>, 'applicationType' | 'isSingleton'>
-
 /**
  * User-facing input for `defineApplication`. Excludes the internal
  * `applicationType` and `isSingleton`.
  * @public
  */
-export type DefineAppInput = {
-  [K in keyof PublicAppInput]: Exclude<PublicAppInput[K], undefined>
-}
+export type DefineAppInput = Omit<
+  z.output<typeof DefineAppInputSchema>,
+  'applicationType' | 'isSingleton'
+>
 
 /**
  * Nominal brand the CLI discriminates on to enable the workbench build/deploy
@@ -122,7 +121,9 @@ const WORKBENCH_APP: unique symbol = Symbol.for('sanity.workbench.defineApp')
  * input plus the internal brand — users only ever see `DefineAppInput`.
  * @public
  */
-export type DefineAppResult = DefineAppInput & {readonly [WORKBENCH_APP]: true}
+export type DefineAppResult = {
+  [K in keyof DefineAppInput]: Exclude<DefineAppInput[K], undefined>
+} & {readonly [WORKBENCH_APP]: true}
 
 /**
  * A branded app as the CLI reads it — the full schema shape, including the
