@@ -38,6 +38,7 @@
     "pre:enter": "changeset pre enter",
     "pre:exit": "changeset pre exit",
     "prepare": "husky",
+    "preview:create": "node scripts/preview-create-sanity.mjs",
     "publint": "turbo run publint",
     "publish-packages": "changeset publish",
     "release": "pnpm build:cli && pnpm publish-packages",

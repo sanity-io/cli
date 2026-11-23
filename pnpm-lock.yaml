@@ -1445,9 +1445,18 @@ snapshots:
 		"packages/create-sanity": {
 			"name": "create-sanity",
 			"dependencies": {
-				"@sanity/cli": "workspace:*",
+				"@sanity/blueprints": {
+					"specifier": "^0.34.1",
+					"version": "0.34.1",
+					"with": {
+						"@sanity/cli-build": "link:packages/@sanity/cli-build",
+					},
+				},
+				"@sanity/cli-setup": "workspace:*",
+				"@sanity/client": "catalog:",
 			},
 			"devDependencies": {
+				"@sanity/cli": "workspace:*",
 				"@types/node": {
 					"specifier": "^22.20.5",
 					"version": "22.20.5",
