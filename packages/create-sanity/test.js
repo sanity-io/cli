@@ -1,6 +1,7 @@
 import {spawn} from 'node:child_process'
 import {join} from 'node:path'
 
+// eslint-disable-next-line import-js/no-extraneous-dependencies -- Vitest is a test-only dependency
 import {expect, test} from 'vitest'
 
 const createSanityScript = join(import.meta.dirname, 'index.js')
@@ -42,10 +43,19 @@ test('create-sanity --help returns exit code 0 and help text', async () => {
 
   expect(result.code, 'Exit code should be 0 for --help').toBe(0)
   expect(result.output, 'Output should contain help-related text').toMatch(/help|usage|options/i)
+  expect(result.output).not.toContain('--with-blueprints')
   expect(
     result.output,
     "Output should mention init command since that's what create-sanity runs",
   ).toMatch(/init/i)
+})
+
+test('create-sanity forwards --with-blueprints to init', async () => {
+  const result = await runCreateSanity(['--with-blueprints', '--yes'])
+
+  expect(result.code).toBe(2)
+  expect(result.output).toContain('Project is required in unattended mode.')
+  expect(result.output).not.toContain('Output path is required')
 })
 
 test('create-sanity passes through arguments to sanity init', async () => {
