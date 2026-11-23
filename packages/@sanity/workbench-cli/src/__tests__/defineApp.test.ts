@@ -1,4 +1,16 @@
+import path from 'node:path'
+import {fileURLToPath} from 'node:url'
+
 import {type ApplicationType, type AppVisibility} from '@sanity/cli-core'
+import {
+  createCompilerHost,
+  createProgram,
+  createSourceFile,
+  getPreEmitDiagnostics,
+  parseJsonConfigFileContent,
+  readConfigFile,
+  sys,
+} from 'typescript'
 import {describe, expect, expectTypeOf, test} from 'vitest'
 
 import {
@@ -607,4 +619,44 @@ describe('interface surface', () => {
   test('allows declaring an app entry and panel views together', () => {
     expectTypeOf<Base & {entry: string; views: PanelView[]}>().toExtend<DefineAppInput>()
   })
+})
+
+describe('`defineApplication` under exactOptionalPropertyTypes', () => {
+  const PACKAGE_DIR = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', '..')
+  const PROBE_PATH = path
+    .join(PACKAGE_DIR, 'src', '__exactOptionalProbe__.ts')
+    .replaceAll('\\', '/')
+  const probeSource = `import {type CliConfig} from '@sanity/cli-core'
+import {defineApplication} from './defineApp'
+const base = {organizationId: 'org', slug: 'app', title: 'App'}
+export const goodOmitted: CliConfig = {app: defineApplication(base)}
+export const badExplicitUndefined = defineApplication({...base, entry: undefined})
+`
+
+  test("result is assignable to `CliConfig['app']`, and `entry: undefined` is a type error", () => {
+    const {config} = readConfigFile(path.join(PACKAGE_DIR, 'tsconfig.json'), sys.readFile)
+    const {options} = parseJsonConfigFileContent(config, sys, PACKAGE_DIR)
+    const compilerOptions = {...options, exactOptionalPropertyTypes: true, noEmit: true}
+    const host = createCompilerHost(compilerOptions)
+    const {fileExists, getSourceFile, readFile} = host
+    const isProbe = (fileName: string) => fileName.replaceAll('\\', '/') === PROBE_PATH
+
+    host.fileExists = (fileName) => isProbe(fileName) || fileExists.call(host, fileName)
+    host.readFile = (fileName) => (isProbe(fileName) ? probeSource : readFile.call(host, fileName))
+    host.getSourceFile = (fileName, languageVersionOrOptions, ...rest) =>
+      isProbe(fileName)
+        ? createSourceFile(fileName, probeSource, languageVersionOrOptions, true)
+        : getSourceFile.call(host, fileName, languageVersionOrOptions, ...rest)
+
+    const diagnostics = getPreEmitDiagnostics(
+      createProgram({host, options: compilerOptions, rootNames: [PROBE_PATH]}),
+    ).filter(({file}) => file && isProbe(file.fileName))
+
+    expect(
+      diagnostics.map(({code, file, start}) => ({
+        code,
+        line: file!.getLineAndCharacterOfPosition(start!).line + 1,
+      })),
+    ).toEqual([{code: 2379, line: 5}])
+  }, 60_000)
 })

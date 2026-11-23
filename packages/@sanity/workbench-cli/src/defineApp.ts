@@ -98,15 +98,16 @@ export const DefineAppInputSchema = z
     }),
   )
 
+type PublicAppInput = Omit<z.output<typeof DefineAppInputSchema>, 'applicationType' | 'isSingleton'>
+
 /**
  * User-facing input for `defineApplication`. Excludes the internal
  * `applicationType` and `isSingleton`.
  * @public
  */
-export type DefineAppInput = Omit<
-  z.output<typeof DefineAppInputSchema>,
-  'applicationType' | 'isSingleton'
->
+export type DefineAppInput = {
+  [K in keyof PublicAppInput]: Exclude<PublicAppInput[K], undefined>
+}
 
 /**
  * Nominal brand the CLI discriminates on to enable the workbench build/deploy
