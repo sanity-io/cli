@@ -174,40 +174,20 @@ describe('deployStudio (federated studio)', () => {
     )
   })
 
-  test('the declared app and view icon images reach the deployment', async () => {
+  test('the declared icon image reaches the deployment', async () => {
     const workDir = await mkdtemp(join(tmpdir(), 'studio-icon-'))
     onTestFinished(() => rm(workDir, {force: true, recursive: true}))
     await writeFile(join(workDir, 'icon.png'), 'png bytes')
-    await writeFile(join(workDir, 'feed.png'), 'feed bytes')
 
     await deployStudio({
-      ...deployOptions({
-        app: {
-          icon: './icon.png',
-          views: [
-            {
-              icon: './feed.png',
-              name: 'feed',
-              src: './src/Feed.tsx',
-              surface: 'panel',
-              title: 'Feed',
-            },
-          ],
-        },
-      }),
+      ...deployOptions({app: {icon: './icon.png'}}),
       projectRoot: {directory: workDir, path: join(workDir, 'sanity.cli.ts')},
     } as DeployAppOptions)
 
     expect(mockDeployWorkbenchApp).toHaveBeenCalledWith(
       expect.objectContaining({
         icon: expect.objectContaining({contentType: 'image/png', image: Buffer.from('png bytes')}),
-        viewIcons: [
-          {
-            icon: expect.objectContaining({image: Buffer.from('feed bytes')}),
-            name: 'feed',
-            type: 'panel',
-          },
-        ],
+        workDir,
       }),
     )
   })

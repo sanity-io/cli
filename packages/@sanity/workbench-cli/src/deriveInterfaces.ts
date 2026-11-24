@@ -29,16 +29,24 @@ interface DerivedInterfaceBase {
 
 /** @internal */
 export type DerivedInterface =
+  | (DerivedInterfaceBase & {
+      icon?: string
+      metadata: ViewPlacementMetadata | null
+      surface: 'panel'
+    })
+  | (DerivedInterfaceBase & {
+      icon?: string
+      metadata: ViewPlacementMetadata | null
+      surface: 'window'
+    })
   | (DerivedInterfaceBase & {metadata: null; surface: 'asset_source'})
   | (DerivedInterfaceBase & {metadata: null; type: 'worker'})
   | (DerivedInterfaceBase & {metadata: TileInterfaceMetadata; surface: 'tile'})
-  | (DerivedInterfaceBase & {metadata: ViewPlacementMetadata | null; surface: 'panel'})
-  | (DerivedInterfaceBase & {metadata: ViewPlacementMetadata | null; surface: 'window'})
 
 /**
  * `appTitle` titles the window where a deploy resolved one through `--title`;
- * dev takes it from the config. `iconUrl` resolves a view's `icon` path to where
- * a local server serves it; a deploy uploads icons instead.
+ * dev takes it from the config. `iconUrl` resolves an interface's `icon` path to
+ * the `metadata.icon` a local server serves it at; a deploy uploads it instead.
  * @internal
  */
 export function deriveInterfaces(
@@ -108,6 +116,8 @@ export function deriveInterfaces(
       if (view.surface === 'panel' || view.surface === 'window') {
         return {
           ...shared(view.surface, view),
+          // A local interface carries its icon only in `metadata.icon`, like a deployed one.
+          ...(view.icon && !iconUrl && {icon: view.icon}),
           metadata: placementMetadata(view.dock, view.surface, view.icon),
           surface: view.surface,
         }

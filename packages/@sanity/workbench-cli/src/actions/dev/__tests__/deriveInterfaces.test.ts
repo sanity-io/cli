@@ -233,23 +233,28 @@ describe('deriveInterfaces', () => {
     ])
   })
 
-  test("sets metadata.icon to the iconUrl of a window or panel view's icon, alongside dock", () => {
-    const app = iconApp()
-
+  test("puts a local window or panel view's icon only in metadata.icon, like a deployed one", () => {
     expect(
-      deriveInterfaces(app, {iconUrl: (path) => `http://localhost:3333/${path}`, isApp: true}).map(
-        (iface) => iface.metadata,
-      ),
+      deriveInterfaces(iconApp(), {
+        iconUrl: (path) => `http://localhost:3333/${path}`,
+        isApp: true,
+      }).map(({icon, metadata}) => ({icon, metadata})),
     ).toStrictEqual([
-      {icon: 'http://localhost:3333/./feed.png'},
-      {dock: {order: 20}, icon: 'http://localhost:3333/./settings.png'},
+      {icon: undefined, metadata: {icon: 'http://localhost:3333/./feed.png'}},
+      {
+        icon: undefined,
+        metadata: {dock: {order: 20}, icon: 'http://localhost:3333/./settings.png'},
+      },
     ])
   })
 
-  test('omits the icon from metadata when no iconUrl is given', () => {
-    expect(deriveInterfaces(iconApp(), {isApp: true}).map((iface) => iface.metadata)).toStrictEqual(
-      [null, {dock: {order: 20}}],
-    )
+  test('keeps the icon path out of metadata for a deploy to upload', () => {
+    expect(
+      deriveInterfaces(iconApp(), {isApp: true}).map(({icon, metadata}) => ({icon, metadata})),
+    ).toStrictEqual([
+      {icon: './feed.png', metadata: null},
+      {icon: './settings.png', metadata: {dock: {order: 20}}},
+    ])
   })
 
   test('stamps the moduleId a deploy would, so a local interface resolves like a deployed one', () => {

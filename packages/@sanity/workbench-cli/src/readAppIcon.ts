@@ -1,10 +1,7 @@
 import {relative, resolve, sep} from 'node:path'
 
-import {type CliConfig} from '@sanity/cli-core'
 import {getErrorMessage} from '@sanity/cli-core/errors'
 import {type ImageFile, readImageFile} from '@sanity/cli-core/images'
-
-import {isWorkbenchApp} from './defineApp.js'
 
 /**
  * An app's or view's `icon` image, read from its project.
@@ -33,35 +30,6 @@ export async function readAppIcon(workDir: string, iconPath: string): Promise<Ap
   } catch (err) {
     throw new Error(`Can't use icon "${iconPath}": ${getErrorMessage(err)}`, {cause: err})
   }
-}
-
-/**
- * A window or panel view's icon, keyed like the Brett interface it belongs to.
- * @internal
- */
-export interface ViewIcon {
-  icon: AppIcon
-  name: string
-  type: 'app' | 'panel'
-}
-
-/** @internal */
-export async function readViewIcons(workDir: string, app: CliConfig['app']): Promise<ViewIcon[]> {
-  if (!isWorkbenchApp(app)) return []
-
-  return Promise.all(
-    (app.views ?? []).flatMap((view) =>
-      (view.surface === 'window' || view.surface === 'panel') && view.icon
-        ? [
-            readAppIcon(workDir, view.icon).then((icon) => ({
-              icon,
-              name: view.name,
-              type: view.surface === 'window' ? ('app' as const) : view.surface,
-            })),
-          ]
-        : [],
-    ),
-  )
 }
 
 /**

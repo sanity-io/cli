@@ -8,7 +8,7 @@ import {spinner} from '@sanity/cli-core/ux'
 import {c as createTar} from 'tar'
 
 import {type DerivedInterface, deriveInterfaces} from '../../deriveInterfaces.js'
-import {type ViewIcon} from '../../readAppIcon.js'
+import {readAppIcon} from '../../readAppIcon.js'
 import {
   type Application,
   type BrettAccess,
@@ -42,7 +42,7 @@ function toBrettInterface(iface: DerivedInterface): BrettInterface {
       return {...view, type: surface}
     }
     case 'panel': {
-      const {surface, ...view} = declaration
+      const {icon: _icon, surface, ...view} = declaration
       return {...view, type: surface}
     }
     case 'tile': {
@@ -50,7 +50,7 @@ function toBrettInterface(iface: DerivedInterface): BrettInterface {
       return {...view, type: surface}
     }
     case 'window': {
-      const {surface, ...view} = declaration
+      const {icon: _icon, surface, ...view} = declaration
       return {...view, type: 'app'}
     }
   }
@@ -109,7 +109,7 @@ export async function createStudio(options: {
  * then sync its mutable metadata (`title`, and `slug`/`visibility` when set)
  * and its icon from config. The deploy endpoint ignores these, so a redeploy
  * patches them here alongside the new deployment. No `icon` removes the
- * application's icon. `viewIcons` go on the deployment's new interfaces.
+ * application's icon. Each interface's `icon` goes on the interface Brett created for it.
  *
  * `onDeployed` fires the instant the deployment is live, before the metadata
  * sync — so a caller can disarm a create-time rollback that must not delete an
@@ -138,8 +138,8 @@ export async function deployWorkbenchApp(options: {
   sourceDir: string
   title: string
   version: string
-  viewIcons?: readonly ViewIcon[]
   visibility?: AppVisibility
+  workDir: string
   workspaces?: readonly BrettWorkspace[]
 }): Promise<void> {
   const {
@@ -157,13 +157,21 @@ export async function deployWorkbenchApp(options: {
     sourceDir,
     title,
     version,
-    viewIcons = [],
     visibility,
+    workDir,
     workspaces,
   } = options
   const tarball = isExternal
     ? undefined
     : createTar({cwd: dirname(sourceDir)}, [basename(sourceDir)]).pipe(createGzip())
+
+  // Read before deploying, so a bad icon path fails while nothing is live.
+  const interfaces = await Promise.all(
+    deriveInterfaces(app, {appTitle: title, isApp}).map(async (iface) => ({
+      brett: toBrettInterface(iface),
+      icon: 'icon' in iface && iface.icon ? await readAppIcon(workDir, iface.icon) : undefined,
+    })),
+  )
 
   const spin = spinner(label).start()
   try {
@@ -171,9 +179,7 @@ export async function deployWorkbenchApp(options: {
       access,
       applicationId,
       // Brett assigns the id and resolves modules by `moduleId`, so neither travels.
-      interfaces: deriveInterfaces(app, {appTitle: title, isApp}).map((iface) =>
-        toBrettInterface(iface),
-      ),
+      interfaces: interfaces.map(({brett}) => brett),
       isAutoUpdating,
       mfManifest,
       tarball,
@@ -203,7 +209,12 @@ export async function deployWorkbenchApp(options: {
     } else {
       await removeApplicationIcon(applicationId)
     }
-    for (const {icon, name, type} of viewIcons) {
+    for (const {
+      brett: {name, type},
+      icon: interfaceIcon,
+    } of interfaces) {
+      if (!interfaceIcon) continue
+
       const iface = deployment.interfaces.find((i) => i.type === type && i.name === name)
       if (!iface) {
         throw new Error(
@@ -211,7 +222,7 @@ export async function deployWorkbenchApp(options: {
         )
       }
       try {
-        await setInterfaceIcon(applicationId, iface.id, icon)
+        await setInterfaceIcon(applicationId, iface.id, interfaceIcon)
       } catch (error) {
         throw toIconRejection(
           error,

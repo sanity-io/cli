@@ -19,7 +19,7 @@ export {
   type DeployedWebWorker,
   summarizeInterfaces,
 } from '../actions/deploy/summarizeInterfaces.js'
-export {readAppIcon, readViewIcons} from '../readAppIcon.js'
+export {readAppIcon} from '../readAppIcon.js'
 export {type ResolvedMediaLibraryConfig, resolveWorkbenchConfig} from '../resolveWorkbenchConfig.js'
 export {
   type Application,
