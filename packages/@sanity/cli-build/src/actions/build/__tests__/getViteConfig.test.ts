@@ -219,6 +219,7 @@ describe('#getViteConfig', () => {
     expect(config.build).toMatchObject({
       assetsDir: 'static',
       emptyOutDir: false,
+      manifest: true,
       minify: 'oxc',
       outDir: mockCustomOutput,
       sourcemap: false,
