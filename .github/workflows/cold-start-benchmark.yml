@@ -24,6 +24,8 @@ jobs:
     runs-on: ubuntu-latest
     continue-on-error: true
     timeout-minutes: 10
+    outputs:
+      stats: ${{ steps.measure.outputs.stats }}
     steps:
       - uses: actions/checkout@v7
 
@@ -38,6 +40,57 @@ jobs:
           pnpm --filter create-sanity pack --out "$RUNNER_TEMP/create-sanity-candidate.tgz"
 
       - name: Measure cold Blueprint setup
+        id: measure
         run: |
           node scripts/bench-create-sanity.mjs \
             "$RUNNER_TEMP/create-sanity-candidate.tgz" 4
+
+  report-cold-start:
+    needs: blueprint-cold-start
+    if: github.event.pull_request.head.repo.full_name == github.repository && needs.blueprint-cold-start.outputs.stats != ''
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    permissions:
+      pull-requests: write
+    steps:
+      - name: Post benchmark stats
+        uses: actions/github-script@v9
+        env:
+          BENCHMARK_STATS: ${{ needs.blueprint-cold-start.outputs.stats }}
+        with:
+          script: |
+            const marker = '<!-- sanity-cold-start-benchmark -->'
+            const {budgetSeconds, median, seconds, size} = JSON.parse(process.env.BENCHMARK_STATS)
+            if (!Array.isArray(seconds) || seconds.length !== 3 ||
+                ![...seconds, budgetSeconds, median, size].every((value) => Number.isFinite(value) && value >= 0)) {
+              throw new Error('Invalid cold-start benchmark stats')
+            }
+
+            const {number, head} = context.payload.pull_request
+            const {data: pr} = await github.rest.pulls.get({...context.repo, pull_number: number})
+            if (pr.state !== 'open' || pr.head.sha !== head.sha) return
+
+            const samples = seconds.map((value) => value.toFixed(2)).join(', ')
+            const result = median > budgetSeconds ? 'Above budget' : 'Within budget'
+            const runUrl = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`
+            const body = [
+              marker,
+              '### Cold Blueprint setup',
+              '',
+              '| Runs (s) | Median (s) | Budget (s) | Tarball (MB) | Result |',
+              '| --- | ---: | ---: | ---: | --- |',
+              `| ${samples} | ${median.toFixed(2)} | ${budgetSeconds.toFixed(2)} | ${size.toFixed(2)} | ${result} |`,
+              '',
+              `[Workflow run](${runUrl}) for \`${head.sha.slice(0, 7)}\`. Three empty-cache runs against a local fixture.`,
+            ].join('\n')
+
+            const issue = {...context.repo, issue_number: number}
+            const comments = await github.paginate(github.rest.issues.listComments, issue)
+            const comment = comments.find(({user, body}) =>
+              user?.login === 'github-actions[bot]' && body?.startsWith(marker),
+            )
+            if (comment) {
+              await github.rest.issues.updateComment({...context.repo, comment_id: comment.id, body})
+            } else {
+              await github.rest.issues.createComment({...issue, body})
+            }

@@ -140,6 +140,10 @@ require('node:module').syncBuiltinESMExports()
   if (process.env.GITHUB_STEP_SUMMARY) {
     await appendFile(process.env.GITHUB_STEP_SUMMARY, `${summary}\n`)
   }
+  if (process.env.GITHUB_OUTPUT) {
+    const stats = JSON.stringify({budgetSeconds, median, seconds, size})
+    await appendFile(process.env.GITHUB_OUTPUT, `stats=${stats}\n`)
+  }
 } finally {
   api.close()
   await rm(scratch, {force: true, recursive: true})
