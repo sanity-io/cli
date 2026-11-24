@@ -1,4 +1,6 @@
 import {spawn} from 'node:child_process'
+import {mkdtemp, rm} from 'node:fs/promises'
+import {tmpdir} from 'node:os'
 import {join} from 'node:path'
 
 // eslint-disable-next-line import-js/no-extraneous-dependencies -- Vitest is a test-only dependency
@@ -56,6 +58,31 @@ test('create-sanity forwards --with-blueprints to init', async () => {
   expect(result.code).toBe(2)
   expect(result.output).toContain('Project is required in unattended mode.')
   expect(result.output).not.toContain('Output path is required')
+})
+
+test('reports missing Blueprint credentials before installing the full CLI', async () => {
+  const directory = await mkdtemp(join(tmpdir(), 'create-sanity-no-session-'))
+  try {
+    const result = await runCreateSanity(
+      [
+        '--with-blueprints',
+        '--yes',
+        '--project',
+        'abc123',
+        '--dataset',
+        'production',
+        '--output-path',
+        directory,
+      ],
+      {SANITY_AUTH_TOKEN: '', SANITY_CLI_CONFIG_PATH: join(directory, 'config.json')},
+    )
+
+    expect(result.code).toBe(1)
+    expect(result.stderr).toContain('Set SANITY_AUTH_TOKEN')
+    expect(result.output).not.toContain('Installing the Sanity CLI')
+  } finally {
+    await rm(directory, {force: true, recursive: true})
+  }
 })
 
 test('create-sanity passes through arguments to sanity init', async () => {

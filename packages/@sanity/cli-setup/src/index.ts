@@ -11,3 +11,4 @@ export {
   type GitignoreResult,
   writeGitignoreFile,
 } from './gitignore.js'
+export {absolutify, validateEmptyPath} from './setupPath.js'

@@ -1259,6 +1259,7 @@ snapshots:
 					"version": "8.7.5",
 				},
 				"@oclif/core": "catalog:",
+				"@sanity/cli-setup": "workspace:^",
 				"@sanity/client": "catalog:",
 				"boxen": {
 					"specifier": "^8.0.1",
@@ -1343,6 +1344,7 @@ snapshots:
 					"specifier": "^0.34.1",
 					"version": "0.34.1",
 				},
+				"@sanity/client": "catalog:",
 			},
 			"devDependencies": {
 				"@swc/cli": "catalog:",
@@ -1445,6 +1447,14 @@ snapshots:
 		"packages/create-sanity": {
 			"name": "create-sanity",
 			"dependencies": {
+				"@inquirer/input": {
+					"specifier": "^4.3.0",
+					"version": "4.3.1",
+				},
+				"@inquirer/select": {
+					"specifier": "^4.4.2",
+					"version": "4.4.2",
+				},
 				"@sanity/blueprints": {
 					"specifier": "^0.34.1",
 					"version": "0.34.1",
@@ -1454,6 +1464,7 @@ snapshots:
 				},
 				"@sanity/cli-setup": "workspace:*",
 				"@sanity/client": "catalog:",
+				"open": "catalog:",
 			},
 			"devDependencies": {
 				"@sanity/cli": "workspace:*",

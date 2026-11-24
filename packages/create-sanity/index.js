@@ -5,7 +5,7 @@ import {parseArgs} from 'node:util'
 const args = process.argv.slice(2)
 
 try {
-  const options = getBlueprintOptions(args, process.env.SANITY_AUTH_TOKEN)
+  const options = getBlueprintOptions(args)
   if (options) {
     // eslint-disable-next-line eslint-js/no-restricted-syntax -- load Blueprint setup after routing
     const {bootstrapBlueprint} = await import('./bootstrapBlueprint.js')
@@ -20,9 +20,8 @@ try {
   process.exitCode = 1
 }
 
-function getBlueprintOptions(argv, authToken) {
-  const token = authToken?.trim()
-  if (!token || !argv.includes('--with-blueprints')) return
+function getBlueprintOptions(argv) {
+  if (!argv.includes('--with-blueprints')) return
 
   let values
   try {
@@ -45,20 +44,28 @@ function getBlueprintOptions(argv, authToken) {
 
   const {dataset, organization, project, visibility} = values
   const projectName = values['project-name']?.trim()
-  if (!values.yes || !values['with-blueprints'] || !dataset) return
+  if (!values['with-blueprints'] || !dataset) return
   if (visibility !== undefined && visibility !== 'public') return
   const existingProject =
     project && values['project-name'] === undefined && organization === undefined
   const newProject = project === undefined && projectName && organization
   if (!existingProject && !newProject) return
 
+  const unattended =
+    Boolean(values.yes) ||
+    !process.stdin.isTTY ||
+    process.env.TERM === 'dumb' ||
+    'CI' in process.env
+  const path = values['output-path']
+
   return {
     dataset,
     organization,
-    outputPath: resolve(values['output-path'] ?? '.'),
+    outputPath: path || unattended ? resolve(path ?? '.') : undefined,
     project,
     projectName,
-    token,
+    token: process.env.SANITY_AUTH_TOKEN?.trim(),
+    unattended,
     visibility,
   }
 }

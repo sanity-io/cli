@@ -1,12 +1,10 @@
-import {mkdirSync} from 'node:fs'
 import path from 'node:path'
 
+import {readHostCliUserConfig, writeHostCliUserConfig} from '@sanity/cli-setup/user-config'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
 import {runWithCliExecutionContext} from '../../../executionContext.js'
 import {getSanityConfigDir} from '../../../util/getSanityConfigDir.js'
-import {readJsonFileSync} from '../../../util/readJsonFileSync'
-import {writeJsonFileSync} from '../../../util/writeJsonFileSync.js'
 import {clearCliTokenCache, getCachedTokenInfo, setCachedTokenInfo} from '../cliTokenCache.js'
 import {
   _internals,
@@ -19,16 +17,18 @@ import {
 
 // Mock out cache so we can control it
 vi.mock('../cliTokenCache.js')
-vi.mock('../../../util/readJsonFileSync.js')
-vi.mock('../../../util/writeJsonFileSync.js')
-vi.mock('node:fs')
+vi.mock('@sanity/cli-setup/user-config', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@sanity/cli-setup/user-config')>()),
+  readHostCliUserConfig: vi.fn(),
+  writeHostCliUserConfig: vi.fn(),
+}))
 
 const mockGetCliUserConfig = vi.spyOn(_internals, 'getCliUserConfig')
 
 describe('cliUserConfig', () => {
   beforeEach(() => {
-    vi.mocked(readJsonFileSync).mockReturnValue({})
-    vi.mocked(writeJsonFileSync).mockReturnValue()
+    vi.mocked(readHostCliUserConfig).mockReturnValue({})
+    vi.mocked(writeHostCliUserConfig).mockReturnValue()
   })
 
   afterEach(() => {
@@ -208,33 +208,8 @@ describe('cliUserConfig', () => {
   })
 
   describe('getCliUserConfig()', () => {
-    test('returns empty config when file read throws', () => {
-      vi.mocked(readJsonFileSync).mockImplementationOnce(() => {
-        throw new Error('File not found')
-      })
-      const result = getCliUserConfig('authToken')
-      expect(result).toBeUndefined()
-    })
-
-    test('returns empty config when file content is null', () => {
-      vi.mocked(readJsonFileSync).mockReturnValueOnce(null)
-      const result = getCliUserConfig('authToken')
-      expect(result).toBeUndefined()
-    })
-
-    test('returns empty config when file content is an array', () => {
-      vi.mocked(readJsonFileSync).mockReturnValueOnce([])
-      const result = getCliUserConfig('authToken')
-      expect(result).toBeUndefined()
-    })
-
-    test('returns empty config when file content is not an object', () => {
-      vi.mocked(readJsonFileSync).mockReturnValueOnce('not an object')
-      const result = getCliUserConfig('authToken')
-      expect(result).toBeUndefined()
-    })
     test('returns authToken when valid', () => {
-      vi.mocked(readJsonFileSync).mockReturnValueOnce({
+      vi.mocked(readHostCliUserConfig).mockReturnValueOnce({
         authToken: 'test-token',
       })
 
@@ -243,14 +218,14 @@ describe('cliUserConfig', () => {
     })
 
     test('returns undefined when authToken is not set', () => {
-      vi.mocked(readJsonFileSync).mockReturnValueOnce({})
+      vi.mocked(readHostCliUserConfig).mockReturnValueOnce({})
 
       const result = getCliUserConfig('authToken')
       expect(result).toBeUndefined()
     })
 
     test('returns undefined for invalid value type', () => {
-      vi.mocked(readJsonFileSync).mockReturnValueOnce({
+      vi.mocked(readHostCliUserConfig).mockReturnValueOnce({
         authToken: 123, // Invalid type, should be string
       })
 
@@ -262,13 +237,11 @@ describe('cliUserConfig', () => {
     test('sets valid authToken', () => {
       setCliUserConfig('authToken', 'new-token')
 
-      expect(mkdirSync).toHaveBeenCalledWith(expect.any(String), {mode: 0o700, recursive: true})
-      expect(writeJsonFileSync).toHaveBeenCalledWith(
+      expect(writeHostCliUserConfig).toHaveBeenCalledWith(
         expect.any(String),
         expect.objectContaining({
           authToken: 'new-token',
         }),
-        {mode: 0o600, pretty: true},
       )
     })
 
@@ -277,36 +250,33 @@ describe('cliUserConfig', () => {
     })
 
     test('merges new config with existing config', () => {
-      vi.mocked(readJsonFileSync).mockReturnValueOnce({
+      vi.mocked(readHostCliUserConfig).mockReturnValueOnce({
         authToken: 'existing-token',
         someOtherKey: 'preserved',
       })
 
       setCliUserConfig('authToken', 'new-token')
 
-      expect(writeJsonFileSync).toHaveBeenCalledWith(
+      expect(writeHostCliUserConfig).toHaveBeenCalledWith(
         expect.any(String),
         expect.objectContaining({
           authToken: 'new-token',
           someOtherKey: 'preserved',
         }),
-        {mode: 0o600, pretty: true},
       )
     })
 
     test('setting undefined explicitly removes the key', () => {
-      vi.mocked(readJsonFileSync).mockReturnValueOnce({
+      vi.mocked(readHostCliUserConfig).mockReturnValueOnce({
         authToken: 'old-token',
         someOtherKey: 'preserved',
       })
 
       setCliUserConfig('authToken', undefined)
 
-      expect(writeJsonFileSync).toHaveBeenCalledWith(
-        expect.any(String),
-        {someOtherKey: 'preserved'},
-        {mode: 0o600, pretty: true},
-      )
+      expect(writeHostCliUserConfig).toHaveBeenCalledWith(expect.any(String), {
+        someOtherKey: 'preserved',
+      })
     })
 
     test('invalidates token cache after setting authToken', () => {
@@ -325,11 +295,11 @@ describe('cliUserConfig', () => {
       expect(() => runWithCliExecutionContext({}, () => getUserConfig())).toThrow(
         'Host CLI user configuration is unavailable',
       )
-      expect(readJsonFileSync).not.toHaveBeenCalled()
+      expect(readHostCliUserConfig).not.toHaveBeenCalled()
     })
 
     test('get returns raw value from file', () => {
-      vi.mocked(readJsonFileSync).mockReturnValueOnce({
+      vi.mocked(readHostCliUserConfig).mockReturnValueOnce({
         myKey: 'myValue',
         nested: {deep: true},
       })
@@ -340,52 +310,38 @@ describe('cliUserConfig', () => {
     })
 
     test('get returns undefined for missing key', () => {
-      vi.mocked(readJsonFileSync).mockReturnValueOnce({})
+      vi.mocked(readHostCliUserConfig).mockReturnValueOnce({})
 
       const store = getUserConfig()
       const result = store.get('nonexistent')
       expect(result).toBeUndefined()
     })
 
-    test('get returns undefined when file read fails', () => {
-      vi.mocked(readJsonFileSync).mockImplementationOnce(() => {
-        throw new Error('File not found')
-      })
-
-      const store = getUserConfig()
-      const result = store.get('anyKey')
-      expect(result).toBeUndefined()
-    })
-
     test('set reads file, adds key, and writes file', () => {
-      vi.mocked(readJsonFileSync).mockReturnValueOnce({
+      vi.mocked(readHostCliUserConfig).mockReturnValueOnce({
         existing: 'value',
       })
 
       const store = getUserConfig()
       store.set('newKey', 'newValue')
 
-      expect(mkdirSync).toHaveBeenCalledWith(expect.any(String), {mode: 0o700, recursive: true})
-      expect(writeJsonFileSync).toHaveBeenCalledWith(
-        expect.any(String),
-        {existing: 'value', newKey: 'newValue'},
-        {mode: 0o600, pretty: true},
-      )
+      expect(writeHostCliUserConfig).toHaveBeenCalledWith(expect.any(String), {
+        existing: 'value',
+        newKey: 'newValue',
+      })
     })
 
     test('set overwrites existing key', () => {
-      vi.mocked(readJsonFileSync).mockReturnValueOnce({
+      vi.mocked(readHostCliUserConfig).mockReturnValueOnce({
         myKey: 'oldValue',
       })
 
       const store = getUserConfig()
       store.set('myKey', 'updatedValue')
 
-      expect(writeJsonFileSync).toHaveBeenCalledWith(
-        expect.any(String),
-        {myKey: 'updatedValue'},
-        {mode: 0o600, pretty: true},
-      )
+      expect(writeHostCliUserConfig).toHaveBeenCalledWith(expect.any(String), {
+        myKey: 'updatedValue',
+      })
     })
 
     test('set invalidates token cache when key is authToken', () => {
@@ -401,21 +357,19 @@ describe('cliUserConfig', () => {
     })
 
     test('set handles complex values', () => {
-      vi.mocked(readJsonFileSync).mockReturnValueOnce({})
+      vi.mocked(readHostCliUserConfig).mockReturnValueOnce({})
 
       const store = getUserConfig()
       const complexValue = {status: 'granted', updatedAt: 12_345}
       store.set('telemetryConsent', complexValue)
 
-      expect(writeJsonFileSync).toHaveBeenCalledWith(
-        expect.any(String),
-        {telemetryConsent: complexValue},
-        {mode: 0o600, pretty: true},
-      )
+      expect(writeHostCliUserConfig).toHaveBeenCalledWith(expect.any(String), {
+        telemetryConsent: complexValue,
+      })
     })
 
     test('delete removes key from file and writes', () => {
-      vi.mocked(readJsonFileSync).mockReturnValueOnce({
+      vi.mocked(readHostCliUserConfig).mockReturnValueOnce({
         keepMe: 'yes',
         removeMe: 'bye',
       })
@@ -423,51 +377,50 @@ describe('cliUserConfig', () => {
       const store = getUserConfig()
       store.delete('removeMe')
 
-      expect(mkdirSync).not.toHaveBeenCalled()
-      expect(writeJsonFileSync).toHaveBeenCalledWith(
+      expect(writeHostCliUserConfig).toHaveBeenCalledWith(
         expect.any(String),
         {keepMe: 'yes'},
-        {mode: 0o600, pretty: true},
+        {createDirectory: false},
       )
     })
 
     test('delete invalidates token cache when key is authToken', () => {
-      vi.mocked(readJsonFileSync).mockReturnValueOnce({authToken: 'old-token'})
+      vi.mocked(readHostCliUserConfig).mockReturnValueOnce({authToken: 'old-token'})
       const store = getUserConfig()
       store.delete('authToken')
       expect(clearCliTokenCache).toHaveBeenCalled()
     })
 
     test('delete does not invalidate token cache for other keys', () => {
-      vi.mocked(readJsonFileSync).mockReturnValueOnce({telemetryConsent: 'granted'})
+      vi.mocked(readHostCliUserConfig).mockReturnValueOnce({telemetryConsent: 'granted'})
       const store = getUserConfig()
       store.delete('telemetryConsent')
       expect(clearCliTokenCache).not.toHaveBeenCalled()
     })
 
     test('delete is a no-op when key does not exist', () => {
-      vi.mocked(readJsonFileSync).mockReturnValueOnce({
+      vi.mocked(readHostCliUserConfig).mockReturnValueOnce({
         existing: 'value',
       })
 
       const store = getUserConfig()
       store.delete('nonexistent')
 
-      expect(writeJsonFileSync).not.toHaveBeenCalled()
+      expect(writeHostCliUserConfig).not.toHaveBeenCalled()
     })
 
     test('each operation does a fresh read', () => {
       const store = getUserConfig()
 
       // First call returns one state
-      vi.mocked(readJsonFileSync).mockReturnValueOnce({counter: 1})
+      vi.mocked(readHostCliUserConfig).mockReturnValueOnce({counter: 1})
       expect(store.get('counter')).toBe(1)
 
       // Second call returns updated state
-      vi.mocked(readJsonFileSync).mockReturnValueOnce({counter: 2})
+      vi.mocked(readHostCliUserConfig).mockReturnValueOnce({counter: 2})
       expect(store.get('counter')).toBe(2)
 
-      expect(readJsonFileSync).toHaveBeenCalledTimes(2)
+      expect(readHostCliUserConfig).toHaveBeenCalledTimes(2)
     })
   })
 })

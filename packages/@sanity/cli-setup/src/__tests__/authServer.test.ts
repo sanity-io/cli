@@ -2,7 +2,14 @@ import type http from 'node:http'
 
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
-import {startServerForTokenCallback} from '../authServer.js'
+import {startServerForTokenCallback as startAuthServer} from '../authServer.js'
+
+function startServerForTokenCallback(providerUrl: string) {
+  return startAuthServer(providerUrl, {
+    getTokenDetails: vi.fn(),
+    sanityUrl: 'https://www.sanity.io',
+  })
+}
 
 const mockCreateServer = vi.hoisted(() => vi.fn())
 

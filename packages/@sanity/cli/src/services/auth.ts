@@ -1,12 +1,14 @@
 import {getGlobalCliClient} from '@sanity/cli-core'
-
 import {
-  type ProvidersResponse,
-  type SamlLoginProvider,
-  type TokenDetails,
-} from '../actions/auth/types.js'
+  AUTH_API_VERSION,
+  exchangeLoginSession,
+  getLoginProviders,
+  getSamlLoginProviders,
+} from '@sanity/cli-setup/auth'
 
-export const AUTH_API_VERSION = 'v2025-09-23'
+import {type SamlLoginProvider} from '../actions/auth/types.js'
+
+export {AUTH_API_VERSION} from '@sanity/cli-setup/auth'
 
 async function getUnauthenticatedClient() {
   return getGlobalCliClient({apiVersion: AUTH_API_VERSION, unauthenticated: true})
@@ -30,7 +32,7 @@ export async function logout(token?: string) {
 export async function getProviders() {
   const client = await getUnauthenticatedClient()
 
-  return client.request<ProvidersResponse>({url: '/auth/providers'})
+  return getLoginProviders(client)
 }
 
 export async function getVercelProviderUrl() {
@@ -41,15 +43,13 @@ export async function getVercelProviderUrl() {
 export async function getSSOProviders(orgSlug: string) {
   const client = await getUnauthenticatedClient()
 
-  return client.request<SamlLoginProvider[]>({
-    url: `/auth/organizations/by-slug/${orgSlug}/providers`,
-  })
+  return getSamlLoginProviders(client, orgSlug)
 }
 
 export async function getTokenDetails(queryString: string) {
   const client = await getUnauthenticatedClient()
 
-  return client.request<TokenDetails>({url: `/auth/fetch${queryString}`})
+  return exchangeLoginSession(client, queryString)
 }
 
 /**
