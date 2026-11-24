@@ -6,10 +6,10 @@ import {
   interfaceContractVersion,
   type InterfaceKind,
   interfaceModuleId,
-  type PanelView,
+  type PanelViewDeclaration,
   type TileInterfaceMetadata,
   type ViewPlacementMetadata,
-  type WindowView,
+  type WindowViewDeclaration,
 } from './contract.js'
 import {isWorkbenchApp} from './defineApp.js'
 
@@ -84,7 +84,7 @@ export function deriveInterfaces(
 
   const placementMetadata = (
     dock?: Dock,
-    surface: (PanelView | WindowView)['surface'] = 'window',
+    surface: (PanelViewDeclaration | WindowViewDeclaration)['surface'] = 'window',
     iconPath?: string,
   ): ViewPlacementMetadata | null => {
     const group = surface === 'panel' ? undefined : (dock?.group ?? app.dock?.group)
