@@ -166,7 +166,6 @@ const PanelViewSchema = z.object({
   surface: z.literal('panel'),
   ...interfaceDeclarationFields('View'),
   dock: z.optional(PanelDockSchema),
-  /** Path to the view's icon, relative to the project root. Same formats as `app.icon`. */
   icon: z.optional(z.string()),
 })
 
@@ -185,7 +184,6 @@ const WindowViewSchema = z.object({
   surface: z.literal('window'),
   ...interfaceDeclarationFields('View'),
   dock: z.optional(DockSchema),
-  /** Path to the view's icon, relative to the project root. Same formats as `app.icon`. */
   icon: z.optional(z.string()),
 })
 
