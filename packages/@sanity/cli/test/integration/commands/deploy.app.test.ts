@@ -1035,7 +1035,7 @@ describe('#deploy app', () => {
     })
 
     expect(error).toBeInstanceOf(Error)
-    expect(error?.message).toContain('Can\'t use app icon "./missing-icon.svg"')
+    expect(error?.message).toContain('Can\'t use icon "./missing-icon.svg"')
     // The icon is read before the app is created, so a bad path fails fast.
     expect(mockCreateCoreApp).not.toHaveBeenCalled()
     expect(mockDeployWorkbenchApp).not.toHaveBeenCalled()
