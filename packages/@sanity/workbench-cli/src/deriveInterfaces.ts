@@ -116,7 +116,6 @@ export function deriveInterfaces(
       if (view.surface === 'panel' || view.surface === 'window') {
         return {
           ...shared(view.surface, view),
-          // A local interface carries its icon only in `metadata.icon`, like a deployed one.
           ...(view.icon && !iconUrl && {icon: view.icon}),
           metadata: placementMetadata(view.dock, view.surface, view.icon),
           surface: view.surface,
