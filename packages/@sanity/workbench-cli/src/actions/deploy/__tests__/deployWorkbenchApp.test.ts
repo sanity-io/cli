@@ -580,6 +580,8 @@ describe('deployWorkbenchApp', () => {
   })
 
   test('fails before deploying when a view icon cannot be read', async () => {
+    await writeFile(join(sourceDir, 'feed.png'), 'feed bytes')
+
     await expect(
       deployWorkbenchApp({
         app: viewsApp,
