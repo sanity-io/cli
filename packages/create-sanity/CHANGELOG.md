@@ -1,5 +1,15 @@
 # Changelog
 
+## 6.0.78
+
+[Compare changes](https://github.com/sanity-io/cli/compare/create-sanity-v6.0.77...create-sanity-v6.0.78)
+
+_2026-11-24_
+
+### Bug Fixes
+
+- **create-sanity:** bundle blueprint runtime dependencies ([#2278](https://github.com/sanity-io/cli/pull/2278)) ([722d87a](https://github.com/sanity-io/cli/commit/722d87a31a8dfe56494f3bdc4a27084dadee1124))
+
 ## 6.0.77
 
 [Compare changes](https://github.com/sanity-io/cli/compare/create-sanity-v6.0.76...create-sanity-v6.0.77)
