@@ -121,7 +121,9 @@ const WORKBENCH_APP: unique symbol = Symbol.for('sanity.workbench.defineApp')
  * input plus the internal brand — users only ever see `DefineAppInput`.
  * @public
  */
-export type DefineAppResult = DefineAppInput & {readonly [WORKBENCH_APP]: true}
+export type DefineAppResult = {
+  [K in keyof DefineAppInput]: Exclude<DefineAppInput[K], undefined>
+} & {readonly [WORKBENCH_APP]: true}
 
 /**
  * A branded app as the CLI reads it — the full schema shape, including the
