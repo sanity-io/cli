@@ -1,5 +1,21 @@
 # Changelog
 
+## 7.5.1
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-build-v7.5.0...cli-build-v7.5.1)
+
+_2026-11-24_
+
+### Bug Fixes
+
+- **auto-updates:** round the module URL timestamp to 60 seconds ([#2136](https://github.com/sanity-io/cli/pull/2136)) ([d271d6a](https://github.com/sanity-io/cli/commit/d271d6aaa06dd89592ceb1590877b73f00190030))
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/workbench-cli bumped to 2.19.1
+
 ## 7.5.0
 
 [Compare changes](https://github.com/sanity-io/cli/compare/cli-build-v7.4.0...cli-build-v7.5.0)

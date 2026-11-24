@@ -1,5 +1,28 @@
 # Change Log
 
+## 8.34.0
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-v8.33.0...cli-v8.34.0)
+
+_2026-11-24_
+
+### Features
+
+- **mcp:** add Pi v1 support to MCP and skills setup ([#2269](https://github.com/sanity-io/cli/pull/2269)) ([91d8658](https://github.com/sanity-io/cli/commit/91d86582841726a530215ae010f8134ffe0a32fb))
+- **cli:** migrate dashboard views to plain exports ([#2182](https://github.com/sanity-io/cli/pull/2182)) ([f5e0b75](https://github.com/sanity-io/cli/commit/f5e0b758d71fb5931789388cd67bf0956963ac2d))
+- **projects:** set a project's logo with sanity projects create ([#2259](https://github.com/sanity-io/cli/pull/2259)) ([1f35dd5](https://github.com/sanity-io/cli/commit/1f35dd57f00b3b77fc6e8b9499cf032c29a2ea58))
+
+### Bug Fixes
+
+- **cli:** explain how to drop the ignored dashboard flag ([#2265](https://github.com/sanity-io/cli/pull/2265)) ([d9ba701](https://github.com/sanity-io/cli/commit/d9ba7014389a60d8511b35b12d15ed642803080b))
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/cli-build bumped to 7.5.1
+    - @sanity/workbench-cli bumped to 2.19.1
+
 ## 8.33.0
 
 [Compare changes](https://github.com/sanity-io/cli/compare/cli-v8.32.1...cli-v8.33.0)
