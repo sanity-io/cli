@@ -1,5 +1,26 @@
 # Change Log
 
+## 8.35.0
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-v8.34.0...cli-v8.35.0)
+
+_2026-11-24_
+
+### Features
+
+- **workbench-cli:** set icons on window and panel views ([#2271](https://github.com/sanity-io/cli/pull/2271)) ([ec53cc4](https://github.com/sanity-io/cli/commit/ec53cc44509800cdf1b380f9e2e8eb57727ebdfd))
+- **workbench-cli:** rename view and web worker authoring types ([#2272](https://github.com/sanity-io/cli/pull/2272)) ([ab402ae](https://github.com/sanity-io/cli/commit/ab402ae03feab866e1d4f595825f50b431e470c4))
+
+### Bug Fixes
+
+- **graphql:** support studios with content releases ([#2277](https://github.com/sanity-io/cli/pull/2277)) ([d29837d](https://github.com/sanity-io/cli/commit/d29837d86e3493aa1e5feaaaae37198534955a87))
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/workbench-cli bumped to 2.20.0
+
 ## 8.34.0
 
 [Compare changes](https://github.com/sanity-io/cli/compare/cli-v8.33.0...cli-v8.34.0)
