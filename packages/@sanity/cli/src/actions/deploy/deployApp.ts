@@ -413,6 +413,7 @@ async function runAppDeployment(
         title: appTitle,
         version,
         visibility: workbench.visibility,
+        workDir,
       })
       await deployApplicationConfig()
       const url = hasAppView

@@ -1,4 +1,4 @@
-import {mkdtemp, rm} from 'node:fs/promises'
+import {mkdtemp, rm, writeFile} from 'node:fs/promises'
 import {tmpdir} from 'node:os'
 import {join} from 'node:path'
 import {Readable} from 'node:stream'
@@ -43,6 +43,35 @@ const workspaces: BrettWorkspace[] = [
 ]
 const access: BrettAccess[] = [{resourceId: 'proj-1.production', resourceType: 'dataset'}]
 const icon = {contentType: 'image/png', image: Buffer.from('png bytes')}
+
+const viewsApp = defineApplication({
+  entry: './src/App.tsx',
+  organizationId: 'org-1',
+  slug: 'drop-desk',
+  title: 'Drop Desk',
+  views: [
+    defineWindowView({icon: './inbox.png', name: 'inbox', src: './src/Inbox.tsx', title: 'Inbox'}),
+    definePanelView({icon: './feed.png', name: 'feed', src: './src/Feed.tsx', title: 'Feed'}),
+  ],
+})
+
+/** Deploy `viewsApp` from a project holding its view icons. */
+async function deployViews() {
+  await writeFile(join(sourceDir, 'inbox.png'), 'inbox bytes')
+  await writeFile(join(sourceDir, 'feed.png'), 'feed bytes')
+
+  return deployWorkbenchApp({
+    app: viewsApp,
+    applicationId: 'app_1',
+    isApp: true,
+    isAutoUpdating: false,
+    mfManifest,
+    sourceDir,
+    title: 'Drop Desk',
+    version: '1.0.0',
+    workDir: sourceDir,
+  })
+}
 
 /** The (name, value) pairs a call appended to its FormData. */
 function appendedFields(): Array<[string, unknown]> {
@@ -217,6 +246,7 @@ describe('deployWorkbenchApp', () => {
       sourceDir,
       title: 'Drop Desk',
       version: '1.0.0',
+      workDir: sourceDir,
     })
 
     expect(mockClient.request.mock.calls[0][0]).toMatchObject({
@@ -281,6 +311,7 @@ describe('deployWorkbenchApp', () => {
       sourceDir,
       title: 'Drop Desk',
       version: '1.0.0',
+      workDir: sourceDir,
     })
 
     const fields = appendedFields()
@@ -330,6 +361,7 @@ describe('deployWorkbenchApp', () => {
       sourceDir,
       title: 'Drop Desk',
       version: '1.0.0',
+      workDir: sourceDir,
     })
 
     const fields = appendedFields()
@@ -373,6 +405,7 @@ describe('deployWorkbenchApp', () => {
       sourceDir,
       title: 'My Studio',
       version: '3.0.0',
+      workDir: sourceDir,
       workspaces,
     })
 
@@ -392,6 +425,7 @@ describe('deployWorkbenchApp', () => {
       sourceDir,
       title: 'My Studio',
       version: '3.0.0',
+      workDir: sourceDir,
       workspaces,
     })
 
@@ -411,6 +445,7 @@ describe('deployWorkbenchApp', () => {
       sourceDir,
       title: 'Drop Desk',
       version: '1.0.0',
+      workDir: sourceDir,
     })
 
     expect(mockClient.request.mock.calls.slice(1).map(([request]) => request)).toEqual([
@@ -436,6 +471,7 @@ describe('deployWorkbenchApp', () => {
       sourceDir,
       title: 'Drop Desk',
       version: '1.0.0',
+      workDir: sourceDir,
     })
 
     expect(mockClient.request.mock.calls.slice(1).map(([request]) => request)).toEqual([
@@ -461,6 +497,7 @@ describe('deployWorkbenchApp', () => {
         sourceDir,
         title: 'Drop Desk',
         version: '1.0.0',
+        workDir: sourceDir,
       }),
     ).rejects.toBe(notFound)
   })
@@ -484,10 +521,79 @@ describe('deployWorkbenchApp', () => {
         sourceDir,
         title: 'Drop Desk',
         version: '1.0.0',
+        workDir: sourceDir,
       }),
     ).rejects.toThrow(
       "The app icon was rejected: Unsupported image format. The deployment is live with the application's previous icon. Change `app.icon` in sanity.cli.ts and deploy again.",
     )
+  })
+
+  test("uploads each view icon to the deployment's interface of the same type and name, not in the payload", async () => {
+    // Brett answers with the interfaces it was sent, each given an id.
+    mockClient.request.mockImplementationOnce(async () => ({
+      id: 'dep_1',
+      interfaces: (
+        JSON.parse(appendedFields().find(([name]) => name === 'interfaces')![1] as string) as {
+          name: string
+          type: string
+        }[]
+      ).map((iface) => ({...iface, id: `if_${iface.type}_${iface.name}`})),
+    }))
+
+    await deployViews()
+
+    expect(appendedFields().find(([name]) => name === 'interfaces')![1]).not.toContain('.png')
+    expect(
+      mockClient.request.mock.calls
+        .map(([request]) => request)
+        .filter(({url}) => url.includes('/interfaces/'))
+        .map(({body, url}) => [url, body.toString()]),
+    ).toEqual([
+      ['/applications/app_1/interfaces/if_app_inbox/icon', 'inbox bytes'],
+      ['/applications/app_1/interfaces/if_panel_feed/icon', 'feed bytes'],
+    ])
+  })
+
+  test('names the view, and that the deployment is live, when it has no interface for an icon', async () => {
+    mockClient.request.mockResolvedValueOnce({id: 'dep_1', interfaces: []})
+
+    await expect(deployViews()).rejects.toThrow(
+      'The deployment is live, but has no app interface named "inbox" to set its icon on.',
+    )
+  })
+
+  test('names the view and the server reason when a view icon is rejected', async () => {
+    mockClient.request
+      .mockResolvedValueOnce({
+        id: 'dep_1',
+        interfaces: [{id: 'if_1', name: 'inbox', type: 'app'}],
+      })
+      .mockResolvedValueOnce(undefined)
+      .mockResolvedValueOnce(undefined)
+      .mockRejectedValueOnce(
+        Object.assign(new Error('Unsupported image format'), {statusCode: 415}),
+      )
+
+    await expect(deployViews()).rejects.toThrow(
+      'The icon of view "inbox" was rejected: Unsupported image format. The deployment is live without it. Change the view\'s `icon` in sanity.cli.ts and deploy again.',
+    )
+  })
+
+  test('fails before deploying when a view icon cannot be read', async () => {
+    await expect(
+      deployWorkbenchApp({
+        app: viewsApp,
+        applicationId: 'app_1',
+        isApp: true,
+        isAutoUpdating: false,
+        mfManifest,
+        sourceDir,
+        title: 'Drop Desk',
+        version: '1.0.0',
+        workDir: sourceDir,
+      }),
+    ).rejects.toThrow('Can\'t use icon "./inbox.png"')
+    expect(mockClient.request).not.toHaveBeenCalled()
   })
 
   test('syncs visibility on redeploy when declared', async () => {
@@ -503,6 +609,7 @@ describe('deployWorkbenchApp', () => {
       title: 'Drop Desk',
       version: '1.0.0',
       visibility: 'unlisted',
+      workDir: sourceDir,
     })
 
     expect(mockClient.request.mock.calls[1][0]).toEqual({
@@ -525,6 +632,7 @@ describe('deployWorkbenchApp', () => {
       sourceDir,
       title: 'Drop Desk',
       version: '1.0.0',
+      workDir: sourceDir,
     })
 
     expect(mockClient.request.mock.calls[1][0]).toEqual({
@@ -546,6 +654,7 @@ describe('deployWorkbenchApp', () => {
       sourceDir,
       title: 'Drop Desk',
       version: '1.0.0',
+      workDir: sourceDir,
     })
 
     expect(mockClient.request.mock.calls[1][0].body).not.toHaveProperty('slug')
@@ -569,6 +678,7 @@ describe('deployWorkbenchApp', () => {
         sourceDir,
         title: 'Drop Desk',
         version: '1.0.0',
+        workDir: sourceDir,
       }),
     ).rejects.toThrow(
       'Slug "media" was rejected: Slug "media" is already in use. The deployment is live at the application\'s previous slug — change `app.slug` in sanity.cli.ts and deploy again.',
@@ -591,6 +701,7 @@ describe('deployWorkbenchApp', () => {
         sourceDir,
         title: 'Drop Desk',
         version: '1.0.0',
+        workDir: sourceDir,
       }),
     ).rejects.toThrow('Internal server error')
   })
@@ -615,6 +726,7 @@ describe('deployWorkbenchApp', () => {
         sourceDir,
         title: 'Drop Desk',
         version: '1.0.0',
+        workDir: sourceDir,
       }),
     ).rejects.toThrow('patch failed')
 
@@ -636,6 +748,7 @@ describe('deployWorkbenchApp', () => {
         sourceDir,
         title: 'Drop Desk',
         version: '1.0.0',
+        workDir: sourceDir,
       }),
     ).rejects.toThrow('deploy failed')
 
@@ -655,6 +768,7 @@ describe('deployWorkbenchApp', () => {
       sourceDir,
       title: 'My Studio',
       version: '3.0.0',
+      workDir: sourceDir,
       workspaces,
     })
 

@@ -29,20 +29,33 @@ interface DerivedInterfaceBase {
 
 /** @internal */
 export type DerivedInterface =
+  | (DerivedInterfaceBase & {
+      icon?: string
+      metadata: ViewPlacementMetadata | null
+      surface: 'panel'
+    })
+  | (DerivedInterfaceBase & {
+      icon?: string
+      metadata: ViewPlacementMetadata | null
+      surface: 'window'
+    })
   | (DerivedInterfaceBase & {metadata: null; surface: 'asset_source'})
   | (DerivedInterfaceBase & {metadata: null; type: 'worker'})
   | (DerivedInterfaceBase & {metadata: TileInterfaceMetadata; surface: 'tile'})
-  | (DerivedInterfaceBase & {metadata: ViewPlacementMetadata | null; surface: 'panel'})
-  | (DerivedInterfaceBase & {metadata: ViewPlacementMetadata | null; surface: 'window'})
 
 /**
  * `appTitle` titles the window where a deploy resolved one through `--title`;
- * dev takes it from the config.
+ * dev takes it from the config. `iconUrl` resolves an interface's `icon` path to
+ * the `metadata.icon` a local server serves it at; a deploy uploads it instead.
  * @internal
  */
 export function deriveInterfaces(
   app: CliConfig['app'],
-  {appTitle, isApp}: {appTitle?: string; isApp: boolean},
+  {
+    appTitle,
+    iconUrl,
+    isApp,
+  }: {appTitle?: string; iconUrl?: (iconPath: string) => string; isApp: boolean},
 ): DerivedInterface[] {
   if (!isWorkbenchApp(app)) return []
 
@@ -72,15 +85,21 @@ export function deriveInterfaces(
   const placementMetadata = (
     dock?: Dock,
     surface: (PanelView | WindowView)['surface'] = 'window',
+    iconPath?: string,
   ): ViewPlacementMetadata | null => {
     const group = surface === 'panel' ? undefined : (dock?.group ?? app.dock?.group)
     const order = dock?.order ?? app.dock?.order
-    if (group === undefined && order === undefined) return null
+    const hasDock = group !== undefined || order !== undefined
+    const icon = iconPath && iconUrl?.(iconPath)
+    if (!hasDock && !icon) return null
     return {
-      dock: {
-        ...(group === undefined ? {} : {group}),
-        ...(order === undefined ? {} : {order}),
-      },
+      ...(hasDock && {
+        dock: {
+          ...(group === undefined ? {} : {group}),
+          ...(order === undefined ? {} : {order}),
+        },
+      }),
+      ...(icon && {icon}),
     }
   }
 
@@ -97,7 +116,8 @@ export function deriveInterfaces(
       if (view.surface === 'panel' || view.surface === 'window') {
         return {
           ...shared(view.surface, view),
-          metadata: placementMetadata(view.dock, view.surface),
+          ...(view.icon && !iconUrl && {icon: view.icon}),
+          metadata: placementMetadata(view.dock, view.surface, view.icon),
           surface: view.surface,
         }
       }

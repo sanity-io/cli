@@ -8,6 +8,7 @@ import {spinner} from '@sanity/cli-core/ux'
 import {c as createTar} from 'tar'
 
 import {type DerivedInterface, deriveInterfaces} from '../../deriveInterfaces.js'
+import {readAppIcon} from '../../readAppIcon.js'
 import {
   type Application,
   type BrettAccess,
@@ -18,6 +19,7 @@ import {
   deleteApplication,
   removeApplicationIcon,
   setApplicationIcon,
+  setInterfaceIcon,
   updateApplication,
 } from '../../services/applications.js'
 
@@ -40,7 +42,7 @@ function toBrettInterface(iface: DerivedInterface): BrettInterface {
       return {...view, type: surface}
     }
     case 'panel': {
-      const {surface, ...view} = declaration
+      const {icon: _icon, surface, ...view} = declaration
       return {...view, type: surface}
     }
     case 'tile': {
@@ -48,7 +50,7 @@ function toBrettInterface(iface: DerivedInterface): BrettInterface {
       return {...view, type: surface}
     }
     case 'window': {
-      const {surface, ...view} = declaration
+      const {icon: _icon, surface, ...view} = declaration
       return {...view, type: 'app'}
     }
   }
@@ -107,7 +109,7 @@ export async function createStudio(options: {
  * then sync its mutable metadata (`title`, and `slug`/`visibility` when set)
  * and its icon from config. The deploy endpoint ignores these, so a redeploy
  * patches them here alongside the new deployment. No `icon` removes the
- * application's icon.
+ * application's icon. Each interface's `icon` goes on the interface Brett created for it.
  *
  * `onDeployed` fires the instant the deployment is live, before the metadata
  * sync — so a caller can disarm a create-time rollback that must not delete an
@@ -137,6 +139,7 @@ export async function deployWorkbenchApp(options: {
   title: string
   version: string
   visibility?: AppVisibility
+  workDir: string
   workspaces?: readonly BrettWorkspace[]
 }): Promise<void> {
   const {
@@ -155,21 +158,28 @@ export async function deployWorkbenchApp(options: {
     title,
     version,
     visibility,
+    workDir,
     workspaces,
   } = options
   const tarball = isExternal
     ? undefined
     : createTar({cwd: dirname(sourceDir)}, [basename(sourceDir)]).pipe(createGzip())
 
+  // Read before deploying, so a bad icon path fails while nothing is live.
+  const interfaces = await Promise.all(
+    deriveInterfaces(app, {appTitle: title, isApp}).map(async (iface) => ({
+      brett: toBrettInterface(iface),
+      icon: 'icon' in iface && iface.icon ? await readAppIcon(workDir, iface.icon) : undefined,
+    })),
+  )
+
   const spin = spinner(label).start()
   try {
-    await createDeployment({
+    const deployment = await createDeployment({
       access,
       applicationId,
       // Brett assigns the id and resolves modules by `moduleId`, so neither travels.
-      interfaces: deriveInterfaces(app, {appTitle: title, isApp}).map((iface) =>
-        toBrettInterface(iface),
-      ),
+      interfaces: interfaces.map(({brett}) => brett),
       isAutoUpdating,
       mfManifest,
       tarball,
@@ -190,10 +200,36 @@ export async function deployWorkbenchApp(options: {
       try {
         await setApplicationIcon(applicationId, icon)
       } catch (error) {
-        throw toIconRejection(error)
+        throw toIconRejection(
+          error,
+          'The app icon was rejected',
+          "The deployment is live with the application's previous icon. Change `app.icon`",
+        )
       }
     } else {
       await removeApplicationIcon(applicationId)
+    }
+    for (const {
+      brett: {name, type},
+      icon: interfaceIcon,
+    } of interfaces) {
+      if (!interfaceIcon) continue
+
+      const iface = deployment.interfaces.find((i) => i.type === type && i.name === name)
+      if (!iface) {
+        throw new Error(
+          `The deployment is live, but has no ${type} interface named "${name}" to set its icon on.`,
+        )
+      }
+      try {
+        await setInterfaceIcon(applicationId, iface.id, interfaceIcon)
+      } catch (error) {
+        throw toIconRejection(
+          error,
+          `The icon of view "${name}" was rejected`,
+          "The deployment is live without it. Change the view's `icon`",
+        )
+      }
     }
     spin.succeed()
   } catch (error) {
@@ -217,12 +253,12 @@ function toSlugRejection(error: unknown, slug: string | undefined): unknown {
   )
 }
 
-/** A 4xx on the icon upload is the image being rejected; name the server's reason. */
-function toIconRejection(error: unknown): unknown {
+/** A 4xx on an icon upload is the image being rejected; name the server's reason. */
+function toIconRejection(error: unknown, rejected: string, fix: string): unknown {
   const statusCode = (error as {statusCode?: number})?.statusCode
   if (statusCode === undefined || statusCode < 400 || statusCode >= 500) return error
   return new Error(
-    `The app icon was rejected: ${getErrorMessage(error)}. The deployment is live with the application's previous icon. Change \`app.icon\` in sanity.cli.ts and deploy again.`,
+    `${rejected}: ${getErrorMessage(error)}. ${fix} in sanity.cli.ts and deploy again.`,
     {cause: error},
   )
 }

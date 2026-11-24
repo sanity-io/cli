@@ -405,6 +405,38 @@ describe('startDevServerRegistration', () => {
       expect(mockExtractManifest).toHaveBeenCalledWith(expect.objectContaining({iconUrl: expected}))
     })
 
+    test("gives a view's icon as a metadata.icon URL on the app server", async () => {
+      const {serverOn, workDir} = await iconProject('./public/icon.png')
+      const app = workbenchApp({
+        views: [
+          {
+            icon: './public/icon.png',
+            name: 'feed',
+            src: './src/Feed.tsx',
+            surface: 'panel',
+            title: 'Feed',
+          },
+        ],
+      })
+      mockGetCliConfigUncached.mockResolvedValue({app})
+      const feedWithIcon = expect.objectContaining({
+        metadata: {icon: 'http://localhost:3334/icon.png'},
+        name: 'feed',
+      })
+
+      await register({
+        cliConfig: workbenchCliConfig({app}),
+        isApp: true,
+        server: serverOn(3334),
+        workDir,
+      })
+      expect(readManifest().interfaces).toEqual([feedWithIcon])
+      const {extract} = mockStartDevManifestWatcher.mock.calls[0][0]
+      const {interfaces} = await extract({configPath: join(workDir, 'sanity.cli.ts'), workDir})
+
+      expect(interfaces).toEqual([feedWithIcon])
+    })
+
     test('gives the icon on the rebuilt server once a rebuild moves it to another port', async () => {
       const {serverOn, workDir} = await iconProject('./public/icon.png')
       const onInterfaceSetChange = vi.fn().mockResolvedValue(serverOn(4444))

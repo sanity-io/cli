@@ -247,6 +247,7 @@ async function runStudioDeployment(
         title: appTitle,
         version,
         visibility: workbench.visibility,
+        workDir,
         workspaces: toWorkspaces(studioManifest),
       })
       const url = getApplicationUrl({
