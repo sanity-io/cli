@@ -77,7 +77,10 @@ export type Dock = z.infer<typeof DockSchema>
 const PanelDockSchema = z.object({order: z.optional(z.number())})
 
 /** @internal */
-export const ViewPlacementMetadataSchema = z.object({dock: DockSchema})
+export const ViewPlacementMetadataSchema = z.object({
+  dock: z.optional(DockSchema),
+  icon: z.optional(z.string()),
+})
 
 /** @internal */
 export type ViewPlacementMetadata = z.infer<typeof ViewPlacementMetadataSchema>
@@ -163,6 +166,8 @@ const PanelViewSchema = z.object({
   surface: z.literal('panel'),
   ...interfaceDeclarationFields('View'),
   dock: z.optional(PanelDockSchema),
+  /** Path to the view's icon, relative to the project root. Same formats as `app.icon`. */
+  icon: z.optional(z.string()),
 })
 
 /** @public */
@@ -180,6 +185,8 @@ const WindowViewSchema = z.object({
   surface: z.literal('window'),
   ...interfaceDeclarationFields('View'),
   dock: z.optional(DockSchema),
+  /** Path to the view's icon, relative to the project root. Same formats as `app.icon`. */
+  icon: z.optional(z.string()),
 })
 
 /** @public */

@@ -73,9 +73,17 @@ export async function startWorkbenchPreview(
   } = options
 
   // Read before any server starts, so a bad icon path fails with nothing to tear down.
-  const iconPath = isApp && isWorkbenchApp(cliConfig.app) ? cliConfig.app.icon : undefined
-  const icon = iconPath ? await readAppIcon(workDir, iconPath) : undefined
-  const servedIcon = icon && {...icon, path: `/${toUrlPath(workDir, icon.file)}`}
+  const app = isApp && isWorkbenchApp(cliConfig.app) ? cliConfig.app : undefined
+  const iconUrlPath = (iconPath: string) =>
+    `/${toUrlPath(workDir, path.resolve(workDir, iconPath))}`
+  const icons = await Promise.all(
+    [app?.icon, ...(app?.views ?? []).map((view) => ('icon' in view ? view.icon : undefined))]
+      .filter((iconPath) => iconPath !== undefined)
+      .map(async (iconPath) => ({
+        ...(await readAppIcon(workDir, iconPath)),
+        path: iconUrlPath(iconPath),
+      })),
+  )
 
   const {close, closers, installSignalHandlers} = createServerLifecycle()
 
@@ -96,7 +104,7 @@ export async function startWorkbenchPreview(
     cacheDir,
     httpHost,
     httpPort: remotePort,
-    icon: servedIcon,
+    icons,
     outDir,
     workDir,
   }).catch(async (err) => {
@@ -121,7 +129,10 @@ export async function startWorkbenchPreview(
     const inlinedId = await readInlinedAppId(outDir)
     const configs = await deriveConfigs(cliConfig)
     const id = inlinedId ?? (await buildAppId(workbench))
-    const interfaces = deriveInterfaces(cliConfig.app, {isApp})
+    const interfaces = deriveInterfaces(cliConfig.app, {
+      iconUrl: (iconPath) => `http://${remote.host}:${remote.port}${iconUrlPath(iconPath)}`,
+      isApp,
+    })
     const registration = registerDevServer({
       applicationId: cliConfig.deployment?.appId,
       configs,
@@ -131,7 +142,7 @@ export async function startWorkbenchPreview(
       manifest: await extractManifest({
         applicationId: id,
         configPath,
-        iconUrl: servedIcon && `http://${remote.host}:${remote.port}${servedIcon.path}`,
+        iconUrl: app?.icon && `http://${remote.host}:${remote.port}${iconUrlPath(app.icon)}`,
         workDir,
       }),
       manifestUpdatedAt: new Date().toISOString(),

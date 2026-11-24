@@ -37,12 +37,17 @@ export type DerivedInterface =
 
 /**
  * `appTitle` titles the window where a deploy resolved one through `--title`;
- * dev takes it from the config.
+ * dev takes it from the config. `iconUrl` resolves a view's `icon` path to where
+ * a local server serves it; a deploy uploads icons instead.
  * @internal
  */
 export function deriveInterfaces(
   app: CliConfig['app'],
-  {appTitle, isApp}: {appTitle?: string; isApp: boolean},
+  {
+    appTitle,
+    iconUrl,
+    isApp,
+  }: {appTitle?: string; iconUrl?: (iconPath: string) => string; isApp: boolean},
 ): DerivedInterface[] {
   if (!isWorkbenchApp(app)) return []
 
@@ -72,15 +77,21 @@ export function deriveInterfaces(
   const placementMetadata = (
     dock?: Dock,
     surface: (PanelView | WindowView)['surface'] = 'window',
+    iconPath?: string,
   ): ViewPlacementMetadata | null => {
     const group = surface === 'panel' ? undefined : (dock?.group ?? app.dock?.group)
     const order = dock?.order ?? app.dock?.order
-    if (group === undefined && order === undefined) return null
+    const hasDock = group !== undefined || order !== undefined
+    const icon = iconPath && iconUrl?.(iconPath)
+    if (!hasDock && !icon) return null
     return {
-      dock: {
-        ...(group === undefined ? {} : {group}),
-        ...(order === undefined ? {} : {order}),
-      },
+      ...(hasDock && {
+        dock: {
+          ...(group === undefined ? {} : {group}),
+          ...(order === undefined ? {} : {order}),
+        },
+      }),
+      ...(icon && {icon}),
     }
   }
 
@@ -97,7 +108,7 @@ export function deriveInterfaces(
       if (view.surface === 'panel' || view.surface === 'window') {
         return {
           ...shared(view.surface, view),
-          metadata: placementMetadata(view.dock, view.surface),
+          metadata: placementMetadata(view.dock, view.surface, view.icon),
           surface: view.surface,
         }
       }

@@ -198,6 +198,21 @@ export async function removeApplicationIcon(applicationId: string): Promise<void
   await client.request({method: 'DELETE', url: `/applications/${applicationId}/icon`})
 }
 
+/** Upload an app or panel interface's icon, replacing any it has. */
+export async function setInterfaceIcon(
+  applicationId: string,
+  interfaceId: string,
+  icon: ImageFile,
+): Promise<void> {
+  const client = await getClient()
+  await client.request({
+    body: icon.image,
+    headers: {'Content-Type': icon.contentType},
+    method: 'PUT',
+    url: `/applications/${applicationId}/interfaces/${interfaceId}/icon`,
+  })
+}
+
 /**
  * Deploy a new active version to an existing application. `mfManifest` is the
  * build's federation manifest; `tarball` is omitted for an external application,
@@ -212,7 +227,7 @@ export async function createDeployment(options: {
   tarball?: Gzip
   version: string
   workspaces?: readonly BrettWorkspace[]
-}): Promise<{id: string}> {
+}): Promise<{id: string; interfaces: {id: string; name: string; type: BrettInterface['type']}[]}> {
   const {
     access,
     applicationId,

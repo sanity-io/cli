@@ -44,6 +44,10 @@ const workspaces: BrettWorkspace[] = [
 const access: BrettAccess[] = [{resourceId: 'proj-1.production', resourceType: 'dataset'}]
 const icon = {contentType: 'image/png', image: Buffer.from('png bytes')}
 
+function viewIcon(name: string, type: 'app' | 'panel') {
+  return {icon: {...icon, file: `/p/${name}.png`}, name, type}
+}
+
 /** The (name, value) pairs a call appended to its FormData. */
 function appendedFields(): Array<[string, unknown]> {
   return appendSpy.mock.calls.map((call: unknown[]) => [call[0], call[1]] as [string, unknown])
@@ -487,6 +491,104 @@ describe('deployWorkbenchApp', () => {
       }),
     ).rejects.toThrow(
       "The app icon was rejected: Unsupported image format. The deployment is live with the application's previous icon. Change `app.icon` in sanity.cli.ts and deploy again.",
+    )
+  })
+
+  test("uploads each view icon to the deployment's interface of the same type and name", async () => {
+    const viewsApp = defineApplication({
+      entry: './src/App.tsx',
+      organizationId: 'org-1',
+      slug: 'drop-desk',
+      title: 'Drop Desk',
+      views: [
+        defineWindowView({
+          icon: './inbox.png',
+          name: 'inbox',
+          src: './src/Inbox.tsx',
+          title: 'Inbox',
+        }),
+        definePanelView({icon: './feed.png', name: 'feed', src: './src/Feed.tsx', title: 'Feed'}),
+      ],
+    })
+    // Brett answers with the interfaces it was sent, each given an id.
+    mockClient.request.mockImplementationOnce(async () => ({
+      id: 'dep_1',
+      interfaces: (
+        JSON.parse(appendedFields().find(([name]) => name === 'interfaces')![1] as string) as {
+          name: string
+          type: string
+        }[]
+      ).map((iface) => ({...iface, id: `if_${iface.type}_${iface.name}`})),
+    }))
+
+    await deployWorkbenchApp({
+      app: viewsApp,
+      applicationId: 'app_1',
+      isApp: true,
+      isAutoUpdating: false,
+      mfManifest,
+      sourceDir,
+      title: 'Drop Desk',
+      version: '1.0.0',
+      viewIcons: [viewIcon('inbox', 'app'), viewIcon('feed', 'panel')],
+    })
+
+    expect(
+      mockClient.request.mock.calls
+        .map(([request]) => request.url)
+        .filter((url: string) => url.includes('/interfaces/')),
+    ).toEqual([
+      '/applications/app_1/interfaces/if_app_inbox/icon',
+      '/applications/app_1/interfaces/if_panel_feed/icon',
+    ])
+  })
+
+  test('names the view, and that the deployment is live, when it has no interface for an icon', async () => {
+    mockClient.request.mockResolvedValueOnce({id: 'dep_1', interfaces: []})
+
+    await expect(
+      deployWorkbenchApp({
+        app,
+        applicationId: 'app_1',
+        isApp: true,
+        isAutoUpdating: false,
+        mfManifest,
+        sourceDir,
+        title: 'Drop Desk',
+        version: '1.0.0',
+        viewIcons: [{icon: {...icon, file: '/p/inbox.png'}, name: 'inbox', type: 'panel'}],
+      }),
+    ).rejects.toThrow(
+      'The deployment is live, but has no panel interface named "inbox" to set its icon on.',
+    )
+  })
+
+  test('names the view and the server reason when a view icon is rejected', async () => {
+    mockClient.request
+      .mockResolvedValueOnce({
+        id: 'dep_1',
+        interfaces: [{id: 'if_1', name: 'inbox', type: 'panel'}],
+      })
+      .mockResolvedValueOnce(undefined)
+      .mockResolvedValueOnce(undefined)
+      .mockRejectedValueOnce(
+        Object.assign(new Error('Unsupported image format'), {statusCode: 415}),
+      )
+
+    await expect(
+      deployWorkbenchApp({
+        app,
+        applicationId: 'app_1',
+        isApp: true,
+        isAutoUpdating: false,
+        mfManifest,
+        sourceDir,
+        title: 'Drop Desk',
+        version: '1.0.0',
+        viewIcons: [{icon: {...icon, file: '/p/inbox.png'}, name: 'inbox', type: 'panel'}],
+      }),
+    ).rejects.toThrow(
+      'The icon of view "inbox" was rejected: Unsupported image format. The deployment is live without it. Change the view\'s `icon` in sanity.cli.ts and deploy again.',
     )
   })
 

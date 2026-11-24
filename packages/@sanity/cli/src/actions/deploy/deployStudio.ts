@@ -16,6 +16,7 @@ import {
   getWorkbench,
   getWorkbenchUrl,
   readAppIcon,
+  readViewIcons,
   selectWorkbenchAppId,
   toWorkbenchPayload,
 } from '@sanity/workbench-cli/deploy'
@@ -147,6 +148,7 @@ async function runStudioDeployment(
   // Read up front so a bad icon path fails before we create or build.
   const appIcon =
     !dryRun && workbench?.icon ? await readAppIcon(workDir, workbench.icon) : undefined
+  const viewIcons = !dryRun && workbench ? await readViewIcons(workDir, cliConfig.app) : []
 
   const startedAt = Date.now()
   const summaryDetails =
@@ -246,6 +248,7 @@ async function runStudioDeployment(
         sourceDir,
         title: appTitle,
         version,
+        viewIcons,
         visibility: workbench.visibility,
         workspaces: toWorkspaces(studioManifest),
       })

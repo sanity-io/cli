@@ -6,6 +6,22 @@ import {deriveInterfaces} from '../../../deriveInterfaces.js'
 import {deriveConfigEntries, deriveConfigs} from '../deriveConfigs.js'
 import {workbenchApp} from './devTestHelpers.js'
 
+function iconApp() {
+  return workbenchApp({
+    views: [
+      {icon: './feed.png', name: 'feed', src: './src/Feed.tsx', surface: 'panel', title: 'Feed'},
+      {
+        dock: {order: 20},
+        icon: './settings.png',
+        name: 'settings',
+        src: './src/Settings.tsx',
+        surface: 'window',
+        title: 'Settings',
+      },
+    ],
+  })
+}
+
 describe('deriveInterfaces', () => {
   test('derives nothing for a non-branded app (no defineApplication)', () => {
     expect(deriveInterfaces({title: 'Plain'} as CliConfig['app'], {isApp: true})).toStrictEqual([])
@@ -215,6 +231,25 @@ describe('deriveInterfaces', () => {
         surface: 'window',
       },
     ])
+  })
+
+  test("sets metadata.icon to the iconUrl of a window or panel view's icon, alongside dock", () => {
+    const app = iconApp()
+
+    expect(
+      deriveInterfaces(app, {iconUrl: (path) => `http://localhost:3333/${path}`, isApp: true}).map(
+        (iface) => iface.metadata,
+      ),
+    ).toStrictEqual([
+      {icon: 'http://localhost:3333/./feed.png'},
+      {dock: {order: 20}, icon: 'http://localhost:3333/./settings.png'},
+    ])
+  })
+
+  test('omits the icon from metadata when no iconUrl is given', () => {
+    expect(deriveInterfaces(iconApp(), {isApp: true}).map((iface) => iface.metadata)).toStrictEqual(
+      [null, {dock: {order: 20}}],
+    )
   })
 
   test('stamps the moduleId a deploy would, so a local interface resolves like a deployed one', () => {
