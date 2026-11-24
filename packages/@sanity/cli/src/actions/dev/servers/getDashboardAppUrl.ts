@@ -24,13 +24,15 @@ const getDefaultDashboardURL = ({
 export const getDashboardAppURL = async ({
   httpHost = 'localhost',
   httpPort = 3333,
+  https = false,
   organizationId,
 }: {
   httpHost?: string
   httpPort?: number
+  https?: boolean
   organizationId: string
 }): Promise<string> => {
-  const url = `http://${httpHost}:${httpPort}`
+  const url = `${https ? 'https' : 'http'}://${httpHost}:${httpPort}`
 
   const abortController = new AbortController()
   // Wait for 5 seconds before aborting the request

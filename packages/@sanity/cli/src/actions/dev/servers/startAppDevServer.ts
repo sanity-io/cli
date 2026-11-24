@@ -23,7 +23,7 @@ function toDisplayHost(host: string | undefined): string {
 }
 
 export async function startAppDevServer(options: DevActionOptions): Promise<StartDevServerResult> {
-  const {announceUrl = true, cliConfig, flags, httpPort, output, workDir} = options
+  const {cliConfig, flags, httpPort, output, quiet, workDir} = options
 
   // A config (the Media Library) surfaces through the workbench, not the
   // dashboard, so it takes the same path as an app here.
@@ -52,7 +52,7 @@ export async function startAppDevServer(options: DevActionOptions): Promise<Star
   const config = getDevServerConfig({cliConfig, flags, httpPort, output, workDir})
 
   try {
-    output.log('Starting dev server')
+    if (!quiet) output.log('Starting dev server')
 
     const appTitle = cliConfig && 'app' in cliConfig ? cliConfig.app?.title : undefined
     const {close, server} = await startDevServer({
@@ -61,12 +61,12 @@ export async function startAppDevServer(options: DevActionOptions): Promise<Star
       isApp: true,
     })
 
-    const {port} = server.config.server
+    const {https, port} = server.config.server
 
     // Federated apps surface through the workbench, which announces the URL;
     // only the package-unavailable fallback announces from here.
-    if (isWorkbenchApp && announceUrl) {
-      const url = `http://${toDisplayHost(config.httpHost)}:${port}`
+    if (isWorkbenchApp && !quiet) {
+      const url = `${https ? 'https' : 'http'}://${toDisplayHost(config.httpHost)}:${port}`
       output.log(`App dev server started at ${styleText(['blue', 'underline'], url)}`)
     } else if (!isWorkbenchApp) {
       const httpHost = config.httpHost || 'localhost'
@@ -74,6 +74,7 @@ export async function startAppDevServer(options: DevActionOptions): Promise<Star
       const dashboardAppUrl = await getDashboardAppURL({
         httpHost,
         httpPort: port,
+        https: Boolean(https),
         organizationId,
       })
       output.log(`Dev server started on port ${port}`)

@@ -70,7 +70,7 @@ export async function readSkillState(opts: ReadSkillStateOptions): Promise<Skill
   try {
     // Loaded lazily so a problem with the `skills` package only affects this
     // best-effort probe, not every command that imports this module.
-    // eslint-disable-next-line no-restricted-syntax -- package import, not a file path
+    // eslint-disable-next-line eslint-js/no-restricted-syntax -- package import, not a file path
     const {listSkills} = await import('skills')
     const result = await listSkills({
       scope: 'global',

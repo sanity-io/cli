@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-/* eslint-disable n/no-unsupported-features/node-builtins -- Supported by the Node version guard. */
+/* eslint-disable n-js/no-unsupported-features/node-builtins -- Supported by the Node version guard. */
 import module from 'node:module'
 
 var err = '\u001B[31m\u001B[1mERROR:\u001B[22m\u001B[39m '

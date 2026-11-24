@@ -9,12 +9,7 @@ import {isSchemaError} from '../../util/isSchemaError.js'
 import {extractFromSanitySchema} from './extractFromSanitySchema.js'
 import {resolveGraphQLApis, type Workspace} from './resolveGraphQLApisFromWorkspaces.js'
 import {SchemaError} from './SchemaError.js'
-import {
-  type ExtractedGraphQLAPI,
-  type GraphQLAPIConfig,
-  type GraphQLWorkerResult,
-  type SchemaDefinitionish,
-} from './types.js'
+import {type ExtractedGraphQLAPI, type GraphQLAPIConfig, type GraphQLWorkerResult} from './types.js'
 
 // ---------------------------------------------------------------------------
 // Main-thread orchestrator
@@ -116,12 +111,13 @@ export async function extractGraphQLAPIsWorker(
   const resolvedApis = resolveGraphQLApis({cliConfig, workspaces})
 
   // Get createSchema from sanity (0ms — already cached by ViteNodeRunner)
-  const {createSchema} = await deps.resolveLocalPackage<typeof import('sanity')>('sanity', workDir)
+  const {createSchema, RELEASE_DOCUMENT_TYPE: releaseDocumentType} = await deps.resolveLocalPackage<
+    typeof import('sanity') & {RELEASE_DOCUMENT_TYPE?: string}
+  >('sanity', workDir)
 
   // Build default schema to identify built-in types that should be filtered out
   const defaultSchema = createSchema({name: 'default', types: []})
   const defaultTypes = defaultSchema.getTypeNames()
-  const isCustomType = (type: SchemaDefinitionish) => !defaultTypes.includes(type.name)
 
   // For each API: create compiled schema, extract GraphQL spec, catch SchemaError
   const results: ExtractedGraphQLAPI[] = []
@@ -139,9 +135,19 @@ export async function extractGraphQLAPIsWorker(
     }
 
     try {
+      const excludedTypes = new Set(defaultTypes)
+      if (
+        releaseDocumentType &&
+        api.schemaTypes.some((type) => type.name === releaseDocumentType)
+      ) {
+        // Studio's release records and their metadata are managed by Content Releases.
+        excludedTypes.add(releaseDocumentType)
+        excludedTypes.add('sanity.releaseMetadata')
+      }
+
       const schema = createSchema({
         name: 'default',
-        types: api.schemaTypes.filter((type) => isCustomType(type)),
+        types: api.schemaTypes.filter((type) => !excludedTypes.has(type.name)),
       })
 
       const extracted = extractFromSanitySchema(schema, {

@@ -50,6 +50,26 @@ describe('startAppDevServer', () => {
     vi.clearAllMocks()
   })
 
+  test.each([undefined, {}])('uses resolved HTTPS=%j for app URLs', async (https) => {
+    const started = createMockDevServer({port: 4443})
+    Object.assign(started.server.config.server, {https})
+    mockStartDevServer.mockResolvedValue(started)
+    const output = createMockOutput()
+
+    await startAppDevServer(createOptions({output}))
+    expect(mockGetDashboardAppURL).toHaveBeenCalledWith({
+      httpHost: 'localhost',
+      httpPort: 4443,
+      https: Boolean(https),
+      organizationId: 'org-1',
+    })
+
+    await startAppDevServer(createOptions({cliConfig: workbenchCliConfig(), output}))
+    expect(output.log).toHaveBeenCalledWith(
+      expect.stringContaining(`${https ? 'https' : 'http'}://localhost:4443`),
+    )
+  })
+
   test('exits with error when organizationId is missing', async () => {
     const output = createMockOutput()
     const result = await startAppDevServer(
@@ -136,6 +156,7 @@ describe('startAppDevServer', () => {
     expect(mockGetDashboardAppURL).toHaveBeenCalledWith({
       httpHost: 'localhost',
       httpPort: 3334,
+      https: false,
       organizationId: 'org-1',
     })
     expect(output.log).toHaveBeenCalledWith('Dev server started on port 3334')
@@ -145,30 +166,27 @@ describe('startAppDevServer', () => {
     )
   })
 
-  test('logs "App dev server started" for workbench apps when asked to announce its URL', async () => {
+  test('logs "App dev server started" for workbench apps when not quiet', async () => {
     mockStartDevServer.mockResolvedValue(createMockDevServer({port: 3334}))
     const output = createMockOutput()
 
-    await startAppDevServer(
-      createOptions({announceUrl: true, cliConfig: workbenchCliConfig(), output}),
-    )
+    await startAppDevServer(createOptions({cliConfig: workbenchCliConfig(), output, quiet: false}))
 
     expect(output.log).toHaveBeenCalledWith(expect.stringContaining('App dev server started at'))
     expect(output.log).toHaveBeenCalledWith(expect.stringContaining('http://localhost:3334'))
     expect(mockGetDashboardAppURL).not.toHaveBeenCalled()
   })
 
-  test('skips the port log line for workbench apps when the workbench announces instead', async () => {
+  test('logs nothing for workbench apps when the workbench announces instead', async () => {
     mockStartDevServer.mockResolvedValue(createMockDevServer({port: 3334}))
     const output = createMockOutput()
 
-    await startAppDevServer(
-      createOptions({announceUrl: false, cliConfig: workbenchCliConfig(), output}),
+    const result = await startAppDevServer(
+      createOptions({cliConfig: workbenchCliConfig(), output, quiet: true}),
     )
 
-    // 'Starting dev server' is still logged, but the port announcement is not
-    const logCalls = (output.log as ReturnType<typeof vi.fn>).mock.calls.flat()
-    expect(logCalls.some((c) => String(c).includes('App dev server started'))).toBe(false)
+    expect(result.started).toBe(true)
+    expect(output.log).not.toHaveBeenCalled()
     expect(mockGetDashboardAppURL).not.toHaveBeenCalled()
   })
 

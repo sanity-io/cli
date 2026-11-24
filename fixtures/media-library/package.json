@@ -1,6 +1,6 @@
 {
   "name": "media-library-fixture",
-  "version": "1.0.58",
+  "version": "1.0.65",
   "private": true,
   "keywords": [
     "sanity"
@@ -13,8 +13,8 @@
   },
   "dependencies": {
     "@sanity/cli": "workspace:*",
-    "react": "^19.2.5",
-    "react-dom": "^19.2.5",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
     "sanity": "catalog:",
     "styled-components": "^6.4.0"
   },

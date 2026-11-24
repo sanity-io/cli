@@ -31,14 +31,14 @@ export async function previewAction(
     const isApp = determineIsApp(cliConfig)
     // Lazy so a non-workbench `sanity start` never loads the package. `doImport`
     // is path-based and doesn't apply to a bare specifier.
-    // eslint-disable-next-line no-restricted-syntax
+    // eslint-disable-next-line eslint-js/no-restricted-syntax
     const {startWorkbenchPreview} = await import('@sanity/workbench-cli/preview')
     return startWorkbenchPreview({
       cacheDir: `${SANITY_CACHE_DIR}/vite`,
       checkForDeprecatedAppId: () => checkForDeprecatedAppId({cliConfig, output}),
       cliConfig,
       extractManifest: isApp
-        ? ({workDir: wd}) => extractCoreAppManifest({workDir: wd})
+        ? ({iconUrl, workDir: wd}) => extractCoreAppManifest({iconUrl, workDir: wd})
         : (params) => extractStudioManifest(params),
       httpHost: config.httpHost,
       httpPort: config.httpPort,

@@ -44,8 +44,8 @@ export async function renderDashboard(
 
   const deployedDashboardHost =
     globalThis.__SANITY_STAGING__ === true
-      ? 'workbench-apps-of5p8qpku.run.sanity.work'
-      : 'workbench-apps-osyh1iet5.sanity.run'
+      ? 'workbench--apps--of5p8qpku.run.sanity.work'
+      : 'workbench--apps--osyh1iet5.sanity.run'
   const remoteUrl =
     import.meta.env.SANITY_INTERNAL_WORKBENCH_REMOTE_URL ??
     `https://${deployedDashboardHost}/mf-manifest.json`

@@ -1,5 +1,108 @@
 # Changelog
 
+## 7.5.1
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-build-v7.5.0...cli-build-v7.5.1)
+
+_2026-11-24_
+
+### Bug Fixes
+
+- **auto-updates:** round the module URL timestamp to 60 seconds ([#2136](https://github.com/sanity-io/cli/pull/2136)) ([d271d6a](https://github.com/sanity-io/cli/commit/d271d6aaa06dd89592ceb1590877b73f00190030))
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/workbench-cli bumped to 2.19.1
+
+## 7.5.0
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-build-v7.4.0...cli-build-v7.5.0)
+
+_2026-11-20_
+
+### Features
+
+- use any image as app.icon in sanity.cli.ts ([#2252](https://github.com/sanity-io/cli/pull/2252)) ([d888323](https://github.com/sanity-io/cli/commit/d88832341bedb1ad198b57026039d28fdb2037ce))
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/cli-core bumped to 3.16.0
+    - @sanity/workbench-cli bumped to 2.19.0
+
+## 7.4.0
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-build-v7.3.0...cli-build-v7.4.0)
+
+_2026-11-19_
+
+### Features
+
+- **cli-build:** add generate schema event listeners ([#2210](https://github.com/sanity-io/cli/pull/2210)) ([ab6d722](https://github.com/sanity-io/cli/commit/ab6d722db87a05991c9102d4e180ddf148e24e8e))
+- **cli-build:** accept resource bindings during studio build ([#2230](https://github.com/sanity-io/cli/pull/2230)) ([7c787d1](https://github.com/sanity-io/cli/commit/7c787d16232b40e517247e0cd515aaefd5cee2a4))
+
+### Bug Fixes
+
+- **deps:** update dependency dompurify to ^3.4.18 ([#2212](https://github.com/sanity-io/cli/pull/2212)) ([0cdbcb5](https://github.com/sanity-io/cli/commit/0cdbcb50efca2dce8f8fe2e7b7ef1db44b5fd79d))
+- **deps:** update sanity-tooling ([#2221](https://github.com/sanity-io/cli/pull/2221)) ([ff30dc4](https://github.com/sanity-io/cli/commit/ff30dc4d75c0ca6661a970feea632cce6254980e))
+
+## 7.3.0
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-build-v7.2.2...cli-build-v7.3.0)
+
+_2026-11-17_
+
+### Features
+
+- **workbench-cli:** show app details on dev ([#2149](https://github.com/sanity-io/cli/pull/2149)) ([d96fbe4](https://github.com/sanity-io/cli/commit/d96fbe4d938ec2985b14097adf6661b36ea2ed0b))
+
+### Bug Fixes
+
+- **cli-build:** replace sanity schema upload with @sanity/schema ([#2207](https://github.com/sanity-io/cli/pull/2207)) ([d02ec30](https://github.com/sanity-io/cli/commit/d02ec30685285f52372ca86d8add28a17d11e35b))
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/workbench-cli bumped to 2.18.0
+
+## 7.2.2
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-build-v7.2.1...cli-build-v7.2.2)
+
+_2026-11-17_
+
+### Bug Fixes
+
+- **deps:** update react monorepo to ^19.3.1 ([#2192](https://github.com/sanity-io/cli/pull/2192)) ([2cb7c7a](https://github.com/sanity-io/cli/commit/2cb7c7af9f23d931c6480bfa67ed4432ed1e76f5))
+- **deps:** update dependency cjs-module-lexer to ^2.3.0 ([#2204](https://github.com/sanity-io/cli/pull/2204)) ([54525db](https://github.com/sanity-io/cli/commit/54525db4d770b0200dd70c7e45158d970063d9eb))
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/workbench-cli bumped to 2.17.0
+
+## 7.2.1
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-build-v7.2.0...cli-build-v7.2.1)
+
+_2026-11-17_
+
+### Bug Fixes
+
+- **cli-build:** preserve named array types during serialization ([#2198](https://github.com/sanity-io/cli/pull/2198)) ([04f0fa2](https://github.com/sanity-io/cli/commit/04f0fa2ea878f455be21c0277301076fa5838b71))
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/cli-core bumped to 3.15.1
+    - @sanity/workbench-cli bumped to 2.16.1
+
 ## 7.2.0
 
 [Compare changes](https://github.com/sanity-io/cli/compare/cli-build-v7.1.2...cli-build-v7.2.0)

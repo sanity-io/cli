@@ -1,7 +1,13 @@
+import {mkdtemp, rm, writeFile} from 'node:fs/promises'
+import {tmpdir} from 'node:os'
+import path from 'node:path'
+
+import {getGlobalCliClient} from '@sanity/cli-core'
 import {testCommand} from '@sanity/cli-test'
-import {afterEach, describe, expect, test, vi} from 'vitest'
+import {afterAll, afterEach, beforeAll, describe, expect, test, vi} from 'vitest'
 
 import {httpError} from '../../../../test/helpers/httpError.js'
+import {parseArguments} from '../../../util/parseArguments.js'
 import {UpdateOrganizationCommand} from '../update.js'
 
 const mockRequest = vi.hoisted(() => vi.fn())
@@ -35,9 +41,164 @@ const updatedOrg = {
   updatedAt: '2026-03-18T00:00:00Z',
 }
 
+const logoUrl = 'https://cdn.sanity.io/organizations/org-aaa/images/abc-64x64.png'
+
+let dir: string
+let logoPath: string
+
+beforeAll(async () => {
+  dir = await mkdtemp(path.join(tmpdir(), 'org-update-'))
+  logoPath = path.join(dir, 'logo.png')
+  await writeFile(logoPath, 'png bytes')
+})
+
+afterAll(async () => {
+  await rm(dir, {force: true, recursive: true})
+})
+
 describe('organizations update', () => {
   afterEach(() => {
     vi.clearAllMocks()
+    // clearAllMocks keeps queued mockResolvedValueOnce values, which would leak into the next test.
+    mockRequest.mockReset()
+  })
+
+  test('redacts the logo path from command telemetry', () => {
+    const result = parseArguments(
+      ['node', 'sanity', 'organizations', 'update', 'org-aaa', '--logo=/Users/test/acme/logo.png'],
+      UpdateOrganizationCommand,
+    )
+
+    expect(result.extraArguments).toEqual(['--logo'])
+  })
+
+  test('sets the logo from an image file and prints its URL', async () => {
+    mockRequest.mockResolvedValue({logoUrl})
+
+    const {error, stdout} = await testCommand(UpdateOrganizationCommand, [
+      'org-aaa',
+      '--logo',
+      logoPath,
+    ])
+
+    if (error) throw error
+    expect(stdout).toContain(`Logo: ${logoUrl}`)
+    expect(getGlobalCliClient).toHaveBeenCalledWith({apiVersion: 'vX', requireUser: true})
+    expect(mockRequest).toHaveBeenCalledOnce()
+    expect(mockRequest).toHaveBeenCalledWith({
+      body: Buffer.from('png bytes'),
+      headers: {'Content-Type': 'image/png'},
+      method: 'put',
+      url: '/organizations/org-aaa/logo',
+    })
+  })
+
+  test('removes the logo with --logo ""', async () => {
+    mockRequest.mockResolvedValue({logoUrl: null})
+
+    const {error, stdout} = await testCommand(UpdateOrganizationCommand, ['org-aaa', '--logo', ''])
+
+    if (error) throw error
+    expect(stdout).toContain('Logo removed')
+    expect(getGlobalCliClient).toHaveBeenCalledWith({apiVersion: 'vX', requireUser: true})
+    expect(mockRequest).toHaveBeenCalledOnce()
+    expect(mockRequest).toHaveBeenCalledWith({method: 'delete', url: '/organizations/org-aaa/logo'})
+  })
+
+  test('updates the name and then the logo', async () => {
+    mockRequest.mockResolvedValueOnce(updatedOrg).mockResolvedValueOnce({logoUrl})
+
+    const {error, stdout} = await testCommand(UpdateOrganizationCommand, [
+      'org-aaa',
+      '--name',
+      'New Name',
+      '--logo',
+      logoPath,
+    ])
+
+    if (error) throw error
+    expect(stdout).toContain(`Logo: ${logoUrl}`)
+    expect(mockRequest).toHaveBeenNthCalledWith(1, {
+      body: {name: 'New Name'},
+      method: 'patch',
+      url: '/organizations/org-aaa',
+    })
+    expect(mockRequest).toHaveBeenNthCalledWith(2, {
+      body: Buffer.from('png bytes'),
+      headers: {'Content-Type': 'image/png'},
+      method: 'put',
+      url: '/organizations/org-aaa/logo',
+    })
+  })
+
+  test('rejects a logo over 5 MB without sending anything', async () => {
+    const largeLogo = path.join(dir, 'large.png')
+    await writeFile(largeLogo, Buffer.alloc(10 * 1024 * 1024))
+
+    const {error} = await testCommand(UpdateOrganizationCommand, [
+      'org-aaa',
+      '--name',
+      'New Name',
+      '--logo',
+      largeLogo,
+    ])
+
+    expect(error?.message).toContain('is larger than 5 MB, the upload limit')
+    expect(error?.oclif?.exit).toBe(1)
+    expect(mockRequest).not.toHaveBeenCalled()
+  })
+
+  test("prints the API's reason when it rejects the logo", async () => {
+    mockRequest.mockRejectedValue(
+      httpError(415, 'Unsupported Media Type - The image format is not supported', {
+        error: 'Unsupported Media Type',
+        message: 'The image format is not supported',
+        statusCode: 415,
+      }),
+    )
+
+    const {error} = await testCommand(UpdateOrganizationCommand, ['org-aaa', '--logo', logoPath])
+
+    expect(error?.message).toBe(
+      "Failed to set the organization's logo: The image format is not supported",
+    )
+    expect(error?.oclif?.exit).toBe(1)
+  })
+
+  test('says the other changes were saved when only the logo is rejected', async () => {
+    mockRequest.mockResolvedValueOnce(updatedOrg).mockRejectedValueOnce(
+      httpError(422, 'Unprocessable Entity - The image could not be processed', {
+        message: 'The image could not be processed',
+      }),
+    )
+
+    const {error} = await testCommand(UpdateOrganizationCommand, [
+      'org-aaa',
+      '--name',
+      'New Name',
+      '--logo',
+      logoPath,
+    ])
+
+    expect(error?.message).toBe(
+      "The organization was updated, but its logo wasn't set: The image could not be processed",
+    )
+    expect(error?.oclif?.exit).toBe(1)
+  })
+
+  test("prints the API's reason when it can't remove the logo", async () => {
+    mockRequest.mockRejectedValue(
+      httpError(403, 'Forbidden - You do not have permission to update this organization', {
+        message: 'You do not have permission to update this organization',
+      }),
+    )
+
+    const {error} = await testCommand(UpdateOrganizationCommand, ['org-aaa', '--logo', ''])
+
+    expect(error?.message).toBe(
+      "Failed to remove the organization's logo: You do not have permission to update this organization",
+    )
+    expect(error?.oclif?.exit).toBe(1)
   })
 
   test('updates organization name', async () => {

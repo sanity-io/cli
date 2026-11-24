@@ -1,7 +1,11 @@
 import {getGlobalCliClient} from '@sanity/cli-core'
+import {type ImageFile} from '@sanity/cli-core/images'
 import {RawRequestOptions} from '@sanity/client'
 
 export const ORGANIZATIONS_API_VERSION = 'v2025-05-14'
+
+// The logo routes are only on vX while they are experimental.
+const ORGANIZATION_LOGO_API_VERSION = 'vX'
 
 export interface ProjectOrganization {
   id: string
@@ -29,6 +33,10 @@ export interface OrganizationUpdateParams {
   defaultRoleName?: string
   name?: string
   slug?: string
+}
+
+interface OrganizationLogoResponse {
+  logoUrl: string | null
 }
 
 interface OrganizationDeleteResponse {
@@ -133,6 +141,43 @@ export async function updateOrganization(
     body: params,
     method: 'patch',
     url: `/organizations/${organizationId}`,
+  })
+}
+
+/**
+ * Set an organization's logo, replacing any previous logo
+ */
+export async function setOrganizationLogo(
+  organizationId: string,
+  logo: ImageFile,
+): Promise<OrganizationLogoResponse> {
+  const client = await getGlobalCliClient({
+    apiVersion: ORGANIZATION_LOGO_API_VERSION,
+    requireUser: true,
+  })
+
+  return client.request<OrganizationLogoResponse>({
+    body: logo.image,
+    headers: {'Content-Type': logo.contentType},
+    method: 'put',
+    url: `/organizations/${organizationId}/logo`,
+  })
+}
+
+/**
+ * Remove an organization's logo
+ */
+export async function removeOrganizationLogo(
+  organizationId: string,
+): Promise<OrganizationLogoResponse> {
+  const client = await getGlobalCliClient({
+    apiVersion: ORGANIZATION_LOGO_API_VERSION,
+    requireUser: true,
+  })
+
+  return client.request<OrganizationLogoResponse>({
+    method: 'delete',
+    url: `/organizations/${organizationId}/logo`,
   })
 }
 

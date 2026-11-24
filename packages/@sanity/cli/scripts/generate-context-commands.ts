@@ -26,7 +26,7 @@ import {distillContextOperations} from '../src/actions/context/distillContextOpe
 const ROOT = join(import.meta.dirname, '..')
 
 function quote(value: string): string {
-  return `'${value.replaceAll('\\', '\\\\').replaceAll("'", String.raw`\'`)}'`
+  return `'${value.replaceAll('\\', String.raw`\\`).replaceAll("'", String.raw`\'`)}'`
 }
 
 /** A JSON string literal's body as a single-quoted TypeScript string, escapes kept */

@@ -1,6 +1,5 @@
 export {
   extractCoreAppManifest,
-  readIconFromPath,
   resolveTitleUpdate,
 } from '../../actions/manifest/extractCoreAppManifest.js'
 export {extractManifest} from '../../actions/manifest/extractManifest.js'

@@ -444,15 +444,24 @@ describe('approved CLI payloads', () => {
     const result = sanitizeTelemetryEvent(
       event({
         data: {
-          configuredEditors: ['Cursor', 'private', {token: 'private'}],
+          configuredEditors: ['Cursor', 'Pi', 'private', {token: 'private'}],
           detectedEditors: 'private',
         },
         name: 'CLI MCP Configure Completed',
         version: 1,
       }),
     )
-    expect(result).toMatchObject({data: {configuredEditors: ['Cursor']}})
+    expect(result).toMatchObject({data: {configuredEditors: ['Cursor', 'Pi']}})
     expect(JSON.stringify(result)).not.toContain('private')
+    expect(
+      sanitizeTelemetryEvent(
+        event({
+          data: {detectedEditors: ['Pi', 'private'], installedAgents: ['pi', 'private']},
+          name: 'CLI Skills Install Completed',
+          version: 1,
+        }),
+      ),
+    ).toMatchObject({data: {detectedEditors: ['Pi'], installedAgents: ['pi']}})
     expect(
       sanitizeTelemetryEvent(
         event({

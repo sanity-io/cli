@@ -49,7 +49,7 @@ const hook: Hook.CommandNotFound = async function (opts) {
   if (removed) return this.error(removed, {exit: exitCodes.USAGE_ERROR})
 
   // No alias match - fall back to oclif plugin-not-found's "did you mean?" behavior
-  // eslint-disable-next-line no-restricted-syntax -- package import, not a file path
+  // eslint-disable-next-line eslint-js/no-restricted-syntax -- package import, not a file path
   const {default: notFoundHook} = await import('@oclif/plugin-not-found')
   return notFoundHook.call(this, opts)
 }

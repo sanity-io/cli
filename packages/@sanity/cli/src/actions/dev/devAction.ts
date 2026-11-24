@@ -56,8 +56,8 @@ function startWorkbench(options: DevActionOptions): Promise<{close: () => Promis
     checkForDeprecatedAppId: () => checkForDeprecatedAppId({cliConfig, output}),
     cliConfig,
     extractManifest: isApp
-      ? ({workDir: wd}) => extractCoreAppManifest({workDir: wd})
-      : (params) => extractStudioManifest(params),
+      ? ({iconUrl, workDir: wd}) => extractCoreAppManifest({iconUrl, silent: true, workDir: wd})
+      : (params) => extractStudioManifest({...params, silent: true}),
     httpHost,
     httpPort,
     isApp,

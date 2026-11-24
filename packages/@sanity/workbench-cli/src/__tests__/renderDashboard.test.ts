@@ -32,7 +32,7 @@ describe('renderDashboard', () => {
       name: 'sanity-workbench',
       remotes: [
         {
-          entry: 'https://workbench-apps-osyh1iet5.sanity.run/mf-manifest.json',
+          entry: 'https://workbench--apps--osyh1iet5.sanity.run/mf-manifest.json',
           name: 'workbench-remote',
         },
       ],
@@ -61,7 +61,7 @@ describe('renderDashboard', () => {
       expect.objectContaining({
         remotes: [
           expect.objectContaining({
-            entry: 'https://workbench-apps-of5p8qpku.run.sanity.work/mf-manifest.json',
+            entry: 'https://workbench--apps--of5p8qpku.run.sanity.work/mf-manifest.json',
           }),
         ],
       }),

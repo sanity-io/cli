@@ -21,19 +21,21 @@ interface ExtractManifestOptions extends Pick<WriteManifestFileOptions, 'outPath
   path: string
 
   applicationId?: string
+  silent?: boolean
 }
 
 export async function extractManifest({
   applicationId,
   outPath,
   path,
+  silent,
   workDir,
 }: ExtractManifestOptions): Promise<void> {
   manifestDebug('Project root %o', {directory: workDir, path})
 
   const timer = getTimer()
   timer.start(CREATE_TIMER)
-  const spin = spinner('Extracting manifest').start()
+  const spin = spinner({isSilent: silent, text: 'Extracting manifest'}).start()
 
   try {
     const result = await studioWorkerTask<ExtractManifestWorkerMessage>(

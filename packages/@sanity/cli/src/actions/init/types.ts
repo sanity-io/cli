@@ -52,6 +52,7 @@ export interface InitOptions {
   templateToken?: string
   typescript?: boolean
   visibility?: 'private' | 'public'
+  withBlueprints?: boolean
 }
 
 export interface InitContext {
@@ -95,6 +96,7 @@ interface InitCommandFlags {
   'template-token'?: string
   typescript?: boolean
   visibility?: string
+  'with-blueprints'?: boolean
 }
 
 interface InitCommandArgs {
@@ -154,5 +156,6 @@ export function flagsToInitOptions(
     typescript: flags.typescript,
     unattended: isUnattended,
     visibility: narrowVisibility(flags.visibility),
+    withBlueprints: flags['with-blueprints'],
   }
 }

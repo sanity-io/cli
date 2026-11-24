@@ -1,4 +1,5 @@
 import {subdebug} from '@sanity/cli-core'
+import {type ImageFile} from '@sanity/cli-core/images'
 import {type InlineConfig, preview} from 'vite'
 
 import {readBuiltManifest} from '../build/readBuiltManifest.js'
@@ -26,10 +27,12 @@ export async function serveBuiltApplication(options: {
   cacheDir: string
   httpHost: string
   httpPort: number
+  /** The app's and views' icons, each served at its `path`: they live in the project, not in `outDir`. */
+  icons?: readonly (ImageFile & {path: string})[]
   outDir: string
   workDir: string
 }): Promise<BuiltApplicationServer> {
-  const {cacheDir, httpHost, httpPort, outDir, workDir} = options
+  const {cacheDir, httpHost, httpPort, icons = [], outDir, workDir} = options
 
   await readBuiltManifest(outDir)
 
@@ -43,6 +46,19 @@ export async function serveBuiltApplication(options: {
     configFile: false,
     logLevel: 'warn',
     mode: 'production',
+    plugins: [
+      {
+        configurePreviewServer(server) {
+          for (const icon of icons) {
+            server.middlewares.use(icon.path, (_req, res) => {
+              res.setHeader('Content-Type', icon.contentType)
+              res.end(icon.image)
+            })
+          }
+        },
+        name: 'sanity:app-icon',
+      },
+    ],
     preview: {host: httpHost, port: httpPort, strictPort: false},
     root: workDir,
   }

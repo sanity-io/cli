@@ -96,7 +96,8 @@ function transformCommonTypeFields(
   context: Context,
 ): Omit<ManifestSchemaType, 'name' | 'title' | 'type'> {
   const rawDef = rawDefinitionFor(type, context)
-  const arrayProps = type.jsonType === 'array' ? transformArrayMember(type, context) : {}
+  const arrayProps =
+    typeName === 'array' && type.jsonType === 'array' ? transformArrayMember(type, context) : {}
 
   const referenceProps = isReference(type) ? transformReference(type, retainCustomTypeProps) : {}
   const crossDatasetRefProps = isCrossDatasetReference(type)

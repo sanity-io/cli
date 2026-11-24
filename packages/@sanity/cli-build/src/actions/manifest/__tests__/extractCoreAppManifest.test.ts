@@ -1,6 +1,7 @@
 import {readFile} from 'node:fs/promises'
 
 import {getCliConfigUncached} from '@sanity/cli-core'
+import {spinner} from '@sanity/cli-core/ux'
 import {defineApplication, unstable_defineMediaLibrary} from '@sanity/workbench-cli'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
@@ -57,6 +58,14 @@ describe('extractCoreAppManifest', () => {
 
     expect(result).toBeUndefined()
     expect(mockSpinner.info).not.toHaveBeenCalled()
+  })
+
+  test('extracts without a visible spinner when silent', async () => {
+    mockGetCliConfig.mockResolvedValue({app: {organizationId: 'org-1', title: 'My App'}} as never)
+
+    await extractCoreAppManifest({silent: true, workDir: '/project'})
+
+    expect(spinner).toHaveBeenCalledWith(expect.objectContaining({isSilent: true}))
   })
 
   test('returns manifest with title only when app has no icon', async () => {
@@ -147,6 +156,26 @@ describe('extractCoreAppManifest', () => {
     expect(result?.icon).toMatch(/<svg[\s>]/i)
     expect(result?.icon).toContain('path')
     expect(result?.title).toBe('My App')
+  })
+
+  test('points the icon at iconUrl instead of inlining the file', async () => {
+    mockGetCliConfig.mockResolvedValue({
+      app: defineApplication({
+        entry: './src/App.tsx',
+        icon: './icon.png',
+        organizationId: 'org-1',
+        slug: 'my-app',
+        title: 'My App',
+      }),
+    } as never)
+
+    const result = await extractCoreAppManifest({
+      iconUrl: 'http://localhost:3334/icon.png',
+      workDir: '/project',
+    })
+
+    expect(result?.icon).toBe('http://localhost:3334/icon.png')
+    expect(mockReadFile).not.toHaveBeenCalled()
   })
 
   test('sanitizes the icon SVG before inlining it', async () => {

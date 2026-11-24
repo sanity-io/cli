@@ -1,6 +1,6 @@
 {
   "$schema": "./node_modules/turbo/schema.json",
-  "globalDependencies": ["**/.env.*local"],
+  "globalDependencies": ["**/.env.*local", "pnpm-lock.yaml"],
   "globalEnv": [
     "SANITY_API_TOKEN",
     "NODE_VERSION",
@@ -33,7 +33,13 @@
       "inputs": ["$TURBO_DEFAULT$", "!**/*.md", "!**/*.test.ts"],
       "outputs": ["dist/**/*.d.ts"]
     },
-    "lint": {},
+    "lint": {
+      "inputs": ["$TURBO_DEFAULT$", "$TURBO_ROOT$/packages/@repo/oxc-config/**"]
+    },
+    "@sanity/cli#lint": {
+      "dependsOn": ["@sanity/cli-setup#build:types"],
+      "inputs": ["$TURBO_DEFAULT$", "$TURBO_ROOT$/packages/@repo/oxc-config/**"]
+    },
     "publint": {
       "dependsOn": ["build:types", "^build:types", "^publint"],
       "cache": false

@@ -1,4 +1,4 @@
-/* eslint-disable unicorn/consistent-function-scoping */
+/* eslint-disable unicorn-js/consistent-function-scoping */
 import {generateHelpUrl} from '@sanity/generate-help-url'
 import {Schema} from '@sanity/schema'
 import {

@@ -112,3 +112,14 @@ Essentials:
 - Sanity UI with the App SDK: https://www.sanity.io/docs/app-sdk/sanity-ui-sdk
 - Sanity UI docs: https://www.sanity.io/ui
 - API reference with current signatures: https://reference.sanity.io/_sanity/sdk-react/
+
+## Sanity: connect MCP, then what to build next
+
+Check whether Sanity MCP tools are available before Sanity work. If they aren't, offer the user `npx sanity@latest mcp configure`. It detects their editor and adds the Sanity MCP server; they sign in from the editor the first time it connects. Ask before running it.
+
+Once the app is running, show the user this map and offer the next step:
+
+1. **Schema**: this app has no Studio schema of its own to deploy. Types come from the schema file(s) at the project root, extracted from the Studio that owns the schema — see "Set up TypeGen before writing components" above.
+2. **Queries and types**: write GROQ with `defineQuery` and projections with `defineProjection`, then regenerate types with `npx sanity typegen generate` — again, see "Set up TypeGen before writing components" above.
+3. **Functions**: run code when content changes or on a schedule, for example fill in a slug when a post is published ([Functions guide](https://github.com/sanity-io/agent-toolkit/blob/main/skills/sanity-best-practices/references/functions.md)).
+4. **Deploy**: `npm run deploy` — see "Deploying without prompts" above for flags that work in agent terminals.

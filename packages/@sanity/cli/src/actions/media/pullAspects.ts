@@ -243,7 +243,7 @@ function printFieldModule(definition: Record<string, unknown>): string {
 
 function quote(value: string): string {
   const escaped = value
-    .replaceAll('\\', '\\\\')
+    .replaceAll('\\', String.raw`\\`)
     .replaceAll("'", String.raw`\'`)
     .replaceAll('\n', String.raw`\n`)
     .replaceAll('\r', String.raw`\r`)

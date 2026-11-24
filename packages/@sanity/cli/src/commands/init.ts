@@ -231,6 +231,11 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
       helpValue: '<mode>',
       options: ['public', 'private'],
     }),
+    'with-blueprints': Flags.boolean({
+      description: 'Set up a Blueprint workspace',
+      exclusive: ['bare', 'dashboard', 'env', 'template'],
+      hidden: true,
+    }),
     yes: Flags.boolean({
       char: 'y',
       default: false,

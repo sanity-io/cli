@@ -123,6 +123,29 @@ describe('registerDevServer', () => {
     expect(getRegisteredServers()[0]).toMatchObject(metadata)
   })
 
+  test('forwards an icon-only panel through a round-trip', () => {
+    const panel = {
+      id: 'test-app-panel-feed',
+      metadata: {icon: 'http://localhost:3334/icon.png'},
+      moduleId: 'views/feed',
+      name: 'feed',
+      src: './src/Feed.tsx',
+      surface: 'panel' as const,
+      title: 'Feed',
+      version: '2',
+    }
+
+    registerDevServer({
+      host: 'localhost',
+      interfaces: [panel],
+      port: 3334,
+      type: 'coreApp',
+      workDir: '/tmp/project',
+    })
+
+    expect(getRegisteredServers()[0].interfaces).toEqual([panel])
+  })
+
   test('forwards a tile interface with its size + order metadata through a round-trip', () => {
     const tile = {
       id: 'test-app-tile-agent',

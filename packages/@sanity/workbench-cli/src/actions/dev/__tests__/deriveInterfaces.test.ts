@@ -6,6 +6,22 @@ import {deriveInterfaces} from '../../../deriveInterfaces.js'
 import {deriveConfigEntries, deriveConfigs} from '../deriveConfigs.js'
 import {workbenchApp} from './devTestHelpers.js'
 
+function iconApp() {
+  return workbenchApp({
+    views: [
+      {icon: './feed.png', name: 'feed', src: './src/Feed.tsx', surface: 'panel', title: 'Feed'},
+      {
+        dock: {order: 20},
+        icon: './settings.png',
+        name: 'settings',
+        src: './src/Settings.tsx',
+        surface: 'window',
+        title: 'Settings',
+      },
+    ],
+  })
+}
+
 describe('deriveInterfaces', () => {
   test('derives nothing for a non-branded app (no defineApplication)', () => {
     expect(deriveInterfaces({title: 'Plain'} as CliConfig['app'], {isApp: true})).toStrictEqual([])
@@ -126,7 +142,7 @@ describe('deriveInterfaces', () => {
         src: './src/App.tsx',
         surface: 'window',
         title: 'Test App',
-        version: undefined,
+        version: '1',
       },
     ])
   })
@@ -142,7 +158,7 @@ describe('deriveInterfaces', () => {
         src: './src/App.tsx',
         surface: 'window',
         title: 'Deploy Title',
-        version: undefined,
+        version: '1',
       },
     ])
   })
@@ -158,7 +174,7 @@ describe('deriveInterfaces', () => {
         src: './src/App.tsx',
         surface: 'window',
         title: 'Test App',
-        version: undefined,
+        version: '1',
       },
     ])
   })
@@ -214,6 +230,30 @@ describe('deriveInterfaces', () => {
         name: 'test-app',
         surface: 'window',
       },
+    ])
+  })
+
+  test("puts a local window or panel view's icon only in metadata.icon, like a deployed one", () => {
+    expect(
+      deriveInterfaces(iconApp(), {
+        iconUrl: (path) => `http://localhost:3333/${path}`,
+        isApp: true,
+      }).map(({icon, metadata}) => ({icon, metadata})),
+    ).toStrictEqual([
+      {icon: undefined, metadata: {icon: 'http://localhost:3333/./feed.png'}},
+      {
+        icon: undefined,
+        metadata: {dock: {order: 20}, icon: 'http://localhost:3333/./settings.png'},
+      },
+    ])
+  })
+
+  test('keeps the icon path out of metadata for a deploy to upload', () => {
+    expect(
+      deriveInterfaces(iconApp(), {isApp: true}).map(({icon, metadata}) => ({icon, metadata})),
+    ).toStrictEqual([
+      {icon: './feed.png', metadata: null},
+      {icon: './settings.png', metadata: {dock: {order: 20}}},
     ])
   })
 
@@ -308,7 +348,7 @@ describe('deriveInterfaces', () => {
         src: './src/App.tsx',
         surface: 'window',
         title: 'Test App',
-        version: undefined,
+        version: '1',
       },
     ])
   })
@@ -392,7 +432,7 @@ describe('deriveInterfaces', () => {
         src: './.sanity/federation/remote-entry.jsx',
         surface: 'window',
         title: 'Test App',
-        version: undefined,
+        version: '1',
       },
     ])
   })

@@ -1,4 +1,15 @@
+import {dirname, join} from 'node:path'
+import {fileURLToPath} from 'node:url'
+
 import {type ApplicationType, type AppVisibility} from '@sanity/cli-core'
+import {
+  createProgram,
+  flattenDiagnosticMessageText,
+  getPreEmitDiagnostics,
+  parseJsonConfigFileContent,
+  readConfigFile,
+  sys,
+} from 'typescript'
 import {describe, expect, expectTypeOf, test} from 'vitest'
 
 import {
@@ -282,18 +293,9 @@ describe('DefineAppInputSchema (build-time validation)', () => {
     expect(DefineAppInputSchema.safeParse(validInput({visibility: 'hidden'})).success).toBe(false)
   })
 
-  test('accepts an .svg icon path with any extension casing, rejecting other file types', () => {
+  test('accepts an icon path to an image of any type', () => {
     expect(DefineAppInputSchema.safeParse(validInput({icon: './icon.svg'})).success).toBe(true)
-    expect(DefineAppInputSchema.safeParse(validInput({icon: './ICON.SVG'})).success).toBe(true)
-
-    const result = DefineAppInputSchema.safeParse(validInput({icon: './src/icon.tsx'}))
-
-    expect(result.error?.issues).toEqual([
-      expect.objectContaining({
-        message: 'App `icon` must be a path to an .svg file',
-        path: ['icon'],
-      }),
-    ])
+    expect(DefineAppInputSchema.safeParse(validInput({icon: './icon.png'})).success).toBe(true)
   })
 
   test('accepts a panel view declaration', () => {
@@ -599,6 +601,23 @@ describe('type surface', () => {
   test('does not expose the internal applicationType', () => {
     expectTypeOf<DefineAppResult>().not.toHaveProperty('applicationType')
   })
+
+  test('type-checks as `CliConfig` app with exactOptionalPropertyTypes', () => {
+    const packageDir = join(dirname(fileURLToPath(import.meta.url)), '../..')
+    const fixture = join(packageDir, 'test/__fixtures__/exactOptionalPropertyTypes.ts')
+    const {options} = parseJsonConfigFileContent(
+      readConfigFile(join(packageDir, 'tsconfig.json'), sys.readFile).config,
+      sys,
+      packageDir,
+    )
+    const program = createProgram([fixture], {...options, exactOptionalPropertyTypes: true})
+
+    expect(
+      getPreEmitDiagnostics(program, program.getSourceFile(fixture)).map(({messageText}) =>
+        flattenDiagnosticMessageText(messageText, ' '),
+      ),
+    ).toEqual([])
+  }, 30_000)
 })
 
 describe('interface surface', () => {

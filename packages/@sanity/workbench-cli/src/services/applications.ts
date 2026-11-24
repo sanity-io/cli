@@ -2,6 +2,7 @@ import {PassThrough} from 'node:stream'
 import {type Gzip} from 'node:zlib'
 
 import {type AppVisibility, getGlobalCliClient} from '@sanity/cli-core'
+import {type ImageFile} from '@sanity/cli-core/images'
 import {isStaging} from '@sanity/cli-core/util'
 import FormData from 'form-data'
 
@@ -89,6 +90,30 @@ export async function getApplication(applicationId: string): Promise<Application
   }
 }
 
+export async function getOrganizationApplication(
+  organizationId: string,
+  idOrSlug: string,
+  signal?: AbortSignal,
+): Promise<
+  (Application & {activeDeployment: {createdAt: string; deployedBy: string} | null}) | null
+> {
+  const client = await getGlobalCliClient({
+    apiVersion: APP_WORKBENCH_API_VERSION,
+    ignoreWarnings: ['This is an experimental API version', 'which will change without warning'],
+    requireUser: true,
+  })
+  try {
+    return await client.request({
+      query: {include: 'activeDeployment'},
+      signal,
+      url: `/organizations/${organizationId}/applications/${idOrSlug}`,
+    })
+  } catch (err) {
+    if ((err as {statusCode?: number})?.statusCode === 404) return null
+    throw err
+  }
+}
+
 /** Every application in an organization, in one page (`limit=none`). */
 export async function listApplications(organizationId: string): Promise<Application[]> {
   const client = await getClient()
@@ -141,7 +166,6 @@ export async function createApplication(options: {
 
 /** Mutable application fields the deploy flow patches after create. */
 export interface ApplicationUpdate {
-  icon?: string | null
   /** The address the application is served at; renaming moves it. */
   slug?: string
   title?: string
@@ -155,6 +179,38 @@ export async function updateApplication(
 ): Promise<void> {
   const client = await getClient()
   await client.request({body: update, method: 'PATCH', url: `/applications/${applicationId}`})
+}
+
+/** Upload the application's icon, replacing any it has. */
+export async function setApplicationIcon(applicationId: string, icon: ImageFile): Promise<void> {
+  const client = await getClient()
+  await client.request({
+    body: icon.image,
+    headers: {'Content-Type': icon.contentType},
+    method: 'PUT',
+    url: `/applications/${applicationId}/icon`,
+  })
+}
+
+/** Remove the application's icon; removing one that isn't set changes nothing. */
+export async function removeApplicationIcon(applicationId: string): Promise<void> {
+  const client = await getClient()
+  await client.request({method: 'DELETE', url: `/applications/${applicationId}/icon`})
+}
+
+/** Upload an app or panel interface's icon, replacing any it has. */
+export async function setInterfaceIcon(
+  applicationId: string,
+  interfaceId: string,
+  icon: ImageFile,
+): Promise<void> {
+  const client = await getClient()
+  await client.request({
+    body: icon.image,
+    headers: {'Content-Type': icon.contentType},
+    method: 'PUT',
+    url: `/applications/${applicationId}/interfaces/${interfaceId}/icon`,
+  })
 }
 
 /**
@@ -171,7 +227,7 @@ export async function createDeployment(options: {
   tarball?: Gzip
   version: string
   workspaces?: readonly BrettWorkspace[]
-}): Promise<{id: string}> {
+}): Promise<{id: string; interfaces: {id: string; name: string; type: BrettInterface['type']}[]}> {
   const {
     access,
     applicationId,

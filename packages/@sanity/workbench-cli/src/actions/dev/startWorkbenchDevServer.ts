@@ -36,6 +36,7 @@ const toApplicationsPayload = (servers: DevServerManifest[]) => ({
       ({
         applicationId,
         host,
+        https,
         id,
         interfaces,
         manifest,
@@ -50,6 +51,7 @@ const toApplicationsPayload = (servers: DevServerManifest[]) => ({
       }) => ({
         applicationId,
         host,
+        https,
         id,
         // Views cross to the remote keyed on `type`, never the internal `surface`.
         interfaces: interfaces?.map((iface) => toWireInterface(iface)),
@@ -62,7 +64,7 @@ const toApplicationsPayload = (servers: DevServerManifest[]) => ({
         ...(organizationId && slug && visibility ? {organizationId, slug, visibility} : {}),
       }),
     ),
-  configs: servers.flatMap(({configs, host, port}) =>
+  configs: servers.flatMap(({configs, host, https, port}) =>
     // The registry stores the config flat; the workbench wire shape nests the
     // type-specific payload (`fields` for a media library) under `config`, keyed
     // by the `appType` discriminator.
@@ -71,7 +73,7 @@ const toApplicationsPayload = (servers: DevServerManifest[]) => ({
       config,
       id,
       moduleName,
-      remoteURL: `http://${host}:${port}`,
+      remoteURL: `${https ? 'https' : 'http'}://${host}:${port}`,
       version,
     })),
   ),

@@ -27,7 +27,7 @@ export async function buildAppId(app: ResolvedWorkbenchApp): Promise<string> {
       .map((view): [string, string, string] => [view.surface, view.name, view.src])
       .toSorted(),
   })
-  // eslint-disable-next-line n/no-unsupported-features/node-builtins -- the Web Crypto global is available on our Node target and in the browser
+  // eslint-disable-next-line n-js/no-unsupported-features/node-builtins -- the Web Crypto global is available on our Node target and in the browser
   const digest = await globalThis.crypto.subtle.digest('SHA-256', new TextEncoder().encode(shape))
   return Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, '0')).join('')
 }

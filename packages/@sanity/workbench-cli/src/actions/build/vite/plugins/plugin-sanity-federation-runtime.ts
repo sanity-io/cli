@@ -3,6 +3,7 @@ import path from 'node:path'
 
 import {type EnvironmentModuleNode, type Plugin} from 'vite'
 
+import {WINDOW_CONTRACT_VERSION} from '../../../../contract.js'
 import {renderRemote} from '../../render-remote.js'
 import {
   RESOURCE_BINDINGS_ENTRY_IMPORT,
@@ -26,6 +27,7 @@ const studioEntry = (isolateStyles: boolean) =>
     preamble: `%RESOURCE_BINDINGS_IMPORT%import { Studio } from 'sanity'
 import { studioProps } from '${AUTO_UPDATES_ID}'
 import config from %STUDIO_CONFIG%`,
+    version: String(WINDOW_CONTRACT_VERSION),
   })
 
 // An SDK app's default export is the component; it Fast-Refreshes through its
@@ -34,6 +36,7 @@ const appEntry = (isolateStyles: boolean) =>
   renderRemote({
     isolateStyles,
     preamble: `%RESOURCE_BINDINGS_IMPORT%import App from %APP_ENTRY%`,
+    version: String(WINDOW_CONTRACT_VERSION),
   })
 
 // A branded app that declares no `entry` (e.g. a dock-only panel/worker app)

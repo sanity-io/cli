@@ -3,7 +3,6 @@ import {styleText} from 'node:util'
 import {createGzip, type Gzip} from 'node:zlib'
 
 import {formatSchemaValidation, SchemaExtractionError} from '@sanity/cli-build/_internal/extract'
-import {readIconFromPath} from '@sanity/cli-build/_internal/manifest'
 import {exitCodes} from '@sanity/cli-core'
 import {spinner} from '@sanity/cli-core/ux'
 import {
@@ -11,9 +10,12 @@ import {
   type BrettWorkspace,
   createStudio,
   deployWorkbenchApp,
+  fetchDeploySummaryDetails,
+  formatDeploySummary,
   getApplicationUrl,
   getWorkbench,
   getWorkbenchUrl,
+  readAppIcon,
   selectWorkbenchAppId,
   toWorkbenchPayload,
 } from '@sanity/workbench-cli/deploy'
@@ -144,7 +146,13 @@ async function runStudioDeployment(
 
   // Read up front so a bad icon path fails before we create or build.
   const appIcon =
-    !dryRun && workbench?.icon ? await readIconFromPath(workDir, workbench.icon) : undefined
+    !dryRun && workbench?.icon ? await readAppIcon(workDir, workbench.icon) : undefined
+
+  const startedAt = Date.now()
+  const summaryDetails =
+    workbench && organizationId && !flags.json
+      ? fetchDeploySummaryDetails(organizationId)
+      : undefined
 
   // Create the studio before the build so the bundle carries its real id. A
   // redeploy already has it from `deployment.appId`; a dry run skips creation.
@@ -239,6 +247,7 @@ async function runStudioDeployment(
         title: appTitle,
         version,
         visibility: workbench.visibility,
+        workDir,
         workspaces: toWorkspaces(studioManifest),
       })
       const url = getApplicationUrl({
@@ -247,7 +256,20 @@ async function runStudioDeployment(
         slug: workbench.slug,
         type: 'studio',
       })
-      logWorkbenchStudioDeployed({applicationId, cliConfig, output, url})
+      const durationMs = Date.now() - startedAt
+      output.log(
+        formatDeploySummary({
+          ...(await summaryDetails),
+          applicationId,
+          created: applicationCreated,
+          durationMs,
+          isApp: false,
+          organizationId,
+          showAppIdHint: !appId,
+          title: appTitle,
+          url,
+        }),
+      )
       if (isExternallyHosted)
         logExternalHost({built: flags.build, organizationId, output, sourceDir})
       return {
@@ -347,7 +369,7 @@ async function uploadStudioSchema(
   options: DeployAppOptions,
   {applicationId, isExternal}: {applicationId?: string; isExternal: boolean},
 ): Promise<StudioManifest | null> {
-  const {cliConfig, flags, output, projectRoot, sourceDir} = options
+  const {flags, output, projectRoot, sourceDir} = options
 
   let studioManifest: StudioManifest | null = null
   try {
@@ -357,7 +379,6 @@ async function uploadStudioSchema(
         configPath: projectRoot.path,
         isExternal,
         outPath: `${sourceDir}/static`,
-        projectId: cliConfig.api?.projectId ?? '',
         schemaRequired: flags['schema-required'],
         verbose: flags.verbose,
         workDir: projectRoot.directory,
@@ -472,26 +493,6 @@ function toWorkspaces(manifest: StudioManifest | null): BrettWorkspace[] {
     subtitle: workspace.subtitle,
     title: workspace.title,
   }))
-}
-
-/** Renders the workbench studio's deploy result; the appId hint shows only when none is configured. */
-function logWorkbenchStudioDeployed({
-  applicationId,
-  cliConfig,
-  output,
-  url,
-}: {
-  applicationId: string
-  cliConfig: DeployAppOptions['cliConfig']
-  output: DeployAppOptions['output']
-  url: string
-}): void {
-  output.log(`\nSuccess! Studio deployed to ${styleText('cyan', url)}`)
-  if (getAppId(cliConfig)) return
-
-  output.log(`\nAdd ${styleText('cyan', `appId: '${applicationId}'`)}`)
-  output.log(`to the \`deployment\` section in sanity.cli.js or sanity.cli.ts`)
-  output.log(`to avoid prompting for application id on next deploy.`)
 }
 
 /** Tells the customer what their host must do for the Dashboard to load the studio from it. */

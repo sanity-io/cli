@@ -26,7 +26,9 @@ export function processTemplate<T extends object>(options: TemplateOptions<T>): 
           ? variables[variableName as keyof T]
           : ''
       // Escape backslashes first, then the surrounding quote character
-      const escaped = (newValue as string).replaceAll('\\', '\\\\').replaceAll(quote, `\\${quote}`)
+      const escaped = (newValue as string)
+        .replaceAll('\\', String.raw`\\`)
+        .replaceAll(quote, `\\${quote}`)
       return `${quote}${escaped}${quote}`
     })
 

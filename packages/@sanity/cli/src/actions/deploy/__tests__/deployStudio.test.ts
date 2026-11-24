@@ -1,3 +1,7 @@
+import {mkdtemp, rm, writeFile} from 'node:fs/promises'
+import {tmpdir} from 'node:os'
+import {join} from 'node:path'
+
 import {findBlueprintFile, readBlueprint} from '@sanity/blueprints/resolve'
 import {SchemaExtractionError} from '@sanity/cli-build/_internal/extract'
 import {type CliConfig, exitCodes, type Output} from '@sanity/cli-core'
@@ -5,11 +9,12 @@ import {readBuiltManifest} from '@sanity/workbench-cli/build'
 import {
   createStudio,
   deployWorkbenchApp,
+  fetchDeploySummaryDetails,
   getApplication,
   listApplications,
   selectWorkbenchAppId,
 } from '@sanity/workbench-cli/deploy'
-import {beforeEach, describe, expect, test, vi} from 'vitest'
+import {beforeEach, describe, expect, onTestFinished, test, vi} from 'vitest'
 
 import {buildStudio} from '../../build/buildStudio.js'
 import {createMockOutput, workbenchApp} from '../../dev/__tests__/testHelpers.js'
@@ -29,6 +34,7 @@ vi.mock(import('@sanity/workbench-cli/deploy'), async (importOriginal) => ({
   ...(await importOriginal()),
   createStudio: vi.fn(),
   deployWorkbenchApp: vi.fn(),
+  fetchDeploySummaryDetails: vi.fn(async () => ({organizationName: 'Acme', userName: 'Sam'})),
   getApplication: vi.fn(),
   listApplications: vi.fn(),
   selectWorkbenchAppId: vi.fn(),
@@ -44,7 +50,6 @@ vi.mock('../../build/buildStudio.js', () => ({buildStudio: vi.fn()}))
 vi.mock('../deployStudioSchemasAndManifests.js', () => ({
   deployStudioSchemasAndManifests: vi.fn(async () => ({workspaces: []})),
 }))
-vi.mock('../../manifest/extractCoreAppManifest.js', () => ({readIconFromPath: vi.fn()}))
 vi.mock('../../../services/userApplications.js', () => ({createDeployment: vi.fn()}))
 
 const mockCreateStudio = vi.mocked(createStudio)
@@ -169,6 +174,24 @@ describe('deployStudio (federated studio)', () => {
     )
   })
 
+  test('the declared icon image reaches the deployment', async () => {
+    const workDir = await mkdtemp(join(tmpdir(), 'studio-icon-'))
+    onTestFinished(() => rm(workDir, {force: true, recursive: true}))
+    await writeFile(join(workDir, 'icon.png'), 'png bytes')
+
+    await deployStudio({
+      ...deployOptions({app: {icon: './icon.png'}}),
+      projectRoot: {directory: workDir, path: join(workDir, 'sanity.cli.ts')},
+    } as DeployAppOptions)
+
+    expect(mockDeployWorkbenchApp).toHaveBeenCalledWith(
+      expect.objectContaining({
+        icon: expect.objectContaining({contentType: 'image/png', image: Buffer.from('png bytes')}),
+        workDir,
+      }),
+    )
+  })
+
   test('a first deploy reports the created id and the slug it was created at', async () => {
     const options = deployOptions()
 
@@ -184,18 +207,7 @@ describe('deployStudio (federated studio)', () => {
     expect(vi.mocked(deployStudioSchemasAndManifests).mock.calls[0][0]).toEqual(
       expect.objectContaining({applicationId: 'studio-1'}),
     )
-  })
-
-  test('prints the workbench URL at the configured slug', async () => {
-    const options = deployOptions({flags: {json: false}})
-
-    await deployStudio(options)
-
-    expect(options.output.log).toHaveBeenCalledWith(
-      expect.stringContaining(
-        'Success! Studio deployed to https://org-1.sanity.run/studios/my-studio',
-      ),
-    )
+    expect(fetchDeploySummaryDetails).not.toHaveBeenCalled()
   })
 
   test('a redeploy targets `deployment.appId` and reports the resolved record', async () => {

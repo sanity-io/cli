@@ -1,4 +1,4 @@
-import {mkdirSync} from 'node:fs'
+import {chmodSync, mkdirSync, statSync} from 'node:fs'
 import {dirname, join as joinPath} from 'node:path'
 
 import {z} from 'zod/mini'
@@ -74,6 +74,11 @@ export async function getCliTokenInfo(): Promise<CliTokenInfo | undefined> {
   setCachedTokenInfo(tokenInfo)
   return tokenInfo
 }
+
+// The config file holds the CLI auth token, so keep it readable by its owner only
+const CONFIG_DIR_OPTIONS = {mode: 0o700, recursive: true}
+const CONFIG_WRITE_OPTIONS = {mode: 0o600, pretty: true}
+
 const cliUserConfigSchema = {
   authToken: z.optional(z.string()),
 }
@@ -99,15 +104,15 @@ export function setCliUserConfig(prop: 'authToken', value: string | undefined): 
   }
 
   const configPath = getCliUserConfigPath()
-  mkdirSync(dirname(configPath), {recursive: true})
+  mkdirSync(dirname(configPath), CONFIG_DIR_OPTIONS)
 
   // When value is undefined, explicitly delete the key rather than relying
   // on JSON.stringify silently dropping undefined values.
   if (value === undefined) {
     const {[prop]: _, ...rest} = config
-    writeJsonFileSync(configPath, rest, {pretty: true})
+    writeJsonFileSync(configPath, rest, CONFIG_WRITE_OPTIONS)
   } else {
-    writeJsonFileSync(configPath, {...config, [prop]: value}, {pretty: true})
+    writeJsonFileSync(configPath, {...config, [prop]: value}, CONFIG_WRITE_OPTIONS)
   }
 
   // Invalidate the in-process token cache so subsequent getCliToken() calls
@@ -160,8 +165,8 @@ export function getUserConfig(): ConfigStore {
     set(key: string, value: unknown): void {
       const config = readConfig()
       const configPath = getCliUserConfigPath()
-      mkdirSync(dirname(configPath), {recursive: true})
-      writeJsonFileSync(configPath, {...config, [key]: value}, {pretty: true})
+      mkdirSync(dirname(configPath), CONFIG_DIR_OPTIONS)
+      writeJsonFileSync(configPath, {...config, [key]: value}, CONFIG_WRITE_OPTIONS)
       if (key === 'authToken') clearCliTokenCache()
     },
 
@@ -170,7 +175,7 @@ export function getUserConfig(): ConfigStore {
       const config = readConfig()
       if (!(key in config)) return
       const {[key]: _, ...rest} = config
-      writeJsonFileSync(getCliUserConfigPath(), rest, {pretty: true})
+      writeJsonFileSync(getCliUserConfigPath(), rest, CONFIG_WRITE_OPTIONS)
       if (key === 'authToken') clearCliTokenCache()
     },
   }
@@ -192,8 +197,10 @@ function assertCanAccessHostUserConfig(): void {
  * @internal
  */
 function readConfig(): Record<string, unknown> {
+  const configPath = getCliUserConfigPath()
+  restrictConfigFilePermissions(configPath)
   try {
-    const config = readJsonFileSync(getCliUserConfigPath())
+    const config = readJsonFileSync(configPath)
     if (!config || typeof config !== 'object' || Array.isArray(config)) {
       throw new Error('Invalid config file - expected an object')
     }
@@ -201,6 +208,32 @@ function readConfig(): Record<string, unknown> {
   } catch (err: unknown) {
     debug('Failed to read CLI config file: %s', err instanceof Error ? err.message : `${err}`)
     return {}
+  }
+}
+
+/**
+ * Remove group and other access from an existing config file. CLI versions from
+ * 6.0.0 created it with the default umask mode (usually 0644), exposing the auth
+ * token to other local users. Only touches files owned by the current user, and
+ * never adds permissions.
+ *
+ * @param configPath - Path to the CLI configuration file
+ */
+function restrictConfigFilePermissions(configPath: string): void {
+  // No POSIX permissions to fix on Windows
+  if (typeof process.getuid !== 'function') return
+
+  try {
+    const {mode, uid} = statSync(configPath)
+    if (uid !== process.getuid() || (mode & 0o077) === 0) return
+
+    chmodSync(configPath, mode & 0o700)
+    debug('Restricted permissions of %s to owner only', configPath)
+  } catch (err: unknown) {
+    debug(
+      'Could not restrict permissions of CLI config file: %s',
+      err instanceof Error ? err.message : `${err}`,
+    )
   }
 }
 

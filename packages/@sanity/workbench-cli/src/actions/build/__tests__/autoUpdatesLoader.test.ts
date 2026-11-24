@@ -3,11 +3,12 @@ import {afterEach, beforeEach, expect, test, vi} from 'vitest'
 import {createAutoUpdatesLoader} from '../autoUpdatesLoader.js'
 
 const KEY = Symbol.for('sanity.autoUpdates')
-const NOW = 1_800_000_000
+const NOW = 1_800_000_037
+const ROUNDED_NOW = 1_800_000_000
 // An app ID shaped like a timestamp segment must survive the timestamp refresh.
 const APP_ID = 't9'
 const SANITY_URL = `https://sanity-cdn.com/v1/modules/by-app/${APP_ID}/t100/%5E6.17.0/sanity`
-const CURRENT_SANITY_URL = SANITY_URL.replace('/t100', `/t${NOW}`)
+const CURRENT_SANITY_URL = SANITY_URL.replace('/t100', `/t${ROUNDED_NOW}`)
 const vendor = {react: async () => ({})}
 const modules = {sanity: {source: 'cdn'}, 'sanity/structure': {source: 'cdn structure'}}
 const load = vi.fn(async (_appId: string, _request: object) => ({modules}))
@@ -72,7 +73,7 @@ test('refreshes the timestamp in default (not by-app) module server URLs', async
   await loader.load('sanity')
 
   expect(load).toHaveBeenCalledExactlyOnceWith(APP_ID, {
-    imports: {sanity: url.replace('/t100', `/t${NOW}`)},
+    imports: {sanity: url.replace('/t100', `/t${ROUNDED_NOW}`)},
     specifiers: ['sanity'],
     styles: [],
     vendor,

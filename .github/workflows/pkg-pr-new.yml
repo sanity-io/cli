@@ -43,8 +43,8 @@ jobs:
             './packages/@sanity/cli' \
             './packages/@sanity/cli-build' \
             './packages/@sanity/cli-core' \
+            './packages/@sanity/cli-setup' \
             './packages/@sanity/cli-test' \
-            './packages/@sanity/eslint-config-cli' \
             './packages/@sanity/workbench-cli' \
             --pnpm \
             --json pkg-pr-new-output.json \

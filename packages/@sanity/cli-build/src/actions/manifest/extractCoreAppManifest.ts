@@ -11,6 +11,10 @@ import {type CoreAppManifest, coreAppManifestSchema} from './types.js'
 
 interface ExtractCoreAppManifestOptions {
   workDir: string
+
+  /** Where a local server serves `app.icon`; the manifest points at it instead of inlining the SVG. */
+  iconUrl?: string
+  silent?: boolean
 }
 
 /**
@@ -44,16 +48,15 @@ async function lazySanitizeIcon(): Promise<typeof sanitizeIconFn> {
 }
 
 /**
- * Resolves app.icon from config (a file path) to a sanitized SVG string. Used
- * both for the manifest and, on deploy, for the icon shipped to Brett — the
- * manifest expects the SVG inline, not a path.
+ * Resolves app.icon from config (a file path) to a sanitized SVG string for a
+ * legacy core-app manifest, which carries the SVG inline. Only `defineApplication`
+ * apps upload other image types: a legacy deploy has no route to upload to.
  *
  * The file is sanitized through the same allowlist as the studio manifest's
  * icon resolver (see {@link lazySanitizeIcon}) so both manifest paths inline the
  * same trusted subset of SVG markup.
- * @internal
  */
-export async function readIconFromPath(workDir: string, iconPath: string): Promise<string> {
+async function readIconFromPath(workDir: string, iconPath: string): Promise<string> {
   if (!/\.svg$/i.test(iconPath)) {
     throw new Error(`Icon path "${iconPath}" must point to an .svg file.`)
   }
@@ -90,12 +93,13 @@ export async function readIconFromPath(workDir: string, iconPath: string): Promi
 
 /**
  * Unlike studio manifest extraction, skips schema/tool parsing. The config's
- * `app.icon` is a file path; its content is read and inlined in the manifest.
+ * `app.icon` is a file path; the manifest gets `iconUrl` when given, and
+ * otherwise the file's SVG inline.
  */
 export async function extractCoreAppManifest(
   options: ExtractCoreAppManifestOptions,
 ): Promise<CoreAppManifest | undefined> {
-  const {workDir} = options
+  const {iconUrl, silent, workDir} = options
   const {app} = await getCliConfigUncached(workDir)
   if (!app) {
     return undefined
@@ -107,11 +111,11 @@ export async function extractCoreAppManifest(
     return undefined
   }
 
-  const spin = spinner('Extracting manifest').start()
+  const spin = spinner({isSilent: silent, text: 'Extracting manifest'}).start()
 
   try {
-    let icon: string | undefined
-    if (app.icon) {
+    let icon = iconUrl
+    if (!icon && app.icon) {
       icon = await readIconFromPath(workDir, app.icon)
     }
 

@@ -1,5 +1,177 @@
 # Change Log
 
+## 8.35.0
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-v8.34.0...cli-v8.35.0)
+
+_2026-11-24_
+
+### Features
+
+- **workbench-cli:** set icons on window and panel views ([#2271](https://github.com/sanity-io/cli/pull/2271)) ([ec53cc4](https://github.com/sanity-io/cli/commit/ec53cc44509800cdf1b380f9e2e8eb57727ebdfd))
+- **workbench-cli:** rename view and web worker authoring types ([#2272](https://github.com/sanity-io/cli/pull/2272)) ([ab402ae](https://github.com/sanity-io/cli/commit/ab402ae03feab866e1d4f595825f50b431e470c4))
+
+### Bug Fixes
+
+- **graphql:** support studios with content releases ([#2277](https://github.com/sanity-io/cli/pull/2277)) ([d29837d](https://github.com/sanity-io/cli/commit/d29837d86e3493aa1e5feaaaae37198534955a87))
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/workbench-cli bumped to 2.20.0
+
+## 8.34.0
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-v8.33.0...cli-v8.34.0)
+
+_2026-11-24_
+
+### Features
+
+- **mcp:** add Pi v1 support to MCP and skills setup ([#2269](https://github.com/sanity-io/cli/pull/2269)) ([91d8658](https://github.com/sanity-io/cli/commit/91d86582841726a530215ae010f8134ffe0a32fb))
+- **cli:** migrate dashboard views to plain exports ([#2182](https://github.com/sanity-io/cli/pull/2182)) ([f5e0b75](https://github.com/sanity-io/cli/commit/f5e0b758d71fb5931789388cd67bf0956963ac2d))
+- **projects:** set a project's logo with sanity projects create ([#2259](https://github.com/sanity-io/cli/pull/2259)) ([1f35dd5](https://github.com/sanity-io/cli/commit/1f35dd57f00b3b77fc6e8b9499cf032c29a2ea58))
+
+### Bug Fixes
+
+- **cli:** explain how to drop the ignored dashboard flag ([#2265](https://github.com/sanity-io/cli/pull/2265)) ([d9ba701](https://github.com/sanity-io/cli/commit/d9ba7014389a60d8511b35b12d15ed642803080b))
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/cli-build bumped to 7.5.1
+    - @sanity/workbench-cli bumped to 2.19.1
+
+## 8.33.0
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-v8.32.1...cli-v8.33.0)
+
+_2026-11-20_
+
+### Features
+
+- **cli:** add an agent setup map to template AGENTS.md ([#2237](https://github.com/sanity-io/cli/pull/2237)) ([f4de245](https://github.com/sanity-io/cli/commit/f4de245984545058439fdbb1b3c898e2ee0dd1bf))
+- use any image as app.icon in sanity.cli.ts ([#2252](https://github.com/sanity-io/cli/pull/2252)) ([d888323](https://github.com/sanity-io/cli/commit/d88832341bedb1ad198b57026039d28fdb2037ce))
+
+### Bug Fixes
+
+- **deps:** update dependency skills to ^1.9.0 ([#2245](https://github.com/sanity-io/cli/pull/2245)) ([9c3119d](https://github.com/sanity-io/cli/commit/9c3119d835de5b819f9cb5139a99c020514d3499))
+- **deps:** update dependency valibot to ^1.5.0 ([#2246](https://github.com/sanity-io/cli/pull/2246)) ([8ee45de](https://github.com/sanity-io/cli/commit/8ee45de0874ec2cb1fb3825c398ab9b5fcdd54f6))
+- **deps:** update sanity-tooling ([#2247](https://github.com/sanity-io/cli/pull/2247)) ([181ee1e](https://github.com/sanity-io/cli/commit/181ee1ee4ed4ac03d6f96fce36ab27c1491b2af0))
+- **cli-core:** add readImageFile for image uploads ([#2251](https://github.com/sanity-io/cli/pull/2251)) ([4cd18e4](https://github.com/sanity-io/cli/commit/4cd18e4e10c050379f110ad5d779744a3ccc05cb))
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/cli-core bumped to 3.16.0
+    - @sanity/cli-build bumped to 7.5.0
+    - @sanity/workbench-cli bumped to 2.19.0
+
+## 8.32.1
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-v8.32.0...cli-v8.32.1)
+
+_2026-11-20_
+
+### Bug Fixes
+
+- **deps:** use typegen type fixes from @sanity/codegen 8.3.2 and groq-js 2.0.3 ([#2234](https://github.com/sanity-io/cli/pull/2234)) ([ba74c13](https://github.com/sanity-io/cli/commit/ba74c13e36beb0dddd318f39f841dae07e2c7999))
+
+  `select()` at the query root is typed, and `select()` with no fallback is nullable.
+
+## 8.32.0
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-v8.31.0...cli-v8.32.0)
+
+_2026-11-19_
+
+### Features
+
+- **cli-build:** add generate schema event listeners ([#2210](https://github.com/sanity-io/cli/pull/2210)) ([ab6d722](https://github.com/sanity-io/cli/commit/ab6d722db87a05991c9102d4e180ddf148e24e8e))
+- **organizations:** set an organization's logo from the CLI ([#2227](https://github.com/sanity-io/cli/pull/2227)) ([230b7b1](https://github.com/sanity-io/cli/commit/230b7b12b63587e08fb60984ab4c66efdfbdc279))
+
+### Bug Fixes
+
+- **deps:** update dependency skills to ^1.8.1 ([#2214](https://github.com/sanity-io/cli/pull/2214)) ([3750973](https://github.com/sanity-io/cli/commit/375097389401a99cbe805701ff6cc668fba18b96))
+- **deps:** update dependency smol-toml to ^1.9.1 ([#2219](https://github.com/sanity-io/cli/pull/2219)) ([f7b7de8](https://github.com/sanity-io/cli/commit/f7b7de80724c8fa164fb60ca4b5cd3321adb0371))
+- **deps:** update sanity-tooling ([#2221](https://github.com/sanity-io/cli/pull/2221)) ([ff30dc4](https://github.com/sanity-io/cli/commit/ff30dc4d75c0ca6661a970feea632cce6254980e))
+- **documents:** skip managed documents in file validation ([#2209](https://github.com/sanity-io/cli/pull/2209)) ([314880e](https://github.com/sanity-io/cli/commit/314880e4b5dfafb4e5244c897e2a052d3396848c))
+- **workflows:** add `sanity workflows whoami` and `sanity workflows codemod packages` ([#2147](https://github.com/sanity-io/cli/pull/2147)) ([6c4a8b7](https://github.com/sanity-io/cli/commit/6c4a8b726efa00a8e2b88e911c420b37682b7d09))
+
+  `sanity workflows whoami` shows the user ID Workflows records for your login, for use in user assignee fields. `sanity workflows codemod packages` moves a project's imports and dependencies from the retired Workflows packages to `@sanity/workflows`, `@sanity/workflows-ui`, `@sanity/workflows-cli` and `@sanity/workflows-test`.
+
+- **workflows:** add `--release-resource`, `--workflow-resource` and `--verbose` flags ([#2147](https://github.com/sanity-io/cli/pull/2147)) ([6c4a8b7](https://github.com/sanity-io/cli/commit/6c4a8b726efa00a8e2b88e911c420b37682b7d09))
+
+  `sanity workflows start` accepts `--release-resource`. The `sanity workflows` commands that read or write a workflow store accept `--workflow-resource`. `sanity workflows blueprints generate` accepts `--verbose`.
+
+- **workflows:** remove `sanity workflows set-stage` ([#2147](https://github.com/sanity-io/cli/pull/2147)) ([6c4a8b7](https://github.com/sanity-io/cli/commit/6c4a8b726efa00a8e2b88e911c420b37682b7d09))
+
+  `sanity workflows set-stage` is removed. Workflow instances move between stages through their actions.
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/cli-build bumped to 7.4.0
+
+## 8.31.0
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-v8.30.0...cli-v8.31.0)
+
+_2026-11-17_
+
+### Features
+
+- **workbench-cli:** show app details on dev ([#2149](https://github.com/sanity-io/cli/pull/2149)) ([d96fbe4](https://github.com/sanity-io/cli/commit/d96fbe4d938ec2985b14097adf6661b36ea2ed0b))
+- **workbench-cli:** show app details on deploy ([#2150](https://github.com/sanity-io/cli/pull/2150)) ([efa968e](https://github.com/sanity-io/cli/commit/efa968ecbe609e9d61fe8d00e053da940fbc702d))
+
+### Bug Fixes
+
+- **cli-build:** replace sanity schema upload with @sanity/schema ([#2207](https://github.com/sanity-io/cli/pull/2207)) ([d02ec30](https://github.com/sanity-io/cli/commit/d02ec30685285f52372ca86d8add28a17d11e35b))
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/cli-build bumped to 7.3.0
+    - @sanity/workbench-cli bumped to 2.18.0
+
+## 8.30.0
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-v8.29.0...cli-v8.30.0)
+
+_2026-11-17_
+
+### Features
+
+- **mcp:** use OAuth for every agent in `sanity mcp configure` ([#2185](https://github.com/sanity-io/cli/pull/2185)) ([63be160](https://github.com/sanity-io/cli/commit/63be160c85d3a743d8ca7d41da61f14ab1618836))
+
+  `sanity mcp configure` and `sanity init` no longer save a login token in your agent's MCP config. Every supported agent now signs in to the Sanity MCP server itself, using OAuth, the first time it connects. If an agent's Sanity MCP config contains a token, `sanity mcp configure` and `sanity init` offer to replace it with OAuth when run in a terminal, and leave it alone otherwise. Running `sanity logout` invalidates tokens saved by earlier CLI versions. If you added an API token to an agent's config yourself, revoke it in the project's API settings or with `sanity tokens` once you've switched.
+
+  `sanity mcp configure` no longer requires you to be logged in to the CLI. It now finds current Antigravity installs (`~/.gemini/config/mcp_config.json`) and writes the settings file shared by the Cline VS Code extension and Cline CLI (`~/.cline/data/settings/cline_mcp_settings.json`), so Cline CLI is no longer listed separately.
+
+### Bug Fixes
+
+- **cli-core:** make the CLI config file readable by its owner only ([#2183](https://github.com/sanity-io/cli/pull/2183)) ([687c6e4](https://github.com/sanity-io/cli/commit/687c6e4d3c66df1224926cc5bd7ec8d8f20eb6ef))
+
+  Since 6.0.0, the file that stores your CLI login (`~/.config/sanity/config.json`) could be created readable by other users on the same computer. The CLI now creates it readable only by you, and fixes an existing file the next time you run a command. If you use the CLI on a computer shared with other people, you can replace your login token by running `sanity logout` and then `sanity login`.
+
+- **cli:** validate references within the same release ([#2106](https://github.com/sanity-io/cli/pull/2106)) ([72b1b50](https://github.com/sanity-io/cli/commit/72b1b504f3704d93d658c48653160d1cfab04095))
+- **deps:** update oclif-tooling ([#2186](https://github.com/sanity-io/cli/pull/2186)) ([12528b9](https://github.com/sanity-io/cli/commit/12528b9ee2de1379f0814dca8e04df6695293d40))
+- **deps:** update dependency is-installed-globally to ^1.0.1 ([#2190](https://github.com/sanity-io/cli/pull/2190)) ([9a68d56](https://github.com/sanity-io/cli/commit/9a68d56693866ba0a33a44bd712cecfcd4f0b081))
+- Fix development server startup and dashboard links when HTTPS is enabled through Vite configuration. ([#2200](https://github.com/sanity-io/cli/pull/2200)) ([a07874a](https://github.com/sanity-io/cli/commit/a07874aa576f2dcc427060f22ceb9e20730ce6f8))
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/cli-core bumped to 3.15.1
+    - @sanity/cli-build bumped to 7.2.1
+    - @sanity/workbench-cli bumped to 2.16.1
+
 ## 8.29.0
 
 [Compare changes](https://github.com/sanity-io/cli/compare/cli-v8.28.2...cli-v8.29.0)

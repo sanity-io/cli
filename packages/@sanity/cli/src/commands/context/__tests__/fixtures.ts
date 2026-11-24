@@ -27,7 +27,6 @@ export const knowledgeBase: KnowledgeBase = {
   rebuildRecommended: null,
   refreshInFlight: false,
   sourceChunks: 5,
-  sourceUsage: null,
   state: 'ready',
   title: 'Support docs',
   updatedAt: '2026-08-02T00:00:00.000Z',

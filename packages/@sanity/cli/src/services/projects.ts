@@ -1,4 +1,5 @@
 import {debug, getGlobalCliClient, getProjectCliClient} from '@sanity/cli-core'
+import {type ImageFile} from '@sanity/cli-core/images'
 import {SanityProject} from '@sanity/client'
 
 import {type Invite, type Role} from '../actions/users/types.js'
@@ -6,6 +7,9 @@ import {type Invite, type Role} from '../actions/users/types.js'
 export const PROJECTS_API_VERSION = '2025-09-22'
 
 export const CREATE_PROJECT_API_VERSION = 'v2025-05-14'
+
+// The logo routes are only on vX while they are experimental.
+const PROJECT_LOGO_API_VERSION = 'vX'
 
 const UNCLAIMED_PROJECT_ORGANIZATION_ID = 'oSystemUnclaimed'
 
@@ -57,6 +61,26 @@ export async function createProject(options: CreateProjectOptions): Promise<Crea
     debug('Error creating project', err)
     throw err
   }
+}
+
+/**
+ * Set a project's logo, replacing any previous logo
+ */
+export async function setProjectLogo(
+  projectId: string,
+  logo: ImageFile,
+): Promise<{logoUrl: string}> {
+  const client = await getGlobalCliClient({
+    apiVersion: PROJECT_LOGO_API_VERSION,
+    requireUser: true,
+  })
+
+  return client.request<{logoUrl: string}>({
+    body: logo.image,
+    headers: {'Content-Type': logo.contentType},
+    method: 'put',
+    url: `/projects/${projectId}/logo`,
+  })
 }
 
 export async function getProjectById(projectId: string) {

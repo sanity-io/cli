@@ -87,9 +87,7 @@ function setupBasicMocks(testDir: string) {
   createTestToken('test-auth-token-123')
 }
 
-function setupUserConfigMock(
-  options = {telemetryDisclosed: true} as {telemetryDisclosed: boolean},
-) {
+function setupUserConfigMock(options: {telemetryDisclosed: boolean}) {
   const mockConfig = new Map()
   if (options.telemetryDisclosed) {
     mockConfig.set('telemetryDisclosed', Date.now())
@@ -172,10 +170,10 @@ describe('setupTelemetry integration test', () => {
 
   test('preserves every resolved built-in and bundled plugin command without positional input', async () => {
     const pluginCommands = config.commands.filter((command) =>
-      ['@sanity/runtime-cli', '@sanity/workflow-cli'].includes(command.pluginName ?? ''),
+      ['@sanity/runtime-cli', '@sanity/workflows-cli'].includes(command.pluginName ?? ''),
     )
     expect(new Set(pluginCommands.map((command) => command.pluginName))).toEqual(
-      new Set(['@sanity/runtime-cli', '@sanity/workflow-cli']),
+      new Set(['@sanity/runtime-cli', '@sanity/workflows-cli']),
     )
     for (const command of config.commands) {
       const {id} = await command.load()

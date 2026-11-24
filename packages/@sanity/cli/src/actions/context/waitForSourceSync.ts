@@ -43,7 +43,7 @@ export async function waitForSourceSync(
       typeof result === 'object' && result !== null && 'syncId' in result
         ? result.syncId
         : undefined
-    if (typeof id !== 'string') throw new Error(formatJobFailure('Sync', job))
+    if (typeof id !== 'string') throw new TypeError(formatJobFailure('Sync', job))
     syncId = id
   }
 

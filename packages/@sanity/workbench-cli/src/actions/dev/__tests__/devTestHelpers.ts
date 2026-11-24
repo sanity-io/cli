@@ -1,7 +1,7 @@
 import {EventEmitter} from 'node:events'
 
 import {type CliConfig, type Output} from '@sanity/cli-core'
-// eslint-disable-next-line import-x/no-extraneous-dependencies
+// eslint-disable-next-line import-js/no-extraneous-dependencies
 import {vi} from 'vitest'
 
 import {defineApplication, unstable_defineMediaLibrary} from '../../../defineApp.js'

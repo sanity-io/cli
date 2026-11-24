@@ -12,6 +12,7 @@ const mocks = vi.hoisted(() => ({
   customValidation: vi.fn<(value: unknown, context: ValidationContext) => Promise<string | true>>(),
   emit: vi.fn(),
   end: vi.fn(),
+  exportFinished: vi.fn(),
   getProjectCliClient: vi.fn(),
   getStudioWorkspaces: vi.fn(),
   workerData: {
@@ -31,6 +32,32 @@ const baseDocuments = [
   })),
   {_id: 'published-post', _type: 'post', author: {_ref: 'author', _type: 'reference'}},
   {_id: 'drafts.post', _type: 'post', author: {_ref: 'author', _type: 'reference'}},
+].map((document) => ({...document, _rev: 'rev1'}))
+
+const releaseDocuments = [
+  {_id: 'versions.release-a.release-author', _type: 'author', name: 'Release author'},
+  {_id: 'versions.release-b.other-category', _type: 'category'},
+  {_id: 'drafts.draft-category', _type: 'category'},
+  {_id: 'removed-category', _type: 'category'},
+  {_id: 'versions.release-a.removed-category', _system: {delete: true}, _type: 'category'},
+  {
+    _id: 'versions.release-a.post',
+    _type: 'post',
+    author: {_ref: 'release-author', _type: 'reference'},
+    categories: [
+      'published-category',
+      'other-category',
+      'draft-category',
+      'missing-category',
+      'removed-category',
+    ].map((id) => ({_key: id, _ref: id, _type: 'reference'})),
+  },
+  {
+    _id: 'published-release-post',
+    _type: 'post',
+    author: {_ref: 'release-author', _type: 'reference'},
+  },
+  {_id: 'drafts.release-post', _type: 'post', author: {_ref: 'release-author', _type: 'reference'}},
 ].map((document) => ({...document, _rev: 'rev1'}))
 
 let documents = baseDocuments
@@ -59,7 +86,7 @@ vi.mock('@sanity/worker-channels', () => ({
   WorkerChannelReporter: {
     from: () => ({
       event: {
-        exportFinished: vi.fn(),
+        exportFinished: mocks.exportFinished,
         loadedDocumentCount: vi.fn(),
         loadedReferenceIntegrity: vi.fn(),
         loadedWorkspace: vi.fn(),
@@ -229,7 +256,7 @@ describe('document validation worker', () => {
         documentId: 'published-category',
         level: 'error',
         markers: expect.arrayContaining([
-          expect.objectContaining({level: 'warning', message, path: []}),
+          expect.objectContaining({level: 'error', message, path: []}),
           expect.objectContaining({
             level: 'error',
             message: locale === 'en-US' ? 'Title is required' : 'Tittel er påkrevd',
@@ -238,6 +265,33 @@ describe('document validation worker', () => {
         ]),
       }),
     )
+  })
+
+  test('excludes managed documents from file validation and progress counts', async () => {
+    documents = [
+      ...documents,
+      {
+        _id: 'sanity-preview-url-secret.share-access',
+        _rev: 'rev1',
+        _type: 'sanity.previewUrlShareAccess',
+      },
+      {_id: 'image-asset', _rev: 'rev1', _type: 'sanity.imageAsset'},
+      {_id: 'system-group', _rev: 'rev1', _type: 'system.group'},
+    ]
+    mocks.workerData.level = 'error'
+
+    await import('../../../../src/actions/documents/validateDocuments.worker.js')
+
+    expect(mocks.exportFinished).toHaveBeenCalledWith({
+      totalDocumentsToValidate: baseDocuments.length,
+    })
+    expect(mocks.emit.mock.calls.map(([result]) => result.documentId).toSorted()).toEqual(
+      baseDocuments.map((document) => document._id).toSorted(),
+    )
+    expect(mocks.emit.mock.calls.map(([result]) => result.validatedCount)).toEqual(
+      baseDocuments.map((_, index) => index + 1),
+    )
+    expect(mocks.end).toHaveBeenCalledOnce()
   })
 
   test('reports incomplete validation even when warnings are filtered out', async () => {
@@ -316,6 +370,42 @@ describe('document validation worker', () => {
       expect(mocks.emit).toHaveBeenCalledTimes(documents.length)
       for (const [result] of mocks.emit.mock.calls) {
         expect(result.markers).toEqual([])
+      }
+      expect(mocks.cleanup).toHaveBeenCalledTimes(source === 'export' ? 1 : 0)
+    },
+  )
+
+  test.each(['file', 'export'])(
+    'validates references in their release when reading from %s',
+    async (source) => {
+      documents = [...baseDocuments, ...releaseDocuments]
+      mocks.workerData.ndjsonFilePath = source === 'file' ? '/documents.ndjson' : undefined
+      vi.mocked(globalThis.fetch).mockResolvedValue(
+        new Response(documents.map((document) => JSON.stringify(document)).join('\n')),
+      )
+
+      await import('../../../../src/actions/documents/validateDocuments.worker.js')
+
+      expect(mocks.emit).toHaveBeenCalledTimes(documents.length)
+      const results = mocks.emit.mock.calls.map(([result]) => result)
+      const releasePost = results.find((result) => result.documentId === 'versions.release-a.post')
+      expect(releasePost.markers).toEqual(
+        ['other-category', 'draft-category', 'missing-category', 'removed-category'].map((id) =>
+          expect.objectContaining({
+            level: 'error',
+            message: 'Referenced document must be published',
+            path: ['categories', {_key: id}],
+          }),
+        ),
+      )
+      for (const id of ['published-release-post', 'drafts.release-post']) {
+        expect(results.find((result) => result.documentId === id).markers).toEqual([
+          expect.objectContaining({
+            level: 'error',
+            message: 'Referenced document must be published',
+            path: ['author'],
+          }),
+        ])
       }
       expect(mocks.cleanup).toHaveBeenCalledTimes(source === 'export' ? 1 : 0)
     },

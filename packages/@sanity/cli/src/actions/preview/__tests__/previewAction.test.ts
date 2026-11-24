@@ -8,6 +8,12 @@ const mockStartWorkbenchPreview = vi.hoisted(() => vi.fn())
 const mockStartPreviewServer = vi.hoisted(() => vi.fn())
 const mockGetPreviewServerConfig = vi.hoisted(() => vi.fn())
 const mockCheckForDeprecatedAppId = vi.hoisted(() => vi.fn())
+const mockExtractCoreAppManifest = vi.hoisted(() => vi.fn())
+
+vi.mock(import('@sanity/cli-build/_internal/manifest'), async (importOriginal) => ({
+  ...(await importOriginal()),
+  extractCoreAppManifest: mockExtractCoreAppManifest,
+}))
 
 // The workbench orchestration lives in workbench-cli and is imported lazily —
 // mock the single entry the action delegates to.
@@ -77,5 +83,21 @@ describe('previewAction', () => {
       }),
     )
     expect(result.close).toBe(previewClose)
+  })
+
+  test("points the app manifest's icon at the URL the preview serves it from", async () => {
+    await previewAction(options({cliConfig: workbenchCliConfig()}))
+    const {extractManifest} = mockStartWorkbenchPreview.mock.calls[0][0]
+
+    await extractManifest({
+      configPath: '/tmp/project/sanity.cli.ts',
+      iconUrl: 'http://localhost:3334/public/icon.png',
+      workDir: '/tmp/project',
+    })
+
+    expect(mockExtractCoreAppManifest).toHaveBeenCalledWith({
+      iconUrl: 'http://localhost:3334/public/icon.png',
+      workDir: '/tmp/project',
+    })
   })
 })
