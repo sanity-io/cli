@@ -7,6 +7,7 @@ import {
   type TelemetryUserProperties,
 } from '@sanity/cli-core'
 import {logSymbols, spinner} from '@sanity/cli-core/ux'
+import {checkBlueprintDestination} from '@sanity/cli-setup'
 import {type TelemetryTrace} from '@sanity/telemetry'
 import {type Framework, frameworks} from '@vercel/frameworks'
 import deburr from 'lodash-es/deburr.js'
@@ -29,6 +30,7 @@ import {determineAppTemplate} from './determineAppTemplate.js'
 import {determineMediaLibraryTemplate} from './determineMediaLibraryTemplate.js'
 import {createOrAppendEnvVars} from './env/createOrAppendEnvVars.js'
 import {initApp} from './initApp.js'
+import {initBlueprint} from './initBlueprint.js'
 import {InitError} from './initError.js'
 import {flagOrDefault, shouldPrompt, writeStagingEnvIfNeeded} from './initHelpers.js'
 import {initNextJs} from './initNextJs.js'
@@ -42,7 +44,7 @@ import {type InitContext, type InitOptions} from './types.js'
 
 const debug = subdebug('init')
 
-export async function initAction(options: InitOptions, context: InitContext): Promise<void> {
+export async function initAction(options: InitOptions, context: InitContext) {
   const {output, workDir} = context
 
   if (options.argType) {
@@ -88,6 +90,10 @@ export async function initAction(options: InitOptions, context: InitContext): Pr
     rootPath: workDir,
   })
   const isNextJs = detectedFramework?.slug === 'nextjs'
+  const isBlueprint = options.withBlueprints === true
+  if (isBlueprint && (options.outputPath || options.unattended)) {
+    checkBlueprintDestination(options.outputPath || workDir)
+  }
 
   let remoteTemplateInfo: RepoInfo | undefined
   if (options.template && checkIsRemoteTemplate(options.template)) {
@@ -119,7 +125,11 @@ export async function initAction(options: InitOptions, context: InitContext): Pr
   }
 
   if (options.unattended) {
-    checkFlagsInUnattendedMode(options, {isAppTemplate, isMediaLibraryTemplate, isNextJs})
+    checkFlagsInUnattendedMode(options, {
+      isAppTemplate,
+      isMediaLibraryTemplate,
+      useCurrentPath: isNextJs || isBlueprint,
+    })
   }
 
   trace.start()
@@ -136,6 +146,10 @@ export async function initAction(options: InitOptions, context: InitContext): Pr
     },
     step: 'start',
   })
+
+  if (isBlueprint) {
+    output.log('Setting up a Blueprint')
+  }
 
   const planId = await getPlan(options, output, trace)
 
@@ -200,6 +214,20 @@ export async function initAction(options: InitOptions, context: InitContext): Pr
     )
     trace.complete()
     return
+  }
+
+  if (isBlueprint) {
+    const outputPath = await getProjectOutputPath({
+      initFramework: false,
+      outputPath: options.outputPath,
+      sluggedName: projectId,
+      unattended: options.unattended,
+      useEnv: false,
+      workDir,
+    })
+    const result = await initBlueprint({datasetName, output, outputPath, projectId})
+    trace.complete()
+    return result
   }
 
   // Detect editors once, then share the result with MCP and skills setup so
@@ -377,8 +405,8 @@ function checkFlagsInUnattendedMode(
   {
     isAppTemplate,
     isMediaLibraryTemplate,
-    isNextJs,
-  }: {isAppTemplate: boolean; isMediaLibraryTemplate: boolean; isNextJs: boolean},
+    useCurrentPath,
+  }: {isAppTemplate: boolean; isMediaLibraryTemplate: boolean; useCurrentPath: boolean},
 ): void {
   debug('Unattended mode, validating required options')
 
@@ -410,7 +438,7 @@ function checkFlagsInUnattendedMode(
       )
     }
   } else {
-    if (!isNextJs && !options.bare && !options.outputPath) {
+    if (!useCurrentPath && !options.bare && !options.outputPath) {
       errors.push(
         'Output path is required in unattended mode. Pass it with `--output-path <path>`.',
       )

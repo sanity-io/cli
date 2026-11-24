@@ -36,6 +36,10 @@
     "lint": {
       "inputs": ["$TURBO_DEFAULT$", "$TURBO_ROOT$/packages/@repo/oxc-config/**"]
     },
+    "@sanity/cli#lint": {
+      "dependsOn": ["@sanity/cli-setup#build:types"],
+      "inputs": ["$TURBO_DEFAULT$", "$TURBO_ROOT$/packages/@repo/oxc-config/**"]
+    },
     "publint": {
       "dependsOn": ["build:types", "^build:types", "^publint"],
       "cache": false
