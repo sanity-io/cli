@@ -1,0 +1,43 @@
+name: Cold Start Benchmark
+
+on:
+  pull_request:
+    paths:
+      - 'packages/create-sanity/**'
+      - 'packages/@sanity/cli-setup/**'
+      - 'package.json'
+      - 'pnpm-lock.yaml'
+      - 'pnpm-workspace.yaml'
+      - 'scripts/bench-create-sanity.mjs'
+      - '.github/actions/setup/action.yml'
+      - '.github/workflows/cold-start-benchmark.yml'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  blueprint-cold-start:
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Setup Environment
+        uses: ./.github/actions/setup
+        with:
+          node-version: 24
+
+      - name: Pack launcher
+        run: |
+          pnpm --filter @sanity/cli-setup build
+          pnpm --filter create-sanity pack --out "$RUNNER_TEMP/create-sanity-candidate.tgz"
+
+      - name: Measure cold Blueprint setup
+        run: |
+          node scripts/bench-create-sanity.mjs \
+            "$RUNNER_TEMP/create-sanity-candidate.tgz" 4
