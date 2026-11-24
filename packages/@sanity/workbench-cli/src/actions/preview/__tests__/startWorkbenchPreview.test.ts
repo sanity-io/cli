@@ -235,6 +235,55 @@ describe('startWorkbenchPreview', () => {
       )
     })
 
+    test("serves a studio's view icons, and leaves its app icon unused", async () => {
+      const workDir = await mkdtemp(join(tmpdir(), 'preview-studio-icon-'))
+      onTestFinished(() => rm(workDir, {force: true, recursive: true}))
+      await mkdir(join(workDir, 'public'))
+      await writeFile(join(workDir, 'public', 'panel.png'), 'png bytes')
+      mockReadFile.mockImplementation(async (path: string) => {
+        if (path.endsWith('.png')) return Buffer.from('png bytes')
+        throw Object.assign(new Error('ENOENT'), {code: 'ENOENT'})
+      })
+      mockServeBuiltApplication.mockResolvedValue({
+        close: vi.fn().mockResolvedValue(undefined),
+        host: 'localhost',
+        port: 4001,
+      })
+
+      await run({
+        cliConfig: workbenchCliConfig({
+          app: workbenchApp({
+            icon: './public/missing.png',
+            views: [
+              definePanelView({
+                icon: './public/panel.png',
+                name: 'inbox',
+                src: './src/Inbox.tsx',
+                title: 'Inbox',
+              }),
+            ],
+          }),
+        }),
+        isApp: false,
+        workDir,
+      })
+
+      expect(mockServeBuiltApplication).toHaveBeenCalledWith(
+        expect.objectContaining({
+          icons: [expect.objectContaining({path: '/public/panel.png'})],
+        }),
+      )
+      expect(mockExtractManifest).toHaveBeenCalledWith(
+        expect.objectContaining({iconUrl: undefined}),
+      )
+      expect(readManifest().interfaces).toContainEqual(
+        expect.objectContaining({
+          metadata: {icon: 'http://localhost:4001/public/panel.png'},
+          name: 'inbox',
+        }),
+      )
+    })
+
     test('registers a studio build as a studio', async () => {
       await run({isApp: false})
 

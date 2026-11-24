@@ -73,11 +73,12 @@ export async function startWorkbenchPreview(
   } = options
 
   // Read before any server starts, so a bad icon path fails with nothing to tear down.
-  const app = isApp && isWorkbenchApp(cliConfig.app) ? cliConfig.app : undefined
+  const app = isWorkbenchApp(cliConfig.app) ? cliConfig.app : undefined
+  const appIcon = isApp ? app?.icon : undefined
   const iconUrlPath = (iconPath: string) =>
     `/${toUrlPath(workDir, path.resolve(workDir, iconPath))}`
   const icons = await Promise.all(
-    [app?.icon, ...(app?.views ?? []).map((view) => ('icon' in view ? view.icon : undefined))]
+    [appIcon, ...(app?.views ?? []).map((view) => ('icon' in view ? view.icon : undefined))]
       .filter((iconPath) => iconPath !== undefined)
       .map(async (iconPath) => ({
         ...(await readAppIcon(workDir, iconPath)),
@@ -142,7 +143,7 @@ export async function startWorkbenchPreview(
       manifest: await extractManifest({
         applicationId: id,
         configPath,
-        iconUrl: app?.icon && `http://${remote.host}:${remote.port}${iconUrlPath(app.icon)}`,
+        iconUrl: appIcon && `http://${remote.host}:${remote.port}${iconUrlPath(appIcon)}`,
         workDir,
       }),
       manifestUpdatedAt: new Date().toISOString(),
