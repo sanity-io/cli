@@ -27,6 +27,7 @@ export {
   defineApplication,
   isWorkbenchApp,
   isWorkbenchConfig,
+  resolveAppTitle,
   unstable_defineMediaLibrary,
 } from '../defineApp.js'
 export type {

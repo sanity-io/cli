@@ -73,9 +73,7 @@ async function runStudioDeployment(
   // and deployed like a hosted one, minus the upload.
   const isLegacyExternal = isExternal && !isWorkbenchApp
 
-  const appTitle = workbench
-    ? flags.title?.trim() || cliConfig.app?.title?.trim() || workbench.slug
-    : ''
+  const appTitle = workbench ? flags.title?.trim() || workbench.title : ''
 
   const isAutoUpdating = checkAutoUpdates(reporter, {cliConfig, flags})
 

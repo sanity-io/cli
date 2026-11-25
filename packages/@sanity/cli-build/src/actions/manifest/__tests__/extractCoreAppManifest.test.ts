@@ -128,6 +128,16 @@ describe('extractCoreAppManifest', () => {
     expect(result).toEqual({slug: 'my-slug', title: 'My App', version: '1'})
   })
 
+  test('titles an untitled workbench app after its slug in start case', async () => {
+    mockGetCliConfig.mockResolvedValue({
+      app: defineApplication({organizationId: 'org-1', slug: 'drop-desk'}),
+    } as never)
+
+    const result = await extractCoreAppManifest({workDir: '/project'})
+
+    expect(result).toEqual({slug: 'drop-desk', title: 'Drop Desk', version: '1'})
+  })
+
   test('drops slug and dock placement for a non-workbench app', async () => {
     mockGetCliConfig.mockResolvedValue({
       app: {

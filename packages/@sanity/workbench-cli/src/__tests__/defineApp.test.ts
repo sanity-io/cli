@@ -228,10 +228,10 @@ describe('DefineAppInputSchema (build-time validation)', () => {
     },
   )
 
-  test('requires a title', () => {
+  test('accepts an app without a title', () => {
     const input = validInput()
     delete input.title
-    expect(DefineAppInputSchema.safeParse(input).success).toBe(false)
+    expect(DefineAppInputSchema.safeParse(input).success).toBe(true)
   })
 
   test('requires an organizationId with a pointed error', () => {

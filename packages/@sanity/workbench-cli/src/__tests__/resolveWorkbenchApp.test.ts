@@ -36,9 +36,22 @@ describe('resolveWorkbenchApp', () => {
       name: 'my-app',
       organizationId: 'org-123',
       slug: 'my-app',
+      title: 'My App',
       views: [],
       webWorkers: [],
     })
+  })
+
+  test.each([
+    ['the slug in start case', {slug: 'drop-desk'}, 'Drop Desk'],
+    ['the name over the slug', {name: 'reviews', slug: 'reviews-host'}, 'Reviews'],
+    ['digits as their own word, like Studio', {slug: 'my-app-v2'}, 'My App V 2'],
+    ['the slug for a blank title', {slug: 'drop-desk', title: '  '}, 'Drop Desk'],
+    ['a trimmed declared title', {slug: 'drop-desk', title: '  Acme  '}, 'Acme'],
+  ])('titles the app with %s', (_label, input, expected) => {
+    const config = asConfig(defineApplication({organizationId: 'org-123', ...input}))
+
+    expect(resolveWorkbenchApp(config)?.title).toBe(expected)
   })
 
   test('keeps an explicit name distinct from the slug', () => {

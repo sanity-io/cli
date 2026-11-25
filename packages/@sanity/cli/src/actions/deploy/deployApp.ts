@@ -92,9 +92,7 @@ async function runAppDeployment(
   const deployApplication = !config && (!workbench || workbench.hasInterfaces)
   const hasAppView = resolveAppEntry(cliConfig.app) !== undefined
 
-  const appTitle = workbench
-    ? flags.title?.trim() || cliConfig.app?.title?.trim() || workbench.slug
-    : ''
+  const appTitle = workbench ? flags.title?.trim() || workbench.title : ''
 
   // A federated app with no entry, view or service would ship a remote with
   // nothing to load — reported first so it fails before any prompt or API call.
