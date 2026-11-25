@@ -1,7 +1,7 @@
-import {styleText} from 'node:util'
-
 import {type DashboardConfig} from '@sanity/workbench-cli'
 import {
+  fetchDeploySummaryDetails,
+  formatDeploySummary,
   getOrganizationDashboard,
   getWorkbenchUrl,
   summarizeConfig,
@@ -24,6 +24,8 @@ export function deployDashboardConfig(
     listFiles: ({projectRoot, sourceDir}) => listDeploymentFiles(sourceDir, projectRoot.directory),
     async run({cliConfig, flags, output, projectRoot, sourceDir}, reporter) {
       const workDir = projectRoot.directory
+      const startedAt = Date.now()
+      const summaryDetails = flags.json ? undefined : fetchDeploySummaryDetails(organizationId)
       const version = await checkPackageVersion(reporter, {moduleName: 'sanity', workDir})
       reporter.report({message: `Organization: ${organizationId}`, status: 'pass'})
 
@@ -73,7 +75,15 @@ export function deployDashboardConfig(
 
       await uploadDashboardConfig({dashboard, organizationId, sourceDir, version})
       output.log(
-        `\n🚀 ${styleText('bold', 'Success!')} Dashboard configuration deployed to ${styleText('cyan', url)}`,
+        formatDeploySummary({
+          ...(await summaryDetails),
+          created: !dashboard,
+          durationMs: Date.now() - startedAt,
+          organizationId,
+          title: 'Dashboard configuration',
+          type: 'config',
+          url,
+        }),
       )
 
       return {action, application: null, payload, url}

@@ -21,13 +21,13 @@ function summarize(options: Partial<Parameters<typeof formatDeploySummary>[0]> =
     applicationId: 'k3vq8m2rxt',
     created: false,
     durationMs: 8400,
-    isApp: true,
     organizationId: 'org-1',
     showAppIdHint: false,
     title: 'Reports',
+    type: 'coreApp',
     url,
     ...options,
-  })
+  } as Parameters<typeof formatDeploySummary>[0])
 }
 
 beforeEach(() => {
@@ -106,8 +106,23 @@ describe('formatDeploySummary', () => {
     )
   })
 
+  test('a config deploy names no app and offers no appId hint', () => {
+    const summary = summarize({created: true, title: 'Dashboard configuration', type: 'config'})
+
+    expect(summary.split('\n').slice(1)).toEqual([
+      '  Dashboard configuration deployed in 8.4s',
+      '',
+      '    Organization  org-1',
+      `    URL           ${link}`,
+      '    Version       just now',
+      '',
+      styleText('green', `  ${logSymbols.success} Created Dashboard configuration.`),
+      '',
+    ])
+  })
+
   test('a redeploy without names lists the organization id and no appId hint', () => {
-    const summary = summarize({isApp: false, title: 'Federated Studio'})
+    const summary = summarize({title: 'Federated Studio', type: 'studio'})
 
     expect(summary.split('\n').slice(1)).toEqual([
       '  Federated Studio deployed in 8.4s',

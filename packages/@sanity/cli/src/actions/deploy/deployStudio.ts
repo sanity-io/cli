@@ -261,10 +261,10 @@ async function runStudioDeployment(
           applicationId,
           created: applicationCreated,
           durationMs,
-          isApp: false,
           organizationId,
           showAppIdHint: !appId,
           title: appTitle,
+          type: 'studio',
           url,
         }),
       )

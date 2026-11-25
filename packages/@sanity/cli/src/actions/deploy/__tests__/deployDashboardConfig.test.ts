@@ -10,6 +10,7 @@ const mockUploadDashboardConfig = vi.hoisted(() => vi.fn())
 const mockGetOrganizationDashboard = vi.hoisted(() => vi.fn())
 vi.mock('@sanity/workbench-cli/deploy', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@sanity/workbench-cli/deploy')>()),
+  fetchDeploySummaryDetails: vi.fn(async () => ({organizationName: 'Acme', userName: 'Sam'})),
   getOrganizationDashboard: mockGetOrganizationDashboard,
   uploadDashboardConfig: mockUploadDashboardConfig,
 }))
@@ -30,8 +31,11 @@ const {deployDashboardConfig} = await import('../deployDashboardConfig.js')
 
 const SUMMARY = 'Dashboard configuration: ./src/dashboard.ts'
 
-function deploy(flags: Partial<DeployFlags>) {
-  const output = {error: vi.fn(), log: vi.fn(), logJson: vi.fn(), warn: vi.fn()}
+function mockOutput() {
+  return {error: vi.fn(), log: vi.fn(), logJson: vi.fn(), warn: vi.fn()}
+}
+
+function deploy(flags: Partial<DeployFlags>, output = mockOutput()) {
   const run = deployDashboardConfig({
     cliConfig: {app: {organizationId: 'org-1'}} as CliConfig,
     config: defineDashboard({organizationId: 'org-1', src: './src/dashboard.ts'}),
@@ -107,5 +111,16 @@ describe('deployDashboardConfig', () => {
       expect.objectContaining({dashboard: {id: 'dash-1', organizationId: 'org-1'}}),
     )
     expect(json).toMatchObject({action: 'update'})
+  })
+
+  test('prints the deploy summary studios and apps print', async () => {
+    const output = mockOutput()
+
+    await deploy({json: false}, output)
+
+    const logged = output.log.mock.calls.join('\n')
+    expect(logged).toContain('Dashboard configuration deployed in')
+    expect(logged).toContain('Organization  Acme')
+    expect(logged).toContain('Created Dashboard configuration.')
   })
 })
