@@ -124,6 +124,25 @@ describe('initAction (direct)', () => {
     expect(pending, 'pending mocks').toEqual([])
   })
 
+  test('throws when --in-place-studio is used without a package.json', async () => {
+    const context = createTestContext()
+    context.workDir = '/tmp/init-in-place-studio-missing-package-json'
+
+    let caughtError: unknown
+    try {
+      await initAction({...defaultOptions, inPlaceStudio: true}, context)
+    } catch (error) {
+      caughtError = error
+    }
+
+    expect(caughtError).toBeInstanceOf(InitError)
+    const initError = caughtError as InitError
+    expect(initError.message).toBe(
+      "Couldn't add a Studio to this folder: no package.json found. Run this command from a project folder.",
+    )
+    expect(initError.exitCode).toBe(1)
+  })
+
   test('throws InitError for deprecated reconfigure flag', async () => {
     mockValidateSession.mockResolvedValue({
       email: 'test@example.com',
