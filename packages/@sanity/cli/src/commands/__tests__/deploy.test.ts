@@ -10,6 +10,7 @@ vi.mock('@sanity/cli-core', async (importOriginal) => {
 })
 
 const mockDeployApp = vi.hoisted(() => vi.fn())
+const mockDeployDashboardConfig = vi.hoisted(() => vi.fn())
 const mockDeployStudio = vi.hoisted(() => vi.fn())
 const mockDetermineIsApp = vi.hoisted(() => vi.fn())
 const mockDirIsEmptyOrNonExistent = vi.hoisted(() => vi.fn())
@@ -22,6 +23,9 @@ vi.mock('@sanity/workbench-cli/deploy', () => ({
 }))
 
 vi.mock('../../actions/deploy/deployApp.js', () => ({deployApp: mockDeployApp}))
+vi.mock('../../actions/deploy/deployDashboardConfig.js', () => ({
+  deployDashboardConfig: mockDeployDashboardConfig,
+}))
 vi.mock('../../actions/deploy/deployStudio.js', () => ({deployStudio: mockDeployStudio}))
 vi.mock('../../util/determineIsApp.js', () => ({determineIsApp: mockDetermineIsApp}))
 vi.mock('../../util/dirIsEmptyOrNonExistent.js', () => ({
@@ -50,6 +54,17 @@ describe('#deploy', () => {
     await DeployCommand.run([])
     expect(mockDeployApp).toHaveBeenCalledTimes(1)
     expect(mockDeployStudio).not.toHaveBeenCalled()
+  })
+
+  test('deploys a dashboard configuration instead of an app', async () => {
+    const config = defineDashboard({organizationId: 'org-1', src: './src/dashboard.ts'})
+    mockDetermineIsApp.mockReturnValue(true)
+    mockResolveWorkbenchConfig.mockReturnValue(config)
+
+    await DeployCommand.run([])
+
+    expect(mockDeployDashboardConfig).toHaveBeenCalledWith(expect.objectContaining({config}))
+    expect(mockDeployApp).not.toHaveBeenCalled()
   })
 
   test('routes studios to deployStudio', async () => {
@@ -138,6 +153,7 @@ describe('#deploy', () => {
     expect(mocks.SanityCmdOutputWarn).toHaveBeenCalledWith(
       expect.stringContaining('--media-library-id is ignored'),
     )
+    expect(mockDeployDashboardConfig).toHaveBeenCalledTimes(1)
   })
 
   test('does not warn about --media-library-id for a media library config deploy', async () => {

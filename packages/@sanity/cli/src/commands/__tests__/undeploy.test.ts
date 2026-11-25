@@ -1,7 +1,11 @@
 import {exitCodes} from '@sanity/cli-core/ExitCodes'
 import {confirm} from '@sanity/cli-core/ux'
 import {mockApi, testCommand} from '@sanity/cli-test'
-import {defineApplication, unstable_defineMediaLibrary} from '@sanity/workbench-cli'
+import {
+  defineApplication,
+  defineDashboard,
+  unstable_defineMediaLibrary,
+} from '@sanity/workbench-cli'
 import {cleanAll, pendingMocks} from 'nock'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
@@ -712,6 +716,66 @@ describe('#undeploy', () => {
     expect(stdout).not.toContain('1.0.0')
     expect(stdout).toContain('Alt text (alt): ./src/alt.ts')
     expect(stdout).not.toContain('Config snapshots')
+  })
+
+  test('dashboard configuration dry run --json carries the config target and its summary', async () => {
+    mockApi({
+      apiVersion: 'vX',
+      query: {organizationId: 'org-1'},
+      uri: '/applications/dashboards',
+    }).reply(200, {data: [{id: 'dash-1', organizationId: 'org-1'}], nextCursor: null})
+
+    const {stdout} = await testCommand(UndeployCommand, ['--dry-run', '--json'], {
+      mocks: {
+        cliConfig: {app: defineDashboard({organizationId: 'org-1', src: './src/dashboard.ts'})},
+        token: 'test-token',
+      },
+    })
+
+    expect(JSON.parse(stdout)).toMatchObject({
+      canUndeploy: true,
+      deletes: 'config',
+      payload: {appId: null, config: 'Dashboard configuration: ./src/dashboard.ts'},
+    })
+  })
+
+  test('dashboard configuration dry run reports nothing to undeploy when none is deployed', async () => {
+    mockApi({
+      apiVersion: 'vX',
+      query: {organizationId: 'org-1'},
+      uri: '/applications/dashboards',
+    }).reply(200, {data: [], nextCursor: null})
+
+    const {stdout} = await testCommand(UndeployCommand, ['--dry-run'], {
+      mocks: {
+        cliConfig: {app: defineDashboard({organizationId: 'org-1', src: './src/dashboard.ts'})},
+        token: 'test-token',
+      },
+    })
+
+    expect(stdout).toContain('No deployed dashboard configuration for organization "org-1"')
+  })
+
+  test('undeploys the dashboard configuration', async () => {
+    mockApi({
+      apiVersion: 'vX',
+      query: {organizationId: 'org-1'},
+      uri: '/applications/dashboards',
+    }).reply(200, {data: [{id: 'dash-1', organizationId: 'org-1'}], nextCursor: null})
+    mockApi({
+      apiVersion: 'vX',
+      method: 'delete',
+      uri: '/applications/dashboards/dash-1',
+    }).reply(200, {deleted: true})
+
+    const {stdout} = await testCommand(UndeployCommand, ['--yes'], {
+      mocks: {
+        cliConfig: {app: defineDashboard({organizationId: 'org-1', src: './src/dashboard.ts'})},
+        token: 'test-token',
+      },
+    })
+
+    expect(stdout).toContain('Config deleted.')
   })
 
   test('media library dry run --json carries the structured config target', async () => {

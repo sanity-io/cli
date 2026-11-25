@@ -6,6 +6,7 @@ import {confirm} from '@sanity/cli-core/ux'
 import {getWorkbench, resolveWorkbenchConfig} from '@sanity/workbench-cli/deploy'
 
 import {deployApp} from '../actions/deploy/deployApp.js'
+import {deployDashboardConfig} from '../actions/deploy/deployDashboardConfig.js'
 import {deployDebug} from '../actions/deploy/deployDebug.js'
 import {deployStudio} from '../actions/deploy/deployStudio.js'
 import {getAppId} from '../util/appId.js'
@@ -201,7 +202,17 @@ export class DeployCommand extends SanityCommand<typeof DeployCommand> {
     // Force yes downstream: build/app resolution otherwise prompts for prerelease/version choices
     const deployFlags = this.isUnattended() || flags['dry-run'] ? {...flags, yes: true} : flags
 
-    if (isApp) {
+    if (config?.appType === 'dashboard') {
+      deployDebug('Deploying dashboard configuration')
+      await deployDashboardConfig({
+        cliConfig,
+        config,
+        flags: deployFlags,
+        output: this.output,
+        projectRoot,
+        sourceDir,
+      })
+    } else if (isApp) {
       deployDebug('Deploying app')
       await deployApp({
         cliConfig,

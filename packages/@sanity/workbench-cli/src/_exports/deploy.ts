@@ -19,6 +19,7 @@ export {
   type DeployedWebWorker,
   summarizeInterfaces,
 } from '../actions/deploy/summarizeInterfaces.js'
+export {uploadDashboardConfig} from '../actions/deploy/uploadDashboardConfig.js'
 export {readAppIcon} from '../readAppIcon.js'
 export {resolveWorkbenchConfig} from '../resolveWorkbenchConfig.js'
 export {
@@ -30,3 +31,4 @@ export {
   getWorkbenchUrl,
   listApplications,
 } from '../services/applications.js'
+export {getOrganizationDashboard} from '../services/dashboards.js'
