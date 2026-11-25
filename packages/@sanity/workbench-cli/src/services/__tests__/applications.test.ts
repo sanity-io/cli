@@ -339,6 +339,13 @@ describe('getWorkbenchUrl / getApplicationUrl', () => {
     )
   })
 
+  test('lowercases the organization id in the host', () => {
+    expect(getWorkbenchUrl('oF5P8QpKU')).toBe('https://of5p8qpku.sanity.run')
+    expect(getApplicationUrl({...app, organizationId: 'oF5P8QpKU', type: 'studio'})).toBe(
+      'https://of5p8qpku.sanity.run/studios/my-app',
+    )
+  })
+
   test('builds staging URLs on run.sanity.work', () => {
     vi.stubEnv('SANITY_INTERNAL_ENV', 'staging')
     expect(getWorkbenchUrl('org-1')).toBe('https://org-1.run.sanity.work')

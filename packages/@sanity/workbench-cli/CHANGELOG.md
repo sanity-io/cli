@@ -1,5 +1,27 @@
 # @sanity/workbench-cli
 
+## 2.20.0
+
+[Compare changes](https://github.com/sanity-io/cli/compare/workbench-cli-v2.19.1...workbench-cli-v2.20.0)
+
+_2026-11-24_
+
+### Features
+
+- **workbench-cli:** set icons on window and panel views ([#2271](https://github.com/sanity-io/cli/pull/2271)) ([ec53cc4](https://github.com/sanity-io/cli/commit/ec53cc44509800cdf1b380f9e2e8eb57727ebdfd))
+- **workbench-cli:** rename view and web worker authoring types ([#2272](https://github.com/sanity-io/cli/pull/2272)) ([ab402ae](https://github.com/sanity-io/cli/commit/ab402ae03feab866e1d4f595825f50b431e470c4))
+
+## 2.19.1
+
+[Compare changes](https://github.com/sanity-io/cli/compare/workbench-cli-v2.19.0...workbench-cli-v2.19.1)
+
+_2026-11-24_
+
+### Bug Fixes
+
+- **auto-updates:** round the module URL timestamp to 60 seconds ([#2136](https://github.com/sanity-io/cli/pull/2136)) ([d271d6a](https://github.com/sanity-io/cli/commit/d271d6aaa06dd89592ceb1590877b73f00190030))
+- **workbench-cli:** accept defineApplication with exact optional types ([#2266](https://github.com/sanity-io/cli/pull/2266)) ([230a0e0](https://github.com/sanity-io/cli/commit/230a0e028d3efba92af17cfe8da5ad6b43667acd))
+
 ## 2.19.0
 
 [Compare changes](https://github.com/sanity-io/cli/compare/workbench-cli-v2.18.0...workbench-cli-v2.19.0)

@@ -6,6 +6,7 @@ import {styleText} from 'node:util'
 import {afterEach, beforeEach, describe, expect, onTestFinished, test, vi} from 'vitest'
 
 import {buildAppId} from '../../../appId.js'
+import {definePanelView} from '../../../contract.js'
 import {resolveWorkbenchApp} from '../../../resolveWorkbenchApp.js'
 import {
   createMockOutput,
@@ -180,14 +181,15 @@ describe('startWorkbenchPreview', () => {
       })
     })
 
-    test("serves the app's icon from the project, and points the manifest at it", async () => {
+    test("serves the app's and views' icons from the project, and points the registry at them", async () => {
       const workDir = await mkdtemp(join(tmpdir(), 'preview-icon-'))
       onTestFinished(() => rm(workDir, {force: true, recursive: true}))
       await mkdir(join(workDir, 'public'))
       await writeFile(join(workDir, 'public', 'icon.png'), 'png bytes')
+      await writeFile(join(workDir, 'public', 'panel.png'), 'png bytes')
       const image = Buffer.from('png bytes')
       mockReadFile.mockImplementation(async (path: string) => {
-        if (path.endsWith('icon.png')) return image
+        if (path.endsWith('.png')) return image
         throw Object.assign(new Error('ENOENT'), {code: 'ENOENT'})
       })
       // Non-strict ports: the build is served on whichever port was free.
@@ -198,21 +200,87 @@ describe('startWorkbenchPreview', () => {
       })
 
       await run({
-        cliConfig: workbenchCliConfig({app: workbenchApp({icon: './public/icon.png'})}),
+        cliConfig: workbenchCliConfig({
+          app: workbenchApp({
+            icon: './public/icon.png',
+            views: [
+              definePanelView({
+                icon: './public/panel.png',
+                name: 'inbox',
+                src: './src/Inbox.tsx',
+                title: 'Inbox',
+              }),
+            ],
+          }),
+        }),
         workDir,
       })
 
       expect(mockServeBuiltApplication).toHaveBeenCalledWith(
         expect.objectContaining({
-          icon: expect.objectContaining({
-            contentType: 'image/png',
-            image,
-            path: '/public/icon.png',
-          }),
+          icons: [
+            expect.objectContaining({contentType: 'image/png', image, path: '/public/icon.png'}),
+            expect.objectContaining({contentType: 'image/png', image, path: '/public/panel.png'}),
+          ],
         }),
       )
       expect(mockExtractManifest).toHaveBeenCalledWith(
         expect.objectContaining({iconUrl: 'http://localhost:4001/public/icon.png'}),
+      )
+      expect(readManifest().interfaces).toContainEqual(
+        expect.objectContaining({
+          metadata: {icon: 'http://localhost:4001/public/panel.png'},
+          name: 'inbox',
+        }),
+      )
+    })
+
+    test("serves a studio's view icons, and leaves its app icon unused", async () => {
+      const workDir = await mkdtemp(join(tmpdir(), 'preview-studio-icon-'))
+      onTestFinished(() => rm(workDir, {force: true, recursive: true}))
+      await mkdir(join(workDir, 'public'))
+      await writeFile(join(workDir, 'public', 'panel.png'), 'png bytes')
+      mockReadFile.mockImplementation(async (path: string) => {
+        if (path.endsWith('.png')) return Buffer.from('png bytes')
+        throw Object.assign(new Error('ENOENT'), {code: 'ENOENT'})
+      })
+      mockServeBuiltApplication.mockResolvedValue({
+        close: vi.fn().mockResolvedValue(undefined),
+        host: 'localhost',
+        port: 4001,
+      })
+
+      await run({
+        cliConfig: workbenchCliConfig({
+          app: workbenchApp({
+            icon: './public/missing.png',
+            views: [
+              definePanelView({
+                icon: './public/panel.png',
+                name: 'inbox',
+                src: './src/Inbox.tsx',
+                title: 'Inbox',
+              }),
+            ],
+          }),
+        }),
+        isApp: false,
+        workDir,
+      })
+
+      expect(mockServeBuiltApplication).toHaveBeenCalledWith(
+        expect.objectContaining({
+          icons: [expect.objectContaining({path: '/public/panel.png'})],
+        }),
+      )
+      expect(mockExtractManifest).toHaveBeenCalledWith(
+        expect.objectContaining({iconUrl: undefined}),
+      )
+      expect(readManifest().interfaces).toContainEqual(
+        expect.objectContaining({
+          metadata: {icon: 'http://localhost:4001/public/panel.png'},
+          name: 'inbox',
+        }),
       )
     })
 

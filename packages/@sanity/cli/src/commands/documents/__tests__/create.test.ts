@@ -13,18 +13,7 @@ import {afterEach, describe, expect, type Mock, test, vi} from 'vitest'
 
 import {CreateDocumentCommand} from '../create.js'
 
-vi.mock('node:fs/promises', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('node:fs/promises')>()
-  return {
-    ...actual,
-    default: {
-      mkdir: vi.fn(),
-      readFile: vi.fn(),
-      unlink: vi.fn(),
-      writeFile: vi.fn(),
-    },
-  }
-})
+vi.mock('node:fs/promises')
 vi.mock('node:os')
 vi.mock('chokidar', () => ({
   watch: vi.fn(),

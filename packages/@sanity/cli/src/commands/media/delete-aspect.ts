@@ -51,9 +51,7 @@ export class MediaDeleteAspectCommand extends SanityCommand<typeof MediaDeleteAs
     const {aspectName} = this.args
     const {'media-library-id': mediaLibraryIdFlag, yes: skipConfirmation} = this.flags
 
-    const projectId = await this.getProjectId({
-      fallback: () => promptForProject({}),
-    })
+    const projectId = await this.getProjectId({fallback: () => promptForProject({})})
 
     let mediaLibraryId = mediaLibraryIdFlag
     if (!mediaLibraryId) {

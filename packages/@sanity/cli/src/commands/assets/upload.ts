@@ -11,7 +11,6 @@ import {promptForProject} from '../../prompts/promptForProject.js'
 import {type AssetType} from '../../services/assets.js'
 import {getAssetFilenameError, getIngestUrlError} from '../../util/assetSourceValidation.js'
 import {getAssetUploadErrorMessage} from '../../util/assetUploadErrors.js'
-import {datasetRequiredMessage, getBlueprintDataset} from '../../util/blueprintCliContext.js'
 import {getDatasetFlag, getProjectIdFlag} from '../../util/sharedFlags.js'
 import {defineCommandTelemetry} from '../../util/telemetry/commandTelemetry.js'
 
@@ -104,16 +103,11 @@ export class UploadAssetCommand extends SanityCommand<typeof UploadAssetCommand>
     }
 
     const cliConfig = await this.tryGetCliConfig()
-    const projectId = await this.getProjectId({
-      fallback: () => promptForProject({}),
-    })
-    const dataset =
-      flags.dataset ?? cliConfig.api?.dataset ?? (await getBlueprintDataset(projectId))
+    const projectId = await this.getProjectId({fallback: () => promptForProject({})})
+    const dataset = flags.dataset ?? cliConfig.api?.dataset
     if (!dataset) {
       this.error(
-        datasetRequiredMessage(
-          'Asset upload failed: Dataset is required. Pass --dataset <name> or configure a dataset in sanity.cli.ts.',
-        ),
+        'Asset upload failed: Dataset is required. Pass --dataset <name> or configure a dataset in sanity.cli.ts.',
         {exit: exitCodes.USAGE_ERROR},
       )
     }

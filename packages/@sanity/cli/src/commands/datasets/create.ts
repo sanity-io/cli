@@ -1,11 +1,6 @@
 import {Args, Flags} from '@oclif/core'
-import {defineDataset} from '@sanity/blueprints'
 import {exitCodes, SanityCommand, subdebug} from '@sanity/cli-core'
 
-import {
-  getBlueprintForProject,
-  printBlueprintResource,
-} from '../../actions/blueprints/prepareResource.js'
 import {createDataset} from '../../actions/dataset/create.js'
 import {validateDatasetName} from '../../actions/dataset/validateDatasetName.js'
 import {promptForDatasetName} from '../../prompts/promptForDatasetName.js'
@@ -97,29 +92,6 @@ export class CreateDatasetCommand extends SanityCommand<typeof CreateDatasetComm
         })
       }
       datasetName = await promptForDatasetName()
-    }
-
-    const blueprint = await getBlueprintForProject(projectId)
-    if (blueprint) {
-      if (flags.embeddings) {
-        this.error(
-          'Blueprints cannot set dataset embeddings. Declare the dataset first, then run `sanity datasets embeddings enable`.',
-          {
-            exit: exitCodes.USAGE_ERROR,
-          },
-        )
-      }
-      printBlueprintResource(
-        this.output,
-        blueprint.path,
-        defineDataset({
-          aclMode: visibility === 'custom' || visibility === 'private' ? visibility : 'public',
-          datasetName,
-          name: datasetName,
-          project: projectId,
-        }),
-      )
-      return
     }
 
     let datasets: string[]

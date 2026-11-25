@@ -7,7 +7,6 @@ import {styleText} from 'node:util'
 
 import {Args, Flags} from '@oclif/core'
 import {exitCodes, SanityCommand} from '@sanity/cli-core'
-import {isBlueprintMode} from '@sanity/cli-core/config'
 import {requiredWhenUnattended} from '@sanity/cli-core/flags'
 import {boxen, confirm, input, select} from '@sanity/cli-core/ux'
 import {type DatasetsResponse} from '@sanity/client'
@@ -27,7 +26,6 @@ import {promptForDataset} from '../../prompts/promptForDataset.js'
 import {promptForProject} from '../../prompts/promptForProject.js'
 import {type BackupItem, listBackups} from '../../services/backup.js'
 import {listDatasets} from '../../services/datasets.js'
-import {getBlueprintDataset} from '../../util/blueprintCliContext.js'
 import {humanFileSize} from '../../util/humanFileSize.js'
 import {isPathDirName} from '../../util/isPathDirName.js'
 import {getProjectIdFlag} from '../../util/sharedFlags.js'
@@ -108,7 +106,7 @@ export class DownloadBackupCommand extends SanityCommand<typeof DownloadBackupCo
     const {args} = await this.parse(DownloadBackupCommand)
     let {dataset} = args
 
-    if (!dataset && this.isUnattended() && !isBlueprintMode()) {
+    if (this.isUnattended() && !dataset) {
       this.error('Dataset is required in unattended mode. Pass it as the `<dataset>` argument.', {
         exit: exitCodes.USAGE_ERROR,
       })
@@ -120,13 +118,6 @@ export class DownloadBackupCommand extends SanityCommand<typeof DownloadBackupCo
           requiredPermissions: [{grant: 'read', permission: 'sanity.project.datasets'}],
         }),
     })
-
-    dataset ||= await getBlueprintDataset(projectId)
-    if (this.isUnattended() && !dataset) {
-      this.error('Dataset is required in unattended mode. Pass it as the `<dataset>` argument.', {
-        exit: exitCodes.USAGE_ERROR,
-      })
-    }
 
     let datasets: DatasetsResponse
 

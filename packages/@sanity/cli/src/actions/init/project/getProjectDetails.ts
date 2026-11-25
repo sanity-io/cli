@@ -1,4 +1,3 @@
-import {type BlueprintDatasetResource} from '@sanity/blueprints'
 import {type SanityOrgUser, subdebug, type TelemetryUserProperties} from '@sanity/cli-core'
 import {type TelemetryTrace} from '@sanity/telemetry'
 
@@ -17,7 +16,6 @@ export async function getProjectDetails({
   coupon,
   dataset,
   datasetDefault,
-  declareDataset,
   isAppTemplate,
   isMediaLibraryTemplate = false,
   newProject,
@@ -34,7 +32,6 @@ export async function getProjectDetails({
   coupon: string | undefined
   dataset: string | undefined
   datasetDefault: boolean
-  declareDataset?: boolean
   isAppTemplate: boolean
   isMediaLibraryTemplate?: boolean
   newProject: string | undefined
@@ -49,7 +46,6 @@ export async function getProjectDetails({
   visibility: 'private' | 'public' | undefined
 }): Promise<{
   datasetName: string
-  datasetResource?: BlueprintDatasetResource
   displayName: string
   isFirstProject: boolean
   organizationId?: string
@@ -142,7 +138,6 @@ export async function getProjectDetails({
   const datasetResult = await getOrCreateDataset({
     dataset,
     defaultConfig: datasetDefault || undefined,
-    ...(declareDataset ? {declareDataset} : {}),
     displayName: projectResult.displayName,
     output,
     projectId: projectResult.projectId,
@@ -161,7 +156,6 @@ export async function getProjectDetails({
 
   return {
     datasetName: datasetResult.datasetName,
-    ...(datasetResult.datasetResource ? {datasetResource: datasetResult.datasetResource} : {}),
     displayName: projectResult.displayName,
     isFirstProject: projectResult.isFirstProject,
     organizationId: projectResult.organizationId,

@@ -25,19 +25,12 @@ export default class SanityHelp extends Help {
   private unattended = false
 
   protected formatCommand(command: Command.Loadable): string {
+    let help = super.formatCommand(command)
+
     // When `sanity init` is called, but originates from the `create-sanity`
     // package/binary (eg the one used by `npm create sanity@latest` etc), we want to
     // customize the help text to show that command instead of `sanity init`.
     const isFromCreate = process.argv.includes('--from-create') && command.id === 'init'
-    const blueprintFlag = isFromCreate ? command.flags['with-blueprints'] : undefined
-    let help = super.formatCommand(
-      isFromCreate && blueprintFlag
-        ? {
-            ...command,
-            flags: {...command.flags, 'with-blueprints': {...blueprintFlag, hidden: true}},
-          }
-        : command,
-    )
     if (isFromCreate) {
       help = replaceInitWithCreateCommand(help)
     }

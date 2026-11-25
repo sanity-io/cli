@@ -12,7 +12,6 @@ import {
   type GlobalCliClientOptions,
   type ProjectCliClientOptions,
 } from './apiClient.js'
-import {getBlueprintProfile, isBlueprintMode} from './config/cli/blueprintProfile.js'
 import {getCliConfig} from './config/cli/getCliConfig.js'
 import {type CliConfig} from './config/cli/types/cliConfig.js'
 import {findProjectRoot} from './config/findProjectRoot.js'
@@ -49,7 +48,7 @@ export interface SanityCommandInterface {
   getCliConfig: () => Promise<CliConfig>
   getProjectId: (options?: {
     deprecatedFlagName?: string
-    fallback?: () => Promise<string | undefined>
+    fallback?: () => Promise<string>
   }) => Promise<string>
   getProjectRoot: () => Promise<ProjectRootResult>
   isUnattended: () => boolean
@@ -162,20 +161,6 @@ export abstract class SanityCommand<T extends typeof Command>
    * @returns The CLI config.
    */
   public async getCliConfig(): Promise<CliConfig> {
-    const profile = await getBlueprintProfile()
-    if (profile) {
-      const project = this.flags?.project ?? this.flags?.['project-id']
-      return {
-        api: {
-          dataset:
-            !project || !profile.projectId || project === profile.projectId
-              ? profile.dataset
-              : undefined,
-          projectId: profile.projectId,
-        },
-        app: profile.organizationId ? {organizationId: profile.organizationId} : undefined,
-      }
-    }
     const root = await this.getProjectRoot()
 
     debug(`Using project root`, root)
@@ -199,7 +184,7 @@ export abstract class SanityCommand<T extends typeof Command>
    */
   public async getProjectId(options?: {
     deprecatedFlagName?: string
-    fallback?: () => Promise<string | undefined>
+    fallback?: () => Promise<string>
   }): Promise<string> {
     const hasProjectFlag = this.ctor.flags != null && 'project' in this.ctor.flags
 
@@ -224,15 +209,6 @@ export abstract class SanityCommand<T extends typeof Command>
       if (deprecatedValue) return deprecatedValue
     }
 
-    const profile = await getBlueprintProfile()
-    if (profile) {
-      if (profile.projectId) return profile.projectId
-      throw new CLIError(
-        'Project ID is required in Blueprint mode. Pass `--project`, set SANITY_PROJECT_ID, or select a profile with a project using SANITY_BLUEPRINT_PROFILE.',
-        {exit: exitCodes.USAGE_ERROR},
-      )
-    }
-
     // Fall back to CLI config
     try {
       const config = await this.getCliConfig()
@@ -246,8 +222,7 @@ export abstract class SanityCommand<T extends typeof Command>
     // Offer interactive selection if a fallback was provided
     if (options?.fallback) {
       try {
-        const projectId = await options.fallback()
-        if (projectId !== undefined) return projectId
+        return await options.fallback()
       } catch (err) {
         if (!(err instanceof NonInteractiveError)) throw err
         // Non-interactive: throw with actionable suggestions
@@ -279,11 +254,6 @@ export abstract class SanityCommand<T extends typeof Command>
     if (getCliExecutionContext()) {
       throw new ProjectRootNotFoundError(
         'Project root resolution from the filesystem is disabled for programmatic invocations',
-      )
-    }
-    if (isBlueprintMode()) {
-      throw new ProjectRootNotFoundError(
-        'This command needs a local Sanity project. Run it from the project directory with SANITY_CLI_MODE=legacy.',
       )
     }
     return findProjectRoot(process.cwd())

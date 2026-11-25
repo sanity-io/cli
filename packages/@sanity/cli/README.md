@@ -4509,7 +4509,7 @@ EXAMPLES
 
 ## `sanity mcp configure`
 
-Configure Sanity MCP server for AI editors (Antigravity, Claude Code, Cline, Codex CLI, Cursor, Gemini CLI, GitHub Copilot CLI, MCPorter, OpenCode, VS Code, VS Code Insiders, Zed)
+Configure Sanity MCP server for AI editors (Antigravity, Claude Code, Cline, Codex CLI, Cursor, Gemini CLI, GitHub Copilot CLI, MCPorter, OpenCode, Pi, VS Code, VS Code Insiders, Zed)
 
 ```
 USAGE
@@ -4517,7 +4517,7 @@ USAGE
 
 DESCRIPTION
   Configure Sanity MCP server for AI editors (Antigravity, Claude Code, Cline, Codex CLI, Cursor, Gemini CLI, GitHub
-  Copilot CLI, MCPorter, OpenCode, VS Code, VS Code Insiders, Zed)
+  Copilot CLI, MCPorter, OpenCode, Pi, VS Code, VS Code Insiders, Zed)
 
 EXAMPLES
   Configure Sanity MCP server for detected AI editors
@@ -5084,8 +5084,8 @@ Create a new Sanity project
 
 ```
 USAGE
-  $ sanity projects create [PROJECTNAME] [--json] [--dataset <value>] [--dataset-visibility private|public]
-    [--organization <slug|id>] [-y]
+  $ sanity projects create [PROJECTNAME] [--json] [--dataset <value>] [--dataset-visibility private|public] [--logo
+    <path>] [--organization <slug|id>] [-y]
 
 ARGUMENTS
   [PROJECTNAME]  Name of the project to create
@@ -5096,6 +5096,8 @@ FLAGS
       --dataset=<value>              Create a dataset. Prompts for visibility unless specified or --yes used
       --dataset-visibility=<option>  Dataset visibility: public or private
                                      <options: private|public>
+      --logo=<path>                  Image file to use as the logo: PNG, JPEG, GIF, WebP, SVG, BMP, TIFF, HEIF or AVIF,
+                                     at most 5 MB
       --organization=<slug|id>       Organization to create the project in
 
 GLOBAL FLAGS
@@ -5120,6 +5122,10 @@ EXAMPLES
   Create a project with a private dataset named "staging"
 
     $ sanity projects create "My Project" --dataset=staging --dataset-visibility=private
+
+  Create a project with a logo
+
+    $ sanity projects create "My Project" --logo ./logo.png
 
   Create a project non-interactively with JSON output
 
@@ -5361,7 +5367,7 @@ EXAMPLES
 
 ## `sanity skills install`
 
-Install Sanity agent skills for detected AI editors (Antigravity, Claude Code, Cline, Codex CLI, Cursor, Gemini CLI, GitHub Copilot CLI, OpenCode, VS Code, VS Code Insiders)
+Install Sanity agent skills for detected AI editors (Antigravity, Claude Code, Cline, Codex CLI, Cursor, Gemini CLI, GitHub Copilot CLI, OpenCode, Pi, VS Code, VS Code Insiders)
 
 ```
 USAGE
@@ -5369,7 +5375,7 @@ USAGE
 
 DESCRIPTION
   Install Sanity agent skills for detected AI editors (Antigravity, Claude Code, Cline, Codex CLI, Cursor, Gemini CLI,
-  GitHub Copilot CLI, OpenCode, VS Code, VS Code Insiders)
+  GitHub Copilot CLI, OpenCode, Pi, VS Code, VS Code Insiders)
 
 EXAMPLES
   Install Sanity agent skills for detected AI editors

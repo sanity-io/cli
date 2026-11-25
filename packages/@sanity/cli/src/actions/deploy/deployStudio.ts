@@ -73,9 +73,7 @@ async function runStudioDeployment(
   // and deployed like a hosted one, minus the upload.
   const isLegacyExternal = isExternal && !isWorkbenchApp
 
-  const appTitle = workbench
-    ? flags.title?.trim() || cliConfig.app?.title?.trim() || workbench.slug
-    : ''
+  const appTitle = workbench ? flags.title?.trim() || workbench.title : ''
 
   const isAutoUpdating = checkAutoUpdates(reporter, {cliConfig, flags})
 
@@ -94,12 +92,7 @@ async function runStudioDeployment(
         },
   )
 
-  await checkBlueprintManaged(reporter, {
-    id: appId,
-    kind: 'studio',
-    projectRootDir: workDir,
-    scope: projectId ? {id: projectId, type: 'project'} : undefined,
-  })
+  await checkBlueprintManaged(reporter, {kind: 'studio', projectRootDir: workDir})
 
   // Workbench studios deploy to Brett (which needs the org); plain studios
   // resolve/create on user-applications, unchanged.
@@ -252,6 +245,7 @@ async function runStudioDeployment(
         title: appTitle,
         version,
         visibility: workbench.visibility,
+        workDir,
         workspaces: toWorkspaces(studioManifest),
       })
       const url = getApplicationUrl({

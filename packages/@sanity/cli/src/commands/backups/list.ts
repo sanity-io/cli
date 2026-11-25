@@ -8,7 +8,6 @@ import {assertDatasetExists} from '../../actions/backup/assertDatasetExist.js'
 import {promptForProject} from '../../prompts/promptForProject.js'
 import {listBackups} from '../../services/backup.js'
 import {listDatasets} from '../../services/datasets.js'
-import {getBlueprintDataset} from '../../util/blueprintCliContext.js'
 import {Table} from '../../util/responsiveTable.js'
 import {getProjectIdFlag} from '../../util/sharedFlags.js'
 
@@ -81,8 +80,6 @@ export class ListBackupCommand extends SanityCommand<typeof ListBackupCommand> {
           requiredPermissions: [{grant: 'read', permission: 'sanity.project.datasets'}],
         }),
     })
-
-    dataset ||= await getBlueprintDataset(projectId)
 
     let datasets: DatasetsResponse
 

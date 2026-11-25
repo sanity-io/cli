@@ -97,9 +97,7 @@ export class MediaDeployAspectCommand extends SanityCommand<typeof MediaDeployAs
       this.error(NO_MEDIA_LIBRARY_ASPECTS_PATH, {exit: exitCodes.RUNTIME_ERROR})
     }
 
-    const projectId = await this.getProjectId({
-      fallback: () => promptForProject({}),
-    })
+    const projectId = await this.getProjectId({fallback: () => promptForProject({})})
 
     try {
       // Determine target media library

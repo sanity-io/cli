@@ -70,9 +70,7 @@ export class MediaExportCommand extends SanityCommand<typeof MediaExportCommand>
     const {args, flags} = await this.parse(MediaExportCommand)
     const {destination: targetDestination} = args
 
-    const projectId = await this.getProjectId({
-      fallback: () => promptForProject({}),
-    })
+    const projectId = await this.getProjectId({fallback: () => promptForProject({})})
 
     const projectClient = await getProjectCliClient({
       apiVersion: 'v2025-02-19',

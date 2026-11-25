@@ -1,7 +1,5 @@
 import {randomUUID} from 'node:crypto'
-import {resolve} from 'node:path'
 
-import {type BlueprintDatasetResource} from '@sanity/blueprints'
 import {DEFAULT_BLUEPRINTS_API_VERSION} from '@sanity/blueprints/resolve'
 import {type Output} from '@sanity/cli-core'
 import {getGlobalCliClient} from '@sanity/cli-core/apiClient'
@@ -9,25 +7,20 @@ import {initializeBlueprintWorkspace, JSON_BLUEPRINT_CONTENT} from '@sanity/cli-
 
 export async function initBlueprint({
   datasetName,
-  datasetResource,
   output,
   outputPath,
   projectId,
-  showProfileSetup = true,
 }: {
   datasetName: string
-  datasetResource?: BlueprintDatasetResource
   output: Pick<Output, 'log'>
   outputPath: string
   projectId: string
-  showProfileSetup?: boolean
 }) {
   const {blueprintPath, config, configPath} = await initializeBlueprintWorkspace({
     blueprintExtension: 'json',
     jsonContent: {
       ...JSON_BLUEPRINT_CONTENT,
       $schema: 'https://schemas.sanity.io/blueprints/v2024-10-01/blueprint.schema.json',
-      resources: datasetResource ? [datasetResource] : [],
       values: {dataset: datasetName},
     },
     outputPath,
@@ -66,29 +59,6 @@ export async function initBlueprint({
 
   output.log(`Created ${blueprintPath}`)
   output.log(`Connected the Blueprint to Stack ${stackId} in project ${projectId}.`)
-  if (datasetResource)
-    output.log(
-      `The Blueprint declares dataset "${datasetName}". Deploy the Blueprint to create it.`,
-    )
-  if (showProfileSetup) {
-    const profile = projectId.toLowerCase()
-    const manifest = quoteShellArg(resolve(blueprintPath))
-    output.log(
-      `Save a Blueprint profile with \`sanity blueprints profiles set ${profile} --project ${quoteShellArg(projectId)} --dataset ${quoteShellArg(datasetName)} --stack ${quoteShellArg(stackId)} --path ${manifest}\`.`,
-    )
-    output.log(`Set SANITY_BLUEPRINT_PROFILE=${profile} to use the profile from any directory.`)
-  } else {
-    output.log(`From ${outputPath}, run \`npx @sanity/cli blueprints plan\` to review changes.`)
-  }
-  return {
-    blueprintPath,
-    configPath,
-    dataset: datasetName,
-    projectId,
-    stackId,
-  }
-}
-
-function quoteShellArg(value: string): string {
-  return /^[\w./:@=,-]+$/.test(value) ? value : `'${value.replaceAll("'", String.raw`'\''`)}'`
+  output.log(`From ${outputPath}, run \`npx @sanity/cli blueprints plan\` to review changes.`)
+  return {blueprintPath, configPath, dataset: datasetName, projectId, stackId}
 }

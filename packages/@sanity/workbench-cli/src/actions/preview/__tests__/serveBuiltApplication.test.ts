@@ -72,7 +72,7 @@ describe('serveBuiltApplication', () => {
     expect(server).toMatchObject({host: 'localhost', port: 4009})
   })
 
-  test("serves the app's icon at its path, with its Content-Type, as Dashboard requests it", async () => {
+  test('serves each icon at its path, with its Content-Type, as Dashboard requests it', async () => {
     const {preview} = await vi.importActual<typeof import('vite')>('vite')
     mockPreview.mockImplementationOnce(preview)
     const workDir = await mkdtemp(join(tmpdir(), 'preview-icon-'))
@@ -83,7 +83,10 @@ describe('serveBuiltApplication', () => {
     const server = await serve({
       cacheDir: join(workDir, '.sanity/vite'),
       httpPort: 0,
-      icon: {contentType: 'image/png', image, path: '/public/icon.png'},
+      icons: [
+        {contentType: 'image/png', image, path: '/public/icon.png'},
+        {contentType: 'image/svg+xml', image: Buffer.from('<svg/>'), path: '/feed.svg'},
+      ],
       outDir: join(workDir, 'dist'),
       workDir,
     })
@@ -95,6 +98,9 @@ describe('serveBuiltApplication', () => {
     expect(response.status).toBe(200)
     expect(response.headers.get('content-type')).toBe('image/png')
     expect(Buffer.from(await response.arrayBuffer())).toEqual(image)
+    const viewResponse = await fetch(`http://localhost:${server.port}/feed.svg`)
+    expect(viewResponse.headers.get('content-type')).toBe('image/svg+xml')
+    expect(await viewResponse.text()).toBe('<svg/>')
   })
 
   test('close shuts the http server down', async () => {

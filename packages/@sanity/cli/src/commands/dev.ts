@@ -6,7 +6,6 @@ import {isWorkbenchApp} from '@sanity/workbench-cli'
 
 import {devAction} from '../actions/dev/devAction.js'
 import {devDebug} from '../actions/dev/devDebug.js'
-import {requireLocalConfig} from '../util/blueprintCliContext.js'
 import {determineIsApp} from '../util/determineIsApp.js'
 
 /**
@@ -50,13 +49,14 @@ export class DevCommand extends SanityCommand<typeof DevCommand> {
   public async run(): Promise<{close?: () => Promise<void>}> {
     const {flags} = await this.parse(DevCommand)
 
-    const workDir = (await requireLocalConfig(() => this.getProjectRoot(), 'Studio or app'))
-      .directory
+    const workDir = (await this.getProjectRoot()).directory
     const cliConfig = await this.getCliConfig()
     const isApp = determineIsApp(cliConfig)
 
     if (shouldWarnDashboardFlagIgnored(cliConfig, flags['load-in-dashboard'])) {
-      this.output.warn('Ignoring --load-in-dashboard: this app already runs in the local Dashboard')
+      this.output.warn(
+        'Apps using `defineApplication` always run in the local Dashboard. Remove the --load-in-dashboard flag from your command.',
+      )
     }
 
     // load-in-dashboard is defaulted to true for apps.

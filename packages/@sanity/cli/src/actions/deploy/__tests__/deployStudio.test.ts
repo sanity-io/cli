@@ -187,6 +187,7 @@ describe('deployStudio (federated studio)', () => {
     expect(mockDeployWorkbenchApp).toHaveBeenCalledWith(
       expect.objectContaining({
         icon: expect.objectContaining({contentType: 'image/png', image: Buffer.from('png bytes')}),
+        workDir,
       }),
     )
   })

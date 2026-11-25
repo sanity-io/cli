@@ -413,6 +413,33 @@ describe('extractGraphQLAPIsWorker', () => {
   })
 
   describe('happy path', () => {
+    test('omits Studio release types from the GraphQL schema', async () => {
+      const createSchema = vi.fn().mockReturnValue({getTypeNames: () => ['document']})
+      const deps = createMockDeps({
+        resolveLocalPackage: vi.fn().mockResolvedValue({
+          createSchema,
+          RELEASE_DOCUMENT_TYPE: 'system.release',
+        }),
+      })
+      const post = {name: 'post', type: 'document'}
+      mockResolveGraphQLApis.mockReturnValue([
+        {
+          dataset: 'production',
+          projectId: 'test-project',
+          schemaTypes: [
+            post,
+            {name: 'system.release', type: 'document'},
+            {name: 'sanity.releaseMetadata', type: 'object'},
+          ],
+        },
+      ])
+      mockExtractFromSanitySchema.mockReturnValue({interfaces: [], types: []})
+
+      await extractGraphQLAPIsWorker(createMockPort(), createWorkerData(), deps)
+
+      expect(createSchema).toHaveBeenLastCalledWith({name: 'default', types: [post]})
+    })
+
     test('posts extracted APIs on success', async () => {
       const port = createMockPort()
 

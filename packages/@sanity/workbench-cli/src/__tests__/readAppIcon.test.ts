@@ -29,12 +29,12 @@ test('reads the image at a path relative to the project root', async () => {
 
 test('rejects a path outside the project directory', async () => {
   await expect(readAppIcon(workDir, '../icon.png')).rejects.toThrow(
-    'App icon "../icon.png" is outside the project directory. Move the image into the project and update `app.icon` in sanity.cli.ts.',
+    'Icon "../icon.png" is outside the project directory. Move the image into the project and update the icon path in sanity.cli.ts.',
   )
 })
 
 test('names the icon path when the image cannot be used', async () => {
   await expect(readAppIcon(workDir, './icon.psd')).rejects.toThrow(
-    `Can't use app icon "./icon.psd": "${join(workDir, 'icon.psd')}" isn't a supported image type.`,
+    `Can't use icon "./icon.psd": "${join(workDir, 'icon.psd')}" isn't a supported image type.`,
   )
 })

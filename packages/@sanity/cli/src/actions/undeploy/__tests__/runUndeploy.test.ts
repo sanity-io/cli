@@ -86,28 +86,6 @@ describe('runUndeploy dry run', () => {
     expect(output.error).not.toHaveBeenCalled()
   })
 
-  test('reports the Blueprint check for an ID the legacy adapter cannot find', async () => {
-    const output = mockOutput()
-    const message = 'Blueprint Stack "Preview" manages studio "app-1".'
-    const undeploy = vi.fn()
-    await runUndeploy(
-      {
-        ...options(output, {'dry-run': true}),
-        checkTarget: async () => ({exitCode: exitCodes.USAGE_ERROR, message, status: 'fail'}),
-      },
-      adapter({
-        resolveTarget: async () => ({message: 'Application not found', type: 'none'}),
-        undeploy,
-      }),
-    )
-
-    expect(output.log).toHaveBeenCalledWith(expect.stringContaining(message))
-    expect(output.error).toHaveBeenCalledWith('Undeploy blocked by failing checks.', {
-      exit: exitCodes.USAGE_ERROR,
-    })
-    expect(undeploy).not.toHaveBeenCalled()
-  })
-
   test('a resolve failure blocks the plan and exits like a real run', async () => {
     const output = mockOutput()
     await runUndeploy(

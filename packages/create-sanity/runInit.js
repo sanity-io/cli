@@ -56,7 +56,9 @@ async function installCli(version) {
           '--no-audit',
           '--no-fund',
           '--loglevel=error',
-          '--prefer-offline',
+          // A newly published CLI pin can be missing from npm's cached metadata.
+          '--prefer-online',
+          '--no-prefer-offline',
           `@sanity/cli@${version}`,
         ],
         {

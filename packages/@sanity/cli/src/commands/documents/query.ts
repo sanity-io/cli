@@ -9,9 +9,9 @@ import {
 import {getCliExecutionContext} from '@sanity/cli-core/executionContext'
 
 import {DOCUMENTS_API_VERSION} from '../../actions/documents/constants.js'
+import {resolveCommandTarget} from '../../actions/targets/resolveCommandTarget.js'
 import {promptForProject} from '../../prompts/promptForProject.js'
-import {datasetRequiredMessage, getBlueprintDataset} from '../../util/blueprintCliContext.js'
-import {getDatasetFlag, getProjectIdFlag} from '../../util/sharedFlags.js'
+import {getDatasetFlag, getProjectIdFlag, getWithBlueprintsFlag} from '../../util/sharedFlags.js'
 
 const queryDocumentDebug = subdebug('documents:query')
 
@@ -50,6 +50,7 @@ export class QueryDocumentCommand extends SanityCommand<typeof QueryDocumentComm
   static override flags = {
     ...getProjectIdFlag({description: 'Project ID to query', semantics: 'override'}),
     ...getDatasetFlag({description: 'Dataset to query', semantics: 'override'}),
+    ...getWithBlueprintsFlag(),
     anonymous: Flags.boolean({
       default: false,
       description: 'Send the query without any authorization token',
@@ -70,23 +71,17 @@ export class QueryDocumentCommand extends SanityCommand<typeof QueryDocumentComm
     const {query} = args
     const {anonymous, 'api-version': apiVersion, dataset, pretty} = flags
 
-    const cliConfig = await this.tryGetCliConfig()
-    const projectId = await this.getProjectId({
-      fallback: () => promptForProject({}),
-    })
+    const {dataset: targetDataset, projectId} = flags['with-blueprints']
+      ? await resolveCommandTarget({
+          dataset,
+          loadCliConfig: () => this.tryGetCliConfig(),
+          needsDataset: true,
+          project: flags.project,
+          unattended: this.isUnattended(),
+        })
+      : await this.resolveClassicTarget(dataset)
 
     const requireUser = !anonymous
-
-    const targetDataset =
-      dataset || cliConfig.api?.dataset || (await getBlueprintDataset(projectId))
-    if (!targetDataset) {
-      this.error(
-        datasetRequiredMessage(
-          'Dataset is required. Pass it with `--dataset <name>` or configure it in `sanity.cli.ts`.',
-        ),
-        {exit: exitCodes.USAGE_ERROR},
-      )
-    }
 
     const configuredApiVersion =
       apiVersion ??
@@ -129,5 +124,20 @@ export class QueryDocumentCommand extends SanityCommand<typeof QueryDocumentComm
 
       this.error(`${errorMsg}\nQuery: ${query}`, {exit: exitCodes.RUNTIME_ERROR})
     }
+  }
+
+  private async resolveClassicTarget(datasetFlag?: string) {
+    const cliConfig = await this.tryGetCliConfig()
+    const projectId = await this.getProjectId({fallback: () => promptForProject({})})
+    const dataset = datasetFlag || cliConfig.api?.dataset
+
+    if (!dataset) {
+      this.error(
+        'Dataset is required. Pass it with `--dataset <name>` or configure it in `sanity.cli.ts`.',
+        {exit: exitCodes.USAGE_ERROR},
+      )
+    }
+
+    return {dataset, projectId}
   }
 }

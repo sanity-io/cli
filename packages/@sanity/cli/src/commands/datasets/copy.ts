@@ -9,7 +9,6 @@ import {getCliExecutionContext} from '@sanity/cli-core/executionContext'
 import {SanityCommand} from '@sanity/cli-core/SanityCommand'
 import {spinner} from '@sanity/cli-core/ux'
 
-import {getBlueprintForProject} from '../../actions/blueprints/prepareResource.js'
 import {validateDatasetName} from '../../actions/dataset/validateDatasetName.js'
 import {promptForDataset} from '../../prompts/promptForDataset.js'
 import {promptForDatasetName} from '../../prompts/promptForDatasetName.js'
@@ -161,14 +160,6 @@ export class CopyDatasetCommand extends SanityCommand<typeof CopyDatasetCommand>
 
     if (flags.attach) {
       return this.handleAttachMode(projectId, flags.attach)
-    }
-
-    const blueprint = await getBlueprintForProject(projectId)
-    if (blueprint) {
-      return this.output.error(
-        `Dataset copy creates a new dataset. Declare the destination in ${blueprint.path ?? 'your Blueprint manifest'} and deploy the Blueprint, then use \`sanity datasets export\` and \`sanity datasets import\` to copy its content.`,
-        {exit: exitCodes.USAGE_ERROR},
-      )
     }
 
     return this.handleCopyMode(projectId, args, flags)

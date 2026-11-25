@@ -8,7 +8,6 @@ import {exitCodes, SanityCommand} from '@sanity/cli-core'
 import {deploySchemas} from '../../actions/schema/deploySchemas.js'
 import {schemasDeployDebug} from '../../actions/schema/utils/debug.js'
 import {parseTag} from '../../actions/schema/utils/schemaStoreValidation.js'
-import {requireLocalConfig} from '../../util/blueprintCliContext.js'
 import {defineCommandTelemetry} from '../../util/telemetry/commandTelemetry.js'
 
 const description = `
@@ -77,7 +76,7 @@ export class DeploySchemaCommand extends SanityCommand<typeof DeploySchemaComman
     const {tag, workspace} = flags
 
     try {
-      const workDir = (await requireLocalConfig(() => this.getProjectRoot(), 'Studio')).directory
+      const workDir = (await this.getProjectRoot()).directory
 
       await deploySchemas({
         tag,

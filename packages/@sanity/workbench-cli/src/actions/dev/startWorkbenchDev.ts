@@ -2,7 +2,7 @@ import {styleText} from 'node:util'
 
 import {type CliConfig, type Output} from '@sanity/cli-core'
 
-import {isWorkbenchApp} from '../../defineApp.js'
+import {isWorkbenchApp, resolveAppTitle} from '../../defineApp.js'
 import {createServerLifecycle, toDisplayHost} from '../../util/serverOrchestration.js'
 import {formatSummary} from '../summary.js'
 import {type AppServerResult, startAppServerSupervisor} from './appServerSupervisor.js'
@@ -187,7 +187,7 @@ export async function startWorkbenchDev(
         heading: 'Sanity Dashboard ready',
         isApp,
         organization: organizationName ?? organizationId,
-        title: app?.title,
+        title: app && resolveAppTitle(app),
         url,
         version,
       }),

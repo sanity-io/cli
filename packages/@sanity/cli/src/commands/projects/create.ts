@@ -1,6 +1,5 @@
 import {Args, Flags} from '@oclif/core'
 import {CLIError} from '@oclif/core/errors'
-import {defineDataset, defineProject} from '@sanity/blueprints'
 import {exitCodes} from '@sanity/cli-core'
 import {subdebug} from '@sanity/cli-core/debug'
 import {getErrorMessage} from '@sanity/cli-core/errors'
@@ -9,11 +8,6 @@ import {SanityCommand} from '@sanity/cli-core/SanityCommand'
 import {confirm, spinner} from '@sanity/cli-core/ux'
 import {type DatasetResponse} from '@sanity/client'
 
-import {
-  blueprintResourceName,
-  getBlueprintForOrganization,
-  printBlueprintResource,
-} from '../../actions/blueprints/prepareResource.js'
 import {createDataset} from '../../actions/dataset/create.js'
 import {validateDatasetName} from '../../actions/dataset/validateDatasetName.js'
 import {getOrganization} from '../../actions/organizations/getOrganization.js'
@@ -24,13 +18,11 @@ import {promptForProjectName} from '../../prompts/promptForProjectName.js'
 import {listDatasets} from '../../services/datasets.js'
 import {getProjectFeatures} from '../../services/getProjectFeatures.js'
 import {
-  listOrganizations,
   type OrganizationCreateResponse,
   type ProjectOrganization,
 } from '../../services/organizations.js'
 import {createProject, type CreateProjectResult, setProjectLogo} from '../../services/projects.js'
 import {getCliUser} from '../../services/user.js'
-import {getBlueprintCliContext} from '../../util/blueprintCliContext.js'
 import {defineCommandTelemetry} from '../../util/telemetry/commandTelemetry.js'
 
 const debug = subdebug('projects:create')
@@ -122,53 +114,6 @@ export class CreateProjectCommand extends SanityCommand<typeof CreateProjectComm
       organization,
       yes,
     } = flags
-
-    const workspace = await getBlueprintCliContext()
-    if (workspace) {
-      const organizationId = organization || workspace.organizationId
-      if (!organizationId) {
-        this.error(
-          'Projects require an organization-scoped Blueprint. Pass `--organization` or select a profile with an organization.',
-        )
-      }
-      const selectedOrganization =
-        organization && organization !== workspace.organizationId
-          ? (await listOrganizations()).find(({slug}) => slug === organization)?.id
-          : undefined
-      const blueprint = await getBlueprintForOrganization(selectedOrganization || organizationId)
-      if (blueprint) {
-        if (logoPath !== undefined) {
-          this.error(
-            'Blueprints cannot set the project logo. Leave out `--logo` and set the logo after deployment.',
-          )
-        }
-        const displayName =
-          projectName ||
-          (yes || this.isUnattended() ? 'My Sanity Project' : await promptForProjectName())
-        const project = defineProject({
-          displayName,
-          name: blueprintResourceName('project', displayName),
-        })
-        const resources = [project]
-        if (dataset) {
-          const declaredDataset = defineDataset({
-            aclMode: datasetVisibility === 'private' ? 'private' : 'public',
-            datasetName: dataset,
-            name: blueprintResourceName('dataset', `${project.name}/${dataset}`),
-            project: `$.resources.${project.name}.id`,
-          })
-          printBlueprintResource(
-            this.output,
-            blueprint.path,
-            [...resources, declaredDataset],
-            Boolean(flags.json),
-          )
-          return
-        }
-        printBlueprintResource(this.output, blueprint.path, resources, Boolean(flags.json))
-        return
-      }
-    }
 
     // Read the logo before creating anything, so a bad file doesn't leave a project without it.
     let logo: ImageFile | undefined

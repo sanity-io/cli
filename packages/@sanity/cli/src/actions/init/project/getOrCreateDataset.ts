@@ -1,4 +1,3 @@
-import {type BlueprintDatasetResource, defineDataset} from '@sanity/blueprints'
 import {subdebug} from '@sanity/cli-core'
 import {search, Separator} from '@sanity/cli-core/ux'
 
@@ -8,16 +7,12 @@ import {listDatasets} from '../../../services/datasets.js'
 import {getProjectFeatures} from '../../../services/getProjectFeatures.js'
 import {searchChoices, searchTheme} from '../../../util/searchChoices.js'
 import {createDataset} from '../../dataset/create.js'
-import {determineDatasetAclMode} from '../../dataset/determineDatasetAclMode.js'
-import {validateDatasetName} from '../../dataset/validateDatasetName.js'
-import {InitError} from '../initError.js'
 import {type InitContext} from '../types.js'
 
 const debug = subdebug('init')
 
 export async function getOrCreateDataset(opts: {
   dataset?: string
-  declareDataset?: boolean
   defaultConfig: boolean | undefined
   displayName: string
   output: InitContext['output']
@@ -27,7 +22,6 @@ export async function getOrCreateDataset(opts: {
   visibility?: string
 }): Promise<{
   datasetName: string
-  datasetResource?: BlueprintDatasetResource
   userAction: 'create' | 'none' | 'select'
 }> {
   const {dataset, visibility} = opts
@@ -38,51 +32,23 @@ export async function getOrCreateDataset(opts: {
     getProjectFeatures(opts.projectId),
   ])
 
-  async function provisionDataset(
-    datasetName: string,
-    forcePublic: boolean | undefined,
-    isUnattended?: boolean,
-  ) {
-    if (!opts.declareDataset) {
-      await createDataset({
-        datasetName,
-        forcePublic,
-        ...(isUnattended === undefined ? {} : {isUnattended}),
-        output: opts.output,
-        projectFeatures,
-        projectId: opts.projectId,
-        visibility,
-      })
-      return {datasetName, userAction: 'create' as const}
-    }
-
-    const error = validateDatasetName(datasetName)
-    if (error) throw new InitError(error, 2)
-    const aclMode =
-      visibility === 'private'
-        ? 'private'
-        : await determineDatasetAclMode({
-            canCreatePrivate: projectFeatures.includes('privateDataset') && !forcePublic,
-            isUnattended,
-            output: opts.output,
-            visibility,
-          })
-    return {
-      datasetName,
-      datasetResource: defineDataset({aclMode, datasetName, name: `dataset-${datasetName}`}),
-      userAction: 'create' as const,
-    }
-  }
-
   if (dataset) {
     debug('User has specified dataset through a flag (%s)', dataset)
     const existing = datasets.find((ds) => ds.name === dataset)
     if (!existing) {
       debug('Specified dataset not found, creating it')
-      return provisionDataset(dataset, defaultConfig, opts.unattended)
+      await createDataset({
+        datasetName: dataset,
+        forcePublic: defaultConfig,
+        isUnattended: opts.unattended,
+        output: opts.output,
+        projectFeatures,
+        projectId: opts.projectId,
+        visibility,
+      })
     }
 
-    return {datasetName: dataset, userAction: 'none'}
+    return {datasetName: dataset, userAction: existing ? 'none' : 'create'}
   }
 
   if (opts.unattended) {
@@ -90,9 +56,17 @@ export async function getOrCreateDataset(opts: {
     const datasetName = 'production'
     const existing = datasets.find((ds) => ds.name === datasetName)
     if (!existing) {
-      return provisionDataset(datasetName, visibility === undefined, true)
+      await createDataset({
+        datasetName,
+        forcePublic: visibility === undefined,
+        isUnattended: true,
+        output: opts.output,
+        projectFeatures,
+        projectId: opts.projectId,
+        visibility,
+      })
     }
-    return {datasetName, userAction: 'none'}
+    return {datasetName, userAction: existing ? 'none' : 'create'}
   }
 
   if (datasets.length === 0) {
@@ -105,7 +79,15 @@ export async function getOrCreateDataset(opts: {
       : await promptForDatasetName({
           message: 'Name of your first dataset:',
         })
-    return provisionDataset(name, defaultConfig)
+    await createDataset({
+      datasetName: name,
+      forcePublic: defaultConfig,
+      output: opts.output,
+      projectFeatures,
+      projectId: opts.projectId,
+      visibility,
+    })
+    return {datasetName: name, userAction: 'create'}
   }
 
   debug(`User has ${datasets.length} dataset(s) already, showing list of choices`)
@@ -114,7 +96,7 @@ export async function getOrCreateDataset(opts: {
   const selected = await search({
     message: 'Select dataset to use',
     source: searchChoices([
-      {name: opts.declareDataset ? 'Declare a new dataset' : 'Create new dataset', value: 'new'},
+      {name: 'Create new dataset', value: 'new'},
       new Separator(),
       ...datasetChoices,
     ]),
@@ -136,7 +118,15 @@ export async function getOrCreateDataset(opts: {
           },
           existingDatasetNames,
         )
-    return provisionDataset(newDatasetName, defaultConfig)
+    await createDataset({
+      datasetName: newDatasetName,
+      forcePublic: defaultConfig,
+      output: opts.output,
+      projectFeatures,
+      projectId: opts.projectId,
+      visibility,
+    })
+    return {datasetName: newDatasetName, userAction: 'create'}
   }
 
   debug(`Returning selected dataset (${selected})`)

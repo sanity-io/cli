@@ -1,4 +1,4 @@
-import {relative} from 'node:path'
+import {relative, resolve} from 'node:path'
 
 import {type CliConfig, getCliConfigUncached, type Output} from '@sanity/cli-core'
 import {type ViteDevServer} from 'vite'
@@ -80,6 +80,15 @@ function serverAddress(server: ViteDevServer) {
   }
 }
 
+function servedUrl(server: ViteDevServer, file: string): string {
+  // Vite serves `public/` at the root, and warns on every request for `/public/...`.
+  const {base, publicDir, root} = server.config
+  const inPublicDir = Boolean(publicDir) && !relative(publicDir, file).startsWith('..')
+  const {host, https, port} = serverAddress(server)
+
+  return `${https ? 'https' : 'http'}://${host}:${port}${base}${toUrlPath(inPublicDir ? publicDir : root, file)}`
+}
+
 /**
  * Register the dev server in the registry and watch its config for manifest +
  * interface changes. The workbench reads the entry to locate and render the
@@ -96,7 +105,10 @@ export async function startDevServerRegistration(
 
   // Forwarded alongside (not inside) the manifest so the workbench renders local
   // panels/workers and reads the configs without a deploy.
-  const interfaces = deriveInterfaces(cliConfig.app, {isApp})
+  const interfaces = deriveInterfaces(cliConfig.app, {
+    iconUrl: (iconPath) => servedUrl(server, resolve(workDir, iconPath)),
+    isApp,
+  })
   const configs = await deriveConfigs(cliConfig)
 
   const workbenchApp = isWorkbenchApp(cliConfig.app) ? cliConfig.app : undefined
@@ -160,16 +172,15 @@ export async function startDevServerRegistration(
       if (isApp && isWorkbenchApp(nextConfig.app) && nextConfig.app.icon) {
         // Read in full so an image a deploy would reject warns here, while editing.
         const {file} = await readAppIcon(workDir, nextConfig.app.icon)
-        // Vite serves `public/` at the root, and warns on every request for `/public/...`.
-        const {base, publicDir, root} = liveServer.config
-        const inPublicDir = Boolean(publicDir) && !relative(publicDir, file).startsWith('..')
-        const {host, https, port} = serverAddress(liveServer)
-        iconUrl = `${https ? 'https' : 'http'}://${host}:${port}${base}${toUrlPath(inPublicDir ? publicDir : root, file)}`
+        iconUrl = servedUrl(liveServer, file)
       }
 
       return {
         configs: await deriveConfigs(nextConfig),
-        interfaces: deriveInterfaces(nextConfig.app, {isApp}),
+        interfaces: deriveInterfaces(nextConfig.app, {
+          iconUrl: (iconPath) => servedUrl(liveServer, resolve(workDir, iconPath)),
+          isApp,
+        }),
         manifest: await extractManifest({...params, applicationId: id, iconUrl}),
       }
     },

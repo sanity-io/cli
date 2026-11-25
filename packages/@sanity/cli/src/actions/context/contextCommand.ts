@@ -1,6 +1,5 @@
 import {type Command} from '@oclif/core'
 import {CLIError} from '@oclif/core/errors'
-import {defineContextKnowledgeBase} from '@sanity/blueprints'
 import {exitCodes, SanityCommand, subdebug} from '@sanity/cli-core'
 import {getErrorMessage, JsonOutputError} from '@sanity/cli-core/errors'
 import {confirm} from '@sanity/cli-core/ux'
@@ -16,11 +15,6 @@ import {
   requestContext,
 } from '../../services/context.js'
 import {type CommandTelemetry} from '../../util/telemetry/commandTelemetry.js'
-import {
-  blueprintResourceName,
-  getBlueprintForOrganization,
-  printBlueprintResource,
-} from '../blueprints/prepareResource.js'
 import {
   type ContextCommandEntry,
   type ContextCommandId,
@@ -200,29 +194,6 @@ export function contextCommand(id: ContextCommandId) {
         request = buildOperationRequest(operation, entry, {args, flags: values, organizationId})
       } catch (error) {
         this.error(getErrorMessage(error), {exit: exitCodes.USAGE_ERROR})
-      }
-      if (entry.id === 'context create' && organizationId) {
-        const blueprint = await getBlueprintForOrganization(organizationId)
-        if (blueprint) {
-          const title = stringValue(request.body ?? {}, 'title')
-          const description = stringValue(request.body ?? {}, 'description')
-          if (!title || description === undefined) {
-            this.error(
-              'A Blueprint knowledge base requires a title and description. Pass `--title` and `--description`.',
-            )
-          }
-          printBlueprintResource(
-            this.output,
-            blueprint.path,
-            defineContextKnowledgeBase({
-              description,
-              name: blueprintResourceName('knowledge-base', title),
-              title,
-            }),
-            Boolean(this.flags.json),
-          )
-          return
-        }
       }
       await this.guard(args, request.body)
       if (operation.route.startsWith('DELETE ')) await this.confirmDeletion(args, values)

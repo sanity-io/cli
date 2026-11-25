@@ -30,4 +30,3 @@ export {
   getWorkbenchUrl,
   listApplications,
 } from '../services/applications.js'
-export {listConfigs} from '../services/installations.js'

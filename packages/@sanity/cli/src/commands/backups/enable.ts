@@ -5,13 +5,11 @@ import {exitCodes, SanityCommand, subdebug} from '@sanity/cli-core'
 import {type DatasetsResponse} from '@sanity/client'
 
 import {assertDatasetExists} from '../../actions/backup/assertDatasetExist.js'
-import {getBlueprintForProject} from '../../actions/blueprints/prepareResource.js'
 import {NEW_DATASET_VALUE, promptForDataset} from '../../prompts/promptForDataset.js'
 import {promptForDatasetName} from '../../prompts/promptForDatasetName.js'
 import {promptForProject} from '../../prompts/promptForProject.js'
 import {setBackup} from '../../services/backup.js'
 import {createDataset, listDatasets} from '../../services/datasets.js'
-import {getBlueprintDataset} from '../../util/blueprintCliContext.js'
 import {getProjectIdFlag} from '../../util/sharedFlags.js'
 
 const enableBackupDebug = subdebug('backup:enable')
@@ -60,8 +58,6 @@ export class EnableBackupCommand extends SanityCommand<typeof EnableBackupComman
         }),
     })
 
-    dataset ||= await getBlueprintDataset(projectId)
-
     let datasets: DatasetsResponse
 
     try {
@@ -85,8 +81,7 @@ export class EnableBackupCommand extends SanityCommand<typeof EnableBackupComman
         exit: exitCodes.USAGE_ERROR,
       })
     } else {
-      const blueprint = await getBlueprintForProject(projectId)
-      dataset = await promptForDataset({allowCreation: !blueprint, datasets})
+      dataset = await promptForDataset({allowCreation: true, datasets})
 
       if (dataset === NEW_DATASET_VALUE) {
         const newDatasetName = await promptForDatasetName({

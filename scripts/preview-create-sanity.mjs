@@ -1,7 +1,7 @@
 /* eslint-disable no-console */
 import {createHash} from 'node:crypto'
 import {once} from 'node:events'
-import {mkdir, mkdtemp, readdir, readFile, rm, stat} from 'node:fs/promises'
+import {mkdtemp, readdir, readFile, rm, stat} from 'node:fs/promises'
 import {createServer} from 'node:http'
 import {tmpdir} from 'node:os'
 import {join} from 'node:path'
@@ -9,8 +9,6 @@ import {createInterface} from 'node:readline'
 import {fileURLToPath} from 'node:url'
 
 import {execa} from 'execa'
-
-import {packWorkspacePackage, writeShrinkwrap} from './npm-shrinkwrap.mjs'
 
 const root = fileURLToPath(new URL('../', import.meta.url))
 const registryHost = 'https://registry.npmjs.org'
@@ -71,7 +69,7 @@ async function servePackage(request, response) {
   )
 }
 
-async function register(manifest, archive, {locked = false} = {}) {
+async function register(manifest, archive) {
   const bytes = await readFile(archive)
   const filename = `${manifest.name.split('/').at(-1)}-${manifest.version}.tgz`
   const tarball = `${registryUrl}/${manifest.name}/-/${filename}`
@@ -80,7 +78,6 @@ async function register(manifest, archive, {locked = false} = {}) {
     filename,
     manifest: {
       ...manifest,
-      ...(locked ? {_hasShrinkwrap: true} : {}),
       dist: {
         integrity: `sha512-${createHash('sha512').update(bytes).digest('base64')}`,
         shasum: createHash('sha1').update(bytes).digest('hex'),
@@ -90,26 +87,14 @@ async function register(manifest, archive, {locked = false} = {}) {
   })
 }
 
-async function pack(name, {lock = false} = {}) {
+async function pack(name) {
   const key = name.split('/').at(-1)
   const archive = join(staging, `${key}.tgz`)
-  const manifest = await packWorkspacePackage(join(root, 'packages', name), archive)
-  if (!lock) {
-    await register(manifest, archive)
-    return
-  }
-
-  const extracted = join(staging, key)
-  await mkdir(extracted)
-  await execa('tar', ['-xf', archive, '-C', extracted])
-  const directory = join(extracted, 'package')
-  await writeShrinkwrap(manifest, join(directory, 'npm-shrinkwrap.json'), {env: npmEnv})
-  const {stdout} = await execa(
-    'npm',
-    ['pack', '--ignore-scripts', '--pack-destination', extracted, '--json'],
-    {cwd: directory, env: npmEnv},
-  )
-  await register(manifest, join(extracted, JSON.parse(stdout)[0].filename), {locked: true})
+  await execa('pnpm', ['--config.ignore-scripts=true', 'pack', '--out', archive], {
+    cwd: join(root, 'packages', name),
+  })
+  const {stdout} = await execa('tar', ['-xOf', archive, 'package/package.json'])
+  await register(JSON.parse(stdout), archive)
 }
 
 async function runInitializer(args) {
@@ -179,9 +164,9 @@ registry.listen(0, '127.0.0.1')
 await once(registry, 'listening')
 const registryUrl = `http://127.0.0.1:${registry.address().port}`
 const npmEnv = {
-  npm_config_cache: join(staging, 'lock-npm-cache'),
   npm_config_registry: registryUrl,
-  npm_config_replace_registry_host: 'never',
+  // npm 12 checks that registry tarballs resolve through the configured registry.
+  npm_config_replace_registry_host: 'npmjs',
   XDG_CACHE_HOME: join(staging, 'deferred-cli-cache'),
 }
 
@@ -195,7 +180,7 @@ try {
   ])
     await pack(name)
   await pack('@sanity/cli')
-  await pack('create-sanity', {lock: true})
+  await pack('create-sanity')
 
   const args = process.argv.slice(process.argv[2] === '--' ? 3 : 2)
   if (args.length > 0) {
@@ -204,7 +189,7 @@ try {
     console.log(`Preview registry: ${registryUrl}`)
     console.log('Run from an empty directory in a second terminal:')
     console.log(
-      `XDG_CACHE_HOME=${JSON.stringify(npmEnv.XDG_CACHE_HOME)} npm_config_registry=${registryUrl} npm_config_replace_registry_host=never npm_config_cache="$(mktemp -d)" npm create --yes sanity@blueprints -- --with-blueprints --yes --project "$PROJECT_ID" --dataset production`,
+      `XDG_CACHE_HOME=${JSON.stringify(npmEnv.XDG_CACHE_HOME)} npm_config_registry=${registryUrl} npm_config_replace_registry_host=npmjs npm_config_cache="$(mktemp -d)" npm create --yes sanity@blueprints -- --with-blueprints --yes --project "$PROJECT_ID" --dataset production`,
     )
     console.log('Press Ctrl-C to stop the preview registry.')
     await Promise.race([once(process, 'SIGINT'), once(process, 'SIGTERM')])

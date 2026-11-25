@@ -14,7 +14,6 @@ import {promptForDataset} from '../../prompts/promptForDataset.js'
 import {promptForProject} from '../../prompts/promptForProject.js'
 import {listDatasets} from '../../services/datasets.js'
 import {absolutify} from '../../util/absolutify.js'
-import {getBlueprintDataset} from '../../util/blueprintCliContext.js'
 import {getProjectIdFlag} from '../../util/sharedFlags.js'
 
 const noop = () => null
@@ -142,7 +141,7 @@ export class DatasetExportCommand extends SanityCommand<typeof DatasetExportComm
       try {
         // Get default dataset from config (only available when running from a project directory)
         const cliConfig = await this.tryGetCliConfig()
-        defaultDataset = cliConfig.api?.dataset || (await getBlueprintDataset(projectId))
+        defaultDataset = cliConfig.api?.dataset
       } catch (error) {
         exportDebug('Error selecting dataset', error)
         this.error(`Failed to select dataset:\n${error instanceof Error ? error.message : error}`, {

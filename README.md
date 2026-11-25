@@ -14,19 +14,6 @@ The CLI provides:
 
 For the Sanity Studio and related tools, see the [sanity monorepo](https://github.com/sanity-io/sanity).
 
-## Blueprint profiles
-
-Save a profile once, then select it from any directory.
-
-```sh
-sanity blueprints profiles set preview --project abc123 --dataset preview
-SANITY_BLUEPRINT_PROFILE=preview sanity datasets list
-```
-
-Add `--organization`, `--stack`, or `--path` when you want the profile to identify an organization, a Stack, or a local Blueprint manifest. Profiles are saved in `~/.config/sanity/blueprints/` or `~/.config/sanity-staging/blueprints/` for staging. Run `sanity debug` with the profile selected to see the active target.
-
-For CI or a one-off command, set `SANITY_CLI_MODE=blueprints` and supply the target flags or process environment variables. Blueprint mode gets its targets from flags, then environment variables, then the selected profile. Studio commands that build or serve a local project use the project-pinned CLI. Set `SANITY_CLI_MODE=legacy` to run those commands while a profile is selected.
-
 ## Technical implementation
 
 We're trying out oclif as the CLI framework. It implements a lot of common CLI patterns, and means we can reuse a lot of the existing code.

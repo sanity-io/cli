@@ -21,7 +21,6 @@ import {
   getCurrentSchemaProps,
   validateGraphQLAPI,
 } from '../../services/graphql.js'
-import {requireLocalConfig} from '../../util/blueprintCliContext.js'
 import {getDatasetFlag} from '../../util/sharedFlags.js'
 
 interface DeployTask {
@@ -112,7 +111,7 @@ export class GraphQLDeployCommand extends SanityCommand<typeof GraphQLDeployComm
       'with-union-cache': withUnionCache,
     } = flags
 
-    const workDir = (await requireLocalConfig(() => this.getProjectRoot(), 'Studio')).directory
+    const workDir = (await this.getProjectRoot()).directory
 
     let apiDefs: ExtractedGraphQLAPI[] = []
     let spin: ReturnType<typeof spinner>

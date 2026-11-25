@@ -1,15 +1,10 @@
 import {Args, Flags} from '@oclif/core'
 import {type FlagInput} from '@oclif/core/interfaces'
-import {defineContextMcpEndpoint} from '@sanity/blueprints'
 import {exitCodes, SanityCommand, subdebug} from '@sanity/cli-core'
 import {getErrorMessage} from '@sanity/cli-core/errors'
 import {requiredWhenUnattended} from '@sanity/cli-core/flags'
 import {spinner} from '@sanity/cli-core/ux'
 
-import {
-  getBlueprintForOrganization,
-  printBlueprintResource,
-} from '../../../actions/blueprints/prepareResource.js'
 import {
   datasetSourceId,
   editSources,
@@ -130,8 +125,7 @@ export class CreateMcpEndpointCommand extends SanityCommand<typeof CreateMcpEndp
     } = this.flags
 
     const cliConfig = await this.tryGetCliConfig()
-    const projectId = project ?? cliConfig.api?.projectId
-    const datasetId = datasetSourceId(dataset, projectId)
+    const datasetId = datasetSourceId(dataset, project ?? cliConfig.api?.projectId)
 
     const organizationId = await resolveOrganizationId({
       configuredOrganizationId: cliConfig.app?.organizationId,
@@ -140,28 +134,21 @@ export class CreateMcpEndpointCommand extends SanityCommand<typeof CreateMcpEndp
     })
 
     const title = titleFlag || (await promptForText('MCP endpoint title:'))
-    const payload = {
-      groqFilter,
-      instructions,
-      name,
-      sources: editSources([], {
-        addKnowledgeBases: knowledgeBaseIds,
-        dataset: datasetId,
-        removeKnowledgeBases: [],
-        settings: {perspective, semanticSearch, workspace},
-      }).sources,
-      title,
-    }
-
-    const blueprint = await getBlueprintForOrganization(organizationId)
-    if (blueprint) {
-      printBlueprintResource(this.output, blueprint.path, defineContextMcpEndpoint(payload))
-      return
-    }
 
     const spin = spinner('Creating MCP endpoint').start()
     try {
-      const endpoint = await createMcpEndpoint(organizationId, payload)
+      const endpoint = await createMcpEndpoint(organizationId, {
+        groqFilter,
+        instructions,
+        name,
+        sources: editSources([], {
+          addKnowledgeBases: knowledgeBaseIds,
+          dataset: datasetId,
+          removeKnowledgeBases: [],
+          settings: {perspective, semanticSearch, workspace},
+        }).sources,
+        title,
+      })
       spin.succeed('MCP endpoint created')
       for (const line of formatMcpEndpoint(endpoint)) {
         this.log(line)

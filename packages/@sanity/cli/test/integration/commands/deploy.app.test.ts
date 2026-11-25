@@ -758,6 +758,62 @@ describe('#deploy app', () => {
     )
   })
 
+  test('an untitled app deploys with its slug in start case as the title', async () => {
+    const cwd = await testFixture('basic-app')
+    process.cwd = () => cwd
+
+    mockApi({apiVersion: 'vX', uri: '/applications/app_existing'}).reply(200, {
+      id: 'app_existing',
+      organizationId,
+      slug: 'drop-desk-host',
+      title: 'Workbench App',
+      type: 'coreApp',
+    })
+
+    const app = defineApplication({entry: './src/App.tsx', organizationId, slug: 'drop-desk-host'})
+
+    const {error, stdout} = await testCommand(DeployCommand, [], {
+      config: {root: cwd},
+      mocks: {cliConfig: {app, deployment: {appId: 'app_existing'}}},
+    })
+
+    if (error) throw error
+    expect(mockDeployWorkbenchApp).toHaveBeenCalledWith(
+      expect.objectContaining({title: 'Drop Desk Host'}),
+    )
+    expect(stdout).toContain('Updated Drop Desk Host.')
+  })
+
+  test('--title wins over the app title from config', async () => {
+    const cwd = await testFixture('basic-app')
+    process.cwd = () => cwd
+
+    mockApi({apiVersion: 'vX', uri: '/applications/app_existing'}).reply(200, {
+      id: 'app_existing',
+      organizationId,
+      slug: 'drop-desk-host',
+      title: 'Workbench App',
+      type: 'coreApp',
+    })
+
+    const app = defineApplication({
+      entry: './src/App.tsx',
+      organizationId,
+      slug: 'drop-desk-host',
+      title: 'Workbench App',
+    })
+
+    const {error} = await testCommand(DeployCommand, ['--title', 'Flag Title'], {
+      config: {root: cwd},
+      mocks: {cliConfig: {app, deployment: {appId: 'app_existing'}}},
+    })
+
+    if (error) throw error
+    expect(mockDeployWorkbenchApp).toHaveBeenCalledWith(
+      expect.objectContaining({title: 'Flag Title'}),
+    )
+  })
+
   describe('without a configured appId', () => {
     const app = defineApplication({
       entry: './src/App.tsx',
@@ -1035,7 +1091,7 @@ describe('#deploy app', () => {
     })
 
     expect(error).toBeInstanceOf(Error)
-    expect(error?.message).toContain('Can\'t use app icon "./missing-icon.svg"')
+    expect(error?.message).toContain('Can\'t use icon "./missing-icon.svg"')
     // The icon is read before the app is created, so a bad path fails fast.
     expect(mockCreateCoreApp).not.toHaveBeenCalled()
     expect(mockDeployWorkbenchApp).not.toHaveBeenCalled()

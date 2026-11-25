@@ -91,7 +91,6 @@ export async function initAction(options: InitOptions, context: InitContext) {
   })
   const isNextJs = detectedFramework?.slug === 'nextjs'
   const isBlueprint = options.withBlueprints === true
-  const useBlueprintDeclarations = isBlueprint && !options.fromCreate
   if (isBlueprint && (options.outputPath || options.unattended)) {
     checkBlueprintDestination(options.outputPath || workDir)
   }
@@ -178,7 +177,7 @@ export async function initAction(options: InitOptions, context: InitContext) {
     newProject = await createProjectFromName({
       coupon: options.coupon,
       createProjectName: options.projectName,
-      dataset: useBlueprintDeclarations ? undefined : options.dataset,
+      dataset: options.dataset,
       organization: options.organization,
       planId,
       user,
@@ -186,12 +185,11 @@ export async function initAction(options: InitOptions, context: InitContext) {
     })
   }
 
-  const {datasetName, datasetResource, displayName, isFirstProject, organizationId, projectId} =
+  const {datasetName, displayName, isFirstProject, organizationId, projectId} =
     await getProjectDetails({
       coupon: options.coupon,
       dataset: options.dataset,
       datasetDefault: options.datasetDefault,
-      ...(useBlueprintDeclarations ? {declareDataset: true} : {}),
       isAppTemplate,
       isMediaLibraryTemplate,
       newProject,
@@ -227,14 +225,7 @@ export async function initAction(options: InitOptions, context: InitContext) {
       useEnv: false,
       workDir,
     })
-    const result = await initBlueprint({
-      datasetName,
-      datasetResource,
-      output,
-      outputPath,
-      projectId,
-      showProfileSetup: useBlueprintDeclarations,
-    })
+    const result = await initBlueprint({datasetName, output, outputPath, projectId})
     trace.complete()
     return result
   }

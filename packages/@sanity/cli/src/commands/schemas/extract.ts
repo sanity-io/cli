@@ -14,7 +14,6 @@ import {confirm} from '@sanity/cli-core/ux'
 import {extractSchema} from '../../actions/schema/extractSchema.js'
 import {getExtractOptions} from '../../actions/schema/getExtractOptions.js'
 import {watchExtractSchema} from '../../actions/schema/watchExtractSchema.js'
-import {requireLocalConfig} from '../../util/blueprintCliContext.js'
 import {defineCommandTelemetry} from '../../util/telemetry/commandTelemetry.js'
 
 const description = `
@@ -85,7 +84,7 @@ export class ExtractSchemaCommand extends SanityCommand<typeof ExtractSchemaComm
     const configPath = flags['config-path'] && resolve(flags['config-path'])
     const projectRoot = configPath
       ? {directory: dirname(configPath), path: configPath, type: 'studio' as const}
-      : await requireLocalConfig(() => this.getProjectRoot(), 'Studio')
+      : await this.getProjectRoot()
 
     let cliConfig: CliConfig
     try {

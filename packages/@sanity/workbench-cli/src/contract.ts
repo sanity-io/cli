@@ -77,7 +77,10 @@ export type Dock = z.infer<typeof DockSchema>
 const PanelDockSchema = z.object({order: z.optional(z.number())})
 
 /** @internal */
-export const ViewPlacementMetadataSchema = z.object({dock: DockSchema})
+export const ViewPlacementMetadataSchema = z.object({
+  dock: z.optional(DockSchema),
+  icon: z.optional(z.string()),
+})
 
 /** @internal */
 export type ViewPlacementMetadata = z.infer<typeof ViewPlacementMetadataSchema>
@@ -163,16 +166,17 @@ const PanelViewSchema = z.object({
   surface: z.literal('panel'),
   ...interfaceDeclarationFields('View'),
   dock: z.optional(PanelDockSchema),
+  icon: z.optional(z.string()),
 })
 
 /** @public */
-export type PanelView = z.output<typeof PanelViewSchema>
+export type PanelViewDeclaration = z.output<typeof PanelViewSchema>
 
 /** @public */
-export type DefinePanelViewInput = Omit<PanelView, 'surface'>
+export type DefinePanelViewInput = Omit<PanelViewDeclaration, 'surface'>
 
 /** @public */
-export function definePanelView(view: DefinePanelViewInput): PanelView {
+export function definePanelView(view: DefinePanelViewInput): PanelViewDeclaration {
   return {...view, surface: 'panel'}
 }
 
@@ -180,16 +184,17 @@ const WindowViewSchema = z.object({
   surface: z.literal('window'),
   ...interfaceDeclarationFields('View'),
   dock: z.optional(DockSchema),
+  icon: z.optional(z.string()),
 })
 
 /** @public */
-export type WindowView = z.output<typeof WindowViewSchema>
+export type WindowViewDeclaration = z.output<typeof WindowViewSchema>
 
 /** @public */
-export type DefineWindowViewInput = Omit<WindowView, 'surface'>
+export type DefineWindowViewInput = Omit<WindowViewDeclaration, 'surface'>
 
 /** @public */
-export function defineWindowView(view: DefineWindowViewInput): WindowView {
+export function defineWindowView(view: DefineWindowViewInput): WindowViewDeclaration {
   return {...view, surface: 'window'}
 }
 
@@ -199,13 +204,15 @@ const AssetSourceViewSchema = z.object({
 })
 
 /** @public */
-export type AssetSourceView = z.output<typeof AssetSourceViewSchema>
+export type AssetSourceViewDeclaration = z.output<typeof AssetSourceViewSchema>
 
 /** @public */
-export type DefineAssetSourceViewInput = Omit<AssetSourceView, 'surface'>
+export type DefineAssetSourceViewInput = Omit<AssetSourceViewDeclaration, 'surface'>
 
 /** @public */
-export function defineAssetSourceView(view: DefineAssetSourceViewInput): AssetSourceView {
+export function defineAssetSourceView(
+  view: DefineAssetSourceViewInput,
+): AssetSourceViewDeclaration {
   return {...view, surface: 'asset_source'}
 }
 
@@ -219,13 +226,13 @@ const TileViewSchema = z.object({
 })
 
 /** @public */
-export type TileView = z.output<typeof TileViewSchema>
+export type TileViewDeclaration = z.output<typeof TileViewSchema>
 
 /** @public */
-export type DefineTileViewInput = Omit<TileView, 'surface'>
+export type DefineTileViewInput = Omit<TileViewDeclaration, 'surface'>
 
 /** @public */
-export function defineTileView(view: DefineTileViewInput): TileView {
+export function defineTileView(view: DefineTileViewInput): TileViewDeclaration {
   return {...view, surface: 'tile'}
 }
 
@@ -246,13 +253,13 @@ const WebWorkerSchema = z.object({
 })
 
 /** @public */
-export type WebWorker = z.output<typeof WebWorkerSchema>
+export type WebWorkerDeclaration = z.output<typeof WebWorkerSchema>
 
 /** @public */
-export type DefineWebWorkerInput = Omit<WebWorker, 'type'>
+export type DefineWebWorkerInput = Omit<WebWorkerDeclaration, 'type'>
 
 /** @public */
-export function defineWebWorker(webWorker: DefineWebWorkerInput): WebWorker {
+export function defineWebWorker(webWorker: DefineWebWorkerInput): WebWorkerDeclaration {
   return {...webWorker, type: 'worker'}
 }
 

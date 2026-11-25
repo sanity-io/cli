@@ -20,8 +20,7 @@ const mockFsReaddir = vi.hoisted(() => vi.fn())
 const mockImportModule = vi.hoisted(() => vi.fn())
 const mockGetTsconfig = vi.hoisted(() => vi.fn())
 
-vi.mock(import('node:fs/promises'), async (importOriginal) => ({
-  ...(await importOriginal()),
+vi.mock('node:fs/promises', () => ({
   access: mockFsAccess,
   readdir: mockFsReaddir,
 }))

@@ -1,6 +1,5 @@
 import {CLIError} from '@oclif/core/errors'
 import {exitCodes} from '@sanity/cli-core'
-import {isBlueprintMode} from '@sanity/cli-core/config'
 
 import {promptForOrganization} from '../../prompts/promptForOrganization.js'
 
@@ -22,14 +21,9 @@ export async function resolveOrganizationId(options: {
 }): Promise<string> {
   const {configuredOrganizationId, flagOrganizationId, unattended} = options
 
-  const organizationId = flagOrganizationId || configuredOrganizationId
-  if (organizationId) return organizationId
+  if (flagOrganizationId) return flagOrganizationId
+  if (configuredOrganizationId) return configuredOrganizationId
 
-  if (isBlueprintMode()) {
-    throw new MissingOrganizationError(
-      'Organization ID is required in Blueprint mode. Pass `--organization`, set SANITY_ORGANIZATION_ID, or select a profile with an organization.',
-    )
-  }
   if (unattended) {
     throw new MissingOrganizationError(
       'Organization ID is required. Provide it with the --organization flag.',

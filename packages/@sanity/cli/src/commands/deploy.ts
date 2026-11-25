@@ -2,7 +2,6 @@ import path from 'node:path'
 
 import {Args, Flags} from '@oclif/core'
 import {exitCodes, SanityCommand} from '@sanity/cli-core'
-import {isBlueprintMode} from '@sanity/cli-core/config'
 import {confirm} from '@sanity/cli-core/ux'
 import {getWorkbench, resolveWorkbenchConfig} from '@sanity/workbench-cli/deploy'
 
@@ -137,12 +136,6 @@ export class DeployCommand extends SanityCommand<typeof DeployCommand> {
   public async run(): Promise<void> {
     const {flags} = await this.parse(DeployCommand)
 
-    if (isBlueprintMode()) {
-      this.error(
-        'Add the Studio or app to your Blueprint, then run `sanity blueprints deploy --path <manifest>`.',
-        {exit: exitCodes.USAGE_ERROR},
-      )
-    }
     const cliConfig = await this.getCliConfig()
     const projectRoot = await this.getProjectRoot()
 

@@ -4,7 +4,6 @@ import {SanityCommand} from '@sanity/cli-core'
 import {buildApp} from '../actions/build/buildApp.js'
 import {buildStudio} from '../actions/build/buildStudio.js'
 import {shouldAutoUpdate} from '../actions/build/shouldAutoUpdate.js'
-import {requireLocalConfig} from '../util/blueprintCliContext.js'
 import {determineIsApp} from '../util/determineIsApp.js'
 
 export class BuildCommand extends SanityCommand<typeof BuildCommand> {
@@ -47,14 +46,13 @@ export class BuildCommand extends SanityCommand<typeof BuildCommand> {
   }
 
   public async run(): Promise<void> {
-    const projectRoot = await requireLocalConfig(() => this.getProjectRoot(), 'Studio or app')
     const cliConfig = await this.getCliConfig()
 
     const {flags} = await this.parse(BuildCommand)
 
     const isApp = determineIsApp(cliConfig)
 
-    const workDir = projectRoot.directory
+    const workDir = (await this.getProjectRoot()).directory
 
     const output = this.output
 

@@ -1,6 +1,6 @@
 {
   "name": "create-sanity",
-  "version": "6.0.75",
+  "version": "6.0.79",
   "description": "Initialize a new Sanity project",
   "keywords": [
     "cms",
@@ -26,14 +26,12 @@
     "index.js",
     "bootstrapBlueprint.js",
     "runInit.js",
-    "dist/studio-cli-version.json",
-    "npm-shrinkwrap.json"
+    "dist/studio-cli-version.json"
   ],
   "type": "module",
   "scripts": {
     "build": "node scripts/record-studio-cli-version.mjs",
     "prepack": "node scripts/record-studio-cli-version.mjs",
-    "prepublishOnly": "node scripts/prepare-release.mjs",
     "publint": "publint",
     "test": "vitest"
   },
@@ -48,6 +46,11 @@
     "publint": "catalog:",
     "vitest": "catalog:"
   },
+  "bundleDependencies": [
+    "@sanity/blueprints",
+    "@sanity/cli-setup",
+    "@sanity/client"
+  ],
   "engines": {
     "node": ">=22.12"
   }

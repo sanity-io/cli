@@ -122,9 +122,7 @@ export class MediaImportCommand extends SanityCommand<typeof MediaImportCommand>
       this.error(sourceUrlError, {exit: exitCodes.USAGE_ERROR})
     }
 
-    const projectId = await this.getProjectId({
-      fallback: () => promptForProject({}),
-    })
+    const projectId = await this.getProjectId({fallback: () => promptForProject({})})
 
     const cliConfig = await this.tryGetCliConfig()
     const dataset = cliConfig.api?.dataset

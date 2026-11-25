@@ -4,7 +4,6 @@ import {getErrorMessage} from '@sanity/cli-core/errors'
 import {formatTokenAccess} from '../../actions/tokens/formatTokenAccess.js'
 import {type Robot} from '../../actions/tokens/types.js'
 import {getTokens} from '../../services/tokens.js'
-import {getBlueprintCliContext} from '../../util/blueprintCliContext.js'
 import {resolveTokenScope} from '../../util/resolveTokenScope.js'
 import {Table} from '../../util/responsiveTable.js'
 import {getOrganizationFlag, getProjectIdFlag} from '../../util/sharedFlags.js'
@@ -52,18 +51,10 @@ export class TokensListCommand extends SanityCommand<typeof TokensListCommand> {
     const {json} = flags
     const outputJson = json ?? false
 
-    let {organization} = flags
-    if (!organization && !flags.project) {
-      const workspace = await getBlueprintCliContext()
-      if (workspace?.organizationId && !(await this.tryGetCliConfig()).api?.projectId) {
-        organization = workspace.organizationId
-      }
-    }
-
     const scope = await resolveTokenScope({
       getProjectId: this.getProjectId.bind(this),
       grant: 'read',
-      organization,
+      organization: flags.organization,
     })
 
     let tokens: Robot[]
