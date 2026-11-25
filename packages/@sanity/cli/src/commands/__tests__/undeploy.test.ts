@@ -778,6 +778,29 @@ describe('#undeploy', () => {
     expect(stdout).toContain('Config deleted.')
   })
 
+  test('fails when Brett refuses to delete the dashboard configuration', async () => {
+    mockApi({
+      apiVersion: 'vX',
+      query: {organizationId: 'org-1'},
+      uri: '/applications/dashboards',
+    }).reply(200, {data: [{id: 'dash-1', organizationId: 'org-1'}], nextCursor: null})
+    mockApi({
+      apiVersion: 'vX',
+      method: 'delete',
+      uri: '/applications/dashboards/dash-1',
+    }).reply(403, {message: 'Missing the "sanity.sdk.applications.deploy" grant'})
+
+    const {error, stdout} = await testCommand(UndeployCommand, ['--yes'], {
+      mocks: {
+        cliConfig: {app: defineDashboard({organizationId: 'org-1', src: './src/dashboard.ts'})},
+        token: 'test-token',
+      },
+    })
+
+    expect(error?.message).toContain('Missing the "sanity.sdk.applications.deploy" grant')
+    expect(stdout).not.toContain('Config deleted.')
+  })
+
   test('media library dry run --json carries the structured config target', async () => {
     mockApi({
       apiVersion: 'vX',

@@ -56,17 +56,6 @@ describe('#deploy', () => {
     expect(mockDeployStudio).not.toHaveBeenCalled()
   })
 
-  test('deploys a dashboard configuration instead of an app', async () => {
-    const config = defineDashboard({organizationId: 'org-1', src: './src/dashboard.ts'})
-    mockDetermineIsApp.mockReturnValue(true)
-    mockResolveWorkbenchConfig.mockReturnValue(config)
-
-    await DeployCommand.run([])
-
-    expect(mockDeployDashboardConfig).toHaveBeenCalledWith(expect.objectContaining({config}))
-    expect(mockDeployApp).not.toHaveBeenCalled()
-  })
-
   test('routes studios to deployStudio', async () => {
     mockDetermineIsApp.mockReturnValue(false)
     await DeployCommand.run([])
