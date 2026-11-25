@@ -1,5 +1,15 @@
 # Changelog
 
+## 6.0.79
+
+[Compare changes](https://github.com/sanity-io/cli/compare/create-sanity-v6.0.78...create-sanity-v6.0.79)
+
+_2026-11-25_
+
+### Bug Fixes
+
+- **create-sanity:** refresh npm metadata before installing the cli ([#2282](https://github.com/sanity-io/cli/pull/2282)) ([2110970](https://github.com/sanity-io/cli/commit/2110970bddfcb49674fefa7b0866dab67d603308))
+
 ## 6.0.78
 
 [Compare changes](https://github.com/sanity-io/cli/compare/create-sanity-v6.0.77...create-sanity-v6.0.78)
