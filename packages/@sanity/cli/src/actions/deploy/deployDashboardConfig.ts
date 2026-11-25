@@ -73,7 +73,7 @@ export function deployDashboardConfig(
 
       if (flags['dry-run'] || !version) return {application: null, payload}
 
-      await uploadDashboardConfig({dashboard, organizationId, sourceDir, version})
+      await uploadDashboardConfig({dashboard, organizationId, sourceDir})
       output.log(
         formatDeploySummary({
           ...(await summaryDetails),

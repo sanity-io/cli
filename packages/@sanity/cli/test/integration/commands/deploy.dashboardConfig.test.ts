@@ -94,7 +94,7 @@ describe.skipIf(platform() === 'win32')(
       const {error, stdout} = await deploy()
 
       if (error) throw error
-      expect(upload.body).toContain('name="version"')
+      expect(upload.body).toMatch(/name="version"\r\n\r\n1\r\n/)
       expect(upload.body).toContain('filename="dashboard-config.tar.gz"')
       expect(stdout).toContain('Dashboard configuration deployed in')
       expect(stdout).toContain('Created Dashboard configuration.')

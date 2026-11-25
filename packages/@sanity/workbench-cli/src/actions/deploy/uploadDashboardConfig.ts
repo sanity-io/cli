@@ -4,6 +4,7 @@ import {createGzip} from 'node:zlib'
 import {subdebug} from '@sanity/cli-core'
 import {c as createTar} from 'tar'
 
+import {configContractVersion} from '../../contract.js'
 import {
   createDashboard,
   createDashboardConfig,
@@ -17,9 +18,9 @@ export async function uploadDashboardConfig(options: {
   dashboard: Dashboard | undefined
   organizationId: string
   sourceDir: string
-  version: string
 }): Promise<void> {
-  const {dashboard, organizationId, sourceDir, version} = options
+  const {dashboard, organizationId, sourceDir} = options
+  const version = configContractVersion('dashboard')
   const tarball = createTar({cwd: dirname(sourceDir)}, [basename(sourceDir)]).pipe(createGzip())
 
   if (dashboard) {
