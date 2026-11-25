@@ -2,13 +2,13 @@ import {styleText} from 'node:util'
 
 import {exitCodes, getProjectCliClient, SanityCommand, subdebug} from '@sanity/cli-core'
 
-import {promptForProject} from '../../prompts/promptForProject.js'
+import {resolveProjectForCommand} from '../../actions/targets/blueprintCommandTarget.js'
 import {
   GRAPHQL_API_VERSION,
   type GraphQLEndpoint,
   listGraphQLEndpoints,
 } from '../../services/graphql.js'
-import {getProjectIdFlag} from '../../util/sharedFlags.js'
+import {getProjectIdFlag, getWithBlueprintsFlag} from '../../util/sharedFlags.js'
 
 const listGraphQLDebug = subdebug('graphql:list')
 
@@ -26,6 +26,7 @@ export class List extends SanityCommand<typeof List> {
   ]
 
   static override flags = {
+    ...getWithBlueprintsFlag(),
     ...getProjectIdFlag({
       description: 'Project ID to list GraphQL endpoints for',
       semantics: 'override',
@@ -35,9 +36,7 @@ export class List extends SanityCommand<typeof List> {
   public async run(): Promise<void> {
     await this.parse(List)
 
-    const projectId = await this.getProjectId({
-      fallback: () => promptForProject({}),
-    })
+    const projectId = await resolveProjectForCommand(this, this.flags)
 
     let endpoints: GraphQLEndpoint[] | undefined
     try {

@@ -1,5 +1,6 @@
 import {Args, Flags} from '@oclif/core'
 import {CLIError} from '@oclif/core/errors'
+import {defineDataset, defineProject} from '@sanity/blueprints'
 import {exitCodes} from '@sanity/cli-core'
 import {subdebug} from '@sanity/cli-core/debug'
 import {getErrorMessage} from '@sanity/cli-core/errors'
@@ -8,6 +9,12 @@ import {SanityCommand} from '@sanity/cli-core/SanityCommand'
 import {confirm, spinner} from '@sanity/cli-core/ux'
 import {type DatasetResponse} from '@sanity/client'
 
+import {
+  blueprintResourceName,
+  getBlueprintForScope,
+  printBlueprintResource,
+} from '../../actions/blueprints/prepareResource.js'
+import {resolveOrganizationId} from '../../actions/context/resolveOrganizationId.js'
 import {createDataset} from '../../actions/dataset/create.js'
 import {validateDatasetName} from '../../actions/dataset/validateDatasetName.js'
 import {getOrganization} from '../../actions/organizations/getOrganization.js'
@@ -18,11 +25,14 @@ import {promptForProjectName} from '../../prompts/promptForProjectName.js'
 import {listDatasets} from '../../services/datasets.js'
 import {getProjectFeatures} from '../../services/getProjectFeatures.js'
 import {
+  listOrganizations,
   type OrganizationCreateResponse,
   type ProjectOrganization,
 } from '../../services/organizations.js'
 import {createProject, type CreateProjectResult, setProjectLogo} from '../../services/projects.js'
 import {getCliUser} from '../../services/user.js'
+import {getCheckoutBlueprint} from '../../util/checkoutBlueprint.js'
+import {getWithBlueprintsFlag} from '../../util/sharedFlags.js'
 import {defineCommandTelemetry} from '../../util/telemetry/commandTelemetry.js'
 
 const debug = subdebug('projects:create')
@@ -68,6 +78,7 @@ export class CreateProjectCommand extends SanityCommand<typeof CreateProjectComm
   ]
 
   static override flags = {
+    ...getWithBlueprintsFlag(),
     dataset: Flags.string({
       description: 'Create a dataset. Prompts for visibility unless specified or --yes used',
       parse: async (input) => {
@@ -114,6 +125,54 @@ export class CreateProjectCommand extends SanityCommand<typeof CreateProjectComm
       organization,
       yes,
     } = flags
+
+    if (flags['with-blueprints']) {
+      const checkout = organization ? undefined : getCheckoutBlueprint()
+      let configuredOrganizationId =
+        checkout?.scopeType === 'organization' ? checkout.scopeId : undefined
+      if (!organization && !configuredOrganizationId) {
+        configuredOrganizationId = (await this.tryGetCliConfig()).app?.organizationId
+      }
+      const organizationId = await resolveOrganizationId({
+        configuredOrganizationId,
+        flagOrganizationId: organization,
+        unattended: this.isUnattended(),
+      })
+      const selectedOrganization = organization
+        ? ((await listOrganizations()).find(({slug}) => slug === organization)?.id ??
+          organizationId)
+        : organizationId
+      const blueprintPath = await getBlueprintForScope({
+        id: selectedOrganization,
+        type: 'organization',
+      })
+      if (logoPath !== undefined) {
+        this.error(
+          'Set the project logo after deploying the Blueprint. Omit `--logo` to print the declaration.',
+          {exit: exitCodes.USAGE_ERROR},
+        )
+      }
+      const displayName =
+        projectName ||
+        (yes || this.isUnattended() ? 'My Sanity Project' : await promptForProjectName())
+      const project = defineProject({
+        displayName,
+        name: blueprintResourceName('project', displayName),
+      })
+      const resources: object[] = [project]
+      if (dataset) {
+        resources.push(
+          defineDataset({
+            aclMode: datasetVisibility === 'private' ? 'private' : 'public',
+            datasetName: dataset,
+            name: blueprintResourceName('dataset', `${project.name}/${dataset}`),
+            project: `$.resources.${project.name}.id`,
+          }),
+        )
+      }
+      printBlueprintResource(this.output, blueprintPath, resources, Boolean(flags.json))
+      return
+    }
 
     // Read the logo before creating anything, so a bad file doesn't leave a project without it.
     let logo: ImageFile | undefined

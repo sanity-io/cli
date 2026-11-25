@@ -5,12 +5,13 @@ import {exitCodes, SanityCommand, subdebug} from '@sanity/cli-core'
 import {type DatasetsResponse} from '@sanity/client'
 
 import {assertDatasetExists} from '../../actions/backup/assertDatasetExist.js'
+import {getBlueprintDatasetTarget} from '../../actions/targets/blueprintCommandTarget.js'
 import {NEW_DATASET_VALUE, promptForDataset} from '../../prompts/promptForDataset.js'
 import {promptForDatasetName} from '../../prompts/promptForDatasetName.js'
 import {promptForProject} from '../../prompts/promptForProject.js'
 import {setBackup} from '../../services/backup.js'
 import {createDataset, listDatasets} from '../../services/datasets.js'
-import {getProjectIdFlag} from '../../util/sharedFlags.js'
+import {getProjectIdFlag, getWithBlueprintsFlag} from '../../util/sharedFlags.js'
 
 const enableBackupDebug = subdebug('backup:enable')
 
@@ -36,6 +37,7 @@ export class EnableBackupCommand extends SanityCommand<typeof EnableBackupComman
   ]
 
   static override flags = {
+    ...getWithBlueprintsFlag(),
     ...getProjectIdFlag({
       description: 'Project ID to enable backups for',
       semantics: 'override',
@@ -48,15 +50,29 @@ export class EnableBackupCommand extends SanityCommand<typeof EnableBackupComman
     const {args} = await this.parse(EnableBackupCommand)
     let {dataset} = args
 
-    const projectId = await this.getProjectId({
-      fallback: () =>
-        promptForProject({
-          requiredPermissions: [
-            {grant: 'read', permission: 'sanity.project.datasets'},
-            {grant: 'update', permission: 'sanity.project.datasets'},
-          ],
-        }),
-    })
+    const blueprintTarget = await getBlueprintDatasetTarget(
+      this,
+      {...this.flags, dataset: dataset},
+      {
+        datasetUsage: '<dataset>',
+        requiredProjectPermissions: [
+          {grant: 'read', permission: 'sanity.project.datasets'},
+          {grant: 'update', permission: 'sanity.project.datasets'},
+        ],
+      },
+    )
+    const projectId =
+      blueprintTarget?.projectId ??
+      (await this.getProjectId({
+        fallback: () =>
+          promptForProject({
+            requiredPermissions: [
+              {grant: 'read', permission: 'sanity.project.datasets'},
+              {grant: 'update', permission: 'sanity.project.datasets'},
+            ],
+          }),
+      }))
+    dataset = blueprintTarget?.dataset ?? dataset
 
     let datasets: DatasetsResponse
 

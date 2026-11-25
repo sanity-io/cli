@@ -2,9 +2,16 @@ import {Args} from '@oclif/core'
 import {exitCodes, SanityCommand, subdebug} from '@sanity/cli-core'
 import {select} from '@sanity/cli-core/ux'
 
-import {promptForProject} from '../../prompts/promptForProject.js'
+import {
+  guardBlueprintResource,
+  matchesResourceProject,
+  reportBlueprintManagedError,
+  resourceAttachmentId,
+  resourceValue,
+} from '../../actions/blueprints/guardResource.js'
+import {resolveProjectForCommand} from '../../actions/targets/blueprintCommandTarget.js'
 import {type CorsOrigin, deleteCorsOrigin, listCorsOrigins} from '../../services/cors.js'
-import {getProjectIdFlag} from '../../util/sharedFlags.js'
+import {getProjectIdFlag, getWithBlueprintsFlag} from '../../util/sharedFlags.js'
 
 const deleteCorsDebug = subdebug('cors:delete')
 
@@ -34,6 +41,7 @@ export class Delete extends SanityCommand<typeof Delete> {
   ]
 
   static override flags = {
+    ...getWithBlueprintsFlag(),
     ...getProjectIdFlag({
       description: 'Project ID to delete CORS origin from',
       semantics: 'override',
@@ -50,21 +58,37 @@ export class Delete extends SanityCommand<typeof Delete> {
     }
 
     // Ensure we have project context
-    const projectId = await this.getProjectId({
-      fallback: () =>
-        promptForProject({
-          requiredPermissions: [{grant: 'delete', permission: 'sanity.project.cors'}],
-        }),
-    })
+    const projectId = await resolveProjectForCommand(this, this.flags, [
+      {grant: 'delete', permission: 'sanity.project.cors'},
+    ])
 
     // Get the origin ID to delete
-    const originId = await this.promptForOrigin(args.origin, projectId)
+    const {id: originId, origin} = await this.promptForOrigin(args.origin, projectId)
+    const label = `CORS origin "${origin}"`
+    if (this.flags['with-blueprints']) {
+      await guardBlueprintResource(
+        this.output,
+        {id: projectId, type: 'project'},
+        {
+          id: String(originId),
+          label,
+          matches: (resource, blueprint) =>
+            matchesResourceProject(resource, blueprint, projectId) &&
+            (resourceAttachmentId(resource) === String(originId) ||
+              ('origin' in resource && resourceValue(resource.origin, blueprint) === origin)),
+          type: 'sanity.project.cors',
+        },
+        'delete',
+      )
+    }
 
     try {
       await deleteCorsOrigin({originId, projectId})
 
       this.log('Origin deleted')
     } catch (error) {
+      if (this.flags['with-blueprints'])
+        reportBlueprintManagedError(this.output, error, label, 'delete')
       const err = error as Error
       deleteCorsDebug(`Error deleting CORS origin ${originId} for project ${projectId}`, err)
       this.error(`Origin deletion failed:\n${err.message}`, {exit: exitCodes.RUNTIME_ERROR})
@@ -74,7 +98,7 @@ export class Delete extends SanityCommand<typeof Delete> {
   private async promptForOrigin(
     specifiedOrigin: string | undefined,
     projectId: string,
-  ): Promise<number> {
+  ): Promise<CorsOrigin> {
     let origins: CorsOrigin[]
     try {
       origins = await listCorsOrigins(projectId)
@@ -99,7 +123,7 @@ export class Delete extends SanityCommand<typeof Delete> {
         this.error(`Origin "${specifiedOrigin}" not found`, {exit: exitCodes.RUNTIME_ERROR})
       }
 
-      return selectedOrigin.id
+      return selectedOrigin
     }
 
     // If no origin specified, prompt user to select one
@@ -113,6 +137,8 @@ export class Delete extends SanityCommand<typeof Delete> {
       message: 'Select origin to delete',
     })
 
-    return selectedId
+    const origin = origins.find(({id}) => id === selectedId)
+    if (!origin) this.error('The selected CORS origin could not be found.')
+    return origin
   }
 }

@@ -5,6 +5,7 @@ import {BLUEPRINT_FILE_NAMES, readStackConfigFile, type ScopeType} from '@sanity
 import {getCliExecutionContext} from '@sanity/cli-core/executionContext'
 
 export interface CheckoutStack {
+  directory: string
   scopeId: string
   scopeType: ScopeType
   stackId: string
@@ -17,10 +18,15 @@ export function getCheckoutBlueprint(cwd = process.cwd()): CheckoutStack | undef
   while (true) {
     const link = readStackConfigFile(directory)
     if (link?.stackId && link.projectId) {
-      return {scopeId: link.projectId, scopeType: 'project', stackId: link.stackId}
+      return {directory, scopeId: link.projectId, scopeType: 'project', stackId: link.stackId}
     }
     if (link?.stackId && link.organizationId) {
-      return {scopeId: link.organizationId, scopeType: 'organization', stackId: link.stackId}
+      return {
+        directory,
+        scopeId: link.organizationId,
+        scopeType: 'organization',
+        stackId: link.stackId,
+      }
     }
 
     const parent = dirname(directory)
@@ -35,4 +41,8 @@ export function getCheckoutBlueprint(cwd = process.cwd()): CheckoutStack | undef
     }
     directory = parent
   }
+}
+
+export function getCheckoutManifest({directory}: CheckoutStack): string | undefined {
+  return BLUEPRINT_FILE_NAMES.map((name) => join(directory, name)).find((path) => existsSync(path))
 }

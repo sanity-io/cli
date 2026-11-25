@@ -7,6 +7,7 @@ import {promptForDataset} from '../../prompts/promptForDataset.js'
 import {promptForProject} from '../../prompts/promptForProject.js'
 import {getDeployedStack} from '../../services/blueprints.js'
 import {listDatasets} from '../../services/datasets.js'
+import {type RequiredPermission} from '../../types/grants.js'
 import {type CheckoutStack, getCheckoutBlueprint} from '../../util/checkoutBlueprint.js'
 
 interface TargetOptions {
@@ -14,8 +15,10 @@ interface TargetOptions {
   unattended: boolean
 
   dataset?: string
+  datasetUsage?: string
   needsDataset?: boolean
   project?: string
+  requiredProjectPermissions?: RequiredPermission[]
 }
 
 interface CommandTarget {
@@ -32,9 +35,11 @@ export function resolveCommandTarget(
 export function resolveCommandTarget(options: TargetOptions): Promise<CommandTarget>
 export async function resolveCommandTarget({
   dataset: datasetFlag,
+  datasetUsage = '--dataset <name>',
   loadCliConfig,
   needsDataset,
   project: projectFlag,
+  requiredProjectPermissions,
   unattended,
 }: TargetOptions): Promise<CommandTarget> {
   if (projectFlag && (!needsDataset || datasetFlag)) {
@@ -47,7 +52,7 @@ export async function resolveCommandTarget({
   } catch (cause) {
     throw targetError(
       'Could not read the local Blueprint Stack link. Check .sanity/blueprint.config.json.',
-      retryFlags(projectFlag, datasetFlag, needsDataset),
+      retryFlags(projectFlag, datasetFlag, needsDataset, datasetUsage),
       cause,
     )
   }
@@ -61,7 +66,10 @@ export async function resolveCommandTarget({
 
   const stack =
     targetStack && (!projectId || (needsDataset && !dataset))
-      ? await readStackTargets(targetStack, retryFlags(projectId, dataset, needsDataset))
+      ? await readStackTargets(
+          targetStack,
+          retryFlags(projectId, dataset, needsDataset, datasetUsage),
+        )
       : undefined
 
   if (!projectId) {
@@ -75,16 +83,22 @@ export async function resolveCommandTarget({
       defaultProject && (!dataset || matching.length === 0 || matching.includes(defaultProject))
     projectId = useDefaultProject
       ? defaultProject
-      : await selectStackTarget(matching.length > 0 ? matching : projects, 'project', unattended)
+      : await selectStackTarget(
+          matching.length > 0 ? matching : projects,
+          'project',
+          unattended,
+          '--project <project-id>',
+        )
     if (!projectId) {
       if (unattended) {
         const reason = stack
           ? 'No deployed project found in the linked Stack.'
           : 'Project is required.'
-        throw targetError(reason, retryFlags(projectId, dataset, needsDataset))
+        throw targetError(reason, retryFlags(projectId, dataset, needsDataset, datasetUsage))
       }
       projectId = await promptForProject({
         organizationId: checkout?.scopeType === 'organization' ? checkout.scopeId : undefined,
+        ...(requiredProjectPermissions ? {requiredPermissions: requiredProjectPermissions} : {}),
       })
     }
   }
@@ -94,19 +108,20 @@ export async function resolveCommandTarget({
       [...(stack?.datasets.get(projectId) ?? [])],
       'dataset',
       unattended,
+      datasetUsage,
     )
     if (!dataset && unattended) {
       const reason = stack
         ? 'No deployed dataset found in the linked Stack for this project.'
         : 'Dataset is required.'
-      throw targetError(reason, '--dataset <name>')
+      throw targetError(reason, datasetUsage)
     }
     if (!dataset) {
       const datasets = await listDatasets(projectId)
       if (datasets.length === 0) {
         throw targetError(
           'No datasets found in this project. Create a dataset or choose another project.',
-          '--project <project-id> --dataset <name>',
+          `--project <project-id> ${datasetUsage}`,
         )
       }
       dataset = await promptForDataset({datasets})
@@ -145,10 +160,10 @@ async function selectStackTarget(
   values: string[],
   kind: 'dataset' | 'project',
   unattended: boolean,
+  flag: string,
 ): Promise<string | undefined> {
   if (values.length < 2) return values[0]
   if (unattended) {
-    const flag = kind === 'project' ? '--project <project-id>' : '--dataset <name>'
     throw targetError(`Multiple deployed ${kind}s match the linked Stack.`, flag)
   }
   return select({
@@ -157,10 +172,15 @@ async function selectStackTarget(
   })
 }
 
-function retryFlags(project?: string, dataset?: string, needsDataset?: boolean): string {
+function retryFlags(
+  project: string | undefined,
+  dataset: string | undefined,
+  needsDataset: boolean | undefined,
+  datasetUsage: string,
+): string {
   const flags = []
   if (!project) flags.push('--project <project-id>')
-  if (needsDataset && !dataset) flags.push('--dataset <name>')
+  if (needsDataset && !dataset) flags.push(datasetUsage)
   return flags.join(' ')
 }
 

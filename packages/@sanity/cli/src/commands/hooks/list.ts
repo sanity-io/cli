@@ -1,9 +1,9 @@
 import {exitCodes, SanityCommand, subdebug} from '@sanity/cli-core'
 
 import {type Hook} from '../../actions/hook/types'
-import {promptForProject} from '../../prompts/promptForProject.js'
+import {resolveProjectForCommand} from '../../actions/targets/blueprintCommandTarget.js'
 import {listHooksForProject} from '../../services/hooks.js'
-import {getProjectIdFlag} from '../../util/sharedFlags.js'
+import {getProjectIdFlag, getWithBlueprintsFlag} from '../../util/sharedFlags.js'
 
 const listHookDebug = subdebug('hook:list')
 
@@ -21,6 +21,7 @@ export class List extends SanityCommand<typeof List> {
   ]
 
   static override flags = {
+    ...getWithBlueprintsFlag(),
     ...getProjectIdFlag({
       description: 'Project ID to list webhooks for',
       semantics: 'override',
@@ -31,12 +32,9 @@ export class List extends SanityCommand<typeof List> {
 
   public async run() {
     // Ensure we have project context
-    const projectId = await this.getProjectId({
-      fallback: () =>
-        promptForProject({
-          requiredPermissions: [{grant: 'read', permission: 'sanity.project.webhooks'}],
-        }),
-    })
+    const projectId = await resolveProjectForCommand(this, this.flags, [
+      {grant: 'read', permission: 'sanity.project.webhooks'},
+    ])
 
     let hooks: Hook[]
     try {

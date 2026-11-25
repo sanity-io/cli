@@ -8,11 +8,12 @@ import {spinner} from '@sanity/cli-core/ux'
 import {sanityImport} from '@sanity/import'
 import prettyMs from 'pretty-ms'
 
+import {getBlueprintDatasetTarget} from '../../actions/targets/blueprintCommandTarget.js'
 import {NEW_DATASET_VALUE, promptForDataset} from '../../prompts/promptForDataset.js'
 import {promptForDatasetName} from '../../prompts/promptForDatasetName.js'
 import {promptForProject} from '../../prompts/promptForProject.js'
 import {createDataset, listDatasets} from '../../services/datasets.js'
-import {getDatasetFlag, getProjectIdFlag} from '../../util/sharedFlags.js'
+import {getDatasetFlag, getProjectIdFlag, getWithBlueprintsFlag} from '../../util/sharedFlags.js'
 import {defineCommandTelemetry} from '../../util/telemetry/commandTelemetry.js'
 
 const importDebug = subdebug('dataset:import')
@@ -96,6 +97,7 @@ export class ImportDatasetCommand extends SanityCommand<typeof ImportDatasetComm
   ]
 
   static override flags = {
+    ...getWithBlueprintsFlag(),
     'allow-assets-in-different-dataset': Flags.boolean({
       default: false,
       description: 'Allow asset documents to reference different project/dataset',
@@ -183,11 +185,17 @@ export class ImportDatasetCommand extends SanityCommand<typeof ImportDatasetComm
       token,
     } = flags
 
-    const projectId = await this.getProjectId({
-      fallback: () => promptForProject({}),
-    })
-
     const {source, targetDataset: targetDatasetArg} = args
+
+    const blueprintTarget = await getBlueprintDatasetTarget(this, {
+      ...this.flags,
+      dataset: datasetFlag ?? targetDatasetArg,
+    })
+    const projectId =
+      blueprintTarget?.projectId ??
+      (await this.getProjectId({
+        fallback: () => promptForProject({}),
+      }))
 
     if (targetDatasetArg && !datasetFlag) {
       this.output.warn(
@@ -195,7 +203,7 @@ export class ImportDatasetCommand extends SanityCommand<typeof ImportDatasetComm
       )
     }
 
-    let dataset = datasetFlag ?? targetDatasetArg
+    let dataset = blueprintTarget?.dataset ?? datasetFlag ?? targetDatasetArg
     if (!dataset) {
       if (this.isUnattended()) {
         return this.output.error('Dataset is required. Pass it with `--dataset <name>`.', {

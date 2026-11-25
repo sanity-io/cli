@@ -29,6 +29,7 @@ test('uses the nearest link from a nested working directory without evaluating t
     writeFileSync(join(sub, 'sanity.blueprint.ts'), 'throw new Error("do not run")')
 
     expect(getCheckoutBlueprint(cwd)).toEqual({
+      directory: sub,
       scopeId: 'inner-org',
       scopeType: 'organization',
       stackId: 'ST-inner',
@@ -61,6 +62,7 @@ test('ignores the host filesystem in an embedded invocation', () => {
   try {
     writeStackLink(root, {projectId: 'project', stackId: 'ST-local'})
     expect(getCheckoutBlueprint(root)).toEqual({
+      directory: root,
       scopeId: 'project',
       scopeType: 'project',
       stackId: 'ST-local',

@@ -14,12 +14,12 @@ import {isAssetAspect, type SchemaValidationProblem} from '@sanity/types'
 
 import {getMediaLibraryConfig} from '../../actions/media/getMediaLibraryConfig.js'
 import {importAspects} from '../../actions/media/importAspects.js'
-import {promptForProject} from '../../prompts/promptForProject.js'
+import {resolveProjectForCommand} from '../../actions/targets/blueprintCommandTarget.js'
 import {selectMediaLibrary} from '../../prompts/selectMediaLibrary.js'
 import {deployAspects} from '../../services/mediaLibraries.js'
 import {NO_MEDIA_LIBRARY_ASPECTS_PATH} from '../../util/errorMessages.js'
 import {pluralize} from '../../util/pluralize.js'
-import {getProjectIdFlag} from '../../util/sharedFlags.js'
+import {getProjectIdFlag, getWithBlueprintsFlag} from '../../util/sharedFlags.js'
 
 const deployAspectDebug = subdebug('media:deploy-aspect')
 
@@ -45,6 +45,7 @@ export class MediaDeployAspectCommand extends SanityCommand<typeof MediaDeployAs
   ]
 
   static override flags = {
+    ...getWithBlueprintsFlag(),
     ...getProjectIdFlag({
       description: 'Project ID to deploy media aspect to',
       semantics: 'override',
@@ -97,7 +98,7 @@ export class MediaDeployAspectCommand extends SanityCommand<typeof MediaDeployAs
       this.error(NO_MEDIA_LIBRARY_ASPECTS_PATH, {exit: exitCodes.RUNTIME_ERROR})
     }
 
-    const projectId = await this.getProjectId({fallback: () => promptForProject({})})
+    const projectId = await resolveProjectForCommand(this, this.flags)
 
     try {
       // Determine target media library

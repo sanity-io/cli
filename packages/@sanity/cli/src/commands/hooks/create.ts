@@ -1,9 +1,10 @@
 import {exitCodes, getSanityUrl, SanityCommand, subdebug} from '@sanity/cli-core'
 import open from 'open'
 
-import {promptForProject} from '../../prompts/promptForProject.js'
+import {getBlueprintForScope} from '../../actions/blueprints/prepareResource.js'
+import {resolveProjectForCommand} from '../../actions/targets/blueprintCommandTarget.js'
 import {getProjectById} from '../../services/projects.js'
-import {getProjectIdFlag} from '../../util/sharedFlags.js'
+import {getProjectIdFlag, getWithBlueprintsFlag} from '../../util/sharedFlags.js'
 
 const createHookDebug = subdebug('hook:create')
 
@@ -21,6 +22,7 @@ export class CreateHookCommand extends SanityCommand<typeof CreateHookCommand> {
   ]
 
   static override flags = {
+    ...getWithBlueprintsFlag(),
     ...getProjectIdFlag({
       description: 'Project ID to create webhook for',
       semantics: 'override',
@@ -30,10 +32,17 @@ export class CreateHookCommand extends SanityCommand<typeof CreateHookCommand> {
   static override hiddenAliases: string[] = ['hook:create']
 
   public async run() {
-    const projectId = await this.getProjectId({
-      fallback: () =>
-        promptForProject({requiredPermissions: [{grant: 'read', permission: 'sanity.project'}]}),
-    })
+    const projectId = await resolveProjectForCommand(this, this.flags, [
+      {grant: 'read', permission: 'sanity.project'},
+    ])
+
+    if (this.flags['with-blueprints']) {
+      const blueprintPath = await getBlueprintForScope({id: projectId, type: 'project'})
+      this.error(
+        `Add a document webhook to ${blueprintPath ?? 'your Blueprint manifest'} for project "${projectId}", then run \`sanity blueprints plan\`.`,
+        {exit: exitCodes.USAGE_ERROR},
+      )
+    }
 
     let projectInfo: {organizationId?: string | null}
     try {
