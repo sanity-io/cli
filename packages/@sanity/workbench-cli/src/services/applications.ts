@@ -65,7 +65,7 @@ export interface BrettWorkspace {
 }
 
 export function getWorkbenchUrl(organizationId: string): string {
-  return `https://${organizationId}.${isStaging() ? 'run.sanity.work' : 'sanity.run'}`
+  return `https://${organizationId.toLowerCase()}.${isStaging() ? 'run.sanity.work' : 'sanity.run'}`
 }
 
 /** Where a deployed application is served on its organization's workbench. */
