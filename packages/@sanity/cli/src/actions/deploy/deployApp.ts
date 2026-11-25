@@ -188,7 +188,7 @@ async function runAppDeployment(
 
   const startedAt = Date.now()
   const summaryDetails =
-    workbench && organizationId && !flags.json
+    (workbench || config) && organizationId && !flags.json
       ? fetchDeploySummaryDetails(organizationId)
       : undefined
 
@@ -326,8 +326,6 @@ async function runAppDeployment(
         await deployConfig({
           appType: configAppType,
           installationId,
-          organizationId,
-          output,
           sourceDir,
           version,
         })
@@ -381,7 +379,18 @@ async function runAppDeployment(
       if (aspectSyncPlan) {
         await runAspectSync(aspectSyncPlan, output)
       }
-      if (installationId && version) {
+      if (installationId && version && organizationId) {
+        output.log(
+          formatDeploySummary({
+            ...(await summaryDetails),
+            created: false,
+            durationMs: Date.now() - startedAt,
+            organizationId,
+            title: 'Media Library configuration',
+            type: 'config',
+            url: getWorkbenchUrl(organizationId),
+          }),
+        )
         return {application: null, installationId, payload}
       }
       return
