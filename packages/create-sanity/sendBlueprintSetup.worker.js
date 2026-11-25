@@ -5,6 +5,7 @@ import {fileURLToPath} from 'node:url'
 
 import {
   getLocalTelemetryDenial,
+  getTelemetryTokenDigest,
   TELEMETRY_API_VERSION,
   TELEMETRY_BATCH_PATH,
   TELEMETRY_STATUS_PATH,
@@ -12,7 +13,7 @@ import {
 import {createClient} from '@sanity/client'
 import {createSessionId} from '@sanity/telemetry'
 
-export async function sendBlueprintSetup(route, outcome, elapsed) {
+export async function sendBlueprintSetup(route, outcome, elapsed, tokenDigest) {
   const durationMs = Number(elapsed)
   if (!['delegated', 'standalone'].includes(route)) return
   if (!['cancelled', 'failed', 'success'].includes(outcome)) return
@@ -21,7 +22,8 @@ export async function sendBlueprintSetup(route, outcome, elapsed) {
 
   const environment = process.env.SANITY_INTERNAL_ENV
   const token = await readToken(environment)
-  if (!token) return
+  // A separate CLI invocation can replace the saved login while setup is running.
+  if (!token || getTelemetryTokenDigest(token) !== tokenDigest) return
 
   const apiHost = environment === 'staging' ? 'https://api.sanity.work' : environment
   const client = createClient({
@@ -78,6 +80,6 @@ async function readToken(environment) {
 }
 
 if (process.argv[1] && fileURLToPath(import.meta.url) === resolve(process.argv[1])) {
-  const [route, outcome, elapsed] = process.argv.slice(2)
-  await sendBlueprintSetup(route, outcome, elapsed).catch(() => {})
+  const [route, outcome, elapsed, tokenDigest] = process.argv.slice(2)
+  await sendBlueprintSetup(route, outcome, elapsed, tokenDigest).catch(() => {})
 }

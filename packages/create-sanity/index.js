@@ -2,24 +2,32 @@
 import {resolve} from 'node:path'
 import {parseArgs} from 'node:util'
 
+import {getLocalTelemetryDenial, getTelemetryTokenDigest} from '@sanity/cli-setup/telemetry'
+
 import {reportBlueprintSetup} from './reportBlueprintSetup.js'
 
+const windowsControlCExit = 0xc0_00_01_3a
 const args = process.argv.slice(2)
 const separator = args.indexOf('--')
 const flags = separator === -1 ? args : args.slice(0, separator)
-const isBlueprintAttempt =
-  flags.includes('--with-blueprints') && !flags.includes('--help') && !flags.includes('-h')
-const startedAt = isBlueprintAttempt ? performance.now() : 0
+const shouldReport =
+  flags.includes('--with-blueprints') &&
+  !flags.includes('--help') &&
+  !flags.includes('-h') &&
+  !getLocalTelemetryDenial()
+const startedAt = shouldReport ? performance.now() : 0
 let reported = false
 let outcome = 'failed'
 let route = 'delegated'
+let tokenDigest
 
-if (isBlueprintAttempt) process.once('SIGINT', cancel)
+if (shouldReport) process.once('SIGINT', cancel)
 
 try {
   const options = getBlueprintOptions(args, process.env.SANITY_AUTH_TOKEN)
   if (options) {
     route = 'standalone'
+    if (shouldReport) tokenDigest = getTelemetryTokenDigest(options.token)
     // eslint-disable-next-line eslint-js/no-restricted-syntax -- load Blueprint setup after routing
     const {bootstrapBlueprint} = await import('./bootstrapBlueprint.js')
     await bootstrapBlueprint(options, (message) => process.stdout.write(`${message}\n`))
@@ -27,16 +35,18 @@ try {
   } else {
     // eslint-disable-next-line eslint-js/no-restricted-syntax -- load the full CLI installer on demand
     const {runInit} = await import('./runInit.js')
-    const {code, signal} = await runInit(args)
+    const {code, signal} = await runInit(args, shouldReport ? rememberTokenDigest : undefined)
     process.exitCode = code ?? 1
     if (code === 0) outcome = 'success'
-    if (code === 3 || code === 130 || signal === 'SIGINT') outcome = 'cancelled'
+    if (code === 3 || code === 130 || code >>> 0 === windowsControlCExit || signal === 'SIGINT') {
+      outcome = 'cancelled'
+    }
   }
 } catch (err) {
   process.stderr.write(`${err instanceof Error ? err.message : String(err)}\n`)
   process.exitCode = 1
 } finally {
-  if (isBlueprintAttempt) {
+  if (shouldReport) {
     reportOutcome(outcome)
     process.off('SIGINT', cancel)
   }
@@ -44,15 +54,20 @@ try {
 
 function cancel() {
   reportOutcome('cancelled')
+  if (process.platform === 'win32') return process.exit(windowsControlCExit)
   process.kill(process.pid, 'SIGINT')
 }
 
+function rememberTokenDigest(digest) {
+  tokenDigest = digest
+}
+
 function reportOutcome(result) {
-  if (reported) return
+  if (reported || !tokenDigest) return
   reported = true
   const durationMs = Math.round(performance.now() - startedAt)
   try {
-    reportBlueprintSetup(route, result, durationMs)
+    reportBlueprintSetup(route, result, durationMs, tokenDigest)
   } catch {
     // Telemetry is best effort.
   }

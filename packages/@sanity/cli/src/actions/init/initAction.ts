@@ -160,6 +160,7 @@ export async function initAction(options: InitOptions, context: InitContext) {
   const envFilename = typeof options.env === 'string' ? options.env : envFilenameDefault
 
   const {user} = await ensureAuthenticated(options, output, trace)
+  await context.onAuthenticated?.()
   if (!isAppTemplate) {
     output.log(`${logSymbols.success} Fetching existing projects`)
     output.log('')

@@ -1,6 +1,7 @@
 import {Args, Command, Flags} from '@oclif/core'
 import {CLIError} from '@oclif/core/errors'
-import {SanityCommand} from '@sanity/cli-core'
+import {getCliToken, SanityCommand} from '@sanity/cli-core'
+import {getTelemetryTokenDigest} from '@sanity/cli-setup/telemetry'
 
 import {initAction} from '../actions/init/initAction.js'
 import {InitError} from '../actions/init/initError.js'
@@ -259,10 +260,17 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
       skillsMode = 'skip'
     }
 
+    const reportTokenDigest =
+      this.flags['from-create'] && this.flags['with-blueprints'] && process.send
+        ? sendBlueprintTokenDigest
+        : undefined
+    await reportTokenDigest?.()
+
     try {
       await initAction(
         flagsToInitOptions(this.flags, this.isUnattended(), this.args, mcpMode, skillsMode),
         {
+          onAuthenticated: reportTokenDigest,
           output: this.output,
           telemetry: this.telemetry,
           workDir: process.cwd(),
@@ -274,5 +282,14 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
       }
       throw error
     }
+  }
+}
+
+async function sendBlueprintTokenDigest(): Promise<void> {
+  try {
+    const token = await getCliToken()
+    process.send?.({blueprintTokenDigest: token ? getTelemetryTokenDigest(token) : null}, () => {})
+  } catch {
+    // A closed telemetry channel must not interrupt setup.
   }
 }

@@ -6,21 +6,24 @@ import {fileURLToPath} from 'node:url'
 
 const cliManifest = join('node_modules', '@sanity', 'cli', 'package.json')
 
-export async function runInit(args) {
+export async function runInit(args, onTokenDigest) {
   const pin = await readFile(new URL('dist/studio-cli-version.json', import.meta.url), 'utf8')
   const {version} = JSON.parse(pin)
   const local = await resolveLocalCli(version)
   const manifestPath = local ?? (await installCli(version))
   const {bin} = JSON.parse(await readFile(manifestPath, 'utf8'))
-  return waitForExit(
-    spawn(
-      process.execPath,
-      [join(dirname(manifestPath), bin.sanity), 'init', ...args, '--from-create'],
-      {
-        stdio: 'inherit',
-      },
-    ),
+  const child = spawn(
+    process.execPath,
+    [join(dirname(manifestPath), bin.sanity), 'init', ...args, '--from-create'],
+    {stdio: onTokenDigest ? ['inherit', 'inherit', 'inherit', 'ipc'] : 'inherit'},
   )
+  if (onTokenDigest) {
+    child.on('message', (message) => {
+      const digest = message?.blueprintTokenDigest
+      if (digest === null || typeof digest === 'string') onTokenDigest(digest)
+    })
+  }
+  return waitForExit(child)
 }
 
 async function resolveLocalCli(version) {

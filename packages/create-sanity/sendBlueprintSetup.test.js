@@ -1,3 +1,4 @@
+import {createHash} from 'node:crypto'
 import {dirname, join} from 'node:path'
 import {fileURLToPath} from 'node:url'
 
@@ -13,6 +14,8 @@ const {createClient, readFile, request, spawn} = vi.hoisted(() => ({
   request: vi.fn(),
   spawn: vi.fn(),
 }))
+const privateDigest = createHash('sha256').update('private-token').digest('hex')
+const storedDigest = createHash('sha256').update('stored-token').digest('hex')
 
 vi.mock('node:fs/promises', () => ({readFile}))
 vi.mock('@sanity/client', () => ({createClient}))
@@ -40,7 +43,7 @@ test('launches the sender without keeping the setup process open', () => {
   spawn.mockReturnValueOnce(child)
   vi.spyOn(process, 'getBuiltinModule').mockReturnValueOnce({spawn})
 
-  reportBlueprintSetup('standalone', 'failed', 37)
+  reportBlueprintSetup('standalone', 'failed', 37, privateDigest)
 
   expect(spawn).toHaveBeenCalledExactlyOnceWith(
     process.execPath,
@@ -49,6 +52,7 @@ test('launches the sender without keeping the setup process open', () => {
       'standalone',
       'failed',
       '37',
+      privateDigest,
     ],
     {detached: true, stdio: 'ignore', windowsHide: true},
   )
@@ -59,12 +63,12 @@ test('launches the sender without keeping the setup process open', () => {
 test.each(['CI', 'DO_NOT_TRACK'])('skips the background worker with %s enabled', (env) => {
   vi.stubEnv(env, 'True')
   const getBuiltinModule = vi.spyOn(process, 'getBuiltinModule')
-  reportBlueprintSetup('standalone', 'success', 5)
+  reportBlueprintSetup('standalone', 'success', 5, privateDigest)
   expect(getBuiltinModule).not.toHaveBeenCalled()
 })
 
 test('checks account consent and sends only the setup outcome', async () => {
-  await sendBlueprintSetup('standalone', 'success', '23')
+  await sendBlueprintSetup('standalone', 'success', '23', privateDigest)
 
   expect(readFile).not.toHaveBeenCalled()
   expect(createClient).toHaveBeenCalledExactlyOnceWith({
@@ -108,7 +112,7 @@ test('reads the CLI login for a delegated run', async () => {
   vi.stubEnv('SANITY_AUTH_TOKEN', '')
   readFile.mockResolvedValueOnce('{"authToken":"stored-token"}')
 
-  await sendBlueprintSetup('delegated', 'cancelled', '12')
+  await sendBlueprintSetup('delegated', 'cancelled', '12', storedDigest)
 
   expect(readFile).toHaveBeenCalledExactlyOnceWith('/test/config.json', 'utf8')
   expect(createClient).toHaveBeenCalledWith(expect.objectContaining({token: 'stored-token'}))
@@ -119,18 +123,27 @@ test('reads the CLI login for a delegated run', async () => {
   })
 })
 
+test('skips consent and collection if another login replaced the account used for setup', async () => {
+  vi.stubEnv('SANITY_AUTH_TOKEN', '')
+  readFile.mockResolvedValueOnce('{"authToken":"another-account-token"}')
+
+  await sendBlueprintSetup('delegated', 'success', '12', storedDigest)
+
+  expect(createClient).not.toHaveBeenCalled()
+})
+
 test.each(['denied', 'unset', 'unexpected', undefined])(
   'skips the batch when consent is %s',
   async (status) => {
     request.mockResolvedValueOnce({status})
-    await sendBlueprintSetup('delegated', 'failed', '0')
+    await sendBlueprintSetup('delegated', 'failed', '0', privateDigest)
     expect(request).toHaveBeenCalledOnce()
   },
 )
 
 test('skips consent and collection if there is no login', async () => {
   vi.stubEnv('SANITY_AUTH_TOKEN', '')
-  await sendBlueprintSetup('delegated', 'failed', '0')
+  await sendBlueprintSetup('delegated', 'failed', '0', privateDigest)
   expect(createClient).not.toHaveBeenCalled()
 })
 
@@ -138,7 +151,7 @@ test.each(['BUILD_NUMBER', 'CI', 'CONTINUOUS_INTEGRATION', 'DO_NOT_TRACK'])(
   'skips consent and collection with %s enabled',
   async (env) => {
     vi.stubEnv(env, '1')
-    await sendBlueprintSetup('standalone', 'success', '5')
+    await sendBlueprintSetup('standalone', 'success', '5', privateDigest)
     expect(createClient).not.toHaveBeenCalled()
   },
 )
@@ -149,6 +162,6 @@ test.each([
   ['standalone', 'success', 'private-token'],
   ['standalone', 'success', '-1'],
 ])('rejects unexpected input (%s, %s, %s)', async (route, result, elapsed) => {
-  await sendBlueprintSetup(route, result, elapsed)
+  await sendBlueprintSetup(route, result, elapsed, privateDigest)
   expect(createClient).not.toHaveBeenCalled()
 })

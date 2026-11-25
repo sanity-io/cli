@@ -59,6 +59,8 @@ export interface InitContext {
   output: Output
   telemetry: CLITelemetryStore
   workDir: string
+
+  onAuthenticated?: () => Promise<void>
 }
 
 interface InitCommandFlags {
