@@ -5,10 +5,10 @@ import {exitCodes, SanityCommand, subdebug} from '@sanity/cli-core'
 import {requiredWhenUnattended} from '@sanity/cli-core/flags'
 import {confirm} from '@sanity/cli-core/ux'
 
-import {promptForProject} from '../../prompts/promptForProject.js'
+import {resolveProjectForCommand} from '../../actions/targets/blueprintCommandTarget.js'
 import {selectMediaLibrary} from '../../prompts/selectMediaLibrary.js'
 import {deleteAspect} from '../../services/mediaLibraries.js'
-import {getProjectIdFlag} from '../../util/sharedFlags.js'
+import {getProjectIdFlag, getWithBlueprintsFlag} from '../../util/sharedFlags.js'
 
 const deleteAspectDebug = subdebug('media:delete-aspect')
 
@@ -30,6 +30,7 @@ export class MediaDeleteAspectCommand extends SanityCommand<typeof MediaDeleteAs
   ]
 
   static override flags = {
+    ...getWithBlueprintsFlag(),
     ...getProjectIdFlag({
       description: 'Project ID to delete media aspect from',
       semantics: 'override',
@@ -51,7 +52,7 @@ export class MediaDeleteAspectCommand extends SanityCommand<typeof MediaDeleteAs
     const {aspectName} = this.args
     const {'media-library-id': mediaLibraryIdFlag, yes: skipConfirmation} = this.flags
 
-    const projectId = await this.getProjectId({fallback: () => promptForProject({})})
+    const projectId = await resolveProjectForCommand(this, this.flags)
 
     let mediaLibraryId = mediaLibraryIdFlag
     if (!mediaLibraryId) {

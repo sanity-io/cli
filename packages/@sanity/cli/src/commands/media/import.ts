@@ -11,17 +11,18 @@ import {type OperatorFunction, pipe, scan, tap} from 'rxjs'
 import {importer, type State} from '../../actions/media/importMedia.js'
 import {importMediaDebug} from '../../actions/media/importMediaDebug.js'
 import {ingestMediaAssetFromUrlWithProgress} from '../../actions/media/ingestMediaAssetFromUrlWithProgress.js'
+import {resolveProjectForCommand} from '../../actions/targets/blueprintCommandTarget.js'
 import {promptForMediaLibrary} from '../../prompts/promptForMediaLibrary.js'
-import {promptForProject} from '../../prompts/promptForProject.js'
 import {getMediaLibraries} from '../../services/mediaLibraries.js'
 import {getAssetFilenameError, getIngestUrlError} from '../../util/assetSourceValidation.js'
 import {getAssetUploadErrorMessage} from '../../util/assetUploadErrors.js'
 import {isRemoteAssetSource} from '../../util/isRemoteAssetSource.js'
 import {parseAspectFlags} from '../../util/parseAspectFlags.js'
-import {getProjectIdFlag} from '../../util/sharedFlags.js'
+import {getProjectIdFlag, getWithBlueprintsFlag} from '../../util/sharedFlags.js'
 import {defineCommandTelemetry} from '../../util/telemetry/commandTelemetry.js'
 
 const flags = {
+  ...getWithBlueprintsFlag(),
   ...getProjectIdFlag({
     description: 'Project ID to import media to',
     semantics: 'override',
@@ -122,7 +123,7 @@ export class MediaImportCommand extends SanityCommand<typeof MediaImportCommand>
       this.error(sourceUrlError, {exit: exitCodes.USAGE_ERROR})
     }
 
-    const projectId = await this.getProjectId({fallback: () => promptForProject({})})
+    const projectId = await resolveProjectForCommand(this, this.flags)
 
     const cliConfig = await this.tryGetCliConfig()
     const dataset = cliConfig.api?.dataset

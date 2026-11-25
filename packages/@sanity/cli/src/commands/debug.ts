@@ -2,6 +2,7 @@ import {styleText} from 'node:util'
 
 import {Flags} from '@oclif/core'
 import {ProjectRootNotFoundError, SanityCommand} from '@sanity/cli-core'
+import {getErrorMessage} from '@sanity/cli-core/errors'
 
 import {
   gatherAuthInfo,
@@ -13,6 +14,8 @@ import {
 } from '../actions/debug/gatherDebugInfo.js'
 import {formatKeyValue, sectionHeader} from '../actions/debug/output.js'
 import {type StudioWorkspace, type UserInfo} from '../actions/debug/types.js'
+import {getCheckoutBlueprint, getCheckoutManifest} from '../util/checkoutBlueprint.js'
+import {getWithBlueprintsFlag} from '../util/sharedFlags.js'
 
 type ConfigLoadResult<T> = {error: Error; value?: never} | {error?: never; value: T}
 
@@ -25,6 +28,7 @@ export class Debug extends SanityCommand<typeof Debug> {
   ]
 
   static override flags = {
+    ...getWithBlueprintsFlag(),
     secrets: Flags.boolean({
       default: false,
       description: 'Include API keys in output',
@@ -81,6 +85,8 @@ export class Debug extends SanityCommand<typeof Debug> {
     // Section 3: CLI
     await this.printCliSection()
 
+    if (flags['with-blueprints']) this.printBlueprintSection()
+
     // Section 4: Project
     this.printProjectSection(project, cliConfigLoad, studioLoad)
 
@@ -102,6 +108,24 @@ export class Debug extends SanityCommand<typeof Debug> {
 
     if (!includeSecrets) {
       this.log('  (run with --secrets to reveal token)')
+    }
+    this.log('')
+  }
+
+  private printBlueprintSection(): void {
+    this.log(sectionHeader('Blueprint'))
+    try {
+      const checkout = getCheckoutBlueprint()
+      if (checkout) {
+        this.log(formatKeyValue('Stack', checkout.stackId, {padTo: 8}))
+        this.log(formatKeyValue('Scope', `${checkout.scopeType} ${checkout.scopeId}`, {padTo: 8}))
+        const manifest = getCheckoutManifest(checkout)
+        if (manifest) this.log(formatKeyValue('Manifest', manifest, {padTo: 8}))
+      } else {
+        this.log('No linked Blueprint Stack found in this checkout.')
+      }
+    } catch (error) {
+      this.log(`Could not read the local Blueprint Stack link. ${getErrorMessage(error)}`)
     }
     this.log('')
   }

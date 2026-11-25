@@ -13,13 +13,15 @@ import {getDatasetsOutString} from './utils/schemaStoreOutStrings.js'
 import {SCHEMA_PERMISSION_HELP_TEXT} from './utils/schemaStoreValidation.js'
 
 interface ListSchemasOptions {
-  configPath: string
   json: boolean
   output: Output
-  workDir: string
 
   id?: string
 }
+
+type SchemaDataset = Pick<Workspace, 'dataset' | 'projectId'>
+type SchemaWorkspace = Pick<Workspace, 'name'> & SchemaDataset
+type SchemaSource = {configPath: string; workDir: string} | {dataset: SchemaDataset}
 
 class DatasetError extends Error {
   public dataset: string
@@ -32,18 +34,10 @@ class DatasetError extends Error {
   }
 }
 
-export async function listSchemas(options: ListSchemasOptions): Promise<void> {
-  const {configPath, id, json, output, workDir} = options
-
-  const projectDatasets = await studioWorkerTask<(Workspace & {key: string})[]>(
-    new URL('uniqueWorkspaces.worker.js', import.meta.url),
-    {
-      name: 'uniqueWorkspaces',
-      studioRootPath: workDir,
-      workerData: {configPath} satisfies UniqWorkspaceWorkerData,
-    },
-  )
-
+export async function listSchemas(options: ListSchemasOptions & SchemaSource): Promise<void> {
+  const {id, json, output} = options
+  const workspaces = 'dataset' in options ? undefined : await getStudioWorkspaces(options)
+  const projectDatasets = 'dataset' in options ? [options.dataset] : (workspaces ?? [])
   const schemas = await getDatasetSchemas(projectDatasets, id)
   const parsedSchemas = parseSchemas(schemas, output, json)
 
@@ -60,11 +54,26 @@ export async function listSchemas(options: ListSchemasOptions): Promise<void> {
   if (json) {
     output.logJson(id ? parsedSchemas[0] : parsedSchemas)
   } else {
-    printSchemas({output, schemas: parsedSchemas, workspaces: projectDatasets})
+    const resultWorkspaces =
+      'dataset' in options
+        ? parsedSchemas.map(({workspace}) => ({...options.dataset, name: workspace.name}))
+        : (workspaces ?? [])
+    printSchemas({output, schemas: parsedSchemas, workspaces: resultWorkspaces})
   }
 }
 
-async function getDatasetSchemas(projectDatasets: Workspace[], id?: string) {
+function getStudioWorkspaces({configPath, workDir}: {configPath: string; workDir: string}) {
+  return studioWorkerTask<SchemaWorkspace[]>(
+    new URL('uniqueWorkspaces.worker.js', import.meta.url),
+    {
+      name: 'uniqueWorkspaces',
+      studioRootPath: workDir,
+      workerData: {configPath} satisfies UniqWorkspaceWorkerData,
+    },
+  )
+}
+
+async function getDatasetSchemas(projectDatasets: SchemaDataset[], id?: string) {
   return Promise.allSettled(
     projectDatasets.map(async ({dataset, projectId}) => {
       try {
@@ -127,7 +136,7 @@ function printSchemas({
 }: {
   output: Output
   schemas: StoredWorkspaceSchema[]
-  workspaces: Workspace[]
+  workspaces: SchemaWorkspace[]
 }) {
   const rows = schemas
     .toSorted((a, b) => -(a._createdAt || '').localeCompare(b._createdAt || ''))

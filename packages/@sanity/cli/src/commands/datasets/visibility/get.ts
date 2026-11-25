@@ -2,9 +2,9 @@ import {Args} from '@oclif/core'
 import {exitCodes, SanityCommand, subdebug} from '@sanity/cli-core'
 
 import {validateDatasetName} from '../../../actions/dataset/validateDatasetName.js'
-import {promptForProject} from '../../../prompts/promptForProject.js'
+import {resolveProjectForCommand} from '../../../actions/targets/blueprintCommandTarget.js'
 import {listDatasets} from '../../../services/datasets.js'
-import {getProjectIdFlag} from '../../../util/sharedFlags.js'
+import {getProjectIdFlag, getWithBlueprintsFlag} from '../../../util/sharedFlags.js'
 
 const getDebug = subdebug('dataset:visibility:get')
 
@@ -26,6 +26,7 @@ export class DatasetVisibilityGetCommand extends SanityCommand<typeof DatasetVis
   ]
 
   static override flags = {
+    ...getWithBlueprintsFlag(),
     ...getProjectIdFlag({
       description: 'Project ID to get dataset visibility for',
       semantics: 'override',
@@ -38,12 +39,9 @@ export class DatasetVisibilityGetCommand extends SanityCommand<typeof DatasetVis
     const {args} = await this.parse(DatasetVisibilityGetCommand)
     const {dataset} = args
 
-    const projectId = await this.getProjectId({
-      fallback: () =>
-        promptForProject({
-          requiredPermissions: [{grant: 'read', permission: 'sanity.project.datasets'}],
-        }),
-    })
+    const projectId = await resolveProjectForCommand(this, this.flags, [
+      {grant: 'read', permission: 'sanity.project.datasets'},
+    ])
 
     const dsError = validateDatasetName(dataset)
     if (dsError) {

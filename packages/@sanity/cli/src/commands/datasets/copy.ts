@@ -10,9 +10,9 @@ import {SanityCommand} from '@sanity/cli-core/SanityCommand'
 import {spinner} from '@sanity/cli-core/ux'
 
 import {validateDatasetName} from '../../actions/dataset/validateDatasetName.js'
+import {resolveProjectForCommand} from '../../actions/targets/blueprintCommandTarget.js'
 import {promptForDataset} from '../../prompts/promptForDataset.js'
 import {promptForDatasetName} from '../../prompts/promptForDatasetName.js'
-import {promptForProject} from '../../prompts/promptForProject.js'
 import {
   copyDataset,
   type CopyJobProgressEvent,
@@ -23,7 +23,7 @@ import {
 } from '../../services/datasets.js'
 import {formatCliErrorMessages} from '../../util/formatCliErrorMessages.js'
 import {Table} from '../../util/responsiveTable.js'
-import {getProjectIdFlag} from '../../util/sharedFlags.js'
+import {getProjectIdFlag, getWithBlueprintsFlag} from '../../util/sharedFlags.js'
 
 const copyDatasetDebug = subdebug('dataset:copy')
 
@@ -81,6 +81,7 @@ export class CopyDatasetCommand extends SanityCommand<typeof CopyDatasetCommand>
   ]
 
   static override flags = {
+    ...getWithBlueprintsFlag(),
     ...getProjectIdFlag({
       description: 'Project ID to copy dataset in',
       semantics: 'override',
@@ -128,6 +129,13 @@ export class CopyDatasetCommand extends SanityCommand<typeof CopyDatasetCommand>
   public async run(): Promise<void> {
     const {args, flags} = await this.parse(CopyDatasetCommand)
 
+    if (flags['with-blueprints'] && !flags.list && !flags.attach) {
+      return this.output.error(
+        'Dataset copy creates a new dataset. Declare and deploy the destination in your Blueprint, then use `sanity datasets export` and `sanity datasets import` to copy the content.',
+        {exit: exitCodes.USAGE_ERROR},
+      )
+    }
+
     if (!flags.list && !flags.attach && this.isUnattended()) {
       const errors: string[] = []
 
@@ -143,15 +151,10 @@ export class CopyDatasetCommand extends SanityCommand<typeof CopyDatasetCommand>
       }
     }
 
-    const projectId = await this.getProjectId({
-      fallback: () =>
-        promptForProject({
-          requiredPermissions: [
-            {grant: 'read', permission: 'sanity.project.datasets'},
-            {grant: 'create', permission: 'sanity.project.datasets'},
-          ],
-        }),
-    })
+    const projectId = await resolveProjectForCommand(this, this.flags, [
+      {grant: 'read', permission: 'sanity.project.datasets'},
+      {grant: 'create', permission: 'sanity.project.datasets'},
+    ])
 
     // Route to appropriate mode
     if (flags.list) {

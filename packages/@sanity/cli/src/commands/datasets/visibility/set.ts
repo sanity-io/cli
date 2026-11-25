@@ -2,10 +2,14 @@ import {Args} from '@oclif/core'
 import {exitCodes, SanityCommand, subdebug} from '@sanity/cli-core'
 import {DatasetsResponse} from '@sanity/client'
 
+import {
+  guardBlueprintDataset,
+  reportBlueprintManagedError,
+} from '../../../actions/blueprints/guardResource.js'
 import {validateDatasetName} from '../../../actions/dataset/validateDatasetName.js'
-import {promptForProject} from '../../../prompts/promptForProject.js'
+import {resolveProjectForCommand} from '../../../actions/targets/blueprintCommandTarget.js'
 import {editDatasetAcl, listDatasets} from '../../../services/datasets.js'
-import {getProjectIdFlag} from '../../../util/sharedFlags.js'
+import {getProjectIdFlag, getWithBlueprintsFlag} from '../../../util/sharedFlags.js'
 
 const setDatasetVisibilityDebug = subdebug('dataset:visibility:set')
 
@@ -36,6 +40,7 @@ export class DatasetVisibilitySetCommand extends SanityCommand<typeof DatasetVis
   ]
 
   static override flags = {
+    ...getWithBlueprintsFlag(),
     ...getProjectIdFlag({
       description: 'Project ID to set dataset visibility for',
       semantics: 'override',
@@ -48,15 +53,10 @@ export class DatasetVisibilitySetCommand extends SanityCommand<typeof DatasetVis
     const {args} = await this.parse(DatasetVisibilitySetCommand)
     const {dataset, mode} = args
 
-    const projectId = await this.getProjectId({
-      fallback: () =>
-        promptForProject({
-          requiredPermissions: [
-            {grant: 'read', permission: 'sanity.project.datasets'},
-            {grant: 'update', permission: 'sanity.project.datasets'},
-          ],
-        }),
-    })
+    const projectId = await resolveProjectForCommand(this, this.flags, [
+      {grant: 'read', permission: 'sanity.project.datasets'},
+      {grant: 'update', permission: 'sanity.project.datasets'},
+    ])
 
     const dsError = validateDatasetName(dataset)
     if (dsError) {
@@ -84,6 +84,10 @@ export class DatasetVisibilitySetCommand extends SanityCommand<typeof DatasetVis
       return
     }
 
+    if (this.flags['with-blueprints']) {
+      await guardBlueprintDataset(this.output, projectId, dataset, 'edit')
+    }
+
     if (mode === 'private') {
       this.log(
         'Please note that while documents are private, assets (files and images) are still public',
@@ -97,6 +101,8 @@ export class DatasetVisibilitySetCommand extends SanityCommand<typeof DatasetVis
         projectId,
       })
     } catch (error) {
+      if (this.flags['with-blueprints'])
+        reportBlueprintManagedError(this.output, error, `dataset "${dataset}"`, 'edit')
       const message = error instanceof Error ? error.message : String(error)
       setDatasetVisibilityDebug(`Failed to edit dataset: ${message}`, error)
       this.error(`Failed to edit dataset: ${message}`, {exit: exitCodes.RUNTIME_ERROR})

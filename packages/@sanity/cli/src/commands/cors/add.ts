@@ -3,15 +3,21 @@ import path from 'node:path'
 import {styleText} from 'node:util'
 
 import {Args, Flags} from '@oclif/core'
+import {defineCorsOrigin} from '@sanity/blueprints'
 import {exitCodes, SanityCommand, subdebug} from '@sanity/cli-core'
 import {getCliExecutionContext} from '@sanity/cli-core/executionContext'
 import {confirm, logSymbols} from '@sanity/cli-core/ux'
 import {oneline} from 'oneline'
 
+import {
+  blueprintResourceName,
+  getBlueprintForScope,
+  printBlueprintResource,
+} from '../../actions/blueprints/prepareResource.js'
 import {filterAndValidateOrigin} from '../../actions/cors/filterAndValidateOrigin.js'
-import {promptForProject} from '../../prompts/promptForProject.js'
+import {resolveProjectForCommand} from '../../actions/targets/blueprintCommandTarget.js'
 import {createCorsOrigin} from '../../services/cors.js'
-import {getProjectIdFlag} from '../../util/sharedFlags.js'
+import {getProjectIdFlag, getWithBlueprintsFlag} from '../../util/sharedFlags.js'
 
 const addCorsDebug = subdebug('cors:add')
 
@@ -45,6 +51,7 @@ export class Add extends SanityCommand<typeof Add> {
   ]
 
   static override flags = {
+    ...getWithBlueprintsFlag(),
     ...getProjectIdFlag({
       description: 'Project ID to add CORS origin to',
       semantics: 'override',
@@ -66,12 +73,9 @@ export class Add extends SanityCommand<typeof Add> {
     const {origin} = args
 
     // Ensure we have project context
-    const projectId = await this.getProjectId({
-      fallback: () =>
-        promptForProject({
-          requiredPermissions: [{grant: 'create', permission: 'sanity.project.cors'}],
-        }),
-    })
+    const projectId = await resolveProjectForCommand(this, this.flags, [
+      {grant: 'create', permission: 'sanity.project.cors'},
+    ])
 
     // Check if the origin argument looks like a file path and warn. This only
     // makes sense for shell usage (unquoted globs expanding to filenames), so
@@ -113,6 +117,21 @@ export class Add extends SanityCommand<typeof Add> {
 
     if (filteredOrigin !== origin) {
       this.log(`Normalized origin to: ${filteredOrigin}`)
+    }
+
+    if (this.flags['with-blueprints']) {
+      const blueprintPath = await getBlueprintForScope({id: projectId, type: 'project'})
+      printBlueprintResource(
+        this.output,
+        blueprintPath,
+        defineCorsOrigin({
+          allowCredentials,
+          name: blueprintResourceName('cors', `${projectId}/${filteredOrigin}`),
+          origin: filteredOrigin,
+          project: projectId,
+        }),
+      )
+      return
     }
 
     try {

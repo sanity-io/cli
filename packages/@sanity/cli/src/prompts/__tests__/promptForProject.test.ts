@@ -45,6 +45,26 @@ const makeProject = (id: string, displayName: string, createdAt: string) =>
   ({createdAt, displayName, id}) as never
 
 describe('promptForProject', () => {
+  test('offers only accessible projects in the linked organization', async () => {
+    mockProjectsList.mockResolvedValue([
+      {
+        createdAt: '2024-01-01',
+        displayName: 'Linked Project',
+        id: 'linked',
+        organizationId: 'org-a',
+      },
+      {createdAt: '2024-01-01', displayName: 'Other Project', id: 'other', organizationId: 'org-b'},
+    ])
+    mockSelect.mockResolvedValue('linked')
+
+    await expect(promptForProject({organizationId: 'org-a'})).resolves.toBe('linked')
+    expect(mockProjectsList).toHaveBeenCalledWith({onlyExplicitMembership: false})
+    expect(mockSelect).toHaveBeenCalledWith({
+      choices: [{name: 'Linked Project (linked)', value: 'linked'}],
+      message: 'Select project',
+    })
+  })
+
   test('shows projects sorted by creation date descending', async () => {
     mockProjectsList.mockResolvedValue([
       makeProject('older', 'Older Project', '2024-01-01T00:00:00Z'),

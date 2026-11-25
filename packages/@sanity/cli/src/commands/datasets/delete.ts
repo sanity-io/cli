@@ -5,11 +5,15 @@ import {exitCodes, SanityCommand, subdebug} from '@sanity/cli-core'
 import {requiredWhenUnattended} from '@sanity/cli-core/flags'
 import {input, logSymbols} from '@sanity/cli-core/ux'
 
+import {
+  guardBlueprintDataset,
+  reportBlueprintManagedError,
+} from '../../actions/blueprints/guardResource.js'
 import {validateDatasetName} from '../../actions/dataset/validateDatasetName.js'
-import {promptForProject} from '../../prompts/promptForProject.js'
+import {resolveProjectForCommand} from '../../actions/targets/blueprintCommandTarget.js'
 import {deleteDataset} from '../../services/datasets.js'
 import {getProjectById} from '../../services/projects.js'
-import {getProjectIdFlag} from '../../util/sharedFlags.js'
+import {getProjectIdFlag, getWithBlueprintsFlag} from '../../util/sharedFlags.js'
 
 const deleteDatasetDebug = subdebug('dataset:delete')
 
@@ -35,6 +39,7 @@ export class DeleteDatasetCommand extends SanityCommand<typeof DeleteDatasetComm
   ]
 
   static override flags = {
+    ...getWithBlueprintsFlag(),
     ...getProjectIdFlag({
       description: 'Project ID to delete dataset from',
       semantics: 'override',
@@ -52,18 +57,19 @@ export class DeleteDatasetCommand extends SanityCommand<typeof DeleteDatasetComm
     const {args, flags} = await this.parse(DeleteDatasetCommand)
     const {force} = flags
 
-    const projectId = await this.getProjectId({
-      fallback: () =>
-        promptForProject({
-          requiredPermissions: [{grant: 'delete', permission: 'sanity.project.datasets'}],
-        }),
-    })
+    const projectId = await resolveProjectForCommand(this, this.flags, [
+      {grant: 'delete', permission: 'sanity.project.datasets'},
+    ])
 
     const datasetName = args.datasetName
 
     const dsError = validateDatasetName(datasetName)
     if (dsError) {
       this.error(dsError, {exit: exitCodes.USAGE_ERROR})
+    }
+
+    if (this.flags['with-blueprints']) {
+      await guardBlueprintDataset(this.output, projectId, datasetName, 'delete')
     }
 
     if (force) {
@@ -99,6 +105,8 @@ export class DeleteDatasetCommand extends SanityCommand<typeof DeleteDatasetComm
       await deleteDataset({datasetName, projectId})
       this.log('Dataset deleted successfully')
     } catch (error) {
+      if (this.flags['with-blueprints'])
+        reportBlueprintManagedError(this.output, error, `dataset "${datasetName}"`, 'delete')
       const err = error instanceof Error ? error : new Error(`${error}`)
       deleteDatasetDebug(`Error deleting dataset ${datasetName}`, err)
       this.error(`Dataset deletion failed: ${err.message}`, {exit: exitCodes.RUNTIME_ERROR})

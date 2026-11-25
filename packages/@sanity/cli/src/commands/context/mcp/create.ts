@@ -1,10 +1,15 @@
 import {Args, Flags} from '@oclif/core'
 import {type FlagInput} from '@oclif/core/interfaces'
+import {defineContextMcpEndpoint} from '@sanity/blueprints'
 import {exitCodes, SanityCommand, subdebug} from '@sanity/cli-core'
 import {getErrorMessage} from '@sanity/cli-core/errors'
 import {requiredWhenUnattended} from '@sanity/cli-core/flags'
 import {spinner} from '@sanity/cli-core/ux'
 
+import {
+  getBlueprintForScope,
+  printBlueprintResource,
+} from '../../../actions/blueprints/prepareResource.js'
 import {
   datasetSourceId,
   editSources,
@@ -13,9 +18,16 @@ import {
   parseNonEmpty,
 } from '../../../actions/context/mcpEndpoint.js'
 import {resolveOrganizationId} from '../../../actions/context/resolveOrganizationId.js'
+import {resolveProjectForCommand} from '../../../actions/targets/blueprintCommandTarget.js'
 import {promptForText} from '../../../prompts/promptForText.js'
 import {createMcpEndpoint} from '../../../services/context.js'
-import {getDatasetFlag, getOrganizationFlag, getProjectIdFlag} from '../../../util/sharedFlags.js'
+import {getCheckoutBlueprint} from '../../../util/checkoutBlueprint.js'
+import {
+  getDatasetFlag,
+  getOrganizationFlag,
+  getProjectIdFlag,
+  getWithBlueprintsFlag,
+} from '../../../util/sharedFlags.js'
 import {defineCommandTelemetry} from '../../../util/telemetry/commandTelemetry.js'
 
 const createMcpDebug = subdebug('context:mcp:create')
@@ -23,6 +35,7 @@ const createMcpDebug = subdebug('context:mcp:create')
 const SOURCE_FLAGS = ['knowledge-base', 'dataset']
 
 const flags = {
+  ...getWithBlueprintsFlag(),
   ...getOrganizationFlag({
     description: 'Organization to create the MCP endpoint in',
     semantics: 'override',
@@ -125,30 +138,44 @@ export class CreateMcpEndpointCommand extends SanityCommand<typeof CreateMcpEndp
     } = this.flags
 
     const cliConfig = await this.tryGetCliConfig()
-    const datasetId = datasetSourceId(dataset, project ?? cliConfig.api?.projectId)
+    const withBlueprints = this.flags['with-blueprints']
+    const checkout = withBlueprints && !organization ? getCheckoutBlueprint() : undefined
+    const projectId =
+      withBlueprints && dataset
+        ? await resolveProjectForCommand(this, this.flags)
+        : (project ?? cliConfig.api?.projectId)
+    const datasetId = datasetSourceId(dataset, projectId)
 
     const organizationId = await resolveOrganizationId({
-      configuredOrganizationId: cliConfig.app?.organizationId,
+      configuredOrganizationId:
+        checkout?.scopeType === 'organization' ? checkout.scopeId : cliConfig.app?.organizationId,
       flagOrganizationId: organization,
       unattended: this.isUnattended(),
     })
 
     const title = titleFlag || (await promptForText('MCP endpoint title:'))
+    const payload = {
+      groqFilter,
+      instructions,
+      name,
+      sources: editSources([], {
+        addKnowledgeBases: knowledgeBaseIds,
+        dataset: datasetId,
+        removeKnowledgeBases: [],
+        settings: {perspective, semanticSearch, workspace},
+      }).sources,
+      title,
+    }
+
+    if (withBlueprints) {
+      const blueprintPath = await getBlueprintForScope({id: organizationId, type: 'organization'})
+      printBlueprintResource(this.output, blueprintPath, defineContextMcpEndpoint(payload))
+      return
+    }
 
     const spin = spinner('Creating MCP endpoint').start()
     try {
-      const endpoint = await createMcpEndpoint(organizationId, {
-        groqFilter,
-        instructions,
-        name,
-        sources: editSources([], {
-          addKnowledgeBases: knowledgeBaseIds,
-          dataset: datasetId,
-          removeKnowledgeBases: [],
-          settings: {perspective, semanticSearch, workspace},
-        }).sources,
-        title,
-      })
+      const endpoint = await createMcpEndpoint(organizationId, payload)
       spin.succeed('MCP endpoint created')
       for (const line of formatMcpEndpoint(endpoint)) {
         this.log(line)

@@ -1,13 +1,18 @@
 import {Args, Flags} from '@oclif/core'
+import {defineDataset} from '@sanity/blueprints'
 import {exitCodes, SanityCommand, subdebug} from '@sanity/cli-core'
 
+import {
+  getBlueprintForScope,
+  printBlueprintResource,
+} from '../../actions/blueprints/prepareResource.js'
 import {createDataset} from '../../actions/dataset/create.js'
 import {validateDatasetName} from '../../actions/dataset/validateDatasetName.js'
+import {resolveProjectForCommand} from '../../actions/targets/blueprintCommandTarget.js'
 import {promptForDatasetName} from '../../prompts/promptForDatasetName.js'
-import {promptForProject} from '../../prompts/promptForProject.js'
 import {listDatasets} from '../../services/datasets.js'
 import {getProjectFeatures} from '../../services/getProjectFeatures.js'
-import {getProjectIdFlag} from '../../util/sharedFlags.js'
+import {getProjectIdFlag, getWithBlueprintsFlag} from '../../util/sharedFlags.js'
 import {defineCommandTelemetry} from '../../util/telemetry/commandTelemetry.js'
 
 const createDatasetDebug = subdebug('dataset:create')
@@ -40,6 +45,7 @@ export class CreateDatasetCommand extends SanityCommand<typeof CreateDatasetComm
   ]
 
   static override flags = {
+    ...getWithBlueprintsFlag(),
     ...getProjectIdFlag({
       description: 'Project ID to create dataset in',
       semantics: 'override',
@@ -68,15 +74,10 @@ export class CreateDatasetCommand extends SanityCommand<typeof CreateDatasetComm
     const {visibility} = flags
 
     // Ensure we have project context
-    const projectId = await this.getProjectId({
-      fallback: () =>
-        promptForProject({
-          requiredPermissions: [
-            {grant: 'read', permission: 'sanity.project.datasets'},
-            {grant: 'create', permission: 'sanity.project.datasets'},
-          ],
-        }),
-    })
+    const projectId = await resolveProjectForCommand(this, this.flags, [
+      {grant: 'read', permission: 'sanity.project.datasets'},
+      {grant: 'create', permission: 'sanity.project.datasets'},
+    ])
 
     // Get dataset name from args or prompt
     let {name: datasetName} = args
@@ -92,6 +93,29 @@ export class CreateDatasetCommand extends SanityCommand<typeof CreateDatasetComm
         })
       }
       datasetName = await promptForDatasetName()
+    }
+
+    if (this.flags['with-blueprints']) {
+      const blueprintPath = await getBlueprintForScope({id: projectId, type: 'project'})
+      if (flags.embeddings) {
+        this.error(
+          'Blueprints cannot set dataset embeddings. Declare the dataset first, then run `sanity datasets embeddings enable`.',
+          {
+            exit: exitCodes.USAGE_ERROR,
+          },
+        )
+      }
+      printBlueprintResource(
+        this.output,
+        blueprintPath,
+        defineDataset({
+          aclMode: visibility === 'custom' || visibility === 'private' ? visibility : 'public',
+          datasetName,
+          name: datasetName,
+          project: projectId,
+        }),
+      )
+      return
     }
 
     let datasets: string[]

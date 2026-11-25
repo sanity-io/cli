@@ -1,14 +1,21 @@
 import {Args, Flags} from '@oclif/core'
 import {CLIError} from '@oclif/core/errors'
+import {defineRobotToken} from '@sanity/blueprints'
 import {exitCodes, SanityCommand, subdebug} from '@sanity/cli-core'
 import {getErrorMessage, isProjectRootNotFoundError} from '@sanity/cli-core/errors'
 import {input, select} from '@sanity/cli-core/ux'
 import {ClientError} from '@sanity/client'
 
 import {
+  blueprintResourceName,
+  getBlueprintForScope,
+  printBlueprintResource,
+} from '../../actions/blueprints/prepareResource.js'
+import {
   MissingOrganizationError,
   resolveOrganizationId,
 } from '../../actions/context/resolveOrganizationId.js'
+import {resolveProjectForCommand} from '../../actions/targets/blueprintCommandTarget.js'
 import {expiryInDays, parseExpiryDate} from '../../actions/tokens/expiry.js'
 import {
   DEFAULT_ROLE,
@@ -20,13 +27,18 @@ import {
   projectGrantKey,
   toMemberships,
 } from '../../actions/tokens/grants.js'
-import {type RobotWithToken} from '../../actions/tokens/types.js'
+import {type Membership, type RobotWithToken} from '../../actions/tokens/types.js'
 import {validateRole} from '../../actions/tokens/validateRole.js'
 import {promptForGrants} from '../../prompts/promptForGrants.js'
 import {promptForProject} from '../../prompts/promptForProject.js'
 import {listProjects} from '../../services/projects.js'
 import {createOrganizationToken, createToken} from '../../services/tokens.js'
-import {getOrganizationFlag, getProjectIdFlag} from '../../util/sharedFlags.js'
+import {getCheckoutBlueprint} from '../../util/checkoutBlueprint.js'
+import {
+  getOrganizationFlag,
+  getProjectIdFlag,
+  getWithBlueprintsFlag,
+} from '../../util/sharedFlags.js'
 
 const tokensCreateDebug = subdebug('tokens:create')
 
@@ -86,6 +98,7 @@ export class CreateTokenCommand extends SanityCommand<typeof CreateTokenCommand>
   ]
 
   static override flags = {
+    ...getWithBlueprintsFlag(),
     ...getProjectIdFlag({
       description: 'Project ID to create token in',
       semantics: 'override',
@@ -142,7 +155,7 @@ export class CreateTokenCommand extends SanityCommand<typeof CreateTokenCommand>
         ? {...(await this.getFlagGrants(flagGrants)), expiresAt: await getExpiry()}
         : await this.promptForAccess(getExpiry)
 
-    let token: RobotWithToken
+    let token: RobotWithToken | undefined
     try {
       token = await this.createTokenForGrants({
         expiresAt,
@@ -158,6 +171,7 @@ export class CreateTokenCommand extends SanityCommand<typeof CreateTokenCommand>
       })
     }
 
+    if (!token) return
     if (flags.json) {
       this.logJson(token)
       return
@@ -188,20 +202,31 @@ export class CreateTokenCommand extends SanityCommand<typeof CreateTokenCommand>
     grants: Grant[]
     label: string
     organizationId: string | undefined
-  }): Promise<RobotWithToken> {
+  }): Promise<RobotWithToken | undefined> {
     const {expiresAt, grants, label} = options
     const projectMembership = getProjectTokenMembership(grants)
     if (projectMembership) {
       const {resourceId: projectId, roleNames} = projectMembership
+      if (this.flags['with-blueprints']) {
+        const blueprintPath = await getBlueprintForScope({id: projectId, type: 'project'})
+        await this.printRobotDeclaration(blueprintPath, label, [projectMembership], expiresAt)
+        return
+      }
       return createToken({expiresAt, label, projectId, roleNames})
     }
 
     const organizationId = options.organizationId ?? (await this.resolveOrganization())
+    const memberships = toMemberships(grants, organizationId)
+    if (this.flags['with-blueprints']) {
+      const blueprintPath = await getBlueprintForScope({id: organizationId, type: 'organization'})
+      await this.printRobotDeclaration(blueprintPath, label, memberships, expiresAt)
+      return
+    }
     try {
       return await createOrganizationToken({
         expiresAt,
         label,
-        memberships: toMemberships(grants, organizationId),
+        memberships,
         organizationId,
       })
     } catch (error) {
@@ -260,9 +285,43 @@ export class CreateTokenCommand extends SanityCommand<typeof CreateTokenCommand>
     return parsed.grant
   }
 
+  private async printRobotDeclaration(
+    path: string | undefined,
+    label: string,
+    memberships: Membership[],
+    expiresAt?: string,
+  ) {
+    if (expiresAt) {
+      this.error(
+        'Blueprints cannot set token expiration. Use a Blueprint robot token without an expiration or manage an expiring token separately.',
+      )
+    }
+    const blueprintMemberships: Parameters<typeof defineRobotToken>[0]['memberships'] =
+      memberships.map(({resourceId, resourceType, roleNames}) => {
+        if (resourceType !== 'organization' && resourceType !== 'project') {
+          throw new CLIError('Blueprint robot tokens support project and organization grants.')
+        }
+        return {resourceId, resourceType, roleNames}
+      })
+    printBlueprintResource(
+      this.output,
+      path,
+      defineRobotToken({
+        label,
+        memberships: blueprintMemberships,
+        name: blueprintResourceName('robot', label),
+      }),
+      Boolean(this.flags.json),
+    )
+  }
+
   private async promptForAccess(getExpiry: () => Promise<string | undefined>): Promise<Access> {
     const requestedProjectId = this.flags.project
-    const configProjectId = (await this.tryGetCliConfig()).api?.projectId
+    const checkout = this.flags['with-blueprints'] ? getCheckoutBlueprint() : undefined
+    const configProjectId =
+      checkout?.scopeType === 'project'
+        ? checkout.scopeId
+        : (await this.tryGetCliConfig()).api?.projectId
     const projects = await listProjects({onlyExplicitMembership: false})
     const organizationOf = (projectId: string | undefined) =>
       projects.find((project) => project.id === projectId)?.organizationId ?? undefined
@@ -282,7 +341,8 @@ export class CreateTokenCommand extends SanityCommand<typeof CreateTokenCommand>
 
     const expiresAt = await getExpiry()
     const grants = await promptForGrants({
-      preselectedProjectId: requestedProjectId,
+      preselectedProjectId:
+        requestedProjectId ?? (checkout?.scopeType === 'project' ? checkout.scopeId : undefined),
       projects: organizationProjects,
     })
     return {expiresAt, grants, organizationId}
@@ -349,10 +409,18 @@ export class CreateTokenCommand extends SanityCommand<typeof CreateTokenCommand>
     projectOrganizations: {fallback?: string; preferred?: string} = {},
   ): Promise<string> {
     const {fallback, preferred} = projectOrganizations
+    const checkout =
+      this.flags['with-blueprints'] && !this.flags.organization && !preferred
+        ? getCheckoutBlueprint()
+        : undefined
     try {
       return await resolveOrganizationId({
         configuredOrganizationId:
-          preferred ?? (await this.tryGetCliConfig()).app?.organizationId ?? fallback,
+          preferred ??
+          (checkout?.scopeType === 'organization'
+            ? checkout.scopeId
+            : (await this.tryGetCliConfig()).app?.organizationId) ??
+          fallback,
         flagOrganizationId: this.flags.organization,
         unattended: this.isUnattended(),
       })
@@ -368,8 +436,10 @@ export class CreateTokenCommand extends SanityCommand<typeof CreateTokenCommand>
   }
 
   private async resolveProjectId(): Promise<string> {
+    if (this.flags['with-blueprints']) return resolveProjectForCommand(this, this.flags)
+    const resolveProject = this.getProjectId.bind(this)
     if (!this.isUnattended()) {
-      return this.getProjectId({
+      return resolveProject({
         fallback: () =>
           promptForProject({
             requiredPermissions: [
@@ -381,7 +451,7 @@ export class CreateTokenCommand extends SanityCommand<typeof CreateTokenCommand>
     }
 
     try {
-      return await this.getProjectId()
+      return await resolveProject()
     } catch (error) {
       if (!isProjectRootNotFoundError(error)) throw error
       this.error(

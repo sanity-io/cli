@@ -4,12 +4,23 @@ import {requiredWhenUnattended} from '@sanity/cli-core/flags'
 import {confirm, select} from '@sanity/cli-core/ux'
 import {ClientError} from '@sanity/client'
 
+import {
+  guardBlueprintResource,
+  reportBlueprintManagedError,
+  resourceAttachmentId,
+} from '../../actions/blueprints/guardResource.js'
+import {resolveProjectForCommand} from '../../actions/targets/blueprintCommandTarget.js'
 import {formatTokenAccess} from '../../actions/tokens/formatTokenAccess.js'
 import {type TokenScope} from '../../actions/tokens/types.js'
 import {deleteToken, getTokens} from '../../services/tokens.js'
+import {getCheckoutBlueprint} from '../../util/checkoutBlueprint.js'
 import {formatCliErrorMessages} from '../../util/formatCliErrorMessages.js'
 import {resolveTokenScope} from '../../util/resolveTokenScope.js'
-import {getOrganizationFlag, getProjectIdFlag} from '../../util/sharedFlags.js'
+import {
+  getOrganizationFlag,
+  getProjectIdFlag,
+  getWithBlueprintsFlag,
+} from '../../util/sharedFlags.js'
 
 const deleteTokenDebug = subdebug('tokens:delete')
 
@@ -51,6 +62,7 @@ export class DeleteTokensCommand extends SanityCommand<typeof DeleteTokensComman
   ]
 
   static override flags = {
+    ...getWithBlueprintsFlag(),
     ...getOrganizationFlag({
       description: 'Delete a token managed by this organization',
       exclusive: ['project'],
@@ -90,13 +102,38 @@ export class DeleteTokensCommand extends SanityCommand<typeof DeleteTokensComman
       }
     }
 
+    let {organization} = flags
+    if (flags['with-blueprints'] && !organization && !flags.project) {
+      const checkout = getCheckoutBlueprint()
+      if (checkout?.scopeType === 'organization') organization = checkout.scopeId
+    }
+
     const scope = await resolveTokenScope({
-      getProjectId: this.getProjectId.bind(this),
+      getProjectId: flags['with-blueprints']
+        ? () =>
+            resolveProjectForCommand(this, flags, [
+              {grant: 'delete', permission: 'sanity.project.tokens'},
+            ])
+        : this.getProjectId.bind(this),
       grant: 'delete',
-      organization: flags.organization,
+      organization,
     })
 
     const tokenId = givenTokenId || (await this.getTokenIdFromList(scope))
+    const label = `API token "${tokenId}"`
+    if (this.flags['with-blueprints']) {
+      await guardBlueprintResource(
+        this.output,
+        {id: scope.resourceId, type: scope.resourceType},
+        {
+          id: tokenId,
+          label,
+          matches: (resource) => resourceAttachmentId(resource) === tokenId,
+          type: 'sanity.access.robot',
+        },
+        'delete',
+      )
+    }
 
     if (!skipConfirmation) {
       const confirmed = await confirm({
@@ -118,6 +155,8 @@ export class DeleteTokensCommand extends SanityCommand<typeof DeleteTokensComman
 
       this.log('API token deleted')
     } catch (error) {
+      if (this.flags['with-blueprints'])
+        reportBlueprintManagedError(this.output, error, label, 'delete')
       if (error instanceof ClientError && error.response.statusCode === 404) {
         this.error(`Token with ID "${tokenId}" not found`, {exit: exitCodes.RUNTIME_ERROR})
       }

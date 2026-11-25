@@ -1,8 +1,8 @@
 import {exitCodes, SanityCommand, subdebug} from '@sanity/cli-core'
 
-import {promptForProject} from '../../prompts/promptForProject.js'
+import {resolveProjectForCommand} from '../../actions/targets/blueprintCommandTarget.js'
 import {listDatasetAliases, listDatasets} from '../../services/datasets.js'
-import {getProjectIdFlag} from '../../util/sharedFlags.js'
+import {getProjectIdFlag, getWithBlueprintsFlag} from '../../util/sharedFlags.js'
 
 const listDatasetDebug = subdebug('dataset:list')
 
@@ -21,6 +21,7 @@ export class ListDatasetCommand extends SanityCommand<typeof ListDatasetCommand>
   ]
 
   static override flags = {
+    ...getWithBlueprintsFlag(),
     ...getProjectIdFlag({
       description: 'Project ID to list datasets for',
       semantics: 'override',
@@ -30,12 +31,9 @@ export class ListDatasetCommand extends SanityCommand<typeof ListDatasetCommand>
   static override hiddenAliases: string[] = ['dataset:list']
 
   public async run(): Promise<void> {
-    const projectId = await this.getProjectId({
-      fallback: () =>
-        promptForProject({
-          requiredPermissions: [{grant: 'read', permission: 'sanity.project.datasets'}],
-        }),
-    })
+    const projectId = await resolveProjectForCommand(this, this.flags, [
+      {grant: 'read', permission: 'sanity.project.datasets'},
+    ])
 
     const [datasets, aliases] = await Promise.allSettled([
       listDatasets(projectId),

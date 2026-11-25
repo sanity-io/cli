@@ -3,10 +3,10 @@ import {styleText} from 'node:util'
 import {Flags} from '@oclif/core'
 import {SanityCommand} from '@sanity/cli-core'
 
+import {resolveProjectForCommand} from '../../actions/targets/blueprintCommandTarget.js'
 import {getMembersForProject} from '../../actions/users/getMembersForProject.js'
-import {promptForProject} from '../../prompts/promptForProject.js'
 import {Table} from '../../util/responsiveTable.js'
-import {getProjectIdFlag} from '../../util/sharedFlags.js'
+import {getProjectIdFlag, getWithBlueprintsFlag} from '../../util/sharedFlags.js'
 import {sortRowsByColumn} from '../../util/sortRowsByColumn.js'
 
 const sortFields = ['id', 'name', 'role', 'date']
@@ -36,6 +36,7 @@ export class List extends SanityCommand<typeof List> {
     },
   ]
   static override flags = {
+    ...getWithBlueprintsFlag(),
     ...getProjectIdFlag({
       description: 'Project ID to list users for',
       semantics: 'override',
@@ -67,15 +68,10 @@ export class List extends SanityCommand<typeof List> {
   public async run(): Promise<void> {
     const {invitations, order, robots, sort} = this.flags
 
-    const projectId = await this.getProjectId({
-      fallback: () =>
-        promptForProject({
-          requiredPermissions: [
-            {grant: 'read', permission: 'sanity.project'},
-            {grant: 'read', permission: 'sanity.project.members'},
-          ],
-        }),
-    })
+    const projectId = await resolveProjectForCommand(this, this.flags, [
+      {grant: 'read', permission: 'sanity.project'},
+      {grant: 'read', permission: 'sanity.project.members'},
+    ])
 
     const members = await getMembersForProject({
       includeInvitations: invitations,

@@ -6,13 +6,13 @@ import {select} from '@sanity/cli-core/ux'
 
 import {formatFailure} from '../../actions/hook/formatFailure.js'
 import {type DeliveryAttempt, type Hook, type HookMessage} from '../../actions/hook/types'
-import {promptForProject} from '../../prompts/promptForProject.js'
+import {resolveProjectForCommand} from '../../actions/targets/blueprintCommandTarget.js'
 import {
   getHookAttemptsForProject,
   getHookMessagesForProject,
   getHooksForProject,
 } from '../../services/hooks.js'
-import {getProjectIdFlag} from '../../util/sharedFlags.js'
+import {getProjectIdFlag, getWithBlueprintsFlag} from '../../util/sharedFlags.js'
 
 const logsHookDebug = subdebug('hook:logs')
 
@@ -42,6 +42,7 @@ export class LogsHookCommand extends SanityCommand<typeof LogsHookCommand> {
   ]
 
   static override flags = {
+    ...getWithBlueprintsFlag(),
     ...getProjectIdFlag({
       description: 'Project ID to view webhook logs for',
       semantics: 'override',
@@ -58,12 +59,9 @@ export class LogsHookCommand extends SanityCommand<typeof LogsHookCommand> {
     const {args, flags} = await this.parse(LogsHookCommand)
 
     // Ensure we have project context
-    const projectId = await this.getProjectId({
-      fallback: () =>
-        promptForProject({
-          requiredPermissions: [{grant: 'read', permission: 'sanity.project.webhooks'}],
-        }),
-    })
+    const projectId = await resolveProjectForCommand(this, this.flags, [
+      {grant: 'read', permission: 'sanity.project.webhooks'},
+    ])
 
     // Get hooks for the project
     let hooks: Hook[]

@@ -10,11 +10,12 @@ import {exportDataset, type ExportOptions, type ExportProgress} from '@sanity/ex
 import prettyMs from 'pretty-ms'
 
 import {validateDatasetName} from '../../actions/dataset/validateDatasetName.js'
+import {getBlueprintDatasetTarget} from '../../actions/targets/blueprintCommandTarget.js'
 import {promptForDataset} from '../../prompts/promptForDataset.js'
 import {promptForProject} from '../../prompts/promptForProject.js'
 import {listDatasets} from '../../services/datasets.js'
 import {absolutify} from '../../util/absolutify.js'
-import {getProjectIdFlag} from '../../util/sharedFlags.js'
+import {getProjectIdFlag, getWithBlueprintsFlag} from '../../util/sharedFlags.js'
 
 const noop = () => null
 const exportDebug = subdebug('dataset:export')
@@ -59,6 +60,7 @@ export class DatasetExportCommand extends SanityCommand<typeof DatasetExportComm
   ]
 
   static override flags = {
+    ...getWithBlueprintsFlag(),
     ...getProjectIdFlag({
       description: 'Project ID to export dataset from',
       semantics: 'override',
@@ -110,12 +112,22 @@ export class DatasetExportCommand extends SanityCommand<typeof DatasetExportComm
     const {destination: targetDestination, name: targetDataset} = args
 
     // Get project configuration
-    const projectId = await this.getProjectId({
-      fallback: () =>
-        promptForProject({
-          requiredPermissions: [{grant: 'read', permission: 'sanity.project.datasets'}],
-        }),
-    })
+    const blueprintTarget = await getBlueprintDatasetTarget(
+      this,
+      {...this.flags, dataset: targetDataset},
+      {
+        datasetUsage: '<name>',
+        requiredProjectPermissions: [{grant: 'read', permission: 'sanity.project.datasets'}],
+      },
+    )
+    const projectId =
+      blueprintTarget?.projectId ??
+      (await this.getProjectId({
+        fallback: () =>
+          promptForProject({
+            requiredPermissions: [{grant: 'read', permission: 'sanity.project.datasets'}],
+          }),
+      }))
 
     const projectClient = await getProjectCliClient({
       apiVersion: '2023-05-26',
@@ -135,7 +147,7 @@ export class DatasetExportCommand extends SanityCommand<typeof DatasetExportComm
     }
 
     // Determine dataset name
-    let dataset = targetDataset
+    let dataset = blueprintTarget?.dataset ?? targetDataset
     if (!dataset) {
       let defaultDataset: string | undefined
       try {

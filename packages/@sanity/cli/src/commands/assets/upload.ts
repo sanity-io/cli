@@ -7,16 +7,18 @@ import {exitCodes, SanityCommand, subdebug} from '@sanity/cli-core'
 import {AssetFileError} from '../../actions/assets/assetFileError.js'
 import {ingestAssetFromUrlWithProgress} from '../../actions/assets/ingestAssetFromUrlWithProgress.js'
 import {uploadAssetWithProgress} from '../../actions/assets/uploadAssetWithProgress.js'
+import {getBlueprintDatasetTarget} from '../../actions/targets/blueprintCommandTarget.js'
 import {promptForProject} from '../../prompts/promptForProject.js'
 import {type AssetType} from '../../services/assets.js'
 import {getAssetFilenameError, getIngestUrlError} from '../../util/assetSourceValidation.js'
 import {getAssetUploadErrorMessage} from '../../util/assetUploadErrors.js'
-import {getDatasetFlag, getProjectIdFlag} from '../../util/sharedFlags.js'
+import {getDatasetFlag, getProjectIdFlag, getWithBlueprintsFlag} from '../../util/sharedFlags.js'
 import {defineCommandTelemetry} from '../../util/telemetry/commandTelemetry.js'
 
 const uploadAssetDebug = subdebug('assets:upload')
 
 const flags = {
+  ...getWithBlueprintsFlag(),
   ...getProjectIdFlag({
     description: 'Project ID to upload the asset to',
     semantics: 'override',
@@ -102,9 +104,12 @@ export class UploadAssetCommand extends SanityCommand<typeof UploadAssetCommand>
       this.error(`Asset upload failed: ${filenameError}`, {exit: exitCodes.USAGE_ERROR})
     }
 
-    const cliConfig = await this.tryGetCliConfig()
-    const projectId = await this.getProjectId({fallback: () => promptForProject({})})
-    const dataset = flags.dataset ?? cliConfig.api?.dataset
+    const blueprintTarget = await getBlueprintDatasetTarget(this, flags)
+    const cliConfig = blueprintTarget ? undefined : await this.tryGetCliConfig()
+    const projectId =
+      blueprintTarget?.projectId ??
+      (await this.getProjectId({fallback: () => promptForProject({})}))
+    const dataset = blueprintTarget?.dataset ?? flags.dataset ?? cliConfig?.api?.dataset
     if (!dataset) {
       this.error(
         'Asset upload failed: Dataset is required. Pass --dataset <name> or configure a dataset in sanity.cli.ts.',

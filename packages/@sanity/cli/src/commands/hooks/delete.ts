@@ -2,10 +2,17 @@ import {Args} from '@oclif/core'
 import {exitCodes, SanityCommand, subdebug} from '@sanity/cli-core'
 import {select} from '@sanity/cli-core/ux'
 
+import {
+  guardBlueprintResource,
+  matchesResourceProject,
+  reportBlueprintManagedError,
+  resourceAttachmentId,
+  resourceValue,
+} from '../../actions/blueprints/guardResource.js'
 import {type Hook} from '../../actions/hook/types'
-import {promptForProject} from '../../prompts/promptForProject.js'
+import {resolveProjectForCommand} from '../../actions/targets/blueprintCommandTarget.js'
 import {deleteHookForProject, listHooksForProject} from '../../services/hooks.js'
-import {getProjectIdFlag} from '../../util/sharedFlags.js'
+import {getProjectIdFlag, getWithBlueprintsFlag} from '../../util/sharedFlags.js'
 
 const deleteHookDebug = subdebug('hook:delete')
 
@@ -35,6 +42,7 @@ export class Delete extends SanityCommand<typeof Delete> {
   ]
 
   static override flags = {
+    ...getWithBlueprintsFlag(),
     ...getProjectIdFlag({
       description: 'Project ID to delete webhook from',
       semantics: 'override',
@@ -52,31 +60,46 @@ export class Delete extends SanityCommand<typeof Delete> {
       })
     }
 
-    const projectId = await this.getProjectId({
-      fallback: () =>
-        promptForProject({
-          requiredPermissions: [{grant: 'delete', permission: 'sanity.project.webhooks'}],
-        }),
-    })
+    const projectId = await resolveProjectForCommand(this, this.flags, [
+      {grant: 'delete', permission: 'sanity.project.webhooks'},
+    ])
 
     // Get the hook ID to delete
-    const hookId = await this.promptForHook(args.name, projectId)
+    const {id: hookId, name, type, url} = await this.promptForHook(args.name, projectId)
+    const label = `webhook "${name}"`
+    if (this.flags['with-blueprints'] && type !== 'transaction') {
+      await guardBlueprintResource(
+        this.output,
+        {id: projectId, type: 'project'},
+        {
+          id: hookId,
+          label,
+          matches: (resource, blueprint) =>
+            matchesResourceProject(resource, blueprint, projectId) &&
+            (resourceAttachmentId(resource) === hookId ||
+              (('displayName' in resource ? resource.displayName : resource.name) === name &&
+                'url' in resource &&
+                resourceValue(resource.url, blueprint) === url)),
+          type: 'sanity.project.webhook',
+        },
+        'delete',
+      )
+    }
 
     try {
       await deleteHookForProject(projectId, hookId)
 
       this.log('Hook deleted')
     } catch (error) {
+      if (this.flags['with-blueprints'])
+        reportBlueprintManagedError(this.output, error, label, 'delete')
       const err = error as Error
       deleteHookDebug(`Error deleting hook ${hookId} for project ${projectId}`, err)
       this.error(`Hook deletion failed:\n${err.message}`, {exit: exitCodes.RUNTIME_ERROR})
     }
   }
 
-  private async promptForHook(
-    specifiedName: string | undefined,
-    projectId: string,
-  ): Promise<string> {
+  private async promptForHook(specifiedName: string | undefined, projectId: string): Promise<Hook> {
     let hooks: Hook[]
     try {
       hooks = await listHooksForProject(projectId)
@@ -99,7 +122,7 @@ export class Delete extends SanityCommand<typeof Delete> {
         this.error(`Hook with name "${specifiedName}" not found`, {exit: exitCodes.RUNTIME_ERROR})
       }
 
-      return selectedHook.id
+      return selectedHook
     }
 
     // If no hook name specified, prompt user to select one
@@ -113,6 +136,8 @@ export class Delete extends SanityCommand<typeof Delete> {
       message: 'Select hook to delete',
     })
 
-    return selectedId
+    const hook = hooks.find(({id}) => id === selectedId)
+    if (!hook) this.error('The selected webhook could not be found.')
+    return hook
   }
 }

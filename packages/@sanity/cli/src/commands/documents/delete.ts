@@ -2,8 +2,9 @@ import {Args} from '@oclif/core'
 import {exitCodes, getProjectCliClient, SanityCommand, subdebug} from '@sanity/cli-core'
 
 import {DOCUMENTS_API_VERSION} from '../../actions/documents/constants.js'
+import {getBlueprintDatasetTarget} from '../../actions/targets/blueprintCommandTarget.js'
 import {promptForProject} from '../../prompts/promptForProject.js'
-import {getDatasetFlag, getProjectIdFlag} from '../../util/sharedFlags.js'
+import {getDatasetFlag, getProjectIdFlag, getWithBlueprintsFlag} from '../../util/sharedFlags.js'
 
 const deleteDocumentDebug = subdebug('documents:delete')
 
@@ -45,6 +46,7 @@ export class DeleteDocumentCommand extends SanityCommand<typeof DeleteDocumentCo
   ]
 
   static override flags = {
+    ...getWithBlueprintsFlag(),
     ...getProjectIdFlag({description: 'Project ID to delete from', semantics: 'override'}),
     ...getDatasetFlag({description: 'Dataset to delete from', semantics: 'override'}),
   }
@@ -68,18 +70,20 @@ export class DeleteDocumentCommand extends SanityCommand<typeof DeleteDocumentCo
     }
 
     // Get project configuration (may not exist when running outside a project directory)
-    const cliConfig = await this.tryGetCliConfig()
+    const blueprintTarget = await getBlueprintDatasetTarget(this, flags)
+    const cliConfig = blueprintTarget ? undefined : await this.tryGetCliConfig()
 
-    const projectId = await this.getProjectId({fallback: () => promptForProject({})})
+    const projectId =
+      blueprintTarget?.projectId ??
+      (await this.getProjectId({fallback: () => promptForProject({})}))
 
-    if (!cliConfig.api?.dataset && !dataset) {
+    const targetDataset = blueprintTarget?.dataset ?? dataset ?? cliConfig?.api?.dataset
+    if (!targetDataset) {
       this.error(
         'Dataset is required. Pass it with `--dataset <name>` or configure it in `sanity.cli.ts`.',
         {exit: exitCodes.USAGE_ERROR},
       )
     }
-
-    const targetDataset = dataset || cliConfig.api?.dataset
 
     try {
       const projectClient = await getProjectCliClient({

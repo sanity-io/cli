@@ -5,11 +5,12 @@ import {select} from '@sanity/cli-core/ux'
 import {type DatasetsResponse} from '@sanity/client'
 
 import {assertDatasetExists} from '../../actions/backup/assertDatasetExist.js'
+import {getBlueprintDatasetTarget} from '../../actions/targets/blueprintCommandTarget.js'
 import {promptForProject} from '../../prompts/promptForProject.js'
 import {listBackups} from '../../services/backup.js'
 import {listDatasets} from '../../services/datasets.js'
 import {Table} from '../../util/responsiveTable.js'
-import {getProjectIdFlag} from '../../util/sharedFlags.js'
+import {getProjectIdFlag, getWithBlueprintsFlag} from '../../util/sharedFlags.js'
 
 const listBackupDebug = subdebug('backup:list')
 
@@ -51,6 +52,7 @@ export class ListBackupCommand extends SanityCommand<typeof ListBackupCommand> {
   ]
 
   static override flags = {
+    ...getWithBlueprintsFlag(),
     ...getProjectIdFlag({
       description: 'Project ID to list backups for',
       semantics: 'override',
@@ -74,12 +76,23 @@ export class ListBackupCommand extends SanityCommand<typeof ListBackupCommand> {
     const {args, flags} = await this.parse(ListBackupCommand)
     let {dataset} = args
 
-    const projectId = await this.getProjectId({
-      fallback: () =>
-        promptForProject({
-          requiredPermissions: [{grant: 'read', permission: 'sanity.project.datasets'}],
-        }),
-    })
+    const blueprintTarget = await getBlueprintDatasetTarget(
+      this,
+      {...this.flags, dataset: dataset},
+      {
+        datasetUsage: '<dataset>',
+        requiredProjectPermissions: [{grant: 'read', permission: 'sanity.project.datasets'}],
+      },
+    )
+    const projectId =
+      blueprintTarget?.projectId ??
+      (await this.getProjectId({
+        fallback: () =>
+          promptForProject({
+            requiredPermissions: [{grant: 'read', permission: 'sanity.project.datasets'}],
+          }),
+      }))
+    dataset = blueprintTarget?.dataset ?? dataset
 
     let datasets: DatasetsResponse
 

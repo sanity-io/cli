@@ -86,6 +86,33 @@ describe('#undeploy', () => {
     expect(stdout).toContain('Application undeploy scheduled')
   })
 
+  test.each([true, false])(
+    'refuses a Blueprint-aware undeploy in the wrong organization (dry run %s)',
+    async (dryRun) => {
+      mockApi({
+        apiVersion: 'v2024-08-01',
+        query: {appType: 'coreApp'},
+        uri: '/user-applications/core-id',
+      }).reply(200, {id: 'core-id', organizationId: 'different-org'})
+
+      const {error, stdout} = await testCommand(
+        UndeployCommand,
+        [
+          'core-id',
+          '--with-blueprints',
+          '--organization',
+          'expected-org',
+          '--yes',
+          ...(dryRun ? ['--dry-run'] : []),
+        ],
+        {mocks: {cliConfig: {}, token: 'test-token'}},
+      )
+
+      expect(error?.oclif?.exit).toBe(exitCodes.USAGE_ERROR)
+      expect(`${stdout} ${error?.message}`).toContain('belongs to organization "different-org"')
+    },
+  )
+
   test('does nothing if no application found', async () => {
     mockApi({
       apiVersion: 'v2024-08-01',

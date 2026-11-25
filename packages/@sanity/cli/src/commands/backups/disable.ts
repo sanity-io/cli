@@ -6,10 +6,11 @@ import {select} from '@sanity/cli-core/ux'
 import {type DatasetsResponse} from '@sanity/client'
 
 import {assertDatasetExists} from '../../actions/backup/assertDatasetExist.js'
+import {getBlueprintDatasetTarget} from '../../actions/targets/blueprintCommandTarget.js'
 import {promptForProject} from '../../prompts/promptForProject.js'
 import {setBackup} from '../../services/backup.js'
 import {listDatasets} from '../../services/datasets.js'
-import {getProjectIdFlag} from '../../util/sharedFlags.js'
+import {getProjectIdFlag, getWithBlueprintsFlag} from '../../util/sharedFlags.js'
 
 const disableBackupDebug = subdebug('backup:disable')
 
@@ -35,6 +36,7 @@ export class DisableBackupCommand extends SanityCommand<typeof DisableBackupComm
   ]
 
   static override flags = {
+    ...getWithBlueprintsFlag(),
     ...getProjectIdFlag({
       description: 'Project ID to disable backups for',
       semantics: 'override',
@@ -47,15 +49,29 @@ export class DisableBackupCommand extends SanityCommand<typeof DisableBackupComm
     const {args} = await this.parse(DisableBackupCommand)
     let {dataset} = args
 
-    const projectId = await this.getProjectId({
-      fallback: () =>
-        promptForProject({
-          requiredPermissions: [
-            {grant: 'read', permission: 'sanity.project.datasets'},
-            {grant: 'update', permission: 'sanity.project.datasets'},
-          ],
-        }),
-    })
+    const blueprintTarget = await getBlueprintDatasetTarget(
+      this,
+      {...this.flags, dataset: dataset},
+      {
+        datasetUsage: '<dataset>',
+        requiredProjectPermissions: [
+          {grant: 'read', permission: 'sanity.project.datasets'},
+          {grant: 'update', permission: 'sanity.project.datasets'},
+        ],
+      },
+    )
+    const projectId =
+      blueprintTarget?.projectId ??
+      (await this.getProjectId({
+        fallback: () =>
+          promptForProject({
+            requiredPermissions: [
+              {grant: 'read', permission: 'sanity.project.datasets'},
+              {grant: 'update', permission: 'sanity.project.datasets'},
+            ],
+          }),
+      }))
+    dataset = blueprintTarget?.dataset ?? dataset
 
     let datasets: DatasetsResponse
 

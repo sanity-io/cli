@@ -3,9 +3,10 @@ import {CLIError} from '@oclif/core/errors'
 import {exitCodes, SanityCommand, subdebug} from '@sanity/cli-core'
 
 import {resolveDataset} from '../../../actions/dataset/resolveDataset.js'
+import {getBlueprintDatasetTarget} from '../../../actions/targets/blueprintCommandTarget.js'
 import {promptForProject} from '../../../prompts/promptForProject.js'
 import {getEmbeddingsSettings} from '../../../services/embeddings.js'
-import {getProjectIdFlag} from '../../../util/sharedFlags.js'
+import {getProjectIdFlag, getWithBlueprintsFlag} from '../../../util/sharedFlags.js'
 
 const debug = subdebug('dataset:embeddings:status')
 
@@ -29,6 +30,7 @@ export class DatasetEmbeddingsStatusCommand extends SanityCommand<
   ]
 
   static override flags = {
+    ...getWithBlueprintsFlag(),
     ...getProjectIdFlag({
       description: 'Project ID to check embeddings status for',
       semantics: 'override',
@@ -41,12 +43,23 @@ export class DatasetEmbeddingsStatusCommand extends SanityCommand<
     const {args} = await this.parse(DatasetEmbeddingsStatusCommand)
     let {dataset} = args
 
-    const projectId = await this.getProjectId({
-      fallback: () =>
-        promptForProject({
-          requiredPermissions: [{grant: 'read', permission: 'sanity.project.datasets'}],
-        }),
-    })
+    const blueprintTarget = await getBlueprintDatasetTarget(
+      this,
+      {...this.flags, dataset: dataset},
+      {
+        datasetUsage: '<dataset>',
+        requiredProjectPermissions: [{grant: 'read', permission: 'sanity.project.datasets'}],
+      },
+    )
+    const projectId =
+      blueprintTarget?.projectId ??
+      (await this.getProjectId({
+        fallback: () =>
+          promptForProject({
+            requiredPermissions: [{grant: 'read', permission: 'sanity.project.datasets'}],
+          }),
+      }))
+    dataset = blueprintTarget?.dataset ?? dataset
 
     try {
       ;({dataset} = await resolveDataset({

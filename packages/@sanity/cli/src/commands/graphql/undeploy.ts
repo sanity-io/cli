@@ -4,9 +4,10 @@ import {requiredWhenUnattended} from '@sanity/cli-core/flags'
 import {confirm} from '@sanity/cli-core/ux'
 
 import {getGraphQLAPIs} from '../../actions/graphql/getGraphQLAPIs.js'
+import {getBlueprintDatasetTarget} from '../../actions/targets/blueprintCommandTarget.js'
 import {promptForProject} from '../../prompts/promptForProject.js'
 import {deleteGraphQLAPI} from '../../services/graphql.js'
-import {getDatasetFlag, getProjectIdFlag} from '../../util/sharedFlags.js'
+import {getDatasetFlag, getProjectIdFlag, getWithBlueprintsFlag} from '../../util/sharedFlags.js'
 
 const undeployGraphqlDebug = subdebug('graphql:undeploy')
 
@@ -41,6 +42,7 @@ export class Undeploy extends SanityCommand<typeof Undeploy> {
   ]
 
   static override flags = {
+    ...getWithBlueprintsFlag(),
     ...getProjectIdFlag({
       description: 'Project ID to undeploy GraphQL API from',
       semantics: 'override',
@@ -95,6 +97,14 @@ export class Undeploy extends SanityCommand<typeof Undeploy> {
         tag = apiDef.tag || 'default'
       }
     }
+
+    const blueprintTarget = await getBlueprintDatasetTarget(
+      this,
+      {...flags, dataset, project: flags.project ?? projectId},
+      {requiredProjectPermissions: [{grant: 'manage', permission: 'sanity.project.graphql'}]},
+    )
+    projectId = blueprintTarget?.projectId ?? projectId
+    dataset = blueprintTarget?.dataset ?? dataset
 
     // Get projectId from config if not specified
     if (!projectId) {

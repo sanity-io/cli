@@ -1,12 +1,18 @@
 import {exitCodes, SanityCommand, subdebug} from '@sanity/cli-core'
 import {getErrorMessage} from '@sanity/cli-core/errors'
 
+import {resolveProjectForCommand} from '../../actions/targets/blueprintCommandTarget.js'
 import {formatTokenAccess} from '../../actions/tokens/formatTokenAccess.js'
 import {type Robot} from '../../actions/tokens/types.js'
 import {getTokens} from '../../services/tokens.js'
+import {getCheckoutBlueprint} from '../../util/checkoutBlueprint.js'
 import {resolveTokenScope} from '../../util/resolveTokenScope.js'
 import {Table} from '../../util/responsiveTable.js'
-import {getOrganizationFlag, getProjectIdFlag} from '../../util/sharedFlags.js'
+import {
+  getOrganizationFlag,
+  getProjectIdFlag,
+  getWithBlueprintsFlag,
+} from '../../util/sharedFlags.js'
 
 const listTokenDebug = subdebug('tokens:list')
 
@@ -33,6 +39,7 @@ export class TokensListCommand extends SanityCommand<typeof TokensListCommand> {
     },
   ]
   static override flags = {
+    ...getWithBlueprintsFlag(),
     ...getOrganizationFlag({
       description: 'List tokens managed by this organization',
       exclusive: ['project'],
@@ -51,10 +58,21 @@ export class TokensListCommand extends SanityCommand<typeof TokensListCommand> {
     const {json} = flags
     const outputJson = json ?? false
 
+    let {organization} = flags
+    if (flags['with-blueprints'] && !organization && !flags.project) {
+      const checkout = getCheckoutBlueprint()
+      if (checkout?.scopeType === 'organization') organization = checkout.scopeId
+    }
+
     const scope = await resolveTokenScope({
-      getProjectId: this.getProjectId.bind(this),
+      getProjectId: flags['with-blueprints']
+        ? () =>
+            resolveProjectForCommand(this, flags, [
+              {grant: 'read', permission: 'sanity.project.tokens'},
+            ])
+        : this.getProjectId.bind(this),
       grant: 'read',
-      organization: flags.organization,
+      organization,
     })
 
     let tokens: Robot[]

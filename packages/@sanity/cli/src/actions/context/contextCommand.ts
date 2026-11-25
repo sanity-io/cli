@@ -1,5 +1,6 @@
 import {type Command} from '@oclif/core'
 import {CLIError} from '@oclif/core/errors'
+import {type FlagInput} from '@oclif/core/interfaces'
 import {exitCodes, SanityCommand, subdebug} from '@sanity/cli-core'
 import {getErrorMessage, JsonOutputError} from '@sanity/cli-core/errors'
 import {confirm} from '@sanity/cli-core/ux'
@@ -14,6 +15,8 @@ import {
   requestAllPages,
   requestContext,
 } from '../../services/context.js'
+import {getCheckoutBlueprint} from '../../util/checkoutBlueprint.js'
+import {getWithBlueprintsFlag} from '../../util/sharedFlags.js'
 import {type CommandTelemetry} from '../../util/telemetry/commandTelemetry.js'
 import {
   type ContextCommandEntry,
@@ -86,7 +89,11 @@ export function contextCommand(id: ContextCommandId) {
   const operation = operations[entry.operationId]
   if (!operation) throw new Error(`No operation "${entry.operationId}" in the generated operations`)
   const debug = subdebug(id.replaceAll(' ', ':'))
-  const flags = operationFlags(operation, entry)
+  const organizationScoped = needsOrganization(operation)
+  const flags: FlagInput = {
+    ...operationFlags(operation, entry),
+    ...(organizationScoped ? getWithBlueprintsFlag() : {}),
+  }
 
   return class ContextOperationCommand extends SanityCommand<typeof ContextOperationCommand> {
     static override args = operationArgs(operation, entry)
@@ -172,10 +179,18 @@ export function contextCommand(id: ContextCommandId) {
     public async run(): Promise<void> {
       const values: Values = {...this.flags}
       const args: Values = {...this.args}
-      const organizationId = needsOrganization(operation)
+      const organizationFlag = stringValue(values, 'organization')
+      const checkout =
+        organizationScoped && values['with-blueprints'] && !organizationFlag
+          ? getCheckoutBlueprint()
+          : undefined
+      const organizationId = organizationScoped
         ? await resolveOrganizationId({
-            configuredOrganizationId: (await this.tryGetCliConfig()).app?.organizationId,
-            flagOrganizationId: stringValue(values, 'organization'),
+            configuredOrganizationId:
+              checkout?.scopeType === 'organization'
+                ? checkout.scopeId
+                : (await this.tryGetCliConfig()).app?.organizationId,
+            flagOrganizationId: organizationFlag,
             unattended: this.isUnattended(),
           })
         : undefined

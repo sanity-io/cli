@@ -15,6 +15,8 @@ export interface UndeployApplicationTarget extends UndeployTargetDetails {
 export interface UndeployConfigTarget extends UndeployTargetDetails {
   deletes: 'config'
   id: null
+
+  configs?: ReadonlyArray<{id: string}>
 }
 
 interface UndeployTargetDetails {

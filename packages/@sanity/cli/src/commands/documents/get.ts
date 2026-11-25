@@ -8,8 +8,9 @@ import {
 } from '@sanity/cli-core'
 
 import {DOCUMENTS_API_VERSION} from '../../actions/documents/constants.js'
+import {getBlueprintDatasetTarget} from '../../actions/targets/blueprintCommandTarget.js'
 import {promptForProject} from '../../prompts/promptForProject.js'
-import {getDatasetFlag, getProjectIdFlag} from '../../util/sharedFlags.js'
+import {getDatasetFlag, getProjectIdFlag, getWithBlueprintsFlag} from '../../util/sharedFlags.js'
 
 const getDocumentDebug = subdebug('documents:get')
 
@@ -43,6 +44,7 @@ export class GetDocumentCommand extends SanityCommand<typeof GetDocumentCommand>
   ]
 
   static override flags = {
+    ...getWithBlueprintsFlag(),
     ...getProjectIdFlag({
       description: 'Project ID to get document from',
       semantics: 'override',
@@ -61,18 +63,20 @@ export class GetDocumentCommand extends SanityCommand<typeof GetDocumentCommand>
     const {documentId} = args
     const {dataset, pretty} = flags
 
-    const cliConfig = await this.tryGetCliConfig()
+    const blueprintTarget = await getBlueprintDatasetTarget(this, flags)
+    const cliConfig = blueprintTarget ? undefined : await this.tryGetCliConfig()
 
-    const projectId = await this.getProjectId({fallback: () => promptForProject({})})
+    const projectId =
+      blueprintTarget?.projectId ??
+      (await this.getProjectId({fallback: () => promptForProject({})}))
 
-    if (!cliConfig.api?.dataset && !dataset) {
+    const targetDataset = blueprintTarget?.dataset ?? dataset ?? cliConfig?.api?.dataset
+    if (!targetDataset) {
       this.error(
         'Dataset is required. Pass it with `--dataset <name>` or configure it in `sanity.cli.ts`.',
         {exit: exitCodes.USAGE_ERROR},
       )
     }
-
-    const targetDataset = dataset || cliConfig.api?.dataset
 
     try {
       const projectClient = await getProjectCliClient({

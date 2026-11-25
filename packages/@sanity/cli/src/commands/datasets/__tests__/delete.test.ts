@@ -8,6 +8,18 @@ import {DeleteDatasetCommand} from '../delete.js'
 const mockDeleteDataset = vi.hoisted(() => vi.fn())
 const mockGetProjectById = vi.hoisted(() => vi.fn())
 
+const mockCheckout = vi.hoisted(() => vi.fn())
+const mockStack = vi.hoisted(() => vi.fn())
+
+vi.mock('../../../util/checkoutBlueprint.js', () => ({
+  getCheckoutBlueprint: mockCheckout,
+  getCheckoutManifest: () => undefined,
+}))
+vi.mock('../../../services/blueprints.js', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../../../services/blueprints.js')>()),
+  getDeployedStack: mockStack,
+}))
+
 vi.mock('@sanity/cli-core', async () => {
   const actual = await vi.importActual('@sanity/cli-core')
   return {
@@ -60,6 +72,45 @@ describe('#dataset:delete', () => {
   afterEach(() => {
     vi.clearAllMocks()
   })
+
+  test.each([true, false])(
+    'checks ownership before deletion only with the opt-in (%s)',
+    async (optIn) => {
+      mockCheckout.mockReturnValue({
+        directory: '/test/path',
+        scopeId: TEST_PROJECT_ID,
+        scopeType: 'project',
+        stackId: 'ST-test',
+      })
+      mockStack.mockResolvedValue({
+        name: 'Managed datasets',
+        resources: [
+          {externalId: `${TEST_PROJECT_ID}:${TEST_DATASET_NAME}`, type: 'sanity.project.dataset'},
+        ],
+      })
+      mockDeleteDataset.mockResolvedValue(undefined)
+      const {error} = await testCommand(
+        DeleteDatasetCommand,
+        [
+          TEST_DATASET_NAME,
+          '--force',
+          '--project',
+          TEST_PROJECT_ID,
+          ...(optIn ? ['--with-blueprints'] : []),
+        ],
+        {mocks: defaultMocks},
+      )
+      if (optIn) {
+        expect(error?.message).toContain('Blueprint Stack "Managed datasets" manages')
+        expect(mockStack).toHaveBeenCalledOnce()
+        expect(mockDeleteDataset).not.toHaveBeenCalled()
+      } else {
+        expect(error).toBeUndefined()
+        expect(mockStack).not.toHaveBeenCalled()
+        expect(mockDeleteDataset).toHaveBeenCalledOnce()
+      }
+    },
+  )
 
   test('deletes dataset with --force flag', async () => {
     mockDeleteDataset.mockResolvedValue(undefined)

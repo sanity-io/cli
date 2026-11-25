@@ -11,6 +11,7 @@ import {deployStudio} from '../actions/deploy/deployStudio.js'
 import {getAppId} from '../util/appId.js'
 import {determineIsApp} from '../util/determineIsApp.js'
 import {dirIsEmptyOrNonExistent} from '../util/dirIsEmptyOrNonExistent.js'
+import {getWithBlueprintsFlag} from '../util/sharedFlags.js'
 import {defineCommandTelemetry} from '../util/telemetry/commandTelemetry.js'
 
 export class DeployCommand extends SanityCommand<typeof DeployCommand> {
@@ -62,6 +63,7 @@ export class DeployCommand extends SanityCommand<typeof DeployCommand> {
   ]
 
   static override flags = {
+    ...getWithBlueprintsFlag(),
     'auto-updates': Flags.boolean({
       allowNo: true,
       deprecated: true,
@@ -136,6 +138,13 @@ export class DeployCommand extends SanityCommand<typeof DeployCommand> {
   public async run(): Promise<void> {
     const {flags} = await this.parse(DeployCommand)
 
+    if (flags['with-blueprints']) {
+      const command = flags['dry-run'] ? 'plan' : 'deploy'
+      this.error(
+        `Declare the Studio, app, or Media Library config in your Blueprint, then run \`sanity blueprints ${command}\`.`,
+        {exit: exitCodes.USAGE_ERROR},
+      )
+    }
     const cliConfig = await this.getCliConfig()
     const projectRoot = await this.getProjectRoot()
 

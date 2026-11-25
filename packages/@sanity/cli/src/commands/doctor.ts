@@ -2,6 +2,7 @@ import {styleText} from 'node:util'
 
 import {Args, Flags} from '@oclif/core'
 import {exitCodes, SanityCommand} from '@sanity/cli-core'
+import {getErrorMessage} from '@sanity/cli-core/errors'
 import {logSymbols} from '@sanity/cli-core/ux'
 
 import {type DoctorCheckName, doctorChecks, KNOWN_CHECKS} from '../actions/doctor/checks/index.js'
@@ -14,6 +15,8 @@ import {
   type DoctorResults,
   type MessageType,
 } from '../actions/doctor/types.js'
+import {getCheckoutBlueprint, getCheckoutManifest} from '../util/checkoutBlueprint.js'
+import {getWithBlueprintsFlag} from '../util/sharedFlags.js'
 
 const STATUS_SYMBOLS: Record<CheckResultStatus, string> = {
   error: logSymbols.error,
@@ -54,6 +57,7 @@ export class DoctorCommand extends SanityCommand<typeof DoctorCommand> {
   ]
 
   static override flags = {
+    ...getWithBlueprintsFlag(),
     json: Flags.boolean({
       char: 'j',
       default: false,
@@ -83,14 +87,16 @@ export class DoctorCommand extends SanityCommand<typeof DoctorCommand> {
 
     const results = await runDoctorChecks({cwd}, checks)
 
+    const blueprint = flags['with-blueprints'] ? getBlueprintDiagnosis(cwd) : undefined
     if (flags.json) {
-      this.logJson(results)
+      this.logJson(blueprint ? {...results, blueprint} : results)
     } else {
       for (const check of results.checks) {
         this.printCheck(check)
       }
 
       this.printSummary(results.summary)
+      if (blueprint) this.log(blueprint.message)
     }
 
     // Exit with error code if any checks failed
@@ -172,4 +178,20 @@ function getChecks(argv: unknown[]): Array<DoctorCheck> {
   return checkNames.length > 0
     ? checkNames.map((check) => doctorChecks[check])
     : Object.values(doctorChecks)
+}
+
+function getBlueprintDiagnosis(cwd: string) {
+  try {
+    const link = getCheckoutBlueprint(cwd)
+    if (!link) return {message: 'No linked Blueprint Stack found in this checkout.'}
+    return {
+      manifest: getCheckoutManifest(link),
+      message: `Linked Stack ${link.stackId} (${link.scopeType} ${link.scopeId}). Run \`sanity blueprints doctor\` to check the connection.`,
+      scopeId: link.scopeId,
+      scopeType: link.scopeType,
+      stackId: link.stackId,
+    }
+  } catch (error) {
+    return {message: `Could not read the local Blueprint Stack link. ${getErrorMessage(error)}`}
+  }
 }

@@ -9,11 +9,11 @@ import {boxen, input, spinner} from '@sanity/cli-core/ux'
 import {exportDataset, type ExportOptions, type ExportProgress} from '@sanity/export'
 import prettyMs from 'pretty-ms'
 
+import {resolveProjectForCommand} from '../../actions/targets/blueprintCommandTarget.js'
 import {promptForMediaLibrary} from '../../prompts/promptForMediaLibrary.js'
-import {promptForProject} from '../../prompts/promptForProject.js'
 import {getMediaLibraries} from '../../services/mediaLibraries.js'
 import {absolutify} from '../../util/absolutify.js'
-import {getProjectIdFlag} from '../../util/sharedFlags.js'
+import {getProjectIdFlag, getWithBlueprintsFlag} from '../../util/sharedFlags.js'
 
 const noop = () => null
 const exportDebug = subdebug('media:export')
@@ -43,6 +43,7 @@ export class MediaExportCommand extends SanityCommand<typeof MediaExportCommand>
   ]
 
   static override flags = {
+    ...getWithBlueprintsFlag(),
     ...getProjectIdFlag({
       description: 'Project ID to export media from',
       semantics: 'override',
@@ -70,7 +71,7 @@ export class MediaExportCommand extends SanityCommand<typeof MediaExportCommand>
     const {args, flags} = await this.parse(MediaExportCommand)
     const {destination: targetDestination} = args
 
-    const projectId = await this.getProjectId({fallback: () => promptForProject({})})
+    const projectId = await resolveProjectForCommand(this, this.flags)
 
     const projectClient = await getProjectCliClient({
       apiVersion: 'v2025-02-19',

@@ -4,6 +4,8 @@ import {exitCodes, SanityCommand} from '@sanity/cli-core'
 import {listSchemas} from '../../actions/schema/listSchemas.js'
 import {schemasListDebug} from '../../actions/schema/utils/debug.js'
 import {parseWorkspaceSchemaId} from '../../actions/schema/utils/schemaStoreValidation.js'
+import {getBlueprintDatasetTarget} from '../../actions/targets/blueprintCommandTarget.js'
+import {getDatasetFlag, getProjectIdFlag, getWithBlueprintsFlag} from '../../util/sharedFlags.js'
 import {defineCommandTelemetry} from '../../util/telemetry/commandTelemetry.js'
 
 const description = `
@@ -39,6 +41,9 @@ export class ListSchemaCommand extends SanityCommand<typeof ListSchemaCommand> {
   ]
 
   static override flags = {
+    ...getWithBlueprintsFlag(),
+    ...getDatasetFlag({dependsOn: ['with-blueprints'], semantics: 'override'}),
+    ...getProjectIdFlag({dependsOn: ['with-blueprints'], semantics: 'override'}),
     'extract-manifest': Flags.boolean({
       allowNo: true,
       default: true,
@@ -71,16 +76,15 @@ export class ListSchemaCommand extends SanityCommand<typeof ListSchemaCommand> {
       })
     }
 
+    const blueprintTarget = await getBlueprintDatasetTarget(this, flags)
     try {
-      const projectRoot = await this.getProjectRoot()
-
-      await listSchemas({
-        configPath: projectRoot.path,
-        id,
-        json: !!flags.json,
-        output: this.output,
-        workDir: projectRoot.directory,
-      })
+      const common = {id, json: !!flags.json, output: this.output}
+      if (blueprintTarget) {
+        await listSchemas({...common, dataset: blueprintTarget})
+      } else {
+        const projectRoot = await this.getProjectRoot()
+        await listSchemas({...common, configPath: projectRoot.path, workDir: projectRoot.directory})
+      }
     } catch (error) {
       schemasListDebug('Failed to list schemas', error)
 
