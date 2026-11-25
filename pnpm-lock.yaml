@@ -1052,8 +1052,8 @@ snapshots:
 					"version": "1.9.1",
 				},
 				"string-argv": {
-					"specifier": "^0.3.2",
-					"version": "0.3.2",
+					"specifier": "^0.4.0",
+					"version": "0.4.0",
 				},
 				"string-width": {
 					"specifier": "^7.2.0",
@@ -20879,6 +20879,11 @@ snapshots:
 		"string-argv@0.3.2": {
 			"integrity": "sha512-aqD2Q0144Z+/RqG52NeHEkZauTAUWJO8c6yTftGJKO3Tja5tUgIfmIl6kExvhtxSDP7fXB6DvzkfMpCd/F3G+Q==",
 			"engines": {"node": ">=0.6.19"},
+		},
+
+		"string-argv@0.4.0": {
+			"integrity": "sha512-UOtaksJ3SK3KLHba2i9I27fvuZNfBlImDP5wKsCOxCDMRDNxlipCe8rmnUAaDpqlQ93upnA0SzF2pjWhttozSA==",
+			"engines": {"node": ">=16.20.0"},
 		},
 
 		"string-width@4.2.3": {
