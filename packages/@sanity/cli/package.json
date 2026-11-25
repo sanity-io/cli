@@ -138,7 +138,7 @@
     "semver": "catalog:",
     "skills": "^1.9.0",
     "smol-toml": "^1.9.1",
-    "string-argv": "^0.3.2",
+    "string-argv": "^0.4.0",
     "string-width": "^7.2.0",
     "tar": "catalog:",
     "tar-stream": "^3.2.2",
