@@ -9,6 +9,7 @@ import {getProjectsWithPermissions} from '../util/checkProjectPermissions.js'
 const debug = subdebug('prompt:project')
 
 interface PromptForProjectOptions {
+  organizationId?: string
   requiredPermissions?: RequiredPermission[]
 }
 
@@ -24,13 +25,13 @@ export async function promptForProject(options: PromptForProjectOptions = {}): P
     throw new NonInteractiveError('select')
   }
 
-  const {requiredPermissions} = options
+  const {organizationId, requiredPermissions} = options
 
   debug('Fetching projects and grants')
   const spin = spinner('Fetching available projects').start()
 
-  const [projects, grants] = await Promise.all([
-    listProjects(),
+  const [availableProjects, grants] = await Promise.all([
+    organizationId ? listProjects({onlyExplicitMembership: false}) : listProjects(),
     requiredPermissions ? getUserGrants() : undefined,
   ]).catch((error) => {
     spin.fail(
@@ -39,8 +40,16 @@ export async function promptForProject(options: PromptForProjectOptions = {}): P
     throw error
   })
 
+  const projects = organizationId
+    ? availableProjects.filter((project) => project.organizationId === organizationId)
+    : availableProjects
   if (projects.length === 0) {
     spin.fail('No projects found')
+    if (organizationId) {
+      throw new Error(
+        `No accessible projects found in organization ${organizationId}. Try again with \`--project <project-id>\`.`,
+      )
+    }
     throw new Error('No projects found. Create a project at https://www.sanity.io/manage')
   }
 

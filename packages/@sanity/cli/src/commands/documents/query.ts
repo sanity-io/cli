@@ -9,7 +9,7 @@ import {
 import {getCliExecutionContext} from '@sanity/cli-core/executionContext'
 
 import {DOCUMENTS_API_VERSION} from '../../actions/documents/constants.js'
-import {promptForProject} from '../../prompts/promptForProject.js'
+import {resolveCommandTarget} from '../../actions/targets/resolveCommandTarget.js'
 import {getDatasetFlag, getProjectIdFlag} from '../../util/sharedFlags.js'
 
 const queryDocumentDebug = subdebug('documents:query')
@@ -69,22 +69,16 @@ export class QueryDocumentCommand extends SanityCommand<typeof QueryDocumentComm
     const {query} = args
     const {anonymous, 'api-version': apiVersion, dataset, pretty} = flags
 
-    const cliConfig = await this.tryGetCliConfig()
-
-    const projectId = await this.getProjectId({
-      fallback: () => promptForProject({}),
+    const {dataset: targetDataset, projectId} = await resolveCommandTarget({
+      dataset,
+      loadCliConfig: () => this.tryGetCliConfig(),
+      needsDataset: true,
+      project: flags.project,
+      unattended: this.isUnattended(),
     })
 
     const requireUser = !anonymous
 
-    if (!cliConfig.api?.dataset && !dataset) {
-      this.error(
-        'Dataset is required. Pass it with `--dataset <name>` or configure it in `sanity.cli.ts`.',
-        {exit: exitCodes.USAGE_ERROR},
-      )
-    }
-
-    const targetDataset = dataset || cliConfig.api?.dataset
     const configuredApiVersion =
       apiVersion ??
       (getCliExecutionContext() ? undefined : process.env.SANITY_CLI_QUERY_API_VERSION)

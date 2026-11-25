@@ -20,11 +20,16 @@ const defaultMocks = {
 }
 
 const mockFetch = vi.hoisted(() => vi.fn())
+const mockCheckout = vi.hoisted(() => vi.fn())
+const mockGetDeployedStack = vi.hoisted(() => vi.fn())
 const mockGetProjectCliClient = vi.hoisted(() =>
   vi.fn().mockResolvedValue({
     fetch: mockFetch,
   }),
 )
+
+vi.mock('../../../util/checkoutBlueprint.js', () => ({getCheckoutBlueprint: mockCheckout}))
+vi.mock('../../../services/blueprints.js', () => ({getDeployedStack: mockGetDeployedStack}))
 
 vi.mock('@sanity/cli-core', async () => {
   const actual = await vi.importActual('@sanity/cli-core')
@@ -36,8 +41,35 @@ vi.mock('@sanity/cli-core', async () => {
 
 describe('#documents:query', () => {
   afterEach(() => {
+    mockCheckout.mockReset()
+    mockGetDeployedStack.mockReset()
     vi.clearAllMocks()
     vi.unstubAllEnvs()
+  })
+
+  test('queries the deployed dataset in a linked Blueprint checkout', async () => {
+    mockCheckout.mockReturnValue({
+      scopeId: 'blueprint-project',
+      scopeType: 'project',
+      stackId: 'ST-checkout',
+    })
+    mockGetDeployedStack.mockResolvedValue({
+      resources: [
+        {
+          externalId: 'blueprint-project:production',
+          name: 'logical-name',
+          type: 'sanity.project.dataset',
+        },
+      ],
+    })
+    mockFetch.mockResolvedValue([{_id: 'blueprint-doc'}])
+
+    const {stdout} = await testCommand(QueryDocumentCommand, ['*[0...1]'], {mocks: defaultMocks})
+
+    expect(mockGetProjectCliClient).toHaveBeenCalledWith(
+      expect.objectContaining({dataset: 'production', projectId: 'blueprint-project'}),
+    )
+    expect(stdout).toContain('"_id": "blueprint-doc"')
   })
 
   test('executes query successfully with basic options', async () => {
