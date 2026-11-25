@@ -10,10 +10,10 @@ import {
   getCliConfig,
   getCliTelemetry,
   getUserConfig,
-  isCi,
   normalizePath,
   reportCliTraceError,
 } from '@sanity/cli-core'
+import {TELEMETRY_API_VERSION} from '@sanity/cli-setup/telemetry'
 import {createTestToken, mockApi, testHook} from '@sanity/cli-test'
 import {TypegenWatchModeTrace} from '@sanity/codegen'
 import {type TelemetryEvent} from '@sanity/telemetry'
@@ -22,7 +22,6 @@ import {glob} from 'tinyglobby'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
 import {setupTelemetry} from '../../../../src/hooks/prerun/setupTelemetry.js'
-import {TELEMETRY_API_VERSION} from '../../../../src/services/telemetry.js'
 import {commandIdentity} from '../../../../src/util/telemetry/cliCommandIdentity.js'
 import {flushTelemetryFiles} from '../../../../src/util/telemetry/flushTelemetryFiles.js'
 import {readNDJSON} from '../../../../src/util/telemetry/readNDJSON.js'
@@ -48,7 +47,6 @@ vi.mock('@sanity/cli-core', async () => ({
   findProjectRoot: vi.fn(),
   getCliConfig: vi.fn(),
   getUserConfig: vi.fn(),
-  isCi: vi.fn(() => false),
 }))
 vi.mock('../../../../src/actions/telemetry/telemetryDebug.js', () => ({
   telemetryDebug: mockTelemetryDebug,
@@ -59,7 +57,6 @@ const mockSpawn = vi.mocked(spawn)
 const mockFindProjectRoot = vi.mocked(findProjectRoot)
 const mockGetCliConfig = vi.mocked(getCliConfig)
 const mockGetUserConfig = vi.mocked(getUserConfig)
-const mockIsCi = vi.mocked(isCi)
 
 const {config} = await getCommandAndConfig('help')
 // Create mock functions for getUserConfig get/set methods
@@ -139,6 +136,10 @@ describe('setupTelemetry integration test', () => {
   let telemetryPath: string
 
   beforeEach(async () => {
+    for (const name of ['BUILD_NUMBER', 'CI', 'CONTINUOUS_INTEGRATION', 'DO_NOT_TRACK']) {
+      vi.stubEnv(name, undefined)
+    }
+
     // Only create test directory - each test sets up its own mocks
     const {telemetryPath: path, testDir: dir} = setupTestDirectory()
     testDir = dir
@@ -155,11 +156,11 @@ describe('setupTelemetry integration test', () => {
     // Reset all mocks before each test
     mockGet.mockReset()
     mockSet.mockReset()
-    mockIsCi.mockReset().mockReturnValue(false)
   })
 
   afterEach(() => {
     vi.clearAllMocks()
+    vi.unstubAllEnvs()
     const pending = pendingMocks()
     cleanAll()
     expect(pending, 'pending mocks').toEqual([])
@@ -247,7 +248,7 @@ describe('setupTelemetry integration test', () => {
   })
 
   test('does not show disclosure in CI environment', async () => {
-    mockIsCi.mockReturnValue(true)
+    vi.stubEnv('CI', 'true')
 
     const {stderr} = await testHook<'prerun'>(setupTelemetry, {
       config,

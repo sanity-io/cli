@@ -3,7 +3,6 @@ import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
 import {resolveConsent} from '../resolveConsent.js'
 
-const mockIsCi = vi.hoisted(() => vi.fn())
 const mockGetCliToken = vi.hoisted(() => vi.fn())
 const mockFetchTelemetry = vi.hoisted(() => vi.fn())
 const mockTelemetryDebug = vi.hoisted(() => vi.fn())
@@ -13,7 +12,6 @@ vi.mock('@sanity/cli-core', async (importOriginal) => {
   return {
     ...actual,
     getCliToken: mockGetCliToken,
-    isCi: mockIsCi,
   }
 })
 vi.mock('../../../services/telemetry.js', async (importOriginal) => {
@@ -29,18 +27,23 @@ vi.mock('../telemetryDebug.js', async () => ({
 
 describe('actions telemetry resolveConsent', () => {
   beforeEach(() => {
-    mockIsCi.mockReturnValue(false)
+    for (const name of ['BUILD_NUMBER', 'CI', 'CONTINUOUS_INTEGRATION', 'DO_NOT_TRACK']) {
+      vi.stubEnv(name, undefined)
+    }
     mockGetCliToken.mockResolvedValue('fake-token')
   })
   afterEach(() => {
     vi.clearAllMocks()
     vi.unstubAllEnvs()
   })
-  test('should return denied consent if CI env detected', async () => {
-    mockIsCi.mockReturnValue(true)
-    const res = await resolveConsent()
-    expect(res.status).toEqual('denied')
-  })
+  test.each(['BUILD_NUMBER', 'CI', 'CONTINUOUS_INTEGRATION'])(
+    'should return denied consent if %s indicates CI',
+    async (name) => {
+      vi.stubEnv(name, '1')
+      expect(await resolveConsent()).toEqual({status: 'denied'})
+      expect(mockFetchTelemetry).not.toHaveBeenCalled()
+    },
+  )
   test('should return denied consent if DO_NOT_TRACK in env', async () => {
     vi.stubEnv('DO_NOT_TRACK', 'true')
     const res = await resolveConsent()
@@ -58,14 +61,13 @@ describe('actions telemetry resolveConsent', () => {
     expect(res.status).toEqual('granted')
   })
   test('ignores host CI and DO_NOT_TRACK state under an execution context', async () => {
-    mockIsCi.mockReturnValue(true)
+    vi.stubEnv('CI', 'true')
     vi.stubEnv('DO_NOT_TRACK', 'true')
     mockFetchTelemetry.mockResolvedValue({status: 'granted'})
 
     const res = await runWithCliExecutionContext({token: 'context-token'}, () => resolveConsent())
 
     expect(res.status).toEqual('granted')
-    expect(mockIsCi).not.toHaveBeenCalled()
     expect(mockFetchTelemetry).toHaveBeenCalled()
   })
   test('should return undetermined status from telemetry fetch if it throws', async () => {

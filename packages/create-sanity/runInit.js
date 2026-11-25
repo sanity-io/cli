@@ -47,7 +47,7 @@ async function installCli(version) {
   const staging = await mkdtemp(join(cache, '.install-'))
   try {
     await writeFile(join(staging, 'package.json'), '{"private":true}')
-    const result = await waitForExit(
+    const {code} = await waitForExit(
       spawn(
         'npm',
         [
@@ -68,7 +68,7 @@ async function installCli(version) {
         },
       ),
     )
-    if (result !== 0) {
+    if (code !== 0) {
       throw new Error(
         `Could not install @sanity/cli@${version}. Check the npm error above and try again.`,
       )
@@ -88,7 +88,7 @@ async function installCli(version) {
 function waitForExit(child) {
   return new Promise((resolve, reject) => {
     child.once('error', reject)
-    child.once('close', (code) => resolve(code ?? 1))
+    child.once('close', (code, signal) => resolve({code, signal}))
   })
 }
 

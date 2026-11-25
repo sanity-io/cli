@@ -1454,6 +1454,7 @@ snapshots:
 				},
 				"@sanity/cli-setup": "workspace:*",
 				"@sanity/client": "catalog:",
+				"@sanity/telemetry": "catalog:",
 			},
 			"devDependencies": {
 				"@sanity/cli": "workspace:*",

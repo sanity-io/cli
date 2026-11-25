@@ -2,13 +2,16 @@ import {createHash} from 'node:crypto'
 
 import {getCliToken, getGlobalCliClient, getUserConfig} from '@sanity/cli-core'
 import {getCliExecutionContext} from '@sanity/cli-core/executionContext'
+import {
+  TELEMETRY_API_VERSION,
+  TELEMETRY_BATCH_PATH,
+  TELEMETRY_STATUS_PATH,
+} from '@sanity/cli-setup/telemetry'
 import {type TelemetryEvent} from '@sanity/telemetry'
 
 import {telemetryDebug} from '../actions/telemetry/telemetryDebug.js'
 import {createExpiringConfig} from '../util/createExpiringConfig.js'
 import {sanitizeTelemetryEvent} from '../util/telemetry/sanitizeTelemetryEvent.js'
-
-export const TELEMETRY_API_VERSION = 'v2026-01-22'
 
 export const VALID_API_STATUSES = ['granted', 'denied', 'unset'] as const
 export type ValidApiConsentStatus = (typeof VALID_API_STATUSES)[number]
@@ -29,7 +32,7 @@ export async function sendEvents(batch: TelemetryEvent[]) {
     body: {batch: batch.map((event) => sanitizeTelemetryEvent(event)), projectId},
     json: true,
     method: 'POST',
-    url: '/intake/batch',
+    url: TELEMETRY_BATCH_PATH,
   })
 }
 
@@ -41,7 +44,7 @@ async function getTelemetryConsent(): Promise<{
     requireUser: false,
   })
 
-  return client.request({tag: 'telemetry-consent', url: '/intake/telemetry-status'})
+  return client.request({tag: 'telemetry-consent', url: TELEMETRY_STATUS_PATH})
 }
 
 /**

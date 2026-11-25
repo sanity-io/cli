@@ -2,22 +2,60 @@
 import {resolve} from 'node:path'
 import {parseArgs} from 'node:util'
 
+import {reportBlueprintSetup} from './reportBlueprintSetup.js'
+
 const args = process.argv.slice(2)
+const separator = args.indexOf('--')
+const flags = separator === -1 ? args : args.slice(0, separator)
+const isBlueprintAttempt =
+  flags.includes('--with-blueprints') && !flags.includes('--help') && !flags.includes('-h')
+const startedAt = isBlueprintAttempt ? performance.now() : 0
+let reported = false
+let outcome = 'failed'
+let route = 'delegated'
+
+if (isBlueprintAttempt) process.once('SIGINT', cancel)
 
 try {
   const options = getBlueprintOptions(args, process.env.SANITY_AUTH_TOKEN)
   if (options) {
+    route = 'standalone'
     // eslint-disable-next-line eslint-js/no-restricted-syntax -- load Blueprint setup after routing
     const {bootstrapBlueprint} = await import('./bootstrapBlueprint.js')
     await bootstrapBlueprint(options, (message) => process.stdout.write(`${message}\n`))
+    outcome = 'success'
   } else {
     // eslint-disable-next-line eslint-js/no-restricted-syntax -- load the full CLI installer on demand
     const {runInit} = await import('./runInit.js')
-    process.exitCode = await runInit(args)
+    const {code, signal} = await runInit(args)
+    process.exitCode = code ?? 1
+    if (code === 0) outcome = 'success'
+    if (code === 3 || code === 130 || signal === 'SIGINT') outcome = 'cancelled'
   }
 } catch (err) {
   process.stderr.write(`${err instanceof Error ? err.message : String(err)}\n`)
   process.exitCode = 1
+} finally {
+  if (isBlueprintAttempt) {
+    reportOutcome(outcome)
+    process.off('SIGINT', cancel)
+  }
+}
+
+function cancel() {
+  reportOutcome('cancelled')
+  process.kill(process.pid, 'SIGINT')
+}
+
+function reportOutcome(result) {
+  if (reported) return
+  reported = true
+  const durationMs = Math.round(performance.now() - startedAt)
+  try {
+    reportBlueprintSetup(route, result, durationMs)
+  } catch {
+    // Telemetry is best effort.
+  }
 }
 
 function getBlueprintOptions(argv, authToken) {

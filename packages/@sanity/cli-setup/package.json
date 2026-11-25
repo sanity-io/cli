@@ -19,6 +19,11 @@
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
     },
+    "./telemetry": {
+      "source": "./src/telemetry.ts",
+      "types": "./dist/telemetry.d.ts",
+      "default": "./dist/telemetry.js"
+    },
     "./package.json": "./package.json"
   },
   "publishConfig": {
