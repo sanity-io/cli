@@ -973,7 +973,7 @@ snapshots:
 					"specifier": ">=0.39.0 <1.0.0",
 					"version": "0.39.0",
 				},
-				"@vercel/frameworks": "3.29.0",
+				"@vercel/frameworks": "3.35.0",
 				"chokidar": {
 					"specifier": "^5.0.0",
 					"version": "5.0.0",
@@ -13109,14 +13109,14 @@ snapshots:
 			"engines": {"node": ">=14"},
 		},
 
-		"@vercel/error-utils@2.2.0": {
-			"integrity": "sha512-WFWiRxfPzoYWYifaj4thSKvAaZZwUOqD4k5GINRIgZgCiS2E3iAJbWbIsIZmkQdTecWFHcWGA6q48CjisgpOBA==",
+		"@vercel/error-utils@2.2.1": {
+			"integrity": "sha512-9DhP8jP7raLML4hGsBemxX5fXuQnu5xxMV+HjGygGbzEmVK/+KyJ3QP2Cw7PdF0uXdb9N0Qa4c3tRGH34ZX6vw==",
 		},
 
-		"@vercel/frameworks@3.29.0": {
-			"integrity": "sha512-qqkIhTkSkWdaGOs6+oOTliY/1bLd8cLLNQYCBVYSRFU5RiPjm5pM2fhZGFJaosQpFBBBOLEKeCZqYhTcphs6OQ==",
+		"@vercel/frameworks@3.35.0": {
+			"integrity": "sha512-bORA3Pvs8sI+6EvFLRBVZY/Qhf6VnXWGHbfdKBXc0U4yOTSp/GAPbfhBRTORXYWYMO/i3A+m1jZNb6FSdgZd6w==",
 			"dependencies": {
-				"@vercel/error-utils": "2.2.0",
+				"@vercel/error-utils": "2.2.1",
 				"js-yaml": "3.13.1",
 				"smol-toml": "1.5.2",
 			},
