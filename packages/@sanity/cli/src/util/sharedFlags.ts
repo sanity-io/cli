@@ -121,3 +121,15 @@ export function getDatasetFlag(options: SharedFlagOptions) {
     }),
   }
 }
+
+/**
+ * Opt in to Blueprint-aware behavior for this invocation.
+ */
+export function getWithBlueprintsFlag() {
+  return {
+    'with-blueprints': Flags.boolean({
+      description: 'Use Blueprint-aware behavior',
+      hidden: true,
+    }),
+  }
+}

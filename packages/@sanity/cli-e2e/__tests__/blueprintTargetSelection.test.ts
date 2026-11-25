@@ -53,13 +53,19 @@ test('discovers a Stack from a subdirectory and handles an ambiguous dataset', a
       SANITY_INTERNAL_ENV: `http://127.0.0.1:${address.port}`,
       TERM: 'xterm-256color',
     }
-    const unattended = await runCli({args, cwd: nested, env})
+    const classic = await runCli({args, cwd: nested, env})
+    expect(classic.exitCode, classic.stderr).not.toBe(0)
+    expect(classic.stderr).toContain('Unable to determine project ID')
+    expect(requests).toEqual([])
+
+    const blueprintArgs = [...args, '--with-blueprints']
+    const unattended = await runCli({args: blueprintArgs, cwd: nested, env})
     expect(unattended.exitCode, unattended.stderr).not.toBe(0)
     const message = unattended.stderr.replaceAll(/\s+/g, ' ')
     expect(message).toContain('Multiple deployed datasets match the linked Stack.')
     expect(message).toContain('`--dataset <name>`.')
 
-    const terminal = await runCli({args, cwd: nested, env, interactive: true})
+    const terminal = await runCli({args: blueprintArgs, cwd: nested, env, interactive: true})
     await terminal.waitForText(/Select a dataset from this Stack/)
     await terminal.waitForText(/preview/)
     await terminal.waitForText(/production/)

@@ -47,30 +47,40 @@ describe('#documents:query', () => {
     vi.unstubAllEnvs()
   })
 
-  test('queries the deployed dataset in a linked Blueprint checkout', async () => {
-    mockCheckout.mockReturnValue({
-      scopeId: 'blueprint-project',
-      scopeType: 'project',
-      stackId: 'ST-checkout',
-    })
-    mockGetDeployedStack.mockResolvedValue({
-      resources: [
-        {
-          externalId: 'blueprint-project:production',
-          name: 'logical-name',
-          type: 'sanity.project.dataset',
-        },
-      ],
-    })
-    mockFetch.mockResolvedValue([{_id: 'blueprint-doc'}])
+  test.each([
+    {dataset: 'deployed', flags: ['--with-blueprints'], projectId: 'blueprint-project'},
+    {dataset: testDataset, flags: [], projectId: testProjectId},
+  ])(
+    'uses project $projectId and dataset $dataset in a linked checkout with $flags',
+    async ({dataset, flags, projectId}) => {
+      mockCheckout.mockReturnValue({
+        scopeId: 'blueprint-project',
+        scopeType: 'project',
+        stackId: 'ST-checkout',
+      })
+      mockGetDeployedStack.mockResolvedValue({
+        resources: [
+          {
+            externalId: 'blueprint-project:deployed',
+            name: 'logical-name',
+            type: 'sanity.project.dataset',
+          },
+        ],
+      })
+      mockFetch.mockResolvedValue([{_id: 'test-doc'}])
 
-    const {stdout} = await testCommand(QueryDocumentCommand, ['*[0...1]'], {mocks: defaultMocks})
+      const {stdout} = await testCommand(QueryDocumentCommand, ['*[0...1]', ...flags], {
+        mocks: defaultMocks,
+      })
 
-    expect(mockGetProjectCliClient).toHaveBeenCalledWith(
-      expect.objectContaining({dataset: 'production', projectId: 'blueprint-project'}),
-    )
-    expect(stdout).toContain('"_id": "blueprint-doc"')
-  })
+      expect(mockCheckout).toHaveBeenCalledTimes(flags.length)
+      expect(mockGetDeployedStack).toHaveBeenCalledTimes(flags.length)
+      expect(mockGetProjectCliClient).toHaveBeenCalledWith(
+        expect.objectContaining({dataset, projectId}),
+      )
+      expect(stdout).toContain('"_id": "test-doc"')
+    },
+  )
 
   test('executes query successfully with basic options', async () => {
     const mockResults = [

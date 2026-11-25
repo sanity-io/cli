@@ -24,6 +24,7 @@ interface CommandTarget {
   dataset?: string
 }
 
+// Call only after the command has opted in with --with-blueprints.
 // Commands that need a dataset get a complete target or a usage error.
 export function resolveCommandTarget(
   options: TargetOptions & {needsDataset: true},
