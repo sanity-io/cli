@@ -138,6 +138,7 @@
     "@inquirer/core": "^12.0.6",
     "@inquirer/prompts": "^8.7.5",
     "@oclif/core": "catalog:",
+    "@sanity/cli-setup": "workspace:^",
     "@sanity/client": "catalog:",
     "boxen": "^8.0.1",
     "empathic": "catalog:",

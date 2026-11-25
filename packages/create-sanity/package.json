@@ -25,6 +25,8 @@
   "files": [
     "index.js",
     "bootstrapBlueprint.js",
+    "blueprintSession.js",
+    "promptBlueprint.js",
     "runInit.js",
     "dist/studio-cli-version.json"
   ],
@@ -36,9 +38,12 @@
     "test": "vitest"
   },
   "dependencies": {
+    "@inquirer/input": "^4.3.0",
+    "@inquirer/select": "^4.4.2",
     "@sanity/blueprints": "^0.34.1",
     "@sanity/cli-setup": "workspace:*",
-    "@sanity/client": "catalog:"
+    "@sanity/client": "catalog:",
+    "open": "catalog:"
   },
   "devDependencies": {
     "@sanity/cli": "workspace:*",
@@ -47,9 +52,12 @@
     "vitest": "catalog:"
   },
   "bundleDependencies": [
+    "@inquirer/input",
+    "@inquirer/select",
     "@sanity/blueprints",
     "@sanity/cli-setup",
-    "@sanity/client"
+    "@sanity/client",
+    "open"
   ],
   "engines": {
     "node": ">=22.12"

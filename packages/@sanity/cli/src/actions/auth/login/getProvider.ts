@@ -1,5 +1,6 @@
 import {isInteractive, subdebug} from '@sanity/cli-core'
 import {input, spinner, type SpinnerInstance} from '@sanity/cli-core/ux'
+import {selectInteractiveLoginProvider} from '@sanity/cli-setup/auth'
 
 import {promptForProviders} from '../../../prompts/promptForProviders.js'
 import {getProviders, getVercelProviderUrl} from '../../../services/auth.js'
@@ -76,16 +77,10 @@ export async function getProvider({
       }
     }
 
-    const provider = await promptForProviders([
-      ...providers,
-      {name: 'sso', title: 'SSO', url: '_not_used_'},
-    ])
-    if (provider.name === 'sso') {
+    return await selectInteractiveLoginProvider(providers, promptForProviders, async () => {
       const orgSlug = await input({message: 'Organization slug:'})
       return getSSOProvider(orgSlug)
-    }
-
-    return provider
+    })
   } catch (err) {
     spin?.stop()
     debug('Error retrieving providers', err)

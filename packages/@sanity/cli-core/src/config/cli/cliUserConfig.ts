@@ -1,13 +1,13 @@
-import {chmodSync, mkdirSync, statSync} from 'node:fs'
-import {dirname, join as joinPath} from 'node:path'
-
+import {
+  getHostCliUserConfigPath,
+  readHostCliUserConfig,
+  writeHostCliUserConfig,
+} from '@sanity/cli-setup/user-config'
 import {z} from 'zod/mini'
 
 import {debug} from '../../_exports/debug.js'
 import {getCliExecutionContext} from '../../executionContext.js'
-import {getSanityConfigDir} from '../../util/getSanityConfigDir.js'
-import {readJsonFileSync} from '../../util/readJsonFileSync.js'
-import {writeJsonFileSync} from '../../util/writeJsonFileSync.js'
+import {isStaging} from '../../util/isStaging.js'
 import {
   clearCliTokenCache,
   type CliTokenInfo,
@@ -75,10 +75,6 @@ export async function getCliTokenInfo(): Promise<CliTokenInfo | undefined> {
   return tokenInfo
 }
 
-// The config file holds the CLI auth token, so keep it readable by its owner only
-const CONFIG_DIR_OPTIONS = {mode: 0o700, recursive: true}
-const CONFIG_WRITE_OPTIONS = {mode: 0o600, pretty: true}
-
 const cliUserConfigSchema = {
   authToken: z.optional(z.string()),
 }
@@ -104,15 +100,14 @@ export function setCliUserConfig(prop: 'authToken', value: string | undefined): 
   }
 
   const configPath = getCliUserConfigPath()
-  mkdirSync(dirname(configPath), CONFIG_DIR_OPTIONS)
 
   // When value is undefined, explicitly delete the key rather than relying
   // on JSON.stringify silently dropping undefined values.
   if (value === undefined) {
     const {[prop]: _, ...rest} = config
-    writeJsonFileSync(configPath, rest, CONFIG_WRITE_OPTIONS)
+    writeHostCliUserConfig(configPath, rest)
   } else {
-    writeJsonFileSync(configPath, {...config, [prop]: value}, CONFIG_WRITE_OPTIONS)
+    writeHostCliUserConfig(configPath, {...config, [prop]: value})
   }
 
   // Invalidate the in-process token cache so subsequent getCliToken() calls
@@ -165,17 +160,15 @@ export function getUserConfig(): ConfigStore {
     set(key: string, value: unknown): void {
       const config = readConfig()
       const configPath = getCliUserConfigPath()
-      mkdirSync(dirname(configPath), CONFIG_DIR_OPTIONS)
-      writeJsonFileSync(configPath, {...config, [key]: value}, CONFIG_WRITE_OPTIONS)
+      writeHostCliUserConfig(configPath, {...config, [key]: value})
       if (key === 'authToken') clearCliTokenCache()
     },
 
-    // No mkdirSync needed: if readConfig() succeeded the directory already exists.
     delete(key: string): void {
       const config = readConfig()
       if (!(key in config)) return
       const {[key]: _, ...rest} = config
-      writeJsonFileSync(getCliUserConfigPath(), rest, CONFIG_WRITE_OPTIONS)
+      writeHostCliUserConfig(getCliUserConfigPath(), rest, {createDirectory: false})
       if (key === 'authToken') clearCliTokenCache()
     },
   }
@@ -197,54 +190,9 @@ function assertCanAccessHostUserConfig(): void {
  * @internal
  */
 function readConfig(): Record<string, unknown> {
-  const configPath = getCliUserConfigPath()
-  restrictConfigFilePermissions(configPath)
-  try {
-    const config = readJsonFileSync(configPath)
-    if (!config || typeof config !== 'object' || Array.isArray(config)) {
-      throw new Error('Invalid config file - expected an object')
-    }
-    return config
-  } catch (err: unknown) {
-    debug('Failed to read CLI config file: %s', err instanceof Error ? err.message : `${err}`)
-    return {}
-  }
+  return readHostCliUserConfig(getCliUserConfigPath())
 }
 
-/**
- * Remove group and other access from an existing config file. CLI versions from
- * 6.0.0 created it with the default umask mode (usually 0644), exposing the auth
- * token to other local users. Only touches files owned by the current user, and
- * never adds permissions.
- *
- * @param configPath - Path to the CLI configuration file
- */
-function restrictConfigFilePermissions(configPath: string): void {
-  // No POSIX permissions to fix on Windows
-  if (typeof process.getuid !== 'function') return
-
-  try {
-    const {mode, uid} = statSync(configPath)
-    if (uid !== process.getuid() || (mode & 0o077) === 0) return
-
-    chmodSync(configPath, mode & 0o700)
-    debug('Restricted permissions of %s to owner only', configPath)
-  } catch (err: unknown) {
-    debug(
-      'Could not restrict permissions of CLI config file: %s',
-      err instanceof Error ? err.message : `${err}`,
-    )
-  }
-}
-
-/**
- * Get the file system location for the CLI user configuration file.
- * Takes into account the active environment (staging vs production).
- * The file is located in the user's home directory under the `.config` directory.
- *
- * @returns The path to the CLI configuration file.
- * @internal
- */
-function getCliUserConfigPath() {
-  return process.env.SANITY_CLI_CONFIG_PATH || joinPath(getSanityConfigDir(), 'config.json')
+function getCliUserConfigPath(): string {
+  return getHostCliUserConfigPath(isStaging())
 }

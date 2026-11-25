@@ -6,27 +6,18 @@ import {
   initializeBlueprintWorkspace,
   JSON_BLUEPRINT_CONTENT,
 } from '@sanity/cli-setup'
-import {createClient} from '@sanity/client'
+
+import {getBlueprintClient} from './blueprintSession.js'
 
 const datasetApiVersion = 'v2025-09-16'
 const projectApiVersion = 'v2025-05-14'
 
 export async function bootstrapBlueprint(options, log) {
-  const {dataset, organization, outputPath, project, projectName, token, visibility} = options
-  checkBlueprintDestination(outputPath)
+  const {dataset, organization, project, projectName, visibility} = options
+  if (options.outputPath) checkBlueprintDestination(options.outputPath)
   log('Setting up a Blueprint')
 
-  const environment = process.env.SANITY_INTERNAL_ENV
-  const apiHost = environment === 'staging' ? 'https://api.sanity.work' : environment
-  const client = createClient({
-    ...(apiHost && apiHost !== 'production' ? {apiHost} : {}),
-    apiVersion: 'v2025-08-30',
-    requestTagPrefix: 'sanity.cli',
-    token,
-    useCdn: false,
-    useProjectHostname: false,
-  })
-  await client.users.getById('me')
+  const client = await getBlueprintClient(options, log)
 
   let projectId = project
   if (projectName) {
@@ -54,6 +45,13 @@ export async function bootstrapBlueprint(options, log) {
     log('Creating a dataset')
     const aclMode = projectName ? visibility : (visibility ?? 'public')
     await projectClient.datasets.create(dataset, aclMode ? {aclMode} : {})
+  }
+
+  let outputPath = options.outputPath
+  if (!outputPath) {
+    // eslint-disable-next-line eslint-js/no-restricted-syntax -- only load prompts when an output path is needed
+    const {promptBlueprintOutputPath} = await import('./promptBlueprint.js')
+    outputPath = await promptBlueprintOutputPath(projectId)
   }
 
   const {blueprintPath, config} = await initializeBlueprintWorkspace({

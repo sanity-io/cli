@@ -15,13 +15,15 @@ const api = vi.hoisted(() => ({
 }))
 
 vi.mock('@sanity/client', () => ({
-  createClient: () => ({
-    users: {getById: api.user},
-    withConfig: () => ({
+  createClient: () => {
+    const client = {
       datasets: {create: api.createDataset, list: api.listDatasets},
       request: api.request,
-    }),
-  }),
+      users: {getById: api.user},
+      withConfig: () => client,
+    }
+    return client
+  },
 }))
 
 let outputPath
