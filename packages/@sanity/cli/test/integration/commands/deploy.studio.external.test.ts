@@ -915,6 +915,43 @@ describe('#deploy studio (external)', () => {
       expect(stdout).toContain('deployment.appId: "studio_new"')
     })
 
+    test('an untitled studio is created with its slug in start case as the title', async () => {
+      const cwd = await testFixture('basic-studio')
+      process.cwd = () => cwd
+
+      const app = defineApplication({
+        organizationId: 'org-1',
+        slug: 'test-studio',
+      }) as unknown as NonNullable<CliConfig['app']> & {applicationType?: string}
+      app.applicationType = 'studio'
+
+      mockCreateStudio.mockResolvedValue({
+        application: {
+          id: 'studio_new',
+          organizationId: 'org-1',
+          slug: 'test-studio',
+          title: 'Test Studio',
+          type: 'studio',
+        },
+      })
+      mockBuildStudio.mockResolvedValueOnce({mfManifest: {id: 'built'}})
+
+      const {error} = await testCommand(
+        DeployCommand,
+        ['--external', '--url', 'https://studio.example.com'],
+        {
+          config: {root: cwd},
+          mocks: {cliConfig: {api: {projectId: 'test-project-id'}, app} as CliConfig},
+        },
+      )
+
+      if (error) throw error
+      expect(mockCreateStudio).toHaveBeenCalledWith(expect.objectContaining({title: 'Test Studio'}))
+      expect(mockDeployWorkbenchApp).toHaveBeenCalledWith(
+        expect.objectContaining({title: 'Test Studio'}),
+      )
+    })
+
     test('an interactive deploy without an appId redeploys the picked studio without --url', async () => {
       const cwd = await testFixture('basic-studio')
       process.cwd = () => cwd

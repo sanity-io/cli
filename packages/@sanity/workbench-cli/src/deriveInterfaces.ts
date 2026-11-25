@@ -11,7 +11,7 @@ import {
   type ViewPlacementMetadata,
   type WindowViewDeclaration,
 } from './contract.js'
-import {isWorkbenchApp} from './defineApp.js'
+import {isWorkbenchApp, resolveAppTitle} from './defineApp.js'
 
 /** What a studio exposes as `./App` — the generated entry that renders `sanity.config.ts`. */
 const GENERATED_ENTRY = `./${RUNTIME_DIR}/${FEDERATION_FILE_NAME}.jsx`
@@ -132,7 +132,11 @@ export function deriveInterfaces(
       ? []
       : [
           {
-            ...shared('window', {name: appName, src: entry, title: appTitle ?? app.title}),
+            ...shared('window', {
+              name: appName,
+              src: entry,
+              title: appTitle ?? resolveAppTitle(app),
+            }),
             metadata: placementMetadata(),
             surface: 'window' as const,
           },

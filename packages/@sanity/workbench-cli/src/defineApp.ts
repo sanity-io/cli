@@ -71,8 +71,12 @@ export const DefineAppInputSchema = z
           'App `slug` must be lowercase alphanumerics and hyphens, starting with a letter and ending with an alphanumeric',
         ),
       ),
-    /** User-facing app title. Wins over studio.config.ts title on merge. */
-    title: z.string(),
+    /**
+     * User-facing app title. Wins over studio.config.ts title on merge. Defaults
+     * to `name` in start case (`drop-desk` becomes `Drop Desk`), the way Studio
+     * titles a workspace without one.
+     */
+    title: z.optional(z.string()),
     /** Views the app exposes (e.g. a window, dock panels, and tiles). */
     views: z.optional(z.array(InterfaceDeclarationSchema, 'must be an array of views')),
     /** Dashboard visibility of the app. Defaults to `default` when omitted. */
@@ -107,6 +111,20 @@ export type DefineAppInput = Omit<
   z.output<typeof DefineAppInputSchema>,
   'applicationType' | 'isSingleton'
 >
+
+/**
+ * The app's display title. Without one, `name` (or `slug`) in start case, as
+ * Studio's `startCase(name)` does: `my-app-v2` becomes `My App V 2`.
+ * @internal
+ */
+export function resolveAppTitle(app: Pick<DefineAppInput, 'name' | 'slug' | 'title'>): string {
+  return (
+    app.title?.trim() ||
+    ((app.name ?? app.slug).match(/[a-z]+|\d+/gi) ?? [])
+      .map((word) => word[0].toUpperCase() + word.slice(1))
+      .join(' ')
+  )
+}
 
 /**
  * Nominal brand the CLI discriminates on to enable the workbench build/deploy

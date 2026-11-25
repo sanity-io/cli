@@ -8,7 +8,7 @@
 import {type AppVisibility, type CliConfig} from '@sanity/cli-core'
 
 import {defineWindowView, type WorkbenchConfigValue} from './contract.js'
-import {type DefineAppInput, isWorkbenchApp} from './defineApp.js'
+import {type DefineAppInput, isWorkbenchApp, resolveAppTitle} from './defineApp.js'
 import {formatWorkbenchAppErrors, validateWorkbenchApp} from './validateWorkbenchApp.js'
 
 /**
@@ -33,6 +33,8 @@ export interface ResolvedWorkbenchApp {
   /** Organization that owns the app — part of its build-id identity. */
   readonly organizationId: string
   readonly slug: string
+  /** Display title: the declared `title`, else {@link resolveAppTitle}'s fallback. */
+  readonly title: string
 
   /** Views the app declares. */
   readonly views: NonNullable<DefineAppInput['views']>
@@ -63,7 +65,11 @@ export function resolveAppEntry(app: CliConfig['app']): string | undefined {
     app.entry === undefined
       ? (app.views ?? [])
       : [
-          defineWindowView({name: app.name ?? app.slug, src: app.entry, title: app.title}),
+          defineWindowView({
+            name: app.name ?? app.slug,
+            src: app.entry,
+            title: resolveAppTitle(app),
+          }),
           ...(app.views ?? []),
         ]
 
@@ -95,6 +101,7 @@ export function resolveWorkbenchApp(
     name: app.name ?? app.slug,
     organizationId: app.organizationId,
     slug: app.slug,
+    title: resolveAppTitle(app),
     views: app.views ?? [],
     visibility: app.visibility,
     webWorkers: app.webWorkers ?? [],

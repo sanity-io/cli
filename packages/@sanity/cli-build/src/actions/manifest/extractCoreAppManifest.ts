@@ -4,7 +4,7 @@ import {relative, resolve} from 'node:path'
 import {doImport, getCliConfigUncached} from '@sanity/cli-core'
 import {getErrorMessage} from '@sanity/cli-core/errors'
 import {spinner} from '@sanity/cli-core/ux'
-import {isWorkbenchApp, isWorkbenchConfig} from '@sanity/workbench-cli'
+import {isWorkbenchApp, isWorkbenchConfig, resolveAppTitle} from '@sanity/workbench-cli'
 
 import {type sanitizeIcon as sanitizeIconFn} from './sanitizeIcon.js'
 import {type CoreAppManifest, coreAppManifestSchema} from './types.js'
@@ -119,18 +119,19 @@ export async function extractCoreAppManifest(
       icon = await readIconFromPath(workDir, app.icon)
     }
 
-    if (!icon && !app.title) {
+    const workbench = isWorkbenchApp(app) ? app : undefined
+    const title = workbench ? resolveAppTitle(workbench) : app.title
+
+    if (!icon && !title) {
       spin.info('Manifest creation skipped: no icon or title found in app configuration')
       return undefined
     }
-
-    const workbench = isWorkbenchApp(app) ? app : undefined
 
     const manifest: CoreAppManifest = coreAppManifestSchema.parse({
       version: '1',
       ...(workbench?.dock ? {dock: workbench.dock} : {}),
       ...(icon ? {icon} : {}),
-      ...(app.title ? {title: app.title} : {}),
+      ...(title ? {title} : {}),
       ...(workbench?.slug ? {slug: workbench.slug} : {}),
     })
 

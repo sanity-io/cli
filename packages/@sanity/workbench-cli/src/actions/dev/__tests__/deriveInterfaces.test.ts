@@ -163,6 +163,11 @@ describe('deriveInterfaces', () => {
     ])
   })
 
+  test('titles the window after the slug when the app has no title', () => {
+    const app = workbenchApp({entry: './src/App.tsx', slug: 'drop-desk', title: undefined})
+    expect(deriveInterfaces(app, {isApp: true})).toMatchObject([{title: 'Drop Desk'}])
+  })
+
   test('keys the id prefix and window name on name, not the slug address', () => {
     const app = workbenchApp({entry: './src/App.tsx', name: 'reviews', slug: 'reviews-host'})
     expect(deriveInterfaces(app, {isApp: true})).toStrictEqual([
