@@ -1,21 +1,23 @@
-import {type Application, type CurrentUser} from '@sanity/sdk'
-import {type View} from '@sanity/sdk/dashboard'
+import {type CurrentUser} from '@sanity/sdk'
+import {type View, type ViewApplication} from '@sanity/sdk/dashboard'
 
 interface ApplicationsContext {
-  applications: readonly (Application & {views: readonly View[]})[]
+  applications: readonly (ViewApplication & {
+    views: readonly View<{includeApplication: false}>[]
+  })[]
   currentUser: CurrentUser
 }
 
 interface DefineDashboardConfigInput {
   applications?: {
     hidden?: (
-      references: readonly Application['reference'][],
+      references: readonly ViewApplication['reference'][],
       context: ApplicationsContext,
-    ) => readonly Application['reference'][]
+    ) => readonly ViewApplication['reference'][]
     visible?: (
-      references: readonly Application['reference'][],
+      references: readonly ViewApplication['reference'][],
       context: ApplicationsContext,
-    ) => readonly Application['reference'][]
+    ) => readonly ViewApplication['reference'][]
   }
   views?: (views: readonly View[], context: {currentUser: CurrentUser}) => readonly View[]
 }

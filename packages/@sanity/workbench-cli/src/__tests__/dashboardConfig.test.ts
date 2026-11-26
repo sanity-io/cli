@@ -32,4 +32,33 @@ describe('defineDashboardConfig', () => {
           ),
     })
   })
+
+  test('types installations among the applications, with their views but no back-reference', () => {
+    defineDashboardConfig({
+      applications: {
+        hidden: (references, {applications}) =>
+          applications
+            .filter((application) => application.type === 'installation' && application.isLocal)
+            .map((application) => application.reference),
+        visible: (references, {applications}) =>
+          applications.flatMap((application) =>
+            // @ts-expect-error A view in the applications context has no `application`.
+            application.views.map((view) => view.application.reference),
+          ),
+      },
+    })
+  })
+
+  test('hides fields only the application record carries', () => {
+    defineDashboardConfig({
+      applications: {
+        hidden: (references, {applications}) => {
+          // @ts-expect-error `createdAt` is not part of a view application.
+          const created = applications.filter((application) => application.createdAt)
+
+          return created.map((application) => application.reference)
+        },
+      },
+    })
+  })
 })
