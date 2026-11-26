@@ -208,13 +208,13 @@ describe('runUndeploy real run', () => {
     })
   })
 
-  test('a failed config deletion is labeled as the installation config', async () => {
+  test('a failed config deletion is labeled with the config title', async () => {
     const output = mockOutput()
     await runUndeploy(
       options(output, {yes: true}),
       adapter({
         resolveTarget: async () => ({
-          target: configTarget(),
+          target: configTarget({title: 'Media Library configuration'}),
           type: 'found',
         }),
         undeploy: async () => {
@@ -223,9 +223,12 @@ describe('runUndeploy real run', () => {
       }),
     )
 
-    expect(output.error).toHaveBeenCalledWith('Error undeploying installation config: boom', {
-      exit: exitCodes.RUNTIME_ERROR,
-    })
+    expect(output.error).toHaveBeenCalledWith(
+      'Error undeploying Media Library configuration: boom',
+      {
+        exit: exitCodes.RUNTIME_ERROR,
+      },
+    )
   })
 
   test('Ctrl+C on the prompt reads as a cancellation, not an error dump', async () => {
@@ -521,13 +524,13 @@ describe('renderUndeployPlan', () => {
     expect(logged.some((line) => line.includes('boom: do X'))).toBe(true)
   })
 
-  test('a blocked config-only undeploy names the installation config in the verdict', () => {
+  test('a blocked config-only undeploy names the config in the verdict', () => {
     const output = mockOutput()
     renderUndeployPlan(
       {
         checks: [{message: 'boom', status: 'fail'}],
         reason: null,
-        target: configTarget({title: 'media-library', type: 'coreApp'}),
+        target: configTarget({title: 'Media Library configuration', type: 'coreApp'}),
         type: 'coreApp',
       },
       output,
@@ -535,9 +538,7 @@ describe('renderUndeployPlan', () => {
 
     const logged = vi.mocked(output.log).mock.calls.map((call) => String(call[0]))
     expect(
-      logged.some((line) =>
-        line.includes('Installation config for "media-library" can not be undeployed.'),
-      ),
+      logged.some((line) => line.includes('Media Library configuration can not be undeployed.')),
     ).toBe(true)
   })
 })

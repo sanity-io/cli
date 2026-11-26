@@ -9,6 +9,8 @@ import {
   type UndeployTargetResolution,
 } from '@sanity/cli-core/undeploy'
 import {confirm, spinner} from '@sanity/cli-core/ux'
+import {fetchDeploySummaryDetails, getWorkbenchUrl} from '@sanity/workbench-cli/deploy'
+import {formatUndeploySummary} from '@sanity/workbench-cli/undeploy'
 
 import {type UndeployCommand} from '../../commands/undeploy.js'
 import {
@@ -114,6 +116,7 @@ async function undeployApp(
   adapter: UndeployAdapter,
 ): Promise<UndeployResult | undefined> {
   const {flags, output} = options
+  const startedAt = Date.now()
 
   const resolution = await resolveTarget(adapter, createFailFastReporter(output))
   // A resolve failure never lands here: the fail-fast reporter already exited.
@@ -126,6 +129,11 @@ async function undeployApp(
   }
 
   const {target} = resolution
+  const summaryDetails =
+    target.deletes === 'config' && target.organizationId && !flags.json
+      ? fetchDeploySummaryDetails(target.organizationId)
+      : undefined
+
   if (!flags.yes && options.isUnattended) {
     throw new CLIError('Undeploy requires confirmation. Pass --yes to continue.', {
       exit: exitCodes.USAGE_ERROR,
@@ -156,7 +164,10 @@ async function undeployApp(
   }
   spin.succeed()
 
-  printUndeployed(target, output)
+  printUndeployed(target, output, {
+    ...(await summaryDetails),
+    durationMs: Date.now() - startedAt,
+  })
   return {
     application: target.application ?? null,
     deletes: target.deletes,
@@ -197,10 +208,7 @@ async function resolveTarget(
 
 function confirmUndeployMessage(target: UndeployTarget): string {
   if (target.deletes === 'config') {
-    return `This will delete the deployed config for ${styleText(
-      'yellow',
-      target.title ?? 'this app',
-    )}.
+    return `This will delete the ${styleText('yellow', target.title ?? 'deployed config')}.
 Are you ${styleText('red', 'sure')} you want to undeploy?`
   }
 
@@ -219,9 +227,22 @@ Are you ${styleText('red', 'sure')} you want to undeploy?`
 Are you ${styleText('red', 'sure')} you want to undeploy?`
 }
 
-function printUndeployed(target: UndeployTarget, output: Output): void {
+function printUndeployed(
+  target: UndeployTarget,
+  output: Output,
+  summary: {durationMs: number; organizationName?: string | null},
+): void {
   if (target.deletes === 'config') {
-    output.log(`\n${styleText('bold', 'Config deleted.')}`)
+    output.log(
+      target.organizationId
+        ? formatUndeploySummary({
+            ...summary,
+            organizationId: target.organizationId,
+            title: target.title ?? 'Deployed config',
+            url: target.url ?? getWorkbenchUrl(target.organizationId),
+          })
+        : `\n${styleText('bold', 'Config deleted.')}`,
+    )
     return
   }
 

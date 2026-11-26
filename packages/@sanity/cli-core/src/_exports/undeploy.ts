@@ -11,10 +11,13 @@ export interface UndeployApplicationTarget extends UndeployTargetDetails {
   id: string
 }
 
-/** An undeploy that deletes an installation's deployed config; the installation stays installed. */
+/** An undeploy that deletes a deployed config, such as an installation's or the organization's Dashboard configuration. */
 export interface UndeployConfigTarget extends UndeployTargetDetails {
   deletes: 'config'
   id: null
+
+  /** Set when the undeploy ends with the organization summary. */
+  organizationId?: string
 }
 
 interface UndeployTargetDetails {

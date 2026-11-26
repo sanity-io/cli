@@ -183,7 +183,7 @@ async function resolveConfigTarget({
           type: 'coreApp',
         },
         summary: [summarizeConfig(config)],
-        title: appType,
+        title: 'Media Library configuration',
         type: 'coreApp',
         url: getWorkbenchUrl(organizationId),
       },
@@ -207,8 +207,6 @@ async function resolveDashboardConfigTarget(config: DashboardConfig): Promise<{
     }
   }
 
-  const summary = summarizeConfig(config)
-
   return {
     dashboardId: dashboard.id,
     resolution: {
@@ -216,9 +214,9 @@ async function resolveDashboardConfigTarget(config: DashboardConfig): Promise<{
         configs: [],
         deletes: 'config',
         id: null,
-        payload: {appId: null, config: summary, type: 'coreApp'},
-        summary: [summary],
-        title: config.appType,
+        organizationId,
+        payload: {appId: null, config: summarizeConfig(config), type: 'coreApp'},
+        title: 'Dashboard configuration',
         type: 'coreApp',
         url: getWorkbenchUrl(organizationId),
       },

@@ -677,7 +677,7 @@ describe('#undeploy', () => {
     expect(payload.application).toMatchObject({id: 'wb-app-1', slug: 'my-app-x1'})
   })
 
-  test('media library dry run reports the installation config', async () => {
+  test('media library dry run reports the Media Library configuration', async () => {
     mockApi({
       apiVersion: 'vX',
       query: {limit: 'none', organizationId: 'org-1'},
@@ -712,7 +712,7 @@ describe('#undeploy', () => {
       },
     })
 
-    expect(stdout).toContain('Undeploys the installation config')
+    expect(stdout).toContain('Undeploys the Media Library configuration')
     expect(stdout).not.toContain('1.0.0')
     expect(stdout).toContain('Alt text (alt): ./src/alt.ts')
     expect(stdout).not.toContain('Config snapshots')
@@ -756,7 +756,9 @@ describe('#undeploy', () => {
     expect(stdout).toContain('No deployed dashboard configuration for organization "org-1"')
   })
 
-  test('undeploys the dashboard configuration', async () => {
+  test('undeploys the dashboard configuration and prints the organization summary', async () => {
+    mockApi({uri: '/organizations/org-1'}).reply(200, {name: 'Acme'})
+    mockApi({uri: '/users/me'}).optionally().reply(200, {name: 'Sam'})
     mockApi({
       apiVersion: 'vX',
       query: {organizationId: 'org-1'},
@@ -775,7 +777,9 @@ describe('#undeploy', () => {
       },
     })
 
-    expect(stdout).toContain('Config deleted.')
+    expect(stdout).toContain('Dashboard configuration undeployed in')
+    expect(stdout).toContain('Organization  Acme')
+    expect(stdout).toContain('Deleted Dashboard configuration.')
   })
 
   test('fails when Brett refuses to delete the dashboard configuration', async () => {
@@ -798,7 +802,7 @@ describe('#undeploy', () => {
     })
 
     expect(error?.message).toContain('Missing the "sanity.sdk.applications.deploy" grant')
-    expect(stdout).not.toContain('Config deleted.')
+    expect(stdout).not.toContain('undeployed in')
   })
 
   test('media library dry run --json carries the structured config target', async () => {

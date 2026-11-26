@@ -59,3 +59,24 @@ export function formatDeploySummary(
 ${success}
 ${appIdHint}`
 }
+
+export function formatUndeploySummary(options: {
+  durationMs: number
+  organizationId: string
+  organizationName?: string | null
+  title: string
+  url: string
+}): string {
+  const summary = formatSummary({
+    durationMs: options.durationMs,
+    heading: `${options.title} undeployed`,
+    isApp: false,
+    organization: options.organizationName ?? options.organizationId,
+    url: options.url,
+  })
+  const success = styleText('green', `  ${logSymbols.success} Deleted ${options.title}.`)
+
+  return `${summary}
+${success}
+`
+}

@@ -22,7 +22,7 @@ export function canUndeploy(plan: UndeployPlan): boolean {
 /** What an undeploy deletes, phrased for the human output. */
 export function undeployLabel(target: UndeployTarget | null, type: 'coreApp' | 'studio'): string {
   if (target?.deletes === 'config') {
-    return `installation config${target.title ? ` for "${target.title}"` : ''}`
+    return target.title ?? 'deployed config'
   }
   return type === 'coreApp' ? 'application' : 'studio'
 }
@@ -76,9 +76,7 @@ export function describeUndeployTarget(resolution: UndeployTargetResolution): Ch
   const {target} = resolution
   if (target.deletes === 'config') {
     return {
-      message: target.title
-        ? `Undeploys the installation config for "${target.title}"`
-        : 'Undeploys the installation config',
+      message: `Undeploys the ${target.title ?? 'deployed config'}`,
       status: 'pass',
     }
   }
