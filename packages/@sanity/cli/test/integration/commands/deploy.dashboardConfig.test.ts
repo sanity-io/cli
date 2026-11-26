@@ -139,6 +139,22 @@ describe.skipIf(platform() === 'win32')(
       expect(error?.message).toContain('Deploying an app to an external host is not supported.')
     })
 
+    test('reports a failed Dashboard lookup in the --dry-run plan before building', async () => {
+      await dashboardProject()
+      mockApi({apiVersion: 'vX', query: {organizationId}, uri: '/applications/dashboards'}).reply(
+        403,
+        {message: 'User is missing required grant sanity.sdk.applications.read'},
+      )
+
+      const {error, stderr, stdout} = await deploy(['--dry-run'])
+
+      expect(error?.message).toContain('Deploy blocked by failing checks.')
+      expect(stdout).toContain(
+        "Looking up the organization's Dashboard failed: User is missing required grant sanity.sdk.applications.read",
+      )
+      expect(`${stdout}${stderr}`).not.toContain('Building')
+    })
+
     test('reports the plan with --dry-run --json and writes nothing', async () => {
       await dashboardProject()
       mockDashboards([])

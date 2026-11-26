@@ -1,3 +1,4 @@
+import {getErrorMessage} from '@sanity/cli-core/errors'
 import {type DashboardConfig} from '@sanity/workbench-cli'
 import {
   fetchDeploySummaryDetails,
@@ -8,9 +9,11 @@ import {
   uploadDashboardConfig,
 } from '@sanity/workbench-cli/deploy'
 
+import {runStep} from '../../util/checks.js'
 import {EXTERNAL_APP_NOT_SUPPORTED} from '../../util/errorMessages.js'
 import {buildApp} from '../build/buildApp.js'
 import {checkBuild, checkPackageVersion, verifyOutputDir} from './deployChecks.js'
+import {deployDebug} from './deployDebug.js'
 import {listDeploymentFiles} from './deploymentPlan.js'
 import {type DeployPayload, runDeploy} from './deployRunner.js'
 import {type DeployAppOptions} from './types.js'
@@ -39,6 +42,28 @@ export function deployDashboardConfig(
         })
       }
 
+      const lookup = await runStep(reporter, {
+        debug: deployDebug,
+        formatError: (err) =>
+          `Looking up the organization's Dashboard failed: ${getErrorMessage(err)}`,
+        name: 'dashboard lookup',
+        work: async () => ({dashboard: await getOrganizationDashboard(organizationId)}),
+      })
+
+      if (!lookup) return
+
+      const {dashboard} = lookup
+      const action = dashboard ? 'update' : 'create'
+      const url = getWorkbenchUrl(organizationId)
+      reporter.report({
+        message: dashboard
+          ? 'Updates the dashboard configuration'
+          : 'Creates the dashboard configuration',
+        status: 'pass',
+        target: {action, id: null, title: null, type: 'coreApp', url},
+      })
+      reporter.report({message: summary, status: 'pass'})
+
       const built = await checkBuild(reporter, {
         build: () =>
           buildApp({
@@ -59,18 +84,6 @@ export function deployDashboardConfig(
       if (!built) {
         await verifyOutputDir({isWorkbenchApp: true, reporter, sourceDir})
       }
-
-      const dashboard = await getOrganizationDashboard(organizationId)
-      const action = dashboard ? 'update' : 'create'
-      const url = getWorkbenchUrl(organizationId)
-      reporter.report({
-        message: dashboard
-          ? 'Updates the dashboard configuration'
-          : 'Creates the dashboard configuration',
-        status: 'pass',
-        target: {action, id: null, title: null, type: 'coreApp', url},
-      })
-      reporter.report({message: summary, status: 'pass'})
 
       const payload: DeployPayload = {
         appId: null,
