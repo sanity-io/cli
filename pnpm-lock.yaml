@@ -272,8 +272,8 @@ snapshots:
 					"version": "6.3.0",
 				},
 				"@vitest/coverage-istanbul": {
-					"specifier": "^5.1.1",
-					"version": "5.1.1",
+					"specifier": "^5.1.2",
+					"version": "5.1.2",
 				},
 				"babel-plugin-react-compiler": {
 					"specifier": "^1.0.0",
@@ -400,8 +400,8 @@ snapshots:
 					"version": "8.4.0",
 				},
 				"vitest": {
-					"specifier": "^5.1.1",
-					"version": "5.1.1",
+					"specifier": "^5.1.2",
+					"version": "5.1.2",
 				},
 				"yaml": {
 					"specifier": "^2.9.1",
@@ -450,7 +450,13 @@ snapshots:
 					"specifier": "^1.2.3",
 					"version": "1.2.5",
 				},
-				"@vitest/coverage-istanbul": "catalog:",
+				"@vitest/coverage-istanbul": {
+					"specifier": "catalog:",
+					"with": {
+						"jsdom": "31.0.1",
+						"vitest": "5.1.2",
+					},
+				},
 				"execa": "catalog:",
 				"husky": {
 					"specifier": "^9.1.7",
@@ -472,7 +478,13 @@ snapshots:
 					"version": "2.10.12",
 				},
 				"typescript": "catalog:",
-				"vitest": "catalog:",
+				"vitest": {
+					"specifier": "catalog:",
+					"with": {
+						"@vitest/coverage-istanbul": "5.1.2",
+						"jsdom": "31.0.1",
+					},
+				},
 			},
 		},
 
@@ -875,7 +887,13 @@ snapshots:
 					"version": "22.20.5",
 				},
 				"oxlint": "catalog:",
-				"vitest": "catalog:",
+				"vitest": {
+					"specifier": "catalog:",
+					"with": {
+						"@vitest/coverage-istanbul": "5.1.2",
+						"jsdom": "31.0.1",
+					},
+				},
 			},
 		},
 
@@ -1384,7 +1402,13 @@ snapshots:
 				"oxlint": "catalog:",
 				"strip-ansi": "catalog:",
 				"typescript": "catalog:",
-				"vitest": "catalog:",
+				"vitest": {
+					"specifier": "catalog:",
+					"with": {
+						"@vitest/coverage-istanbul": "5.1.2",
+						"jsdom": "31.0.1",
+					},
+				},
 			},
 		},
 
@@ -1404,7 +1428,13 @@ snapshots:
 					"version": "22.20.5",
 				},
 				"typescript": "catalog:",
-				"vitest": "catalog:",
+				"vitest": {
+					"specifier": "catalog:",
+					"with": {
+						"@vitest/coverage-istanbul": "5.1.2",
+						"jsdom": "31.0.1",
+					},
+				},
 			},
 		},
 
@@ -8675,7 +8705,7 @@ snapshots:
 					"below": true,
 				},
 				"@vitest/coverage-istanbul": {
-					"version": "5.1.1",
+					"version": "5.1.2",
 					"below": true,
 				},
 				"jsdom": {
@@ -8683,7 +8713,7 @@ snapshots:
 					"below": true,
 				},
 				"vitest": {
-					"version": "5.1.1",
+					"version": "5.1.2",
 					"below": true,
 				},
 			},
@@ -8703,11 +8733,11 @@ snapshots:
 					"below": true,
 				},
 				"@vitest/coverage-istanbul": {
-					"version": "5.1.1",
+					"version": "5.1.2",
 					"below": true,
 				},
 				"vitest": {
-					"version": "5.1.1",
+					"version": "5.1.2",
 					"below": true,
 				},
 			},
@@ -9409,7 +9439,7 @@ snapshots:
 			"engines": {"node": ">=22.12"},
 			"peerDependencies": {
 				"@vitest/coverage-istanbul": {
-					"version": "5.1.1",
+					"version": "5.1.2",
 					"below": true,
 				},
 				"jsdom": {
@@ -9429,7 +9459,7 @@ snapshots:
 					"below": true,
 				},
 				"vitest": {
-					"version": "5.1.1",
+					"version": "5.1.2",
 					"below": true,
 				},
 			},
@@ -9446,7 +9476,7 @@ snapshots:
 			"engines": {"node": ">=22.12"},
 			"peerDependencies": {
 				"@vitest/coverage-istanbul": {
-					"version": "5.1.1",
+					"version": "5.1.2",
 					"below": true,
 				},
 				"react": {
@@ -9462,7 +9492,7 @@ snapshots:
 					"below": true,
 				},
 				"vitest": {
-					"version": "5.1.1",
+					"version": "5.1.2",
 					"below": true,
 				},
 			},
@@ -9615,7 +9645,7 @@ snapshots:
 					"below": true,
 				},
 				"@vitest/coverage-istanbul": {
-					"version": "5.1.1",
+					"version": "5.1.2",
 					"below": true,
 				},
 				"babel-plugin-react-compiler": {
@@ -9666,7 +9696,7 @@ snapshots:
 					"below": true,
 				},
 				"vitest": {
-					"version": "5.1.1",
+					"version": "5.1.2",
 					"below": true,
 				},
 				"xstate": {
@@ -9719,7 +9749,7 @@ snapshots:
 					"below": true,
 				},
 				"@vitest/coverage-istanbul": {
-					"version": "5.1.1",
+					"version": "5.1.2",
 					"below": true,
 				},
 				"babel-plugin-react-compiler": {
@@ -9745,7 +9775,7 @@ snapshots:
 					"below": true,
 				},
 				"vitest": {
-					"version": "5.1.1",
+					"version": "5.1.2",
 					"below": true,
 				},
 				"yaml": {
@@ -9792,11 +9822,11 @@ snapshots:
 			"engines": {"node": ">=22.12.0"},
 			"peerDependencies": {
 				"@vitest/coverage-istanbul": {
-					"version": "5.1.1",
+					"version": "5.1.2",
 					"below": true,
 				},
 				"vitest": {
-					"version": "5.1.1",
+					"version": "5.1.2",
 					"below": true,
 				},
 			},
@@ -10028,7 +10058,7 @@ snapshots:
 			"hasBin": true,
 			"peerDependencies": {
 				"@vitest/coverage-istanbul": {
-					"version": "5.1.1",
+					"version": "5.1.2",
 					"below": true,
 				},
 				"jsdom": {
@@ -10036,7 +10066,7 @@ snapshots:
 					"below": true,
 				},
 				"vitest": {
-					"version": "5.1.1",
+					"version": "5.1.2",
 					"below": true,
 				},
 			},
@@ -10171,7 +10201,7 @@ snapshots:
 					"below": true,
 				},
 				"@vitest/coverage-istanbul": {
-					"version": "5.1.1",
+					"version": "5.1.2",
 					"below": true,
 				},
 				"jsdom": {
@@ -10179,7 +10209,7 @@ snapshots:
 					"below": true,
 				},
 				"vitest": {
-					"version": "5.1.1",
+					"version": "5.1.2",
 					"below": true,
 				},
 			},
@@ -10300,11 +10330,11 @@ snapshots:
 					"below": true,
 				},
 				"@vitest/coverage-istanbul": {
-					"version": "5.1.1",
+					"version": "5.1.2",
 					"below": true,
 				},
 				"vitest": {
-					"version": "5.1.1",
+					"version": "5.1.2",
 					"below": true,
 				},
 			},
@@ -10386,11 +10416,11 @@ snapshots:
 			"integrity": "sha512-1z199kB46I1F+3z7Z0bwKepUf81BAZ766jhpozVfC8nHaN/ceqQby7lh95KbrwqnlpxbIRu7dWpzXMBdTvm1xA==",
 			"peerDependencies": {
 				"@vitest/coverage-istanbul": {
-					"version": "5.1.1",
+					"version": "5.1.2",
 					"below": true,
 				},
 				"vitest": {
-					"version": "5.1.1",
+					"version": "5.1.2",
 					"below": true,
 				},
 				"xstate": {
@@ -10450,11 +10480,11 @@ snapshots:
 			"integrity": "sha512-qgCdYf8BQz8DyRnotsDX9tgV9R14w+CqS5U7wpzb0Oc21/9QKgwRmrzYLWf9pHNvlnR+lq2Vulq+Aa/xc1ABtA==",
 			"peerDependencies": {
 				"@vitest/coverage-istanbul": {
-					"version": "5.1.1",
+					"version": "5.1.2",
 					"below": true,
 				},
 				"vitest": {
-					"version": "5.1.1",
+					"version": "5.1.2",
 					"below": true,
 				},
 				"xstate": {
@@ -10518,7 +10548,7 @@ snapshots:
 					"below": true,
 				},
 				"@vitest/coverage-istanbul": {
-					"version": "5.1.1",
+					"version": "5.1.2",
 					"below": true,
 				},
 				"jsdom": {
@@ -10526,7 +10556,7 @@ snapshots:
 					"below": true,
 				},
 				"vitest": {
-					"version": "5.1.1",
+					"version": "5.1.2",
 					"below": true,
 				},
 			},
@@ -10548,7 +10578,7 @@ snapshots:
 					"below": true,
 				},
 				"@vitest/coverage-istanbul": {
-					"version": "5.1.1",
+					"version": "5.1.2",
 					"below": true,
 				},
 				"jsdom": {
@@ -10556,7 +10586,7 @@ snapshots:
 					"below": true,
 				},
 				"vitest": {
-					"version": "5.1.1",
+					"version": "5.1.2",
 					"below": true,
 				},
 			},
@@ -10578,11 +10608,11 @@ snapshots:
 					"below": true,
 				},
 				"@vitest/coverage-istanbul": {
-					"version": "5.1.1",
+					"version": "5.1.2",
 					"below": true,
 				},
 				"vitest": {
-					"version": "5.1.1",
+					"version": "5.1.2",
 					"below": true,
 				},
 			},
@@ -10854,7 +10884,7 @@ snapshots:
 					"below": true,
 				},
 				"@vitest/coverage-istanbul": {
-					"version": "5.1.1",
+					"version": "5.1.2",
 					"below": true,
 				},
 				"babel-plugin-react-compiler": {
@@ -10898,7 +10928,7 @@ snapshots:
 					"below": true,
 				},
 				"vitest": {
-					"version": "5.1.1",
+					"version": "5.1.2",
 					"below": true,
 				},
 				"xstate": {
@@ -10960,7 +10990,7 @@ snapshots:
 					"below": true,
 				},
 				"@vitest/coverage-istanbul": {
-					"version": "5.1.1",
+					"version": "5.1.2",
 					"below": true,
 				},
 				"jsdom": {
@@ -10968,7 +10998,7 @@ snapshots:
 					"below": true,
 				},
 				"vitest": {
-					"version": "5.1.1",
+					"version": "5.1.2",
 					"below": true,
 				},
 			},
@@ -10995,11 +11025,11 @@ snapshots:
 					"below": true,
 				},
 				"@vitest/coverage-istanbul": {
-					"version": "5.1.1",
+					"version": "5.1.2",
 					"below": true,
 				},
 				"vitest": {
-					"version": "5.1.1",
+					"version": "5.1.2",
 					"below": true,
 				},
 			},
@@ -11043,7 +11073,7 @@ snapshots:
 					"below": true,
 				},
 				"@vitest/coverage-istanbul": {
-					"version": "5.1.1",
+					"version": "5.1.2",
 					"below": true,
 				},
 				"immer": {
@@ -11067,7 +11097,7 @@ snapshots:
 					"below": true,
 				},
 				"vitest": {
-					"version": "5.1.1",
+					"version": "5.1.2",
 					"below": true,
 				},
 				"xstate": {
@@ -11095,7 +11125,7 @@ snapshots:
 					"below": true,
 				},
 				"@vitest/coverage-istanbul": {
-					"version": "5.1.1",
+					"version": "5.1.2",
 					"below": true,
 				},
 				"immer": {
@@ -11115,7 +11145,7 @@ snapshots:
 					"below": true,
 				},
 				"vitest": {
-					"version": "5.1.1",
+					"version": "5.1.2",
 					"below": true,
 				},
 				"xstate": {
@@ -11161,7 +11191,7 @@ snapshots:
 					"below": true,
 				},
 				"@vitest/coverage-istanbul": {
-					"version": "5.1.1",
+					"version": "5.1.2",
 					"below": true,
 				},
 				"immer": {
@@ -11185,7 +11215,7 @@ snapshots:
 					"below": true,
 				},
 				"vitest": {
-					"version": "5.1.1",
+					"version": "5.1.2",
 					"below": true,
 				},
 			},
@@ -11227,7 +11257,7 @@ snapshots:
 					"below": true,
 				},
 				"@vitest/coverage-istanbul": {
-					"version": "5.1.1",
+					"version": "5.1.2",
 					"below": true,
 				},
 				"immer": {
@@ -11247,7 +11277,7 @@ snapshots:
 					"below": true,
 				},
 				"vitest": {
-					"version": "5.1.1",
+					"version": "5.1.2",
 					"below": true,
 				},
 				"xstate": {
@@ -11284,7 +11314,7 @@ snapshots:
 					"below": true,
 				},
 				"@vitest/coverage-istanbul": {
-					"version": "5.1.1",
+					"version": "5.1.2",
 					"below": true,
 				},
 				"immer": {
@@ -11300,7 +11330,7 @@ snapshots:
 					"below": true,
 				},
 				"vitest": {
-					"version": "5.1.1",
+					"version": "5.1.2",
 					"below": true,
 				},
 				"xstate": {
@@ -11356,7 +11386,7 @@ snapshots:
 					"below": true,
 				},
 				"@vitest/coverage-istanbul": {
-					"version": "5.1.1",
+					"version": "5.1.2",
 					"below": true,
 				},
 				"immer": {
@@ -11372,7 +11402,7 @@ snapshots:
 					"below": true,
 				},
 				"vitest": {
-					"version": "5.1.1",
+					"version": "5.1.2",
 					"below": true,
 				},
 				"xstate": {
@@ -11500,7 +11530,7 @@ snapshots:
 					"below": true,
 				},
 				"@vitest/coverage-istanbul": {
-					"version": "5.1.1",
+					"version": "5.1.2",
 					"below": true,
 				},
 				"immer": {
@@ -11520,7 +11550,7 @@ snapshots:
 					"below": true,
 				},
 				"vitest": {
-					"version": "5.1.1",
+					"version": "5.1.2",
 					"below": true,
 				},
 			},
@@ -11685,7 +11715,7 @@ snapshots:
 					"version": "19.3.0",
 				},
 				"@vitest/coverage-istanbul": {
-					"version": "5.1.1",
+					"version": "5.1.2",
 					"below": true,
 				},
 				"jsdom": {
@@ -11693,7 +11723,7 @@ snapshots:
 					"below": true,
 				},
 				"vitest": {
-					"version": "5.1.1",
+					"version": "5.1.2",
 					"below": true,
 				},
 			},
@@ -11712,7 +11742,7 @@ snapshots:
 					"version": "19.3.0",
 				},
 				"@vitest/coverage-istanbul": {
-					"version": "5.1.1",
+					"version": "5.1.2",
 					"below": true,
 				},
 				"jsdom": {
@@ -11720,7 +11750,7 @@ snapshots:
 					"below": true,
 				},
 				"vitest": {
-					"version": "5.1.1",
+					"version": "5.1.2",
 					"below": true,
 				},
 			},
@@ -11739,11 +11769,11 @@ snapshots:
 					"version": "19.3.0",
 				},
 				"@vitest/coverage-istanbul": {
-					"version": "5.1.1",
+					"version": "5.1.2",
 					"below": true,
 				},
 				"vitest": {
-					"version": "5.1.1",
+					"version": "5.1.2",
 					"below": true,
 				},
 			},
@@ -11906,7 +11936,7 @@ snapshots:
 					"below": true,
 				},
 				"@vitest/coverage-istanbul": {
-					"version": "5.1.1",
+					"version": "5.1.2",
 					"below": true,
 				},
 				"jsdom": {
@@ -11914,7 +11944,7 @@ snapshots:
 					"below": true,
 				},
 				"vitest": {
-					"version": "5.1.1",
+					"version": "5.1.2",
 					"below": true,
 				},
 			},
@@ -11938,11 +11968,11 @@ snapshots:
 					"below": true,
 				},
 				"@vitest/coverage-istanbul": {
-					"version": "5.1.1",
+					"version": "5.1.2",
 					"below": true,
 				},
 				"vitest": {
-					"version": "5.1.1",
+					"version": "5.1.2",
 					"below": true,
 				},
 			},
@@ -11991,7 +12021,7 @@ snapshots:
 					"below": true,
 				},
 				"@vitest/coverage-istanbul": {
-					"version": "5.1.1",
+					"version": "5.1.2",
 					"below": true,
 				},
 				"jsdom": {
@@ -12003,7 +12033,7 @@ snapshots:
 					"below": true,
 				},
 				"vitest": {
-					"version": "5.1.1",
+					"version": "5.1.2",
 					"below": true,
 				},
 			},
@@ -12029,7 +12059,7 @@ snapshots:
 					"below": true,
 				},
 				"@vitest/coverage-istanbul": {
-					"version": "5.1.1",
+					"version": "5.1.2",
 					"below": true,
 				},
 				"typescript": {
@@ -12037,7 +12067,7 @@ snapshots:
 					"below": true,
 				},
 				"vitest": {
-					"version": "5.1.1",
+					"version": "5.1.2",
 					"below": true,
 				},
 			},
@@ -12152,7 +12182,7 @@ snapshots:
 					"below": true,
 				},
 				"@vitest/coverage-istanbul": {
-					"version": "5.1.1",
+					"version": "5.1.2",
 					"below": true,
 				},
 				"codemirror": {
@@ -12173,7 +12203,7 @@ snapshots:
 					"below": true,
 				},
 				"vitest": {
-					"version": "5.1.1",
+					"version": "5.1.2",
 					"below": true,
 				},
 			},
@@ -12314,7 +12344,7 @@ snapshots:
 					"below": true,
 				},
 				"@vitest/coverage-istanbul": {
-					"version": "5.1.1",
+					"version": "5.1.2",
 					"below": true,
 				},
 				"babel-plugin-react-compiler": {
@@ -12358,7 +12388,7 @@ snapshots:
 					"below": true,
 				},
 				"vitest": {
-					"version": "5.1.1",
+					"version": "5.1.2",
 					"below": true,
 				},
 				"xstate": {
@@ -12406,7 +12436,7 @@ snapshots:
 					"version": "0.39.0",
 				},
 				"@vitest/coverage-istanbul": {
-					"version": "5.1.1",
+					"version": "5.1.2",
 					"below": true,
 				},
 				"jsdom": {
@@ -12418,7 +12448,7 @@ snapshots:
 					"below": true,
 				},
 				"vitest": {
-					"version": "5.1.1",
+					"version": "5.1.2",
 					"below": true,
 				},
 			},
@@ -12447,7 +12477,7 @@ snapshots:
 					"below": true,
 				},
 				"@vitest/coverage-istanbul": {
-					"version": "5.1.1",
+					"version": "5.1.2",
 					"below": true,
 				},
 				"jsdom": {
@@ -12467,7 +12497,7 @@ snapshots:
 					"below": true,
 				},
 				"vitest": {
-					"version": "5.1.1",
+					"version": "5.1.2",
 					"below": true,
 				},
 			},
@@ -14143,19 +14173,19 @@ snapshots:
 			],
 		},
 
-		"@vitest/coverage-istanbul@5.1.1": {
-			"integrity": "sha512-bcn7v3+FrcH3E9RwzS7zIGo8RXAQL5n0Eu4B46jVUZGQ1LVoz4VmtAnm3eOvrjLFnv8AMWcfabMFmHdOFxXeIw==",
+		"@vitest/coverage-istanbul@5.1.2": {
+			"integrity": "sha512-ce5GR1nKAn3E+YEbkzC0K6QrRSWlKE7qVXmrmlxg6AQZXdpNLALolW2gwJJpRwPeQ6o5jqJaXWz0SGXaw+3Ngw==",
 			"peerDependencies": {
 				"vitest": {
-					"specifier": "5.1.1",
-					"version": "5.1.1",
+					"specifier": "5.1.2",
+					"version": "5.1.2",
 				},
 			},
 			"dependencies": {
-				"@vitest/istanbul-lib-coverage": "2.1.0",
-				"@vitest/istanbul-lib-instrument": "2.1.0",
-				"@vitest/istanbul-lib-report": "2.1.0",
-				"@vitest/istanbul-lib-source-maps": "2.1.0",
+				"@vitest/istanbul-lib-coverage": "2.1.1",
+				"@vitest/istanbul-lib-instrument": "2.1.1",
+				"@vitest/istanbul-lib-report": "2.1.1",
+				"@vitest/istanbul-lib-source-maps": "2.1.1",
 				"magicast": "0.5.5",
 				"obug": "3.0.0",
 				"tinyrainbow": "3.2.0",
@@ -14176,49 +14206,48 @@ snapshots:
 							"below": true,
 						},
 					},
-					"optional": true,
 				},
 			],
 		},
 
-		"@vitest/istanbul-lib-coverage@2.1.0": {
-			"integrity": "sha512-WOjuS+xcjSIy7ruYBQ+9BUcV7XZQ0FyVcbWbWxW9TRx/kLGx5SQaeFRIFDJxjNplb6YsT7SpKo2zuXXUo91OIQ==",
+		"@vitest/istanbul-lib-coverage@2.1.1": {
+			"integrity": "sha512-pF9nMHHuyQzyEXdkWX3d4wElEKjymfL5TEoofegJn/jK2WjmTLOcJKfJ7/YwYGYdbZf8Ebrt4VDUoBPiTuO9zg==",
 			"engines": {"node": ">=22"},
 		},
 
-		"@vitest/istanbul-lib-instrument@2.1.0": {
-			"integrity": "sha512-lMhFnfKPkueJQealWtkRWv0E95gO14OQg/ZzVT4tqDRXLxn6teAZKBe1uXg9jNB2AI5WPk4vF52R+59LAUgQUA==",
+		"@vitest/istanbul-lib-instrument@2.1.1": {
+			"integrity": "sha512-PkO9t7arcwdxw6zEJQYBZErMN1g68c31D0by8KtdNiz9dvXDgFgJ1Mloxcmnqa4CeQUQ2J0Okj7Mmnv0I1o7Iw==",
 			"engines": {"node": ">=22"},
 			"dependencies": {
 				"@istanbuljs/schema": "0.1.6",
 				"@jridgewell/remapping": "2.3.5",
 				"@jridgewell/trace-mapping": "0.3.31",
-				"@vitest/istanbul-lib-coverage": "2.1.0",
+				"@vitest/istanbul-lib-coverage": "2.1.1",
 				"magic-string": "1.4.5",
 				"rolldown": "1.2.19",
 			},
 		},
 
-		"@vitest/istanbul-lib-report@2.1.0": {
-			"integrity": "sha512-+ZFta25nWtGCOBG9/IET8w1RO5Oawsd6H8Uf6AJ9EA/StFuKVtKAEJEJ6uRt84OH+T4YkI0ASmIHAhRA+0KVxw==",
+		"@vitest/istanbul-lib-report@2.1.1": {
+			"integrity": "sha512-Qba+8OpQQAbWrmq3u1olh6jqE/vyW4OYJe6TLrrTBpXhjJhbY7Os69wyVvMQmNA64KJhGd5nQ/c7l4io8tPCHQ==",
 			"engines": {"node": ">=22"},
 			"dependencies": {
-				"@vitest/istanbul-lib-coverage": "2.1.0",
+				"@vitest/istanbul-lib-coverage": "2.1.1",
 			},
 		},
 
-		"@vitest/istanbul-lib-source-maps@2.1.0": {
-			"integrity": "sha512-X+fmmI1SEiJZc/nmMUllliP8qaLgi4xMcDd0HwTBMdaanbRcCu/+IKo+iq7wbjJXtAEBWQrGyI18wfSWIqyDpw==",
+		"@vitest/istanbul-lib-source-maps@2.1.1": {
+			"integrity": "sha512-IHQy6v4BPbq3WImNBAc4he5aPjvzpzG+KO0Le7ddKzd/ezTmEem1WlRqdSP/m04EtGJ5Qj2Mxo3zBMsPMwrfSA==",
 			"engines": {"node": ">=22"},
 			"dependencies": {
 				"@jridgewell/trace-mapping": "0.3.31",
-				"@vitest/istanbul-lib-coverage": "2.1.0",
+				"@vitest/istanbul-lib-coverage": "2.1.1",
 				"obug": "3.0.0",
 			},
 		},
 
-		"@vitest/mocker@5.1.1": {
-			"integrity": "sha512-b2OgTB4+3ImWIVafXKazJXwLKwQxUNnix6b3xUvUTMh7RyXlrtzoxfZr8aEz9zkHOMAS4K5lu3TvFWoiVeVTQg==",
+		"@vitest/mocker@5.1.2": {
+			"integrity": "sha512-UGc97wUIy0Ji2+9GxzHEJiOhiwkaukgE7VYcUNnjpX3sWnwQ8XogmNXX4WyOukxYgKb8Nh2XFa7KId0ZjpmVhQ==",
 			"peerDependencies": {
 				"msw": {
 					"specifier": "^2.4.9 || ^3.0.0",
@@ -14232,14 +14261,14 @@ snapshots:
 			},
 			"dependencies": {
 				"@jridgewell/trace-mapping": "0.3.31",
-				"@vitest/spy": "5.1.1",
+				"@vitest/spy": "5.1.2",
 				"estree-walker": "3.0.3",
 				"magic-string": "1.4.5",
 			},
 		},
 
-		"@vitest/spy@5.1.1": {
-			"integrity": "sha512-6K8C6alQG1/Yc8/ZI22iJS7JEsxPdVzqtqDq+/xM4Z0mGVykemMVjLhqMy/q6/IHYG3kKD8hKSwRen/ZdyI9vQ==",
+		"@vitest/spy@5.1.2": {
+			"integrity": "sha512-PQl0/3+p9GaY71+MHywN6oyHfLhVDD5kcbm7oNRldA2F0ExMU3S8RQdnpteJ9gFAdK5P6KCgE6LqCpUgy57KzA==",
 		},
 
 		"@xhmikosr/archive-type@8.1.0": {
@@ -17327,7 +17356,7 @@ snapshots:
 			"engines": {"node": ">=22.12.0"},
 			"peerDependencies": {
 				"@vitest/coverage-istanbul": {
-					"version": "5.1.1",
+					"version": "5.1.2",
 					"below": true,
 				},
 				"vitest": {
@@ -17346,9 +17375,9 @@ snapshots:
 							"below": true,
 						},
 						"vitest": {
-							"version": "5.1.1",
+							"version": "5.1.2",
 							"with": {
-								"@vitest/coverage-istanbul": "5.1.1",
+								"@vitest/coverage-istanbul": "5.1.2",
 								"jsdom": "29.1.1",
 							},
 						},
@@ -17361,9 +17390,9 @@ snapshots:
 							"below": true,
 						},
 						"vitest": {
-							"version": "5.1.1",
+							"version": "5.1.2",
 							"with": {
-								"@vitest/coverage-istanbul": "5.1.1",
+								"@vitest/coverage-istanbul": "5.1.2",
 								"jsdom": "31.0.1",
 							},
 						},
@@ -21382,7 +21411,7 @@ snapshots:
 					"below": true,
 				},
 				"@vitest/coverage-istanbul": {
-					"version": "5.1.1",
+					"version": "5.1.2",
 					"below": true,
 				},
 				"immer": {
@@ -21414,7 +21443,7 @@ snapshots:
 					"below": true,
 				},
 				"vitest": {
-					"version": "5.1.1",
+					"version": "5.1.2",
 					"below": true,
 				},
 			},
@@ -21549,7 +21578,7 @@ snapshots:
 					"below": true,
 				},
 				"@vitest/coverage-istanbul": {
-					"version": "5.1.1",
+					"version": "5.1.2",
 					"below": true,
 				},
 				"immer": {
@@ -21573,7 +21602,7 @@ snapshots:
 					"below": true,
 				},
 				"vitest": {
-					"version": "5.1.1",
+					"version": "5.1.2",
 					"below": true,
 				},
 			},
@@ -23238,8 +23267,8 @@ snapshots:
 			},
 		},
 
-		"vitest@5.1.1": {
-			"integrity": "sha512-trVmzUFOSraCZcI3uZIMD5FqBh4atFkC/XuJP/IU7qtyQay0FCs3Ia+0QiQ2JJwGyWG/xrcBoJNel2+O7kEZ0g==",
+		"vitest@5.1.2": {
+			"integrity": "sha512-VIa2wXV208WraXUbzH+dQUrGcFpPuaiRA8HlhXS8R6/sy9cynw6OMqGj8fmAlH1hot7huTCtWUE14+FdXU3eLw==",
 			"engines": {"node": "^22.12.0 || ^24.0.0 || >=26.0.0"},
 			"hasBin": true,
 			"peerDependencies": {
@@ -23257,11 +23286,11 @@ snapshots:
 					"optional": true,
 				},
 				"@vitest/browser-playwright": {
-					"specifier": "5.1.1",
+					"specifier": "5.1.2",
 					"optional": true,
 				},
 				"@vitest/browser-preview": {
-					"specifier": "5.1.1",
+					"specifier": "5.1.2",
 					"optional": true,
 				},
 				"@vitest/browser-webdriverio": {
@@ -23269,16 +23298,16 @@ snapshots:
 					"optional": true,
 				},
 				"@vitest/coverage-istanbul": {
-					"specifier": "5.1.1",
-					"version": "5.1.1",
+					"specifier": "5.1.2",
+					"version": "5.1.2",
 					"optional": true,
 				},
 				"@vitest/coverage-v8": {
-					"specifier": "5.1.1",
+					"specifier": "5.1.2",
 					"optional": true,
 				},
 				"@vitest/ui": {
-					"specifier": "5.1.1",
+					"specifier": "5.1.2",
 					"optional": true,
 				},
 				"happy-dom": {
@@ -23296,7 +23325,7 @@ snapshots:
 			},
 			"dependencies": {
 				"@types/chai": "5.2.3",
-				"@vitest/mocker": "5.1.1",
+				"@vitest/mocker": "5.1.2",
 				"chai": "6.3.0",
 				"es-module-lexer": "2.3.2",
 				"expect-type": "1.4.0",
@@ -23323,7 +23352,6 @@ snapshots:
 							"version": "31.0.1",
 						},
 					},
-					"optional": true,
 				},
 			],
 		},
