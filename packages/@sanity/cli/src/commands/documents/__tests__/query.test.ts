@@ -20,11 +20,16 @@ const defaultMocks = {
 }
 
 const mockFetch = vi.hoisted(() => vi.fn())
+const mockCheckout = vi.hoisted(() => vi.fn())
+const mockGetDeployedStack = vi.hoisted(() => vi.fn())
 const mockGetProjectCliClient = vi.hoisted(() =>
   vi.fn().mockResolvedValue({
     fetch: mockFetch,
   }),
 )
+
+vi.mock('../../../util/checkoutBlueprint.js', () => ({getCheckoutBlueprint: mockCheckout}))
+vi.mock('../../../services/blueprints.js', () => ({getDeployedStack: mockGetDeployedStack}))
 
 vi.mock('@sanity/cli-core', async () => {
   const actual = await vi.importActual('@sanity/cli-core')
@@ -36,9 +41,46 @@ vi.mock('@sanity/cli-core', async () => {
 
 describe('#documents:query', () => {
   afterEach(() => {
+    mockCheckout.mockReset()
+    mockGetDeployedStack.mockReset()
     vi.clearAllMocks()
     vi.unstubAllEnvs()
   })
+
+  test.each([
+    {dataset: 'deployed', flags: ['--with-blueprints'], projectId: 'blueprint-project'},
+    {dataset: testDataset, flags: [], projectId: testProjectId},
+  ])(
+    'uses project $projectId and dataset $dataset in a linked checkout with $flags',
+    async ({dataset, flags, projectId}) => {
+      mockCheckout.mockReturnValue({
+        scopeId: 'blueprint-project',
+        scopeType: 'project',
+        stackId: 'ST-checkout',
+      })
+      mockGetDeployedStack.mockResolvedValue({
+        resources: [
+          {
+            externalId: 'blueprint-project:deployed',
+            name: 'logical-name',
+            type: 'sanity.project.dataset',
+          },
+        ],
+      })
+      mockFetch.mockResolvedValue([{_id: 'test-doc'}])
+
+      const {stdout} = await testCommand(QueryDocumentCommand, ['*[0...1]', ...flags], {
+        mocks: defaultMocks,
+      })
+
+      expect(mockCheckout).toHaveBeenCalledTimes(flags.length)
+      expect(mockGetDeployedStack).toHaveBeenCalledTimes(flags.length)
+      expect(mockGetProjectCliClient).toHaveBeenCalledWith(
+        expect.objectContaining({dataset, projectId}),
+      )
+      expect(stdout).toContain('"_id": "test-doc"')
+    },
+  )
 
   test('executes query successfully with basic options', async () => {
     const mockResults = [
