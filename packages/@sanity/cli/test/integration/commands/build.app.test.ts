@@ -165,4 +165,36 @@ describe('#build app', {timeout: (platform() === 'win32' ? 120 : 60) * 1000}, ()
       expect(manifest.exposes.map((expose: {name: string}) => expose.name)).toContain('App')
     },
   )
+
+  // `sanity/cli` from the fixture's installed `sanity` predates `defineDashboard`, so the
+  // config imports it from source. Skipped on Windows for the same reason as above.
+  test.skipIf(platform() === 'win32')(
+    'exposes dashboard_config for a dashboard configuration',
+    async () => {
+      const cwd = await testFixture('basic-app')
+      process.chdir(cwd)
+      const defineApp = join(import.meta.dirname, '../../../../workbench-cli/src/defineApp.ts')
+
+      await writeFile(
+        join(cwd, 'sanity.cli.ts'),
+        `import {defineDashboard} from ${JSON.stringify(defineApp)}\n` +
+          `export default {\n` +
+          `  app: defineDashboard({organizationId: 'org-id', src: './src/dashboard.ts'}),\n` +
+          `}\n`,
+      )
+      await writeFile(
+        join(cwd, 'src', 'dashboard.ts'),
+        `export default {views: (views: unknown[]) => views}\n`,
+      )
+      vi.stubEnv('MFE_VITE_NO_TEST_ENV_CHECK', 'true')
+
+      const {error} = await testCommand(BuildCommand, ['--yes'], {config: {root: cwd}})
+
+      if (error) throw error
+      const manifest = JSON.parse(await readFile(join(cwd, 'dist', 'mf-manifest.json'), 'utf8'))
+      expect(manifest.exposes.map((expose: {name: string}) => expose.name)).toStrictEqual([
+        'dashboard_config',
+      ])
+    },
+  )
 })

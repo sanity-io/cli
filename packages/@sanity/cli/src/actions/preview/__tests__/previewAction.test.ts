@@ -1,5 +1,5 @@
 import {type CliConfig} from '@sanity/cli-core'
-import {unstable_defineMediaLibrary} from '@sanity/workbench-cli'
+import {defineDashboard, unstable_defineMediaLibrary} from '@sanity/workbench-cli'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
 import {createMockOutput, workbenchCliConfig} from '../../dev/__tests__/testHelpers.js'
@@ -67,6 +67,19 @@ describe('previewAction', () => {
     await previewAction(
       options({
         cliConfig: {app: unstable_defineMediaLibrary({organizationId: 'org-1'})} as CliConfig,
+      }),
+    )
+
+    expect(mockStartWorkbenchPreview).toHaveBeenCalled()
+    expect(mockStartPreviewServer).not.toHaveBeenCalled()
+  })
+
+  test('delegates a dashboard configuration to startWorkbenchPreview', async () => {
+    await previewAction(
+      options({
+        cliConfig: {
+          app: defineDashboard({organizationId: 'org-1', src: './src/dashboard.ts'}),
+        } as CliConfig,
       }),
     )
 

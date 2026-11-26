@@ -7,7 +7,7 @@ import {afterEach, beforeEach, describe, expect, onTestFinished, test, vi} from 
 
 import {buildAppId} from '../../../appId.js'
 import {definePanelView} from '../../../contract.js'
-import {unstable_defineMediaLibrary} from '../../../defineApp.js'
+import {defineDashboard, unstable_defineMediaLibrary} from '../../../defineApp.js'
 import {resolveWorkbenchApp} from '../../../resolveWorkbenchApp.js'
 import {
   createMockOutput,
@@ -15,6 +15,7 @@ import {
   workbenchApp,
   workbenchCliConfig,
 } from '../../dev/__tests__/devTestHelpers.js'
+import {registerDevServer} from '../../dev/registry.js'
 import {startWorkbenchPreview, type StartWorkbenchPreviewOptions} from '../startWorkbenchPreview.js'
 
 const mockStartWorkbenchDevServer = vi.hoisted(() => vi.fn())
@@ -166,6 +167,75 @@ describe('startWorkbenchPreview', () => {
         id: 'config:media-library',
         organizationId: 'org-1',
       })
+    })
+
+    test('registers a dashboard configuration build under "config:dashboard", without an application id', async () => {
+      await run({
+        cliConfig: workbenchCliConfig({
+          app: defineDashboard({organizationId: 'org-1', src: './src/dashboard.ts'}),
+          deployment: {appId: 'app_deployed_id'},
+        }),
+      })
+
+      const manifest = readManifest()
+      expect(manifest).toMatchObject({
+        id: 'config:dashboard',
+        organizationId: 'org-1',
+        port: 3334,
+        type: 'coreApp',
+      })
+      expect(manifest.configs).toStrictEqual([
+        {
+          appType: 'dashboard',
+          id: expect.any(String),
+          moduleName: 'dashboard',
+          src: './src/dashboard.ts',
+          version: '1',
+        },
+      ])
+      expect(manifest).not.toHaveProperty('applicationId')
+    })
+
+    test('refuses a dashboard configuration its organization already serves', async () => {
+      registerDevServer({
+        configs: [],
+        host: 'localhost',
+        id: 'config:dashboard',
+        organizationId: 'org-1',
+        port: 3336,
+        type: 'coreApp',
+        workDir: '/tmp/other-project',
+      })
+
+      await expect(
+        run({
+          cliConfig: workbenchCliConfig({
+            app: defineDashboard({organizationId: 'org-1', src: './src/dashboard.ts'}),
+          }),
+        }),
+      ).rejects.toThrow(
+        'The dashboard configuration is already served by the dev server in /tmp/other-project on port 3336',
+      )
+      expect(mockStartWorkbenchDevServer).not.toHaveBeenCalled()
+    })
+
+    test('names an app the dev server already serves by its slug, not its build id', async () => {
+      registerDevServer({
+        applicationId: 'app_deployed_id',
+        host: 'localhost',
+        id: 'test-app',
+        organizationId: 'org-123',
+        port: 3336,
+        slug: 'test-app',
+        type: 'coreApp',
+        workDir: '/tmp/other-project',
+      })
+
+      await expect(
+        run({cliConfig: workbenchCliConfig({deployment: {appId: 'app_deployed_id'}})}),
+      ).rejects.toThrow(
+        '"test-app" is already served by the dev server in /tmp/other-project on port 3336',
+      )
     })
 
     test('registers the identity declared in defineApplication, as dev does', async () => {
@@ -400,6 +470,20 @@ describe('startWorkbenchPreview', () => {
 
       expect(output.log).toHaveBeenCalledWith(
         `Dashboard preview server started at ${styleText(['blue', 'underline'], 'http://localhost:3333/applications/test-app')}`,
+      )
+    })
+
+    test('links to the Dashboard root for a dashboard configuration build', async () => {
+      const output = createMockOutput()
+      await run({
+        cliConfig: workbenchCliConfig({
+          app: defineDashboard({organizationId: 'org-1', src: './src/dashboard.ts'}),
+        }),
+        output,
+      })
+
+      expect(output.log).toHaveBeenCalledWith(
+        `Dashboard preview server started at ${styleText(['blue', 'underline'], 'http://localhost:3333')}`,
       )
     })
 

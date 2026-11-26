@@ -162,6 +162,13 @@ describe('#buildApp', () => {
     const configExposes: BuildOptions['exposes'] = {
       config: {appType: 'media-library', fields: []},
     }
+    const configBuilds = [
+      ['media library config', configExposes],
+      [
+        'dashboard config',
+        {config: {appType: 'dashboard', organizationId: 'org-1', src: './src/dashboard.ts'}},
+      ],
+    ] as const
 
     let outDir: string
     beforeEach(async () => {
@@ -177,7 +184,7 @@ describe('#buildApp', () => {
       await rm(outDir, {force: true, recursive: true})
     })
 
-    test('does not require @sanity/sdk-react', async () => {
+    test.each(configBuilds)('a %s does not require @sanity/sdk-react', async (_label, exposes) => {
       const output = createMockOutput()
 
       mockedGetLocalPackageVersion.mockImplementation((moduleName) =>
@@ -186,7 +193,7 @@ describe('#buildApp', () => {
 
       await buildApp(
         buildOptions({
-          exposes: configExposes,
+          exposes,
           isWorkbenchApp: true,
           outDir,
           output,
@@ -198,7 +205,7 @@ describe('#buildApp', () => {
       expect(mockedBuildStaticFiles).toHaveBeenCalled()
     })
 
-    test('requires sanity (its island-runtime provider) instead', async () => {
+    test.each(configBuilds)('a %s requires sanity instead', async (_label, exposes) => {
       const output = createMockOutput()
 
       mockedGetLocalPackageVersion.mockImplementation((moduleName) =>
@@ -207,7 +214,7 @@ describe('#buildApp', () => {
 
       await buildApp(
         buildOptions({
-          exposes: configExposes,
+          exposes,
           isWorkbenchApp: true,
           outDir,
           output,
