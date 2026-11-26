@@ -25,15 +25,15 @@ catalog:
   groq-js: ^2.0.3
 
   # Sanity
-  sanity: ^6.24.0
-  '@sanity/vision': ^6.24.0
-  '@sanity/types': ^6.24.0
-  '@sanity/schema': ^6.24.0
-  '@sanity/util': ^6.24.0
-  '@sanity/validation': ^6.24.0
+  sanity: ^6.25.0
+  '@sanity/vision': ^6.25.0
+  '@sanity/types': ^6.25.0
+  '@sanity/schema': ^6.25.0
+  '@sanity/util': ^6.25.0
+  '@sanity/validation': ^6.25.0
   '@sanity/client': ^8.17.0
-  '@sanity/codegen': ^8.3.3
-  '@sanity/sdk': ^3.15.0
+  '@sanity/codegen': ^8.3.4
+  '@sanity/sdk': ^3.16.0
   '@sanity/telemetry': ^1.1.0
 
   # React
@@ -107,6 +107,7 @@ minimumReleaseAgeExclude:
   - 'groq-js'
   - 'groq'
   - 'lodash-es'
+  - 'mendoza'
   - 'react-rx'
   - 'sanity'
   - 'sanity-plugin-media'
