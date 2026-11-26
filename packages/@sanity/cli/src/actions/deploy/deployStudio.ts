@@ -98,7 +98,7 @@ async function runStudioDeployment(
   // resolve/create on user-applications, unchanged.
   let application: UserApplication | null = null
   let studioCreated = false
-  let workbenchApp: {externalUrl?: string} | undefined
+  let workbenchApp: {externalUrl?: string | null} | undefined
   let externalUrl: string | undefined
   let targetAppId = appId
   if (workbench) {

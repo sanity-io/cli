@@ -1,5 +1,5 @@
 import {type CliConfig, exitCodes} from '@sanity/cli-core'
-import {type Application, getApplication} from '@sanity/workbench-cli/deploy'
+import {getApplication} from '@sanity/workbench-cli/deploy'
 import {beforeEach, describe, expect, test, vi} from 'vitest'
 
 import {
@@ -19,6 +19,7 @@ import {
 } from '../deployChecks.js'
 import {resolveAppDeployTarget, resolveStudioDeployTarget} from '../resolveDeployTarget.js'
 import {type DeployFlags} from '../types.js'
+import {toApplication} from './fixtures/applications.js'
 
 // The user-applications resolvers are stubbed; the workbench resolvers stay real
 // and exercise the mocked getApplication.
@@ -336,20 +337,9 @@ describe('checkAppTarget', () => {
   })
 })
 
-function workbenchApp(overrides: Partial<Application> = {}): Application {
-  return {
-    id: 'app-1',
-    organizationId: 'org-1',
-    slug: 'app',
-    title: 'My App',
-    type: 'coreApp',
-    ...overrides,
-  }
-}
-
 describe('checkAppTarget (workbench backend)', () => {
   test('existing appId → pass check for the resolved application', async () => {
-    mockGetApplication.mockResolvedValue(workbenchApp({title: 'Drop Desk'}))
+    mockGetApplication.mockResolvedValue(toApplication({title: 'Drop Desk'}))
     const reporter = createCollectingReporter<DeployCheck>()
 
     await checkAppTarget(reporter, {
@@ -366,7 +356,7 @@ describe('checkAppTarget (workbench backend)', () => {
   })
 
   test('existing appId without an app view → links the organization workbench', async () => {
-    mockGetApplication.mockResolvedValue(workbenchApp({title: 'Drop Desk'}))
+    mockGetApplication.mockResolvedValue(toApplication({title: 'Drop Desk'}))
     const reporter = createCollectingReporter<DeployCheck>()
 
     await checkAppTarget(reporter, {appId: 'app-1', hasAppView: false, isWorkbenchApp: true})
@@ -496,7 +486,7 @@ describe('a workbench would-create', () => {
 
 describe('checkStudioTarget (workbench backend)', () => {
   test('existing appId → pass check for the resolved studio, returns its target', async () => {
-    mockGetApplication.mockResolvedValue(workbenchApp({slug: 'my-studio', type: 'studio'}))
+    mockGetApplication.mockResolvedValue(toApplication({slug: 'my-studio', type: 'studio'}))
     const reporter = createCollectingReporter<DeployCheck>()
 
     const check = await checkStudioTarget(reporter, {
