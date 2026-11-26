@@ -17,6 +17,8 @@ interface ArtifactContext {
   /** Import specifier for an app `src` file, relative to this artifact. */
   resolveImport: (src: string) => string
 
+  /** Under `sanity dev`, config modules import user code after their hot handler registers. */
+  dev?: boolean
   isolateStyles?: boolean
 }
 

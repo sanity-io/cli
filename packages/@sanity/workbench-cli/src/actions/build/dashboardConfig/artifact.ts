@@ -7,16 +7,20 @@ export function dashboardConfigArtifacts(dashboardConfig: {src: string}): Genera
     {
       expose: `./${DASHBOARD_CONFIG_TYPE}`,
       path: `${DASHBOARD_CONFIG_TYPE}.js`,
-      source: ({resolveImport}) => `\
+      source: ({dev, resolveImport}) => {
+        const specifier = JSON.stringify(resolveImport(dashboardConfig.src))
+
+        return `\
 // This file is auto-generated on 'sanity build' / 'sanity dev'
 // Modifications to this file are automatically discarded
 export const type = ${JSON.stringify(DASHBOARD_CONFIG_TYPE)}
 export const version = ${DASHBOARD_CONFIG_CONTRACT_VERSION}
 
 ${HOT_CONFIG_LISTENERS}
-const {default: config} = await import(${JSON.stringify(resolveImport(dashboardConfig.src))})
+${dev ? `const {default: config} = await import(${specifier})` : `import config from ${specifier}`}
 export {config}
-`,
+`
+      },
     },
   ]
 }
