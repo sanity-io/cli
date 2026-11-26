@@ -1,3 +1,4 @@
+import {unstable_defineMediaLibrary} from '@sanity/workbench-cli'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
 import {createMockSanityCommand} from '../../../test/mockSanityCommand.js'
@@ -128,7 +129,9 @@ describe('#deploy', () => {
 
   test('does not warn about --media-library-id for a media library config deploy', async () => {
     mockDetermineIsApp.mockReturnValue(true)
-    mockResolveWorkbenchConfig.mockReturnValue({})
+    mockResolveWorkbenchConfig.mockReturnValue(
+      unstable_defineMediaLibrary({fields: [], organizationId: 'org-1'}),
+    )
 
     await DeployCommand.run(['--media-library-id', 'mlXYZ'])
 

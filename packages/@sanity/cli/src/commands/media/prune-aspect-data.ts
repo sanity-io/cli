@@ -105,7 +105,7 @@ export class MediaPruneAspectDataCommand extends SanityCommand<typeof MediaPrune
     }
 
     const config = resolveWorkbenchConfig(cliConfig)
-    if (!config) {
+    if (config?.appType !== 'media-library') {
       this.error(NOT_A_CONFIG_APP, {exit: exitCodes.RUNTIME_ERROR})
     }
 

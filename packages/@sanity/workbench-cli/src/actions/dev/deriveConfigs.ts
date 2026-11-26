@@ -1,6 +1,6 @@
 import {type CliConfig} from '@sanity/cli-core'
 
-import {MEDIA_LIBRARY_CONFIG_CONTRACT_VERSION} from '../../contract.js'
+import {configContractVersion, ConfigSchema, type WorkbenchConfigValue} from '../../contract.js'
 import {resolveWorkbenchConfig} from '../../resolveWorkbenchConfig.js'
 import {type DevServerManifest} from './registry.js'
 
@@ -13,16 +13,18 @@ export type DevServerConfig = NonNullable<DevServerManifest['configs']>[number]
 /**
  * The named source files a config's generated module is built from, dispatched
  * per app type — the projection the exposes-set id keys on, so the generic HMR
- * tracker owns none of the per-type shape. Throws on an app type it can't
- * handle, so a new config family has to register its shape here.
+ * tracker owns none of the per-type shape.
  */
-export function deriveConfigEntries(config: DevServerConfig): {name: string; src: string}[] {
-  switch (config.appType) {
+export function deriveConfigEntries(config: WorkbenchConfigValue): {name: string; src: string}[] {
+  const {appType} = config
+
+  switch (appType) {
     case 'media-library': {
       return config.fields.map((field) => ({name: field.name, src: field.src}))
     }
     default: {
-      throw new Error(`Cannot derive entries for unknown config appType: ${config.appType}`)
+      appType satisfies never
+      throw new Error(`Cannot derive entries for unknown app type: ${appType as string}`)
     }
   }
 }
@@ -44,18 +46,14 @@ export async function deriveConfigs(
   // empty config is still a config; dev just has nothing local to load for it.
   const config = resolveWorkbenchConfig(cliConfig)
   if (!config) return []
+
   const entry = {
-    appType: config.appType,
-    fields: config.fields.map((field) => ({
-      name: field.name,
-      public: field.public,
-      src: field.src,
-      title: field.title,
-    })),
+    ...ConfigSchema.parse(config),
     // A config keys on its target `appType`, not a fabricated slug.
     moduleName: config.appType,
-    version: String(MEDIA_LIBRARY_CONFIG_CONTRACT_VERSION),
+    version: configContractVersion(config.appType),
   }
+
   return [{...entry, id: await contentHash(JSON.stringify(entry))}]
 }
 

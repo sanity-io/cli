@@ -3,6 +3,7 @@ import {Readable} from 'node:stream'
 import {type Output} from '@sanity/cli-core'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
+import {type WorkbenchConfigValue} from '../../../contract.js'
 import {deployConfig, resolveInstallationId, summarizeConfig} from '../deployConfig.js'
 import {anInstallation} from './fixtures/installations.js'
 
@@ -127,8 +128,8 @@ describe('summarizeConfig', () => {
   })
 
   test('throws for an unhandled app type', () => {
-    expect(() => summarizeConfig({appType: 'canvas', fields: []})).toThrow(
-      /unknown app type: canvas/,
-    )
+    expect(() =>
+      summarizeConfig({appType: 'canvas', fields: []} as unknown as WorkbenchConfigValue),
+    ).toThrow(/unknown app type: canvas/)
   })
 })

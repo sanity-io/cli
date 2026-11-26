@@ -6,7 +6,7 @@ export interface WorkbenchDeployPayload {
   slug: string
   title: string
 
-  /** Media-library config summary. */
+  /** Config summary. */
   config?: string
   services?: DeployedWebWorker[]
   views?: DeployedView[]

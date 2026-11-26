@@ -43,6 +43,12 @@ describe('resolveWorkbenchConfig', () => {
     })
   })
 
+  test('throws on a config without an organization', () => {
+    const app = unstable_defineMediaLibrary({} as Parameters<typeof unstable_defineMediaLibrary>[0])
+
+    expect(() => resolveWorkbenchConfig(asConfig(app))).toThrow(/organizationId/)
+  })
+
   test('throws on duplicate field names', () => {
     const config = asConfig(
       unstable_defineMediaLibrary({

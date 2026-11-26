@@ -34,6 +34,7 @@ export type {
   DefineAppInput,
   DefineAppResult,
   DefineMediaLibraryInput,
+  MediaLibraryConfig,
   MediaLibraryField,
   WorkbenchApp,
   WorkbenchConfig,

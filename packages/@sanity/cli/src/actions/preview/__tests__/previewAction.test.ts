@@ -1,4 +1,5 @@
 import {type CliConfig} from '@sanity/cli-core'
+import {unstable_defineMediaLibrary} from '@sanity/workbench-cli'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
 import {createMockOutput, workbenchCliConfig} from '../../dev/__tests__/testHelpers.js'
@@ -60,6 +61,17 @@ describe('previewAction', () => {
 
     expect(mockStartPreviewServer).toHaveBeenCalled()
     expect(mockStartWorkbenchPreview).not.toHaveBeenCalled()
+  })
+
+  test('delegates a media library config to startWorkbenchPreview', async () => {
+    await previewAction(
+      options({
+        cliConfig: {app: unstable_defineMediaLibrary({organizationId: 'org-1'})} as CliConfig,
+      }),
+    )
+
+    expect(mockStartWorkbenchPreview).toHaveBeenCalled()
+    expect(mockStartPreviewServer).not.toHaveBeenCalled()
   })
 
   test('delegates a workbench app to startWorkbenchPreview with the injected CLI-domain pieces', async () => {

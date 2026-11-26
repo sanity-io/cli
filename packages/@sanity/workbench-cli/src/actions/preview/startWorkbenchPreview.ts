@@ -8,7 +8,8 @@ import {buildAppId, SANITY_APP_ID_FILE} from '../../appId.js'
 import {isWorkbenchApp} from '../../defineApp.js'
 import {deriveInterfaces} from '../../deriveInterfaces.js'
 import {readAppIcon, toUrlPath} from '../../readAppIcon.js'
-import {resolveWorkbenchApp} from '../../resolveWorkbenchApp.js'
+import {type ResolvedWorkbenchApp, resolveWorkbenchApp} from '../../resolveWorkbenchApp.js'
+import {resolveWorkbenchConfig} from '../../resolveWorkbenchConfig.js'
 import {createServerLifecycle, toDisplayHost} from '../../util/serverOrchestration.js'
 import {deriveConfigs} from '../dev/deriveConfigs.js'
 import {
@@ -72,7 +73,12 @@ export async function startWorkbenchPreview(
     workDir,
   } = options
 
-  // Read before any server starts, so a bad icon path fails with nothing to tear down.
+  // Resolved before any server starts, so a bad icon path or a project that isn't set
+  // up for the Dashboard fails with nothing to tear down.
+  const {id, workbenchApp} = await resolvePreviewTarget(cliConfig, outDir)
+  const applicationId = workbenchApp ? cliConfig.deployment?.appId : undefined
+  const organizationId = cliConfig.app?.organizationId
+
   const app = isWorkbenchApp(cliConfig.app) ? cliConfig.app : undefined
   const appIcon = isApp ? app?.icon : undefined
   const iconUrlPath = (iconPath: string) =>
@@ -120,22 +126,13 @@ export async function startWorkbenchPreview(
     // out of workbench-cli.
     checkForDeprecatedAppId()
     const configPath = (await findProjectRoot(workDir)).path
-    const workbench = resolveWorkbenchApp(cliConfig)
-
-    if (!workbench) {
-      throw new Error(
-        '`sanity start` was invoked in an application that is not set up for the Dashboard',
-      )
-    }
-    const inlinedId = await readInlinedAppId(outDir)
     const configs = await deriveConfigs(cliConfig)
-    const id = inlinedId ?? (await buildAppId(workbench))
     const interfaces = deriveInterfaces(cliConfig.app, {
       iconUrl: (iconPath) => `http://${remote.host}:${remote.port}${iconUrlPath(iconPath)}`,
       isApp,
     })
     const registration = registerDevServer({
-      applicationId: cliConfig.deployment?.appId,
+      applicationId,
       configs,
       host: remote.host,
       id,
@@ -147,9 +144,10 @@ export async function startWorkbenchPreview(
         workDir,
       }),
       manifestUpdatedAt: new Date().toISOString(),
+      organizationId,
       port: remote.port,
       projectId: cliConfig?.api?.projectId,
-      ...localAppIdentity(workbench),
+      ...(workbenchApp && localAppIdentity(workbenchApp)),
       type: isApp ? 'coreApp' : 'studio',
       workDir,
     })
@@ -157,7 +155,7 @@ export async function startWorkbenchPreview(
     dashboardAppPath = dashboardPath({
       id,
       interfaces,
-      slug: workbench.slug,
+      slug: workbenchApp?.slug,
       type: isApp ? 'coreApp' : 'studio',
     })
   } catch (err) {
@@ -176,6 +174,31 @@ export async function startWorkbenchPreview(
   installSignalHandlers()
 
   return {close}
+}
+
+/**
+ * What the preview registers: a config under its own id namespace (as in dev),
+ * or the workbench app under the id its build inlined.
+ */
+async function resolvePreviewTarget(
+  cliConfig: CliConfig,
+  outDir: string,
+): Promise<{id: string; workbenchApp?: ResolvedWorkbenchApp}> {
+  const config = resolveWorkbenchConfig(cliConfig)
+
+  if (config) {
+    return {id: `config:${config.appType}`}
+  }
+
+  const workbenchApp = resolveWorkbenchApp(cliConfig)
+
+  if (!workbenchApp) {
+    throw new Error(
+      '`sanity start` was invoked in an application that is not set up for the Dashboard',
+    )
+  }
+
+  return {id: (await readInlinedAppId(outDir)) ?? (await buildAppId(workbenchApp)), workbenchApp}
 }
 
 /** The id the build inlined into its bundle, or undefined when absent. */

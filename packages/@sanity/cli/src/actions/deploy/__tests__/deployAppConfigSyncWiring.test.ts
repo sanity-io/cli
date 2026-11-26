@@ -14,7 +14,7 @@
 import {CLIError} from '@oclif/core/errors'
 import {type CliConfig, exitCodes, type Output} from '@sanity/cli-core'
 import {confirm} from '@sanity/cli-core/ux'
-import {type ResolvedMediaLibraryConfig} from '@sanity/workbench-cli/deploy'
+import {type MediaLibraryConfig, unstable_defineMediaLibrary} from '@sanity/workbench-cli'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
 import {type DeployFlags} from '../types.js'
@@ -79,14 +79,13 @@ function mockOutput() {
 // Typed against the real resolver contract: the sync is gated on the
 // `appType` discriminator, so a made-up value here would silently test a
 // deploy that never syncs.
-const CONFIG: ResolvedMediaLibraryConfig = {
-  appType: 'media-library',
+const CONFIG = unstable_defineMediaLibrary({
   fields: [
     {name: 'caption', src: './src/fields/caption.ts', title: 'Caption'},
     {name: 'notes', src: './src/fields/notes.tsx', title: 'Notes'},
   ],
   organizationId: 'org-1',
-}
+})
 
 const PLAN = {
   documents: [
@@ -140,7 +139,7 @@ describe('deployApp aspect-sync wiring (media-library config)', () => {
     mockResolveWorkbenchConfig.mockReturnValue({
       ...CONFIG,
       appType: 'another-config',
-    } as unknown as ResolvedMediaLibraryConfig)
+    } as unknown as MediaLibraryConfig)
 
     await deployApp(deployOptions({}, mockOutput()))
 

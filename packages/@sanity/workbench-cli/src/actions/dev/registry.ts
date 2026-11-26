@@ -18,7 +18,11 @@ import {
 import {z} from 'zod/mini'
 
 import {applicationReference} from '../../applicationReference.js'
-import {TileInterfaceMetadataSchema, ViewPlacementMetadataSchema} from '../../contract.js'
+import {
+  ConfigSchema,
+  TileInterfaceMetadataSchema,
+  ViewPlacementMetadataSchema,
+} from '../../contract.js'
 import {type WorkbenchApp} from '../../defineApp.js'
 import {canonicalizeWatchDir} from './canonicalizeWatchDir.js'
 import {getProcessStartTime, isOurProcess} from './processLiveness.js'
@@ -95,6 +99,21 @@ const devServerInterfaceSchema = z.union([
   z.object({...interfaceBaseFields, metadata: z.null(), type: z.literal('worker')}),
 ])
 
+const devServerConfigSchema = z.intersection(
+  ConfigSchema,
+  z.object({
+    // Content hash of the config — the workbench's change-detection key
+    // (see deriveConfigs).
+    id: z.string(),
+    // The app's `defineApplication` slug — the module-federation alias the
+    // workbench loads this config's live values from.
+    moduleName: z.optional(z.string()),
+    // The version the workbench federates this config's module under —
+    // a string, like the one Brett returns on a deployed `activeConfig`.
+    version: z.string(),
+  }),
+)
+
 // Exported so test fixtures can validate against the same schema the registry
 // parses with — see `aDevServerManifest`. Used internally by `getRegisteredServers`.
 export const devServerManifestSchema = z.object({
@@ -104,31 +123,7 @@ export const devServerManifestSchema = z.object({
    * rides along so a repoint bumps the exposes-set id and forces a rebuild.
    * Lenient — the workbench is the authority.
    */
-  configs: z.optional(
-    z.array(
-      z.object({
-        // Identifies the owning app when it has no app id (singletons).
-        appType: z.optional(z.string()),
-        fields: z.array(
-          z.object({
-            name: z.string(),
-            public: z.optional(z.boolean()),
-            src: z.string(),
-            title: z.string(),
-          }),
-        ),
-        // Content hash of the config — the workbench's change-detection key
-        // (see deriveConfigs).
-        id: z.string(),
-        // The app's `defineApplication` slug — the module-federation alias the
-        // workbench loads this config's live values from.
-        moduleName: z.optional(z.string()),
-        // The version the workbench federates this config's module under —
-        // a string, like the one Brett returns on a deployed `activeConfig`.
-        version: z.string(),
-      }),
-    ),
-  ),
+  configs: z.optional(z.array(devServerConfigSchema)),
   host: z.string(),
   https: z.optional(z.boolean()),
   /**

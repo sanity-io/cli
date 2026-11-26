@@ -23,4 +23,4 @@ export {
   resolveWorkbenchApp,
   type WorkbenchExposes,
 } from '../resolveWorkbenchApp.js'
-export {type ResolvedMediaLibraryConfig, resolveWorkbenchConfig} from '../resolveWorkbenchConfig.js'
+export {resolveWorkbenchConfig} from '../resolveWorkbenchConfig.js'

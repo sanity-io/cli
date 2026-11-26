@@ -3,13 +3,11 @@ import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
 import {
   defineApplication,
+  type MediaLibraryConfig,
   type MediaLibraryField,
   unstable_defineMediaLibrary,
 } from '../../../defineApp.js'
-import {
-  type ResolvedMediaLibraryConfig,
-  resolveWorkbenchConfig,
-} from '../../../resolveWorkbenchConfig.js'
+import {resolveWorkbenchConfig} from '../../../resolveWorkbenchConfig.js'
 import {
   anInstallation,
   installationsResponse,
@@ -42,11 +40,11 @@ function workbenchApp(): DeployableWorkbenchApp {
 // `resolveWorkbenchConfig` and undeploys via the adapter's `config` path.
 function mediaLibraryConfig(
   fields: MediaLibraryField[] = [{name: 'alt', src: './src/alt.ts', title: 'Alt text'}],
-): ResolvedMediaLibraryConfig {
+): MediaLibraryConfig {
   const config = resolveWorkbenchConfig({
     app: unstable_defineMediaLibrary({fields, organizationId: 'org-1'}),
   } as CliConfig)
-  if (!config) throw new Error('expected a workbench config')
+  if (config?.appType !== 'media-library') throw new Error('expected a media library config')
   return config
 }
 

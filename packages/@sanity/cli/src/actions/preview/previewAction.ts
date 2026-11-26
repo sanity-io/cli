@@ -1,7 +1,7 @@
 import {SANITY_CACHE_DIR} from '@sanity/cli-build/_internal/build'
 import {extractCoreAppManifest} from '@sanity/cli-build/_internal/manifest'
 import {type CliConfig, type Output} from '@sanity/cli-core'
-import {isWorkbenchApp} from '@sanity/workbench-cli'
+import {isWorkbenchApp, isWorkbenchConfig} from '@sanity/workbench-cli'
 
 import {gracefulServerDeath} from '../../server/gracefulServerDeath.js'
 import {type PreviewServer, startPreviewServer} from '../../server/previewServer.js'
@@ -27,7 +27,7 @@ export async function previewAction(
 
   const config = getPreviewServerConfig({cliConfig, flags, rootDir: outDir, workDir})
 
-  if (isWorkbenchApp(cliConfig?.app)) {
+  if (isWorkbenchApp(cliConfig?.app) || isWorkbenchConfig(cliConfig?.app)) {
     const isApp = determineIsApp(cliConfig)
     // Lazy so a non-workbench `sanity start` never loads the package. `doImport`
     // is path-based and doesn't apply to a bare specifier.

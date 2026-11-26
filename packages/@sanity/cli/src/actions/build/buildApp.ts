@@ -34,7 +34,7 @@ export async function buildApp(
   const exposes = workbench
     ? {views: workbench.views, webWorkers: workbench.webWorkers}
     : workbenchConfig
-      ? {config: {appType: workbenchConfig.appType, fields: workbenchConfig.fields}}
+      ? {config: workbenchConfig}
       : undefined
   const isWorkbench = !!workbench || !!workbenchConfig
 
