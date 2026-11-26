@@ -43,10 +43,12 @@ describe('resolveWorkbenchConfig', () => {
     })
   })
 
-  test('throws on a config without an organization', () => {
+  test('names the config type and each invalid field when a config is invalid', () => {
     const app = unstable_defineMediaLibrary({} as Parameters<typeof unstable_defineMediaLibrary>[0])
 
-    expect(() => resolveWorkbenchConfig(asConfig(app))).toThrow(/organizationId/)
+    expect(() => resolveWorkbenchConfig(asConfig(app))).toThrow(
+      "Invalid media-library config:\n✖ Config `organizationId` is required — pass the owning organization's ID\n  → at organizationId",
+    )
   })
 
   test('throws on duplicate field names', () => {

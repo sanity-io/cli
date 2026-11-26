@@ -32,7 +32,7 @@ export function resolveWorkbenchConfig(
     )
     .safeParse(app)
   if (!result.success) {
-    throw new Error(`Invalid Dashboard config: ${result.error.message}`)
+    throw new Error(`Invalid ${app.appType} config:\n${z.prettifyError(result.error)}`)
   }
 
   return app
