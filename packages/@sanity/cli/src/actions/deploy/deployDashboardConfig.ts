@@ -8,6 +8,7 @@ import {
   uploadDashboardConfig,
 } from '@sanity/workbench-cli/deploy'
 
+import {EXTERNAL_APP_NOT_SUPPORTED} from '../../util/errorMessages.js'
 import {buildApp} from '../build/buildApp.js'
 import {checkBuild, checkPackageVersion, verifyOutputDir} from './deployChecks.js'
 import {listDeploymentFiles} from './deploymentPlan.js'
@@ -28,6 +29,15 @@ export function deployDashboardConfig(
       const summaryDetails = flags.json ? undefined : fetchDeploySummaryDetails(organizationId)
       const version = await checkPackageVersion(reporter, {moduleName: 'sanity', workDir})
       reporter.report({message: `Organization: ${organizationId}`, status: 'pass'})
+
+      if (flags.external) {
+        reporter.report({
+          message: EXTERNAL_APP_NOT_SUPPORTED,
+          solution:
+            'Remove the --external flag — dashboard configurations deploy to Sanity hosting',
+          status: 'fail',
+        })
+      }
 
       const built = await checkBuild(reporter, {
         build: () =>

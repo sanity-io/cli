@@ -131,6 +131,14 @@ describe.skipIf(platform() === 'win32')(
       expect(error?.oclif?.exit).toBe(exitCodes.RUNTIME_ERROR)
     })
 
+    test('rejects --external', async () => {
+      await dashboardProject()
+
+      const {error} = await deploy(['--external'])
+
+      expect(error?.message).toContain('Deploying an app to an external host is not supported.')
+    })
+
     test('reports the plan with --dry-run --json and writes nothing', async () => {
       await dashboardProject()
       mockDashboards([])
