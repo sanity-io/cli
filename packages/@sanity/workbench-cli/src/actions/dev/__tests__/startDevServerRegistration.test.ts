@@ -4,7 +4,7 @@ import {dirname, join} from 'node:path'
 
 import {afterEach, beforeEach, describe, expect, onTestFinished, test, vi} from 'vitest'
 
-import {unstable_defineMediaLibrary} from '../../../defineApp.js'
+import {defineDashboard, unstable_defineMediaLibrary} from '../../../defineApp.js'
 import {type DevServerManifest, getRegisteredServers} from '../registry.js'
 import {startDevServerRegistration} from '../startDevServerRegistration.js'
 import {createMockOutput, workbenchApp, workbenchCliConfig} from './devTestHelpers.js'
@@ -108,6 +108,14 @@ function register(overrides: Partial<RegistrationOptions> = {}) {
   })
 }
 
+const dashboardConfig = (src: string) => ({
+  appType: 'dashboard' as const,
+  id: src,
+  moduleName: 'dashboard',
+  src,
+  version: '1',
+})
+
 describe('startDevServerRegistration', () => {
   beforeEach(() => {
     fsMock.reset()
@@ -207,6 +215,52 @@ describe('startDevServerRegistration', () => {
     expect(manifest.id).toBe('config:media-library')
     expect(manifest.organizationId).toBe('org-1')
     expect(manifest.configs).toEqual([expect.objectContaining({appType: 'media-library'})])
+  })
+
+  test('rejects a second dashboard configuration for the same organization', async () => {
+    registerForeignServer({id: 'config:dashboard', organizationId: 'org-1'})
+    const output = createMockOutput()
+
+    await register({
+      cliConfig: workbenchCliConfig({
+        app: defineDashboard({organizationId: 'org-1', src: './src/dashboard.ts'}),
+      }),
+      isApp: true,
+      output,
+    })
+
+    expect(output.error).toHaveBeenCalledWith(
+      expect.stringContaining('"config:dashboard" is already served'),
+      {exit: false},
+    )
+    expect(fsMock.files.has(manifestPath())).toBe(false)
+  })
+
+  test('rebuilds the remote when the dashboard configuration src is repointed', async () => {
+    const onInterfaceSetChange = vi.fn().mockResolvedValue(undefined)
+    await register({
+      cliConfig: workbenchCliConfig({
+        app: defineDashboard({organizationId: 'org-1', src: './src/dashboard.ts'}),
+      }),
+      isApp: true,
+      onInterfaceSetChange,
+    })
+    const watcherUpdate = mockStartDevManifestWatcher.mock.calls[0][0].update
+
+    await watcherUpdate({
+      configs: [dashboardConfig('./src/dashboard.ts')],
+      manifest: undefined,
+      manifestUpdatedAt: 'a',
+    })
+    expect(onInterfaceSetChange).not.toHaveBeenCalled()
+
+    await watcherUpdate({
+      configs: [dashboardConfig('./src/custom.ts')],
+      manifest: undefined,
+      manifestUpdatedAt: 'b',
+    })
+    expect(onInterfaceSetChange).toHaveBeenCalledTimes(1)
+    expect(readManifest().configs).toEqual([dashboardConfig('./src/custom.ts')])
   })
 
   test('keeps the id when the server binds a port it did not ask for', async () => {

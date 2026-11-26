@@ -4,6 +4,7 @@ import {
   type MediaLibraryConfigArtifactOptions,
   mediaLibraryConfigArtifacts,
 } from './configs/artifact.js'
+import {dashboardConfigArtifacts} from './dashboardConfig/artifact.js'
 import {viewArtifacts} from './views/artifact.js'
 import {webWorkerArtifacts} from './webWorkers/artifact.js'
 
@@ -85,6 +86,9 @@ function configArtifacts(
   const {appType} = config
 
   switch (appType) {
+    case 'dashboard': {
+      return dashboardConfigArtifacts(config)
+    }
     case 'media-library': {
       return mediaLibraryConfigArtifacts(config, options)
     }

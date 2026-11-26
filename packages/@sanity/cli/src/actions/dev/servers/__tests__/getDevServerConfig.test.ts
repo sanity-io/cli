@@ -1,4 +1,5 @@
 import {type CliConfig} from '@sanity/cli-core'
+import {defineDashboard} from '@sanity/workbench-cli'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
 import {createMockOutput, DEV_FLAGS as FLAGS, workbenchApp} from '../../__tests__/testHelpers.js'
@@ -48,6 +49,25 @@ describe('getDevServerConfig', () => {
       workDir: '/tmp',
     })
     expect(config.entry).toBe('./src/window.tsx')
+  })
+
+  test('serves a dashboard config as a workbench remote exposing its src', () => {
+    const config = getDevServerConfig({
+      cliConfig: {
+        app: defineDashboard({organizationId: 'org-1', src: './src/dashboard.ts'}),
+      } as CliConfig,
+      flags: FLAGS,
+      output: createMockOutput(),
+      workDir: '/tmp',
+    })
+
+    expect(config).toMatchObject({
+      entry: undefined,
+      exposes: {
+        config: {appType: 'dashboard', organizationId: 'org-1', src: './src/dashboard.ts'},
+      },
+      isWorkbenchApp: true,
+    })
   })
 
   test('should warn when both SANITY_STUDIO_BASEPATH env var and config basePath are set', () => {

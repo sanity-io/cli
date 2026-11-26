@@ -67,29 +67,31 @@ function mediaLibraryConfigSource(input: {
 }): string {
   const {config, resolveImport} = input
   const imports = config.fields
-    .map((field, index) => `import field_${index} from ${JSON.stringify(resolveImport(field.src))}`)
+    .map((field) => `  import(${JSON.stringify(resolveImport(field.src))}),`)
     .join('\n')
   const entries = config.fields
     .map(
       (field, index) =>
         `    {name: ${JSON.stringify(field.name)}, title: ${JSON.stringify(field.title)}, ` +
-        `public: ${JSON.stringify(Boolean(field.public))}, config: field_${index}},`,
+        `public: ${JSON.stringify(Boolean(field.public))}, config: fieldModules[${index}].default},`,
     )
     .join('\n')
   return `\
 // This file is auto-generated on 'sanity build' / 'sanity dev'
 // Modifications to this file are automatically discarded
-${imports}
-
 export const type = ${JSON.stringify(INSTALLATION_CONFIG_TYPE)}
 export const version = ${MEDIA_LIBRARY_CONFIG_CONTRACT_VERSION}
+
+${HOT_CONFIG_LISTENERS}
+const fieldModules = await Promise.all([
+${imports}
+])
 export const config = {
   fields: [
 ${entries}
   ],
 }
-
-${HOT_CONFIG_LISTENERS}`
+`
 }
 
 /**

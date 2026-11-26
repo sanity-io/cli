@@ -1,4 +1,4 @@
-import {unstable_defineMediaLibrary} from '@sanity/workbench-cli'
+import {defineDashboard, unstable_defineMediaLibrary} from '@sanity/workbench-cli'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
 import {createMockSanityCommand} from '../../../test/mockSanityCommand.js'
@@ -125,6 +125,19 @@ describe('#deploy', () => {
       '--media-library-id is ignored — it only applies when deploying a Media Library config',
     )
     expect(isApp ? mockDeployApp : mockDeployStudio).toHaveBeenCalledTimes(1)
+  })
+
+  test('warns that --media-library-id is ignored for a dashboard configuration deploy', async () => {
+    mockDetermineIsApp.mockReturnValue(true)
+    mockResolveWorkbenchConfig.mockReturnValue(
+      defineDashboard({organizationId: 'org-1', src: './src/dashboard.ts'}),
+    )
+
+    await DeployCommand.run(['--media-library-id', 'mlXYZ'])
+
+    expect(mocks.SanityCmdOutputWarn).toHaveBeenCalledWith(
+      expect.stringContaining('--media-library-id is ignored'),
+    )
   })
 
   test('does not warn about --media-library-id for a media library config deploy', async () => {

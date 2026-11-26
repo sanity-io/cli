@@ -40,6 +40,9 @@ export function summarizeConfig(config: WorkbenchConfigValue): string {
   const {appType} = config
 
   switch (appType) {
+    case 'dashboard': {
+      return `Dashboard configuration: ${config.src}`
+    }
     case 'media-library': {
       return summarizeGroup('Media library fields', config.fields)
     }

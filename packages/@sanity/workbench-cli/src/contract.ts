@@ -16,6 +16,10 @@ export const WINDOW_CONTRACT_VERSION = 1
 /** @internal */
 export const MEDIA_LIBRARY_CONFIG_CONTRACT_VERSION = 1
 
+export const DASHBOARD_CONFIG_CONTRACT_VERSION = 1
+
+export const DASHBOARD_CONFIG_TYPE = 'dashboard_config'
+
 /**
  * A view component. The return is opaque so the runtime helpers carry no React
  * dependency — the generated artifact renders it with the app's own React.
@@ -291,12 +295,20 @@ const MediaLibraryConfigSchema = z.object({
     ),
 })
 
+const DashboardConfigSchema = z.object({
+  appType: z.literal('dashboard'),
+  src: z.string('Dashboard configuration `src` must be a path to the configuration file'),
+})
+
 /**
  * A workbench config's built value, keyed by `appType`; deploys as a versioned
  * snapshot, not an interface.
  * @internal
  */
-export const ConfigSchema = z.discriminatedUnion('appType', [MediaLibraryConfigSchema])
+export const ConfigSchema = z.discriminatedUnion('appType', [
+  DashboardConfigSchema,
+  MediaLibraryConfigSchema,
+])
 
 /**
  * The config value, keyed by `appType`, the build expands into a federation
@@ -306,6 +318,7 @@ export const ConfigSchema = z.discriminatedUnion('appType', [MediaLibraryConfigS
 export type WorkbenchConfigValue = z.output<typeof ConfigSchema>
 
 const CONFIG_CONTRACT_VERSIONS: Record<WorkbenchConfigValue['appType'], number> = {
+  dashboard: DASHBOARD_CONFIG_CONTRACT_VERSION,
   'media-library': MEDIA_LIBRARY_CONFIG_CONTRACT_VERSION,
 }
 

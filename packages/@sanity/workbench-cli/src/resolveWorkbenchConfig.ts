@@ -1,8 +1,8 @@
 // Package-internal shared resolver: turn a CLI config's branded
-// `unstable_defineMediaLibrary` config into its target `appType`, owning
-// `organizationId`, and `fields`, or `null` when the config is not a config
-// (a plain project or an app). The deploy/undeploy/build paths consult this
-// second resolver; app-only callers keep using `resolveWorkbenchApp`.
+// `unstable_defineMediaLibrary` or `defineDashboard` config into its target
+// `appType`, owning `organizationId`, and payload, or `null` when the config is
+// not a config (a plain project or an app). The deploy/undeploy/build paths
+// consult this second resolver; app-only callers keep using `resolveWorkbenchApp`.
 
 import {type CliConfig} from '@sanity/cli-core'
 import {z} from 'zod/mini'

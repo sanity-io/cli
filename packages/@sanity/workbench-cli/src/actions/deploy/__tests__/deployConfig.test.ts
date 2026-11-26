@@ -113,6 +113,12 @@ describe('deployConfig', () => {
 })
 
 describe('summarizeConfig', () => {
+  test('names the dashboard configuration source', () => {
+    expect(summarizeConfig({appType: 'dashboard', src: './src/dashboard.ts'})).toBe(
+      'Dashboard configuration: ./src/dashboard.ts',
+    )
+  })
+
   test('lists a media library config as a heading with one entry-point line per field', () => {
     expect(
       summarizeConfig({

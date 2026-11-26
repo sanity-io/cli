@@ -12,6 +12,8 @@ export {
   defineApplication,
   defineAssetSourceView,
   type DefineAssetSourceViewInput,
+  defineDashboard,
+  type DefineDashboardInput,
   type DefineMediaLibraryInput,
   definePanelView,
   type DefinePanelViewInput,

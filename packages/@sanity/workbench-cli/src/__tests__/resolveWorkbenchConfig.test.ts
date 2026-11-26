@@ -1,7 +1,7 @@
 import {type CliConfig} from '@sanity/cli-core'
 import {describe, expect, test} from 'vitest'
 
-import {defineApplication, unstable_defineMediaLibrary} from '../defineApp.js'
+import {defineApplication, defineDashboard, unstable_defineMediaLibrary} from '../defineApp.js'
 import {resolveWorkbenchConfig} from '../resolveWorkbenchConfig.js'
 
 const asConfig = (app: unknown) => ({app}) as CliConfig
@@ -48,6 +48,22 @@ describe('resolveWorkbenchConfig', () => {
 
     expect(() => resolveWorkbenchConfig(asConfig(app))).toThrow(
       "Invalid media-library config:\n✖ Config `organizationId` is required — pass the owning organization's ID\n  → at organizationId",
+    )
+  })
+
+  test('resolves a dashboard configuration with a custom src', () => {
+    const config = asConfig(defineDashboard({organizationId: 'org-123', src: './src/custom.ts'}))
+
+    expect(resolveWorkbenchConfig(config)).toMatchObject({src: './src/custom.ts'})
+  })
+
+  test('names the missing src of a dashboard configuration', () => {
+    const app = defineDashboard({organizationId: 'org-123'} as Parameters<
+      typeof defineDashboard
+    >[0])
+
+    expect(() => resolveWorkbenchConfig(asConfig(app))).toThrow(
+      'Invalid dashboard config:\n✖ Dashboard configuration `src` must be a path to the configuration file\n  → at src',
     )
   })
 
