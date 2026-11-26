@@ -107,6 +107,7 @@ minimumReleaseAgeExclude:
   - 'groq-js'
   - 'groq'
   - 'lodash-es'
+  - 'mendoza'
   - 'react-rx'
   - 'sanity'
   - 'sanity-plugin-media'
