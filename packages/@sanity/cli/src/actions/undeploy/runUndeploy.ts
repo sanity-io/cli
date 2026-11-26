@@ -130,7 +130,7 @@ async function undeployApp(
 
   const {target} = resolution
   const summaryDetails =
-    target.deletes === 'config' && target.organizationId && !flags.json
+    target.deletes === 'config' && !flags.json
       ? fetchDeploySummaryDetails(target.organizationId)
       : undefined
 
@@ -234,14 +234,12 @@ function printUndeployed(
 ): void {
   if (target.deletes === 'config') {
     output.log(
-      target.organizationId
-        ? formatUndeploySummary({
-            ...summary,
-            organizationId: target.organizationId,
-            title: target.title ?? 'Deployed config',
-            url: target.url ?? getWorkbenchUrl(target.organizationId),
-          })
-        : `\n${styleText('bold', 'Config deleted.')}`,
+      formatUndeploySummary({
+        ...summary,
+        organizationId: target.organizationId,
+        title: target.title ?? 'Deployed config',
+        url: target.url ?? getWorkbenchUrl(target.organizationId),
+      }),
     )
     return
   }

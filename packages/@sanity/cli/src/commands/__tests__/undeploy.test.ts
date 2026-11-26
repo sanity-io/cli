@@ -718,6 +718,52 @@ describe('#undeploy', () => {
     expect(stdout).not.toContain('Config snapshots')
   })
 
+  test('undeploys the media library configuration and prints the organization summary', async () => {
+    mockApi({uri: '/organizations/org-1'}).reply(200, {name: 'Acme'})
+    mockApi({uri: '/users/me'}).optionally().reply(200, {name: 'Sam'})
+    mockApi({
+      apiVersion: 'vX',
+      query: {limit: 'none', organizationId: 'org-1'},
+      uri: '/installations',
+    }).reply(200, installationsResponse([anInstallation({id: 'inst-1', name: 'media-library'})]))
+    mockApi({
+      apiVersion: 'vX',
+      query: {limit: 'none'},
+      uri: '/installations/inst-1/configs',
+    }).reply(200, {
+      data: [
+        {
+          createdAt: '2024-01-01T00:00:00Z',
+          deployedBy: 'gustav@sanity.io',
+          id: 'cfg-1',
+          isActive: true,
+          version: '1.0.0',
+        },
+      ],
+    })
+    mockApi({
+      apiVersion: 'vX',
+      method: 'delete',
+      uri: '/installations/inst-1/configs/cfg-1',
+    }).reply(200, {deleted: true})
+
+    const {stdout} = await testCommand(UndeployCommand, ['--yes'], {
+      mocks: {
+        cliConfig: {
+          app: unstable_defineMediaLibrary({
+            fields: [{name: 'alt', src: './src/alt.ts', title: 'Alt text'}],
+            organizationId: 'org-1',
+          }),
+        },
+        token: 'test-token',
+      },
+    })
+
+    expect(stdout).toContain('Media Library configuration undeployed in')
+    expect(stdout).toContain('Organization  Acme')
+    expect(stdout).toContain('Deleted Media Library configuration.')
+  })
+
   test('dashboard configuration dry run --json carries the config target and its summary', async () => {
     mockApi({
       apiVersion: 'vX',

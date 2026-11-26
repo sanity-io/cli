@@ -177,6 +177,7 @@ async function resolveConfigTarget({
         configs,
         deletes: 'config',
         id: null,
+        organizationId,
         payload: {
           appId: null,
           config: summarizeConfig(config),
