@@ -3,7 +3,7 @@ import {afterEach, describe, expect, test, vi} from 'vitest'
 
 import {resolveSchemaIcon} from '../resolveSchemaIcon.js'
 
-const mockResolveLocalPackage = vi.hoisted(() => vi.fn())
+const mockLoadStudioCliTooling = vi.hoisted(() => vi.fn())
 const mockResolveLocalPackageFrom = vi.hoisted(() => vi.fn())
 const mockResolveLocalPackagePath = vi.hoisted(() => vi.fn())
 
@@ -11,7 +11,7 @@ vi.mock('@sanity/cli-core', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@sanity/cli-core')>()
   return {
     ...actual,
-    resolveLocalPackage: mockResolveLocalPackage,
+    loadStudioCliTooling: mockLoadStudioCliTooling,
     resolveLocalPackageFrom: mockResolveLocalPackageFrom,
     resolveLocalPackagePath: mockResolveLocalPackagePath,
   }
@@ -47,16 +47,7 @@ function setupMocks() {
     }
   })
 
-  mockResolveLocalPackage.mockImplementation(async (pkg: string) => {
-    switch (pkg) {
-      case 'sanity': {
-        return {createDefaultIcon}
-      }
-      default: {
-        throw new Error(`Unexpected resolveLocalPackage call: ${pkg}`)
-      }
-    }
-  })
+  mockLoadStudioCliTooling.mockResolvedValue({createDefaultIcon})
 
   return {buildTheme, createDefaultIcon, fakeSanityUrl, mockTheme}
 }
@@ -85,30 +76,30 @@ describe('resolveSchemaIcon', () => {
     expect(mockResolveLocalPackageFrom).toHaveBeenCalledWith('@sanity/ui/theme', fakeSanityUrl)
   })
 
-  test('resolves sanity from the studio workDir when no icon is provided', async () => {
+  test('loads the studio tooling from the studio workDir when no icon is provided', async () => {
     setupMocks()
 
     await resolveSchemaIcon({title: 'Test', workDir})
 
-    expect(mockResolveLocalPackage).toHaveBeenCalledWith('sanity', workDir)
+    expect(mockLoadStudioCliTooling).toHaveBeenCalledWith(workDir)
   })
 
-  test('does not resolve sanity package when a valid component icon is provided', async () => {
+  test('does not load the studio tooling when a valid component icon is provided', async () => {
     setupMocks()
     const CustomIcon = () => <span>custom</span>
 
     await resolveSchemaIcon({icon: CustomIcon, title: 'Test', workDir})
 
-    expect(mockResolveLocalPackage).not.toHaveBeenCalledWith('sanity', workDir)
+    expect(mockLoadStudioCliTooling).not.toHaveBeenCalled()
   })
 
-  test('does not resolve sanity package when a React element icon is provided', async () => {
+  test('does not load the studio tooling when a React element icon is provided', async () => {
     setupMocks()
     const elementIcon = createElement('svg', null, createElement('path', {d: 'M0 0'}))
 
     await resolveSchemaIcon({icon: elementIcon, title: 'Test', workDir})
 
-    expect(mockResolveLocalPackage).not.toHaveBeenCalledWith('sanity', workDir)
+    expect(mockLoadStudioCliTooling).not.toHaveBeenCalled()
   })
 
   test('wraps output with the resolved ThemeProvider and built theme', async () => {

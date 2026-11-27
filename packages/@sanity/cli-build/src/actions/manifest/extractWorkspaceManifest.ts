@@ -1,4 +1,4 @@
-import {doImport, resolveLocalPackage} from '@sanity/cli-core'
+import {doImport, loadStudioCliTooling} from '@sanity/cli-core'
 import {type Schema} from '@sanity/types'
 import {type Workspace} from 'sanity'
 
@@ -64,9 +64,9 @@ export async function extractManifestSchemaTypes(
   const typeNames = schema.getTypeNames()
   const context = {schema}
 
-  const {createSchema} = await resolveLocalPackage<typeof import('sanity')>('sanity', workDir)
+  const {compileSchema} = await loadStudioCliTooling(workDir)
 
-  const studioDefaultTypeNames = createSchema({name: 'default', types: []}).getTypeNames()
+  const studioDefaultTypeNames = compileSchema({name: 'default', types: []}).getTypeNames()
 
   return typeNames
     .filter((typeName) => !studioDefaultTypeNames.includes(typeName))

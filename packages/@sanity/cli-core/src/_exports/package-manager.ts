@@ -1,4 +1,5 @@
 export {getLocalPackageDir, getLocalPackageVersion} from '../util/getLocalPackageVersion.js'
+export {loadStudioCliTooling, type StudioCliTooling} from '../util/loadStudioCliTooling.js'
 export {
   type DetectedPackageManager,
   getBinCommand,

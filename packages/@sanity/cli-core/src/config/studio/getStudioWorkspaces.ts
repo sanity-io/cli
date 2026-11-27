@@ -6,7 +6,7 @@ import {type Workspace} from 'sanity'
 
 import {subdebug} from '../../_exports/debug.js'
 import {doImport} from '../../util/doImport.js'
-import {resolveLocalPackage} from '../../util/resolveLocalPackage.js'
+import {loadStudioCliTooling} from '../../util/loadStudioCliTooling.js'
 import {findStudioConfigPath} from '../util/findStudioConfigPath.js'
 import {isStudioConfig} from './isStudioConfig.js'
 
@@ -42,10 +42,7 @@ export async function getStudioWorkspaces(configPath: string): Promise<Workspace
 
   const workDir = dirname(configPath)
   debug('Work dir %s', workDir)
-  const {resolveConfig} = await resolveLocalPackage<typeof import('sanity')>('sanity', workDir)
-  if (typeof resolveConfig !== 'function') {
-    throw new TypeError('Expected `resolveConfig` from `sanity` to be a function')
-  }
+  const tooling = await loadStudioCliTooling(workDir)
 
   // We will also want to stub out some configuration - we don't need to resolve the
   // users' logged in state, for instance - so let's disable the auth implementation.
@@ -55,7 +52,7 @@ export async function getStudioWorkspaces(configPath: string): Promise<Workspace
 
   // Imported lazily: rxjs and `@sanity/client` are only needed here, but this
   // module is reachable from the `@sanity/cli-core` barrel that every command loads.
-  const [{firstValueFrom, of}, {getEmptyAuth}] = await Promise.all([
+  const [{of}, {getEmptyAuth}] = await Promise.all([
     // eslint-disable-next-line eslint-js/no-restricted-syntax -- package import, not a file path
     import('rxjs'),
     // eslint-disable-next-line eslint-js/no-restricted-syntax -- static relative import, not a user file path
@@ -70,5 +67,5 @@ export async function getStudioWorkspaces(configPath: string): Promise<Workspace
 
   debug('Unauthed workspaces %o', unauthedWorkspaces)
 
-  return firstValueFrom(resolveConfig(unauthedWorkspaces))
+  return tooling.resolveWorkspaces(unauthedWorkspaces)
 }

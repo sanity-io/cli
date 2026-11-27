@@ -141,11 +141,12 @@ function createMockDeps(overrides?: Partial<ExtractWorkerDeps>): ExtractWorkerDe
         ],
       },
     ]),
-    resolveLocalPackage: vi.fn().mockResolvedValue({
-      createSchema: vi.fn().mockReturnValue({
+    loadStudioCliTooling: vi.fn().mockResolvedValue({
+      compileSchema: vi.fn().mockReturnValue({
         getTypeNames: () => ['document', 'string', 'number'],
       }),
     }),
+    resolveLocalPackage: vi.fn().mockResolvedValue({}),
     ...overrides,
   }
 }
@@ -414,12 +415,10 @@ describe('extractGraphQLAPIsWorker', () => {
 
   describe('happy path', () => {
     test('omits Studio release types from the GraphQL schema', async () => {
-      const createSchema = vi.fn().mockReturnValue({getTypeNames: () => ['document']})
+      const compileSchema = vi.fn().mockReturnValue({getTypeNames: () => ['document']})
       const deps = createMockDeps({
-        resolveLocalPackage: vi.fn().mockResolvedValue({
-          createSchema,
-          RELEASE_DOCUMENT_TYPE: 'system.release',
-        }),
+        loadStudioCliTooling: vi.fn().mockResolvedValue({compileSchema}),
+        resolveLocalPackage: vi.fn().mockResolvedValue({RELEASE_DOCUMENT_TYPE: 'system.release'}),
       })
       const post = {name: 'post', type: 'document'}
       mockResolveGraphQLApis.mockReturnValue([
@@ -437,7 +436,7 @@ describe('extractGraphQLAPIsWorker', () => {
 
       await extractGraphQLAPIsWorker(createMockPort(), createWorkerData(), deps)
 
-      expect(createSchema).toHaveBeenLastCalledWith({name: 'default', types: [post]})
+      expect(compileSchema).toHaveBeenLastCalledWith({name: 'default', types: [post]})
     })
 
     test('posts extracted APIs on success', async () => {
