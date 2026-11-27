@@ -20,38 +20,63 @@ export async function fetchDeploySummaryDetails(organizationId: string) {
   return {organizationName, userName}
 }
 
-export function formatDeploySummary(options: {
-  applicationId: string
-  created: boolean
-  durationMs: number
-  isApp: boolean
-  organizationId: string
-  organizationName?: string | null
-  showAppIdHint: boolean
-  title: string
-  url: string
-  userName?: string | null
-}): string {
-  const {applicationId, created, durationMs, isApp, showAppIdHint, title, url, userName} = options
+const CREATED_AS = {config: '', coreApp: ' as a new application', studio: ' as a new studio'}
+
+export function formatDeploySummary(
+  options: (
+    | {applicationId: string; showAppIdHint: boolean; type: 'coreApp' | 'studio'}
+    | {type: 'config'}
+  ) & {
+    created: boolean
+    durationMs: number
+    organizationId: string
+    organizationName?: string | null
+    title: string
+    url: string
+    userName?: string | null
+  },
+): string {
+  const {created, durationMs, title, url, userName} = options
 
   const summary = formatSummary({
     durationMs,
     heading: `${title} deployed`,
-    isApp,
+    isApp: options.type === 'coreApp',
     organization: options.organizationName ?? options.organizationId,
-    title,
+    // A config has no app or studio of its own to name.
+    title: options.type === 'config' ? undefined : title,
     url,
     version: userName ? `just now by ${userName}` : 'just now',
   })
-  const result = created
-    ? `Created ${title} as a new ${isApp ? 'application' : 'studio'}.`
-    : `Updated ${title}.`
+  const result = created ? `Created ${title}${CREATED_AS[options.type]}.` : `Updated ${title}.`
   const success = styleText('green', `  ${logSymbols.success} ${result}`)
-  const appIdHint = showAppIdHint
-    ? `\n  ${styleText('dim', 'Add')} deployment.appId: "${applicationId}" ${styleText('dim', 'to sanity.cli.ts so the next deploy updates it')}\n`
-    : ''
+  const appIdHint =
+    options.type !== 'config' && options.showAppIdHint
+      ? `\n  ${styleText('dim', 'Add')} deployment.appId: "${options.applicationId}" ${styleText('dim', 'to sanity.cli.ts so the next deploy updates it')}\n`
+      : ''
 
   return `${summary}
 ${success}
 ${appIdHint}`
+}
+
+export function formatUndeploySummary(options: {
+  durationMs: number
+  organizationId: string
+  organizationName?: string | null
+  title: string
+  url: string
+}): string {
+  const summary = formatSummary({
+    durationMs: options.durationMs,
+    heading: `${options.title} undeployed`,
+    isApp: false,
+    organization: options.organizationName ?? options.organizationId,
+    url: options.url,
+  })
+  const success = styleText('green', `  ${logSymbols.success} Deleted ${options.title}.`)
+
+  return `${summary}
+${success}
+`
 }

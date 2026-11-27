@@ -5,13 +5,18 @@ import {
   type UndeployTargetResolution,
 } from '@sanity/cli-core/undeploy'
 
-import {type WorkbenchConfig} from '../../defineApp.js'
+import {
+  type DashboardConfig,
+  type MediaLibraryConfig,
+  type WorkbenchConfig,
+} from '../../defineApp.js'
 import {
   deleteApplication,
   getApplication,
   getApplicationUrl,
   getWorkbenchUrl,
 } from '../../services/applications.js'
+import {deleteDashboard, getOrganizationDashboard} from '../../services/dashboard-configs.js'
 import {type ConfigSnapshot, deleteConfig, listConfigs} from '../../services/installations.js'
 import {resolveInstallationId, summarizeConfig} from '../deploy/deployConfig.js'
 import {type DeployableWorkbenchApp} from '../deploy/getWorkbench.js'
@@ -35,8 +40,8 @@ export type WorkbenchUndeployTarget =
  * The undeploy adapter for workbench apps and configs, mirroring what a
  * workbench deploy creates: an app that exposes interfaces deletes its Brett
  * application (the server soft-deletes its deployments and refuses singletons
- * with active installations); a config — the media library — deletes its
- * installation's config snapshots instead. The two are severed at the source,
+ * with active installations); a config deletes its deployed config instead
+ * (installation snapshots, or the dashboard configuration). The two are severed at the source,
  * so exactly one of `workbench`/`config` is supplied and the brand decides the path.
  */
 export function createWorkbenchUndeployAdapter(options: {
@@ -49,6 +54,7 @@ export function createWorkbenchUndeployAdapter(options: {
   const {appId, config, organizationId, type, workbench} = options
   // Workbench-internal, so kept off the reported target; resolveTarget stashes it for the delete.
   let installationId: string | undefined
+  let dashboardId: string | undefined
 
   return {
     resolveTarget: async () => {
@@ -56,12 +62,24 @@ export function createWorkbenchUndeployAdapter(options: {
         if (!workbench) throw new Error('No Dashboard app or config to undeploy')
         return resolveApplicationTarget({appId, type, workbench})
       }
+
+      if (config.appType === 'dashboard') {
+        const resolved = await resolveDashboardConfigTarget(config)
+        dashboardId = resolved.dashboardId
+        return resolved.resolution
+      }
+
       const resolved = await resolveConfigTarget({config, organizationId})
       installationId = resolved.installationId
       return resolved.resolution
     },
     type,
     async undeploy(target) {
+      if (dashboardId) {
+        await deleteDashboard(dashboardId)
+        return
+      }
+
       if (target.deletes === 'config') {
         if (!installationId) throw new Error('No installation resolved for the config undeploy')
         for (const snapshot of target.configs) {
@@ -118,7 +136,7 @@ async function resolveConfigTarget({
   config,
   organizationId,
 }: {
-  config: WorkbenchConfig
+  config: MediaLibraryConfig
   organizationId: string | undefined
 }): Promise<{
   installationId?: string
@@ -165,7 +183,41 @@ async function resolveConfigTarget({
           type: 'coreApp',
         },
         summary: [summarizeConfig(config)],
-        title: appType,
+        title: 'Media Library configuration',
+        type: 'coreApp',
+        url: getWorkbenchUrl(organizationId),
+      },
+      type: 'found',
+    },
+  }
+}
+
+async function resolveDashboardConfigTarget(config: DashboardConfig): Promise<{
+  dashboardId?: string
+  resolution: UndeployTargetResolution<WorkbenchUndeployTarget>
+}> {
+  const {organizationId} = config
+  const dashboard = await getOrganizationDashboard(organizationId)
+  if (!dashboard) {
+    return {
+      resolution: {
+        message: `No deployed dashboard configuration for organization "${organizationId}"`,
+        type: 'none',
+      },
+    }
+  }
+
+  return {
+    dashboardId: dashboard.id,
+    resolution: {
+      target: {
+        configs: [],
+        deletes: 'config',
+        id: null,
+        organizationId,
+        payload: {appId: null, config: summarizeConfig(config), type: 'coreApp'},
+        summary: [summarizeConfig(config)],
+        title: 'Dashboard configuration',
         type: 'coreApp',
         url: getWorkbenchUrl(organizationId),
       },

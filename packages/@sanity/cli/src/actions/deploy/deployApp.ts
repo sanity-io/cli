@@ -429,10 +429,10 @@ async function runAppDeployment(
           applicationId,
           created: applicationCreated,
           durationMs,
-          isApp: true,
           organizationId,
           showAppIdHint: !appId,
           title: appTitle,
+          type: 'coreApp',
           url,
         }),
       )

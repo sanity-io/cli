@@ -222,7 +222,7 @@ describe('createWorkbenchUndeployAdapter — config-only singleton', () => {
       configs: [expect.objectContaining({id: 'cfg-2'}), expect.objectContaining({id: 'cfg-1'})],
       deletes: 'config',
       id: null,
-      title: 'media-library',
+      title: 'Media Library configuration',
       url: 'https://org-1.sanity.run',
     })
   })
