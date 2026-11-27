@@ -66,6 +66,49 @@ describe('context mcp list', () => {
     expect(stdout).toBe('No MCP endpoints found\n')
   })
 
+  test('lists no endpoints when the organization has no document store yet', async () => {
+    mockList.mockRejectedValue(
+      Object.assign(new Error('Dataset for id "org:org-abc123" not found'), {
+        response: {
+          body: {},
+          headers: {},
+          method: 'GET',
+          statusCode: 404,
+          url: 'https://api.sanity.io',
+        },
+        statusCode: 404,
+      }),
+    )
+
+    const {error, stdout} = await testCommand(ListMcpEndpointsCommand, [
+      '--organization',
+      'org-abc123',
+      '--json',
+    ])
+
+    if (error) throw error
+    expect(JSON.parse(stdout)).toEqual([])
+  })
+
+  test('still errors when a 404 is not about the document store', async () => {
+    mockList.mockRejectedValue(
+      Object.assign(new Error('Organization not found'), {
+        response: {
+          body: {},
+          headers: {},
+          method: 'GET',
+          statusCode: 404,
+          url: 'https://api.sanity.io',
+        },
+        statusCode: 404,
+      }),
+    )
+
+    const {error} = await testCommand(ListMcpEndpointsCommand, ['--organization', 'org-abc123'])
+
+    expect(error?.message).toContain('Failed to list MCP endpoints: Organization not found')
+  })
+
   test('requires --organization when unattended and none is configured', async () => {
     const {error} = await testCommand(ListMcpEndpointsCommand, [], {
       mocks: {isInteractive: false},
