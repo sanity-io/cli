@@ -1,5 +1,30 @@
 # Changelog
 
+## 7.6.0
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-build-v7.5.1...cli-build-v7.6.0)
+
+_2026-11-27_
+
+### Features
+
+- **cli:** build and preview dashboard configurations ([#2262](https://github.com/sanity-io/cli/pull/2262)) ([60dafb5](https://github.com/sanity-io/cli/commit/60dafb5b385c3f804ef197701a4879514448985b))
+- **cli-build:** let installed sanity raise react and styled-components minimums ([#2297](https://github.com/sanity-io/cli/pull/2297)) ([8ef0d95](https://github.com/sanity-io/cli/commit/8ef0d95de31faf38552a4e0c3fc99dafeaed35f2))
+- **cli-core:** load studio schema and manifest helpers through sanity/cli getStudioCliTooling ([#2313](https://github.com/sanity-io/cli/pull/2313)) ([613ec7b](https://github.com/sanity-io/cli/commit/613ec7b3b8e705ab2ab01b6f4b7166248bb205f3))
+
+### Bug Fixes
+
+- **deps:** update sanity-tooling ([#2300](https://github.com/sanity-io/cli/pull/2300)) ([ba0ec2e](https://github.com/sanity-io/cli/commit/ba0ec2ea73ceabf64b43f7e1eb77a1ec92b5f6cd))
+- **deps:** update dependency dompurify to ^3.5.0 ([#2304](https://github.com/sanity-io/cli/pull/2304)) ([93c9e33](https://github.com/sanity-io/cli/commit/93c9e33cc234f49edd9d515af5fe65f6a2f3ae54))
+- **build:** preconnect to the project API host in the studio document ([#2299](https://github.com/sanity-io/cli/pull/2299)) ([c39ea2c](https://github.com/sanity-io/cli/commit/c39ea2cb0904078ee79347d6316843c4d11f707c))
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/workbench-cli bumped to 2.21.0
+    - @sanity/cli-core bumped to 3.17.0
+
 ## 7.5.1
 
 [Compare changes](https://github.com/sanity-io/cli/compare/cli-build-v7.5.0...cli-build-v7.5.1)

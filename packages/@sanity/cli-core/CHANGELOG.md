@@ -1,5 +1,21 @@
 # Changelog
 
+## 3.17.0
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-core-v3.16.0...cli-core-v3.17.0)
+
+_2026-11-27_
+
+### Features
+
+- **cli:** deploy and undeploy dashboard configurations ([#2263](https://github.com/sanity-io/cli/pull/2263)) ([23207ff](https://github.com/sanity-io/cli/commit/23207ff32fd6277ebad5f13706439dc64d245c4b))
+- **cli:** summarize media library config deploys like apps ([#2284](https://github.com/sanity-io/cli/pull/2284)) ([563974b](https://github.com/sanity-io/cli/commit/563974bc42a7ed19c7751c99812a501b2e2ed6b6))
+- **cli-core:** load studio schema and manifest helpers through sanity/cli getStudioCliTooling ([#2313](https://github.com/sanity-io/cli/pull/2313)) ([613ec7b](https://github.com/sanity-io/cli/commit/613ec7b3b8e705ab2ab01b6f4b7166248bb205f3))
+
+### Bug Fixes
+
+- **deps:** update dependency @inquirer/core to ^12.1.1 ([#2308](https://github.com/sanity-io/cli/pull/2308)) ([35ccc7c](https://github.com/sanity-io/cli/commit/35ccc7cb486dacf601a0c87de68e7c064580d5f2))
+
 ## 3.16.0
 
 [Compare changes](https://github.com/sanity-io/cli/compare/cli-core-v3.15.1...cli-core-v3.16.0)

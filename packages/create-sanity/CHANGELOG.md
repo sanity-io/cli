@@ -1,5 +1,21 @@
 # Changelog
 
+## 6.0.80
+
+[Compare changes](https://github.com/sanity-io/cli/compare/create-sanity-v6.0.79...create-sanity-v6.0.80)
+
+_2026-11-27_
+
+### Bug Fixes
+
+- **deps:** update sanity-tooling ([#2293](https://github.com/sanity-io/cli/pull/2293)) ([75b6d98](https://github.com/sanity-io/cli/commit/75b6d987da919228a7a0913d60e0daee3f3c8fc0))
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/cli-setup bumped to 0.1.1
+
 ## 6.0.79
 
 [Compare changes](https://github.com/sanity-io/cli/compare/create-sanity-v6.0.78...create-sanity-v6.0.79)

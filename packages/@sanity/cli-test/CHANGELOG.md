@@ -1,5 +1,21 @@
 # Changelog
 
+## 27.0.0
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-test-v26.0.0...cli-test-v27.0.0)
+
+_2026-11-27_
+
+### Bug Fixes
+
+- **cli-core:** load studio schema and manifest helpers through sanity/cli getStudioCliTooling ([#2313](https://github.com/sanity-io/cli/pull/2313)) ([613ec7b](https://github.com/sanity-io/cli/commit/613ec7b3b8e705ab2ab01b6f4b7166248bb205f3))
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/cli-core bumped to 3.17.0
+
 ## 26.0.0
 
 [Compare changes](https://github.com/sanity-io/cli/compare/cli-test-v25.0.2...cli-test-v26.0.0)

@@ -1,5 +1,32 @@
 # @sanity/workbench-cli
 
+## 2.21.0
+
+[Compare changes](https://github.com/sanity-io/cli/compare/workbench-cli-v2.20.0...workbench-cli-v2.21.0)
+
+_2026-11-27_
+
+### Features
+
+- **workbench-cli:** define and develop dashboard configurations ([#2261](https://github.com/sanity-io/cli/pull/2261)) ([2109715](https://github.com/sanity-io/cli/commit/2109715b8b9dc9059a0a0886beb5f8c2654605d3))
+- **cli:** build and preview dashboard configurations ([#2262](https://github.com/sanity-io/cli/pull/2262)) ([60dafb5](https://github.com/sanity-io/cli/commit/60dafb5b385c3f804ef197701a4879514448985b))
+- **cli:** deploy and undeploy dashboard configurations ([#2263](https://github.com/sanity-io/cli/pull/2263)) ([23207ff](https://github.com/sanity-io/cli/commit/23207ff32fd6277ebad5f13706439dc64d245c4b))
+- **cli:** summarize media library config deploys like apps ([#2284](https://github.com/sanity-io/cli/pull/2284)) ([563974b](https://github.com/sanity-io/cli/commit/563974bc42a7ed19c7751c99812a501b2e2ed6b6))
+- **cli:** refuse to preview an already served app ([#2298](https://github.com/sanity-io/cli/pull/2298)) ([d5e1de3](https://github.com/sanity-io/cli/commit/d5e1de3c6250a34a1a5b26ef2b43dfb250503609))
+- **workbench-cli:** make title optional in defineApplication ([#2287](https://github.com/sanity-io/cli/pull/2287)) ([4356d8e](https://github.com/sanity-io/cli/commit/4356d8e77da6ce4962ffe2243e756fd8be34980e))
+
+### Bug Fixes
+
+- **workbench-cli:** print Dashboard URLs with lowercase org ids ([#2285](https://github.com/sanity-io/cli/pull/2285)) ([44a682a](https://github.com/sanity-io/cli/commit/44a682a881aa1b830462b67e1466d18034acd82e))
+- **deps:** update dependency @module-federation/runtime to v2.9.4 ([#2302](https://github.com/sanity-io/cli/pull/2302)) ([a82e53d](https://github.com/sanity-io/cli/commit/a82e53d34a0d56a801584f669be2c30da98a82b1))
+- **deps:** update dependency @module-federation/vite to v1.25.0 ([#2303](https://github.com/sanity-io/cli/pull/2303)) ([54db0cb](https://github.com/sanity-io/cli/commit/54db0cb52b32b581e0c839f2a059e41bcc370db0))
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/cli-core bumped to 3.17.0
+
 ## 2.20.0
 
 [Compare changes](https://github.com/sanity-io/cli/compare/workbench-cli-v2.19.1...workbench-cli-v2.20.0)

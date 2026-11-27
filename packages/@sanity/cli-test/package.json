@@ -1,6 +1,6 @@
 {
   "name": "@sanity/cli-test",
-  "version": "26.0.0",
+  "version": "27.0.0",
   "description": "Sanity CLI test helpers and utilities",
   "keywords": [
     "cli",
