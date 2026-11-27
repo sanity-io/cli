@@ -5,6 +5,7 @@ import {logSymbols} from '@sanity/cli-core/ux'
 import debounce from 'lodash-es/debounce.js'
 import mean from 'lodash-es/mean.js'
 import once from 'lodash-es/once.js'
+import picomatch from 'picomatch'
 import {type Plugin} from 'vite'
 
 import {
@@ -246,9 +247,12 @@ export function sanitySchemaExtractionPlugin(options: SchemaExtractionPluginOpti
 
       trace?.log({enforceRequiredFields, schemaFormat: format, step: 'started'})
 
-      // Add schema patterns to Vite's watcher
-      const absolutePatterns = watchPatterns.map((pattern) => path.join(resolvedWorkDir, pattern))
-      server.watcher.add(absolutePatterns)
+      // Chokidar does not expand globs, so register the static base directory of each pattern
+      // (which may be outside the Studio directory) and let `isMatch` filter the events.
+      const watchRoots = new Set(
+        watchPatterns.map((pattern) => path.resolve(resolvedWorkDir, picomatch.scan(pattern).base)),
+      )
+      server.watcher.add([...watchRoots])
 
       // Prepare function to log "stopped" event to trace and complete the trace
       const onClose = once(() => {
