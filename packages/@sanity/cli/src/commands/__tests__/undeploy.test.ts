@@ -739,6 +739,23 @@ describe('#undeploy', () => {
     })
   })
 
+  test('dashboard configuration dry run lists the config it deletes', async () => {
+    mockApi({
+      apiVersion: 'vX',
+      query: {organizationId: 'org-1'},
+      uri: '/applications/dashboards',
+    }).reply(200, {data: [{id: 'dash-1', organizationId: 'org-1'}], nextCursor: null})
+
+    const {stdout} = await testCommand(UndeployCommand, ['--dry-run'], {
+      mocks: {
+        cliConfig: {app: defineDashboard({organizationId: 'org-1', src: './src/dashboard.ts'})},
+        token: 'test-token',
+      },
+    })
+
+    expect(stdout).toContain('Dashboard configuration: ./src/dashboard.ts')
+  })
+
   test('dashboard configuration dry run reports nothing to undeploy when none is deployed', async () => {
     mockApi({
       apiVersion: 'vX',

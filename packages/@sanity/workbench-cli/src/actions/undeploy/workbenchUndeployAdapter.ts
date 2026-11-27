@@ -216,6 +216,7 @@ async function resolveDashboardConfigTarget(config: DashboardConfig): Promise<{
         id: null,
         organizationId,
         payload: {appId: null, config: summarizeConfig(config), type: 'coreApp'},
+        summary: [summarizeConfig(config)],
         title: 'Dashboard configuration',
         type: 'coreApp',
         url: getWorkbenchUrl(organizationId),
