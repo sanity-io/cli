@@ -98,6 +98,22 @@ const defaultMocks = {
   isInteractive: true,
 }
 
+async function redeployExisting(app: ReturnType<typeof defineApplication>, args: string[]) {
+  const cwd = await testFixture('basic-app')
+  process.cwd = () => cwd
+  mockApi({apiVersion: 'vX', uri: '/applications/app_existing'}).reply(200, {
+    id: 'app_existing',
+    organizationId,
+    slug: 'drop-desk-host',
+    title: 'Workbench App',
+    type: 'coreApp',
+  })
+  return testCommand(DeployCommand, args, {
+    config: {root: cwd},
+    mocks: {cliConfig: {app, deployment: {appId: 'app_existing'}}},
+  })
+}
+
 describe('#deploy app', () => {
   beforeEach(async () => {
     // Set up default mocks
@@ -112,8 +128,8 @@ describe('#deploy app', () => {
     mockListApplications.mockResolvedValue([])
     // Default to empty manifest for app deployments
     mockExtractCoreAppManifest.mockResolvedValue(undefined)
-    // Optional: --json and dry runs skip the deploy summary requests.
-    mockApi({uri: `/organizations/${organizationId}`})
+    // Optional: --json skips the deployer lookup, and deploys that fail early make neither request.
+    mockApi({apiVersion: 'v2026-11-27', uri: `/organizations/${organizationId}`})
       .optionally()
       .reply(200, {name: 'Acme'})
       .persist()
@@ -1000,6 +1016,69 @@ describe('#deploy app', () => {
     const dryRun = await deploy(['--dry-run', '--json'])
     if (dryRun.error) throw dryRun.error
     expect(JSON.parse(dryRun.stdout).url).toBe(`https://${organizationId}.sanity.run`)
+  })
+
+  test.each([
+    {
+      app: {entry: './src/App.tsx'},
+      label: 'an app view',
+      url: 'https://acme.sanity.run/applications/drop-desk-host',
+    },
+    {
+      app: {views: [definePanelView({name: 'feed', src: './src/App.tsx', title: 'Feed'})]},
+      label: 'only a panel',
+      url: 'https://acme.sanity.run',
+    },
+  ])(
+    "an app with $label links the organization's host slug in human, --json and --dry-run output",
+    async ({app: entry, url}) => {
+      // Replaces the shared lookups, which answer without a host slug.
+      cleanAll()
+      mockApi({apiVersion: 'v2026-11-27', uri: `/organizations/${organizationId}`})
+        .reply(200, {name: 'Acme', slug: 'acme'})
+        .persist()
+      mockApi({uri: '/users/me'}).optionally().reply(200, {name: 'Sam'}).persist()
+      const app = defineApplication({
+        ...entry,
+        organizationId,
+        slug: 'drop-desk-host',
+        title: 'Workbench App',
+      })
+
+      const human = await redeployExisting(app, [])
+      if (human.error) throw human.error
+      expect(human.stdout).toMatch(new RegExp(`URL\\s+${url}\n`))
+
+      const json = await redeployExisting(app, ['--json'])
+      if (json.error) throw json.error
+      expect(JSON.parse(json.stdout).url).toBe(url)
+
+      const dryRun = await redeployExisting(app, ['--dry-run', '--json'])
+      if (dryRun.error) throw dryRun.error
+      expect(JSON.parse(dryRun.stdout).url).toBe(url)
+    },
+  )
+
+  test('a failed organization lookup still deploys, linking the org ID host', async () => {
+    cleanAll()
+    mockApi({apiVersion: 'v2026-11-27', uri: `/organizations/${organizationId}`}).reply(403, {
+      message: 'Forbidden',
+    })
+    mockApi({uri: '/users/me'}).reply(200, {name: 'Sam'})
+    const app = defineApplication({
+      entry: './src/App.tsx',
+      organizationId,
+      slug: 'drop-desk-host',
+      title: 'Workbench App',
+    })
+
+    const {error, stdout} = await redeployExisting(app, [])
+
+    expect(error).toBeUndefined()
+    expect(stdout).toMatch(
+      new RegExp(`URL\\s+https://${organizationId}\\.sanity\\.run/applications/drop-desk-host\n`),
+    )
+    expect(stdout).toContain('Organization  org-id')
   })
 
   test.each([

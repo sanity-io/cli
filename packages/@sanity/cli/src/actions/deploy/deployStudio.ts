@@ -11,6 +11,7 @@ import {
   createStudio,
   deployWorkbenchApp,
   fetchDeploySummaryDetails,
+  fetchOrganizationSummary,
   formatDeploySummary,
   getApplicationUrl,
   getWorkbench,
@@ -101,6 +102,14 @@ async function runStudioDeployment(
   let workbenchApp: {externalUrl?: string | null} | undefined
   let externalUrl: string | undefined
   let targetAppId = appId
+  // Every Dashboard URL below is built on the org's host slug (`--json` included); the
+  // deployer lookup only feeds the summary, so it overlaps the build instead.
+  const organization =
+    workbench && organizationId ? fetchOrganizationSummary(organizationId) : undefined
+  const summaryDetails =
+    organization && organizationId && !flags.json
+      ? fetchDeploySummaryDetails(organizationId, organization)
+      : undefined
   if (workbench) {
     reporter.report(
       organizationId
@@ -115,6 +124,7 @@ async function runStudioDeployment(
     workbenchApp = (
       await checkStudioTarget(reporter, {
         appId: targetAppId,
+        hostSlug: (await organization)?.hostSlug,
         isWorkbenchApp: true,
         organizationId,
         slug: workbench.slug,
@@ -147,10 +157,6 @@ async function runStudioDeployment(
     !dryRun && workbench?.icon ? await readAppIcon(workDir, workbench.icon) : undefined
 
   const startedAt = Date.now()
-  const summaryDetails =
-    workbench && organizationId && !flags.json
-      ? fetchDeploySummaryDetails(organizationId)
-      : undefined
 
   // Create the studio before the build so the bundle carries its real id. A
   // redeploy already has it from `deployment.appId`; a dry run skips creation.
@@ -248,12 +254,11 @@ async function runStudioDeployment(
         workDir,
         workspaces: toWorkspaces(studioManifest),
       })
-      const url = getApplicationUrl({
-        id: applicationId,
-        organizationId,
-        slug: workbench.slug,
-        type: 'studio',
-      })
+      const hostSlug = (await organization)?.hostSlug
+      const url = getApplicationUrl(
+        {id: applicationId, organizationId, slug: workbench.slug, type: 'studio'},
+        hostSlug,
+      )
       const durationMs = Date.now() - startedAt
       output.log(
         formatDeploySummary({
@@ -269,7 +274,13 @@ async function runStudioDeployment(
         }),
       )
       if (isExternallyHosted)
-        logExternalHost({built: flags.build, organizationId, output, sourceDir})
+        logExternalHost({
+          built: flags.build,
+          hostSlug,
+          organizationId,
+          output,
+          sourceDir,
+        })
       return {
         action: applicationCreated ? 'create' : 'update',
         application: workbenchApp ?? null,
@@ -496,20 +507,24 @@ function toWorkspaces(manifest: StudioManifest | null): BrettWorkspace[] {
 /** Tells the customer what their host must do for the Dashboard to load the studio from it. */
 function logExternalHost({
   built,
+  hostSlug,
   organizationId,
   output,
   sourceDir,
 }: {
   built: boolean
+  hostSlug?: string | null
   organizationId: string
   output: DeployAppOptions['output']
   sourceDir: string
 }): void {
   const dir = `${relative(process.cwd(), sourceDir) || '.'}/`
+  // The Dashboard is served on both the org ID host and the slug host, so the studio's host must allow both.
+  const origins = [getWorkbenchUrl(organizationId), getWorkbenchUrl(organizationId, hostSlug)]
   output.log(`
 The Dashboard loads this studio from your host, which must:
   1. Serve ${dir} unchanged at the root of its URL (/mf-manifest.json, /remoteEntry-*.js, /static/*)
-  2. Send Access-Control-Allow-Origin for ${getWorkbenchUrl(organizationId)}
+  2. Send Access-Control-Allow-Origin for ${[...new Set(origins)].join(' and ')}
   3. Respond without cookies or a sign-in${built ? `\n\nThis deploy rebuilt ${dir}: copy it to your host before opening the studio in the Dashboard.` : ''}`)
 }
 

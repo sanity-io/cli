@@ -28,12 +28,18 @@ vi.mock('@sanity/cli-core/ux', async () => import('@sanity/cli-test/mocks/cli-co
 const mockDeployConfig = vi.hoisted(() => vi.fn())
 const mockResolveInstallationId = vi.hoisted(() => vi.fn())
 const mockResolveWorkbenchConfig = vi.hoisted(() => vi.fn())
+const mockFetchOrganizationSummary = vi.hoisted(() => vi.fn())
 vi.mock('@sanity/workbench-cli/deploy', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@sanity/workbench-cli/deploy')>()),
   createCoreApp: vi.fn(),
   deployConfig: mockDeployConfig,
   deployWorkbenchApp: vi.fn(),
-  fetchDeploySummaryDetails: vi.fn(async () => ({organizationName: 'Acme', userName: 'Sam'})),
+  fetchDeploySummaryDetails: vi.fn(async () => ({
+    hostSlug: null,
+    organizationName: 'Acme',
+    userName: 'Sam',
+  })),
+  fetchOrganizationSummary: mockFetchOrganizationSummary,
   getApplicationUrl: vi.fn(),
   getWorkbench: vi.fn(() => null),
   resolveInstallationId: mockResolveInstallationId,
@@ -120,6 +126,7 @@ describe('deployApp aspect-sync wiring (media-library config)', () => {
     mockPlanAspectSync.mockResolvedValue({plan: PLAN})
     mockDeployConfig.mockResolvedValue(undefined)
     mockApplyAspectSync.mockResolvedValue(undefined)
+    mockFetchOrganizationSummary.mockResolvedValue({hostSlug: null, organizationName: 'Acme'})
   })
   afterEach(() => vi.clearAllMocks())
 
@@ -144,6 +151,16 @@ describe('deployApp aspect-sync wiring (media-library config)', () => {
     expect(logged).toContain('Organization  Acme')
     expect(logged).toContain('https://org-1.sanity.run')
     expect(logged).toContain('Updated Media Library configuration.')
+  })
+
+  test("the summary links the organization's host slug when it has one", async () => {
+    mockFetchOrganizationSummary.mockResolvedValue({hostSlug: 'acme', organizationName: 'Acme'})
+    const output = mockOutput()
+
+    await deployApp(deployOptions({}, output))
+
+    const logged = vi.mocked(output.log).mock.calls.join('\n')
+    expect(logged).toContain('https://acme.sanity.run')
   })
 
   test('a config of another appType deploys without the media-library aspect sync', async () => {

@@ -2,6 +2,7 @@ import {getErrorMessage} from '@sanity/cli-core/errors'
 import {type DashboardConfig} from '@sanity/workbench-cli'
 import {
   fetchDeploySummaryDetails,
+  fetchOrganizationSummary,
   formatDeploySummary,
   getOrganizationDashboard,
   getWorkbenchUrl,
@@ -29,7 +30,11 @@ export function deployDashboardConfig(
     async run({cliConfig, flags, output, projectRoot, sourceDir}, reporter) {
       const workDir = projectRoot.directory
       const startedAt = Date.now()
-      const summaryDetails = flags.json ? undefined : fetchDeploySummaryDetails(organizationId)
+      // The Dashboard URL is built on the org's host slug (`--json` included).
+      const organization = fetchOrganizationSummary(organizationId)
+      const summaryDetails = flags.json
+        ? undefined
+        : fetchDeploySummaryDetails(organizationId, organization)
       const version = await checkPackageVersion(reporter, {moduleName: 'sanity', workDir})
       reporter.report({message: `Organization: ${organizationId}`, status: 'pass'})
 
@@ -54,7 +59,7 @@ export function deployDashboardConfig(
 
       const {dashboard} = lookup
       const action = dashboard ? 'update' : 'create'
-      const url = getWorkbenchUrl(organizationId)
+      const url = getWorkbenchUrl(organizationId, (await organization).hostSlug)
       reporter.report({
         message: dashboard
           ? 'Updates the dashboard configuration'

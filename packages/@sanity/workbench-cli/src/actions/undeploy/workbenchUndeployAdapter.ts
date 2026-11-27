@@ -19,6 +19,7 @@ import {
 import {deleteDashboard, getOrganizationDashboard} from '../../services/dashboard-configs.js'
 import {type ConfigSnapshot, deleteConfig, listConfigs} from '../../services/installations.js'
 import {resolveInstallationId, summarizeConfig} from '../deploy/deployConfig.js'
+import {fetchOrganizationSummary} from '../deploy/deploySummary.js'
 import {type DeployableWorkbenchApp} from '../deploy/getWorkbench.js'
 import {
   type DeployedView,
@@ -115,6 +116,7 @@ async function resolveApplicationTarget({
   }
 
   const {lines, services, views} = summarizeInterfaces(workbench)
+  const {hostSlug} = await fetchOrganizationSummary(application.organizationId)
   return {
     target: {
       application,
@@ -125,7 +127,7 @@ async function resolveApplicationTarget({
       summary: lines,
       title: application.title,
       type,
-      url: getApplicationUrl({...application, type}),
+      url: getApplicationUrl({...application, type}, hostSlug),
       views,
     },
     type: 'found',
@@ -170,6 +172,7 @@ async function resolveConfigTarget({
     }
   }
 
+  const {hostSlug} = await fetchOrganizationSummary(organizationId)
   return {
     installationId,
     resolution: {
@@ -186,7 +189,7 @@ async function resolveConfigTarget({
         summary: [summarizeConfig(config)],
         title: 'Media Library configuration',
         type: 'coreApp',
-        url: getWorkbenchUrl(organizationId),
+        url: getWorkbenchUrl(organizationId, hostSlug),
       },
       type: 'found',
     },
@@ -208,6 +211,7 @@ async function resolveDashboardConfigTarget(config: DashboardConfig): Promise<{
     }
   }
 
+  const {hostSlug} = await fetchOrganizationSummary(organizationId)
   return {
     dashboardId: dashboard.id,
     resolution: {
@@ -220,7 +224,7 @@ async function resolveDashboardConfigTarget(config: DashboardConfig): Promise<{
         summary: [summarizeConfig(config)],
         title: 'Dashboard configuration',
         type: 'coreApp',
-        url: getWorkbenchUrl(organizationId),
+        url: getWorkbenchUrl(organizationId, hostSlug),
       },
       type: 'found',
     },

@@ -6,18 +6,36 @@ import {getOrganization} from '../../services/organizations.js'
 import {getCurrentUser} from '../../services/users.js'
 import {formatSummary, SUMMARY_LOOKUP_TIMEOUT_MS} from '../summary.js'
 
-export async function fetchDeploySummaryDetails(organizationId: string) {
-  const signal = AbortSignal.timeout(SUMMARY_LOOKUP_TIMEOUT_MS)
-  const [organizationName, userName] = await Promise.all([
-    getOrganization(organizationId, signal)
-      .then((org) => org.name)
-      .catch(() => null),
-    getCurrentUser(signal)
+/**
+ * The organization's name, and its host slug for Dashboard URLs. A failed or
+ * slow (over 3s) lookup reads as `null`, so a deploy falls back to the org ID
+ * host instead of failing.
+ */
+export async function fetchOrganizationSummary(organizationId: string) {
+  const organization = await getOrganization(
+    organizationId,
+    AbortSignal.timeout(SUMMARY_LOOKUP_TIMEOUT_MS),
+  ).catch(() => null)
+
+  return {hostSlug: organization?.slug ?? null, organizationName: organization?.name ?? null}
+}
+
+/**
+ * The organization and deployer for a deploy's summary. Pass the command's
+ * {@link fetchOrganizationSummary} lookup to share it rather than look the org up again.
+ */
+export async function fetchDeploySummaryDetails(
+  organizationId: string,
+  organization?: ReturnType<typeof fetchOrganizationSummary>,
+) {
+  const [{hostSlug, organizationName}, userName] = await Promise.all([
+    organization ?? fetchOrganizationSummary(organizationId),
+    getCurrentUser(AbortSignal.timeout(SUMMARY_LOOKUP_TIMEOUT_MS))
       .then((user) => user.name)
       .catch(() => null),
   ])
 
-  return {organizationName, userName}
+  return {hostSlug, organizationName, userName}
 }
 
 const CREATED_AS = {config: '', coreApp: ' as a new application', studio: ' as a new studio'}

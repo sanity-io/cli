@@ -719,7 +719,10 @@ describe('#undeploy', () => {
   })
 
   test('undeploys the media library configuration and prints the organization summary', async () => {
-    mockApi({uri: '/organizations/org-1'}).reply(200, {name: 'Acme'})
+    // Looked up twice: once for the Dashboard URL, once for the summary.
+    mockApi({apiVersion: 'v2026-11-27', uri: '/organizations/org-1'})
+      .times(2)
+      .reply(200, {name: 'Acme', slug: null})
     mockApi({uri: '/users/me'}).optionally().reply(200, {name: 'Sam'})
     mockApi({
       apiVersion: 'vX',
@@ -820,7 +823,10 @@ describe('#undeploy', () => {
   })
 
   test('undeploys the dashboard configuration and prints the organization summary', async () => {
-    mockApi({uri: '/organizations/org-1'}).reply(200, {name: 'Acme'})
+    // Looked up twice: once for the Dashboard URL, once for the summary.
+    mockApi({apiVersion: 'v2026-11-27', uri: '/organizations/org-1'})
+      .times(2)
+      .reply(200, {name: 'Acme', slug: null})
     mockApi({uri: '/users/me'}).optionally().reply(200, {name: 'Sam'})
     mockApi({
       apiVersion: 'vX',
@@ -843,6 +849,32 @@ describe('#undeploy', () => {
     expect(stdout).toContain('Dashboard configuration undeployed in')
     expect(stdout).toContain('Organization  Acme')
     expect(stdout).toContain('Deleted Dashboard configuration.')
+  })
+
+  test("a dashboard configuration undeploy links the organization's host slug", async () => {
+    mockApi({apiVersion: 'v2026-11-27', uri: '/organizations/org-1'}).reply(200, {
+      name: 'Acme',
+      slug: 'acme',
+    })
+    mockApi({
+      apiVersion: 'vX',
+      query: {organizationId: 'org-1'},
+      uri: '/applications/dashboards',
+    }).reply(200, {data: [{id: 'dash-1', organizationId: 'org-1'}], nextCursor: null})
+    mockApi({
+      apiVersion: 'vX',
+      method: 'delete',
+      uri: '/applications/dashboards/dash-1',
+    }).reply(200, {deleted: true})
+
+    const {stdout} = await testCommand(UndeployCommand, ['--yes', '--json'], {
+      mocks: {
+        cliConfig: {app: defineDashboard({organizationId: 'org-1', src: './src/dashboard.ts'})},
+        token: 'test-token',
+      },
+    })
+
+    expect(JSON.parse(stdout)).toMatchObject({undeployed: true, url: 'https://acme.sanity.run'})
   })
 
   test('fails when Brett refuses to delete the dashboard configuration', async () => {

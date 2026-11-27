@@ -4,7 +4,11 @@ import {getGlobalCliClient} from '@sanity/cli-core'
 import {logSymbols} from '@sanity/cli-core/ux'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
-import {fetchDeploySummaryDetails, formatDeploySummary} from '../deploySummary.js'
+import {
+  fetchDeploySummaryDetails,
+  fetchOrganizationSummary,
+  formatDeploySummary,
+} from '../deploySummary.js'
 
 vi.mock(import('@sanity/cli-core'), async (importOriginal) => ({
   ...(await importOriginal()),
@@ -32,7 +36,7 @@ function summarize(options: Partial<Parameters<typeof formatDeploySummary>[0]> =
 
 beforeEach(() => {
   mockRequest.mockImplementation(async ({url: path}: {url: string}) => {
-    if (path === '/organizations/org-1') return {name: 'Acme'}
+    if (path === '/organizations/org-1') return {name: 'Acme', slug: 'acme'}
     if (path === '/users/me') return {name: 'Sam'}
     throw new Error(`Unexpected request ${path}`)
   })
@@ -45,11 +49,16 @@ afterEach(() => {
 })
 
 describe('fetchDeploySummaryDetails', () => {
-  test('resolves the organization and deployer names', async () => {
+  test("resolves the organization and deployer names, and the organization's host slug", async () => {
     await expect(fetchDeploySummaryDetails('org-1')).resolves.toEqual({
+      hostSlug: 'acme',
       organizationName: 'Acme',
       userName: 'Sam',
     })
+    // Older API versions return the stored slug, which isn't always a valid host.
+    expect(getGlobalCliClient).toHaveBeenCalledWith(
+      expect.objectContaining({apiVersion: 'v2026-11-27'}),
+    )
   })
 
   test('drops the deployer name when its lookup outlasts the 3s deadline', async () => {
@@ -57,7 +66,7 @@ describe('fetchDeploySummaryDetails', () => {
     vi.spyOn(AbortSignal, 'timeout').mockReturnValue(deadline.signal)
     mockRequest.mockImplementation(
       async ({signal, url: path}: {signal: AbortSignal; url: string}) => {
-        if (path === '/organizations/org-1') return {name: 'Acme'}
+        if (path === '/organizations/org-1') return {name: 'Acme', slug: null}
 
         return new Promise((_, reject) => signal.addEventListener('abort', reject))
       },
@@ -67,7 +76,11 @@ describe('fetchDeploySummaryDetails', () => {
     await vi.waitFor(() => expect(mockRequest).toHaveBeenCalledTimes(2))
     deadline.abort()
 
-    await expect(details).resolves.toEqual({organizationName: 'Acme', userName: null})
+    await expect(details).resolves.toEqual({
+      hostSlug: null,
+      organizationName: 'Acme',
+      userName: null,
+    })
     expect(AbortSignal.timeout).toHaveBeenCalledWith(3000)
   })
 
@@ -78,9 +91,28 @@ describe('fetchDeploySummaryDetails', () => {
     })
 
     await expect(fetchDeploySummaryDetails('org-1')).resolves.toEqual({
+      hostSlug: null,
       organizationName: null,
       userName: 'Sam',
     })
+  })
+})
+
+describe('fetchOrganizationSummary', () => {
+  test('falls back to no host slug when the organization lookup outlasts the 3s deadline', async () => {
+    const deadline = new AbortController()
+    vi.spyOn(AbortSignal, 'timeout').mockReturnValue(deadline.signal)
+    mockRequest.mockImplementation(
+      ({signal}: {signal: AbortSignal}) =>
+        new Promise((_, reject) => signal.addEventListener('abort', reject)),
+    )
+
+    const summary = fetchOrganizationSummary('org-1')
+    await vi.waitFor(() => expect(mockRequest).toHaveBeenCalledTimes(1))
+    deadline.abort()
+
+    await expect(summary).resolves.toEqual({hostSlug: null, organizationName: null})
+    expect(AbortSignal.timeout).toHaveBeenCalledWith(3000)
   })
 })
 

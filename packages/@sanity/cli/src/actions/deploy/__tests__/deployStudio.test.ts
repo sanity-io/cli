@@ -10,6 +10,7 @@ import {
   createStudio,
   deployWorkbenchApp,
   fetchDeploySummaryDetails,
+  fetchOrganizationSummary,
   getApplication,
   listApplications,
   selectWorkbenchAppId,
@@ -35,7 +36,12 @@ vi.mock(import('@sanity/workbench-cli/deploy'), async (importOriginal) => ({
   ...(await importOriginal()),
   createStudio: vi.fn(),
   deployWorkbenchApp: vi.fn(),
-  fetchDeploySummaryDetails: vi.fn(async () => ({organizationName: 'Acme', userName: 'Sam'})),
+  fetchDeploySummaryDetails: vi.fn(async () => ({
+    hostSlug: null,
+    organizationName: 'Acme',
+    userName: 'Sam',
+  })),
+  fetchOrganizationSummary: vi.fn(async () => ({hostSlug: null, organizationName: 'Acme'})),
   getApplication: vi.fn(),
   listApplications: vi.fn(),
   selectWorkbenchAppId: vi.fn(),
@@ -208,7 +214,48 @@ describe('deployStudio (federated studio)', () => {
     expect(vi.mocked(deployStudioSchemasAndManifests).mock.calls[0][0]).toEqual(
       expect.objectContaining({applicationId: 'studio-1'}),
     )
+  })
+
+  test("reports the URL on the organization's host slug when it has one", async () => {
+    vi.mocked(fetchOrganizationSummary).mockResolvedValueOnce({
+      hostSlug: 'acme',
+      organizationName: 'Acme',
+    })
+    const options = deployOptions()
+
+    await deployStudio(options)
+
+    expect(deployedPayload(options.output).url).toBe('https://acme.sanity.run/studios/my-studio')
+    // `--json` prints no summary, so the deployer is never looked up.
     expect(fetchDeploySummaryDetails).not.toHaveBeenCalled()
+  })
+
+  test("a --dry-run names the existing studio on the organization's host slug", async () => {
+    vi.mocked(fetchOrganizationSummary).mockResolvedValueOnce({
+      hostSlug: 'acme',
+      organizationName: 'Acme',
+    })
+    mockGetApplication.mockResolvedValue(
+      toApplication({
+        id: 'studio-9',
+        organizationId: 'org-1',
+        slug: 'my-studio',
+        title: 'My Studio',
+        type: 'studio',
+      }),
+    )
+    const options = deployOptions({
+      cliConfig: {deployment: {appId: 'studio-9'}},
+      flags: {'dry-run': true, json: false},
+    })
+
+    await deployStudio(options)
+
+    const logged = vi
+      .mocked(options.output.log)
+      .mock.calls.map(([line]) => line)
+      .join('\n')
+    expect(logged).toContain('Deploys to existing studio https://acme.sanity.run/studios/my-studio')
   })
 
   test('a redeploy targets `deployment.appId` and reports the resolved record', async () => {
@@ -428,10 +475,27 @@ describe('deployStudio --external (federated studio)', () => {
       .mock.calls.map(([line]) => line)
       .join('\n')
     expect(logged).toContain('/mf-manifest.json')
-    expect(logged).toContain('Access-Control-Allow-Origin')
-    expect(logged).toContain('https://org-1.sanity.run')
+    expect(logged).toContain('Send Access-Control-Allow-Origin for https://org-1.sanity.run\n')
     expect(logged).toContain('cookies')
     expect(logged).toContain('copy it to your host')
+  })
+
+  test('asks the host to allow both the org ID host and the host slug', async () => {
+    vi.mocked(fetchOrganizationSummary).mockResolvedValueOnce({
+      hostSlug: 'acme',
+      organizationName: 'Acme',
+    })
+    const options = deployOptions({flags: externalFlags})
+
+    await deployStudio(options)
+
+    const logged = vi
+      .mocked(options.output.log)
+      .mock.calls.map(([line]) => line)
+      .join('\n')
+    expect(logged).toContain(
+      'Send Access-Control-Allow-Origin for https://org-1.sanity.run and https://acme.sanity.run\n',
+    )
   })
 
   test('a first deploy without --url fails before anything is created', async () => {

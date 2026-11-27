@@ -17,6 +17,7 @@ import {
   deployConfig,
   deployWorkbenchApp,
   fetchDeploySummaryDetails,
+  fetchOrganizationSummary,
   formatDeploySummary,
   getApplicationUrl,
   getWorkbench,
@@ -145,6 +146,15 @@ async function runAppDeployment(
 
   await checkBlueprintManaged(reporter, {kind: 'coreApp', projectRootDir: workDir})
 
+  // Every Dashboard URL below is built on the org's host slug (`--json` included); the
+  // deployer lookup only feeds the summary, so it overlaps the build instead.
+  const organization =
+    (workbench || config) && organizationId ? fetchOrganizationSummary(organizationId) : undefined
+  const summaryDetails =
+    organization && organizationId && !flags.json
+      ? fetchDeploySummaryDetails(organizationId, organization)
+      : undefined
+
   let application: UserApplicationResolved | null = null
   let appCreated = false
   let workbenchApp: object | undefined
@@ -161,6 +171,7 @@ async function runAppDeployment(
       await checkAppTarget(reporter, {
         appId: targetAppId,
         hasAppView,
+        hostSlug: (await organization)?.hostSlug,
         isWorkbenchApp: true,
         organizationId,
         slug: workbench.slug,
@@ -187,10 +198,6 @@ async function runAppDeployment(
     !dryRun && workbench?.icon ? await readAppIcon(workDir, workbench.icon) : undefined
 
   const startedAt = Date.now()
-  const summaryDetails =
-    (workbench || config) && organizationId && !flags.json
-      ? fetchDeploySummaryDetails(organizationId)
-      : undefined
 
   // Create the app before the build so the bundle carries its real id. A
   // redeploy already has it from `deployment.appId`; a dry run skips creation.
@@ -388,7 +395,7 @@ async function runAppDeployment(
             organizationId,
             title: 'Media Library configuration',
             type: 'config',
-            url: getWorkbenchUrl(organizationId),
+            url: getWorkbenchUrl(organizationId, (await organization)?.hostSlug),
           }),
         )
         return {application: null, installationId, payload}
@@ -423,14 +430,13 @@ async function runAppDeployment(
         workDir,
       })
       await deployApplicationConfig()
+      const hostSlug = (await organization)?.hostSlug
       const url = hasAppView
-        ? getApplicationUrl({
-            id: applicationId,
-            organizationId,
-            slug: workbench.slug,
-            type: 'coreApp',
-          })
-        : getWorkbenchUrl(organizationId)
+        ? getApplicationUrl(
+            {id: applicationId, organizationId, slug: workbench.slug, type: 'coreApp'},
+            hostSlug,
+          )
+        : getWorkbenchUrl(organizationId, hostSlug)
       const durationMs = Date.now() - startedAt
       output.log(
         formatDeploySummary({

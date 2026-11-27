@@ -56,16 +56,23 @@ export interface BrettWorkspace {
   title?: string
 }
 
-export function getWorkbenchUrl(organizationId: string): string {
-  return `https://${organizationId.toLowerCase()}.${isStaging() ? 'run.sanity.work' : 'sanity.run'}`
+/**
+ * The organization's Dashboard, on its host slug when it has one. Sessions are
+ * per origin and the org ID host redirects to the slug host, so a link to the
+ * org ID host would make the user sign in again.
+ */
+export function getWorkbenchUrl(organizationId: string, hostSlug?: string | null): string {
+  const host = (hostSlug ?? organizationId).toLowerCase()
+  return `https://${host}.${isStaging() ? 'run.sanity.work' : 'sanity.run'}`
 }
 
 /** Where a deployed application is served on its organization's workbench. */
 export function getApplicationUrl(
   application: Pick<Application, 'id' | 'organizationId' | 'slug' | 'type'>,
+  hostSlug?: string | null,
 ): string {
   const segment = application.type === 'studio' ? 'studios' : 'applications'
-  return `${getWorkbenchUrl(application.organizationId)}/${segment}/${application.slug ?? application.id}`
+  return `${getWorkbenchUrl(application.organizationId, hostSlug)}/${segment}/${application.slug ?? application.id}`
 }
 
 async function getClient() {
