@@ -245,6 +245,43 @@ export const apiRoutes: ApiRouteEntry[] = [
     title: 'Content Agent API reference'
   },
   {
+    host: 'global',
+    pathPatterns: [
+      'context/knowledge-bases',
+      'context/knowledge-bases/{knowledgeBaseId}',
+      'context/knowledge-bases/{knowledgeBaseId}/apply',
+      'context/knowledge-bases/{knowledgeBaseId}/build',
+      'context/knowledge-bases/{knowledgeBaseId}/build/cancel',
+      'context/knowledge-bases/{knowledgeBaseId}/discard',
+      'context/knowledge-bases/{knowledgeBaseId}/documents',
+      'context/knowledge-bases/{knowledgeBaseId}/documents/{documentId}',
+      'context/knowledge-bases/{knowledgeBaseId}/documents/{documentId}/content',
+      'context/knowledge-bases/{knowledgeBaseId}/entries/{entryPath}/rebuild',
+      'context/knowledge-bases/{knowledgeBaseId}/instructions',
+      'context/knowledge-bases/{knowledgeBaseId}/instructions/check',
+      'context/knowledge-bases/{knowledgeBaseId}/instructions/draft',
+      'context/knowledge-bases/{knowledgeBaseId}/instructions/{instructionId}',
+      'context/knowledge-bases/{knowledgeBaseId}/issues/apply',
+      'context/knowledge-bases/{knowledgeBaseId}/issues/{issueId}/dismiss',
+      'context/knowledge-bases/{knowledgeBaseId}/issues/{issueId}/reopen',
+      'context/knowledge-bases/{knowledgeBaseId}/issues/{issueId}/resolve',
+      'context/knowledge-bases/{knowledgeBaseId}/jobs/{jobId}',
+      'context/knowledge-bases/{knowledgeBaseId}/sources',
+      'context/knowledge-bases/{knowledgeBaseId}/sources/{sourceId}',
+      'context/knowledge-bases/{knowledgeBaseId}/sources/{sourceId}/syncs',
+      'context/knowledge-bases/{knowledgeBaseId}/sources/{sourceId}/syncs/{syncId}',
+      'context/knowledge-bases/{knowledgeBaseId}/sources/{sourceId}/uploads',
+      'context/knowledge-bases/{knowledgeBaseId}/sync',
+      'context/organizations/{organizationId}/conversations/{threadId}',
+      'context/organizations/{organizationId}/mcp',
+      'context/organizations/{organizationId}/mcp/{mcpEndpoint}',
+      'context/organizations/{organizationId}/mcp/{mcpEndpoint}/initial-context',
+      'context/organizations/{organizationId}/mcp/{mcpEndpoint}/status'
+    ],
+    slug: 'context-api',
+    title: 'Context API reference'
+  },
+  {
     defaultApiVersion: 'v2025-02-19',
     host: 'global',
     pathPatterns: [
