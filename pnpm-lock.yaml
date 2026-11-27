@@ -308,8 +308,8 @@ snapshots:
 					"version": "4.2.0",
 				},
 				"jsdom": {
-					"specifier": "^29.1.1",
-					"version": "29.1.1",
+					"specifier": "^31.0.1",
+					"version": "31.0.1",
 				},
 				"lodash-es": {
 					"specifier": "^4.18.1",
@@ -990,10 +990,6 @@ snapshots:
 				"@sanity/migrate": {
 					"specifier": "^8.0.5",
 					"version": "8.0.5",
-					"with": {
-						"jsdom": "29.1.1",
-						"xstate": "5.33.4",
-					},
 				},
 				"@sanity/runtime-cli": {
 					"specifier": "^17.23.0",
@@ -1453,12 +1449,7 @@ snapshots:
 				"@module-federation/runtime": "2.9.4",
 				"@module-federation/vite": "1.25.0",
 				"@sanity/cli-core": "workspace:^",
-				"@sanity/sdk": {
-					"specifier": "catalog:",
-					"with": {
-						"xstate": "5.33.4",
-					},
-				},
+				"@sanity/sdk": "catalog:",
 				"@sanity/types": "catalog:",
 				"@vitejs/plugin-react": "catalog:",
 				"form-data": "catalog:",
@@ -9636,7 +9627,7 @@ snapshots:
 					"below": true,
 				},
 				"jsdom": {
-					"version": "29.1.1",
+					"version": "31.0.1",
 					"below": true,
 				},
 				"oxc-transform-react": {
@@ -9683,9 +9674,19 @@ snapshots:
 				"@rolldown/plugin-babel": "0.3.1",
 				"@sanity/cli-core": "3.16.0",
 				"@sanity/generate-help-url": "4.0.0",
-				"@sanity/schema": "6.25.0",
+				"@sanity/schema": {
+					"version": "6.25.0",
+					"with": {
+						"jsdom": "31.0.1",
+					},
+				},
 				"@sanity/telemetry": "1.1.0",
-				"@sanity/types": "6.25.0",
+				"@sanity/types": {
+					"version": "6.25.0",
+					"with": {
+						"jsdom": "31.0.1",
+					},
+				},
 				"@sanity/workbench-cli": "2.20.0",
 				"@vitejs/plugin-react": "6.3.0",
 				"chokidar": "5.0.0",
@@ -9732,7 +9733,7 @@ snapshots:
 					"below": true,
 				},
 				"jsdom": {
-					"version": "29.1.1",
+					"version": "31.0.1",
 					"below": true,
 				},
 				"oxc-transform-react": {
@@ -9757,10 +9758,27 @@ snapshots:
 				"@inquirer/core": "12.1.1",
 				"@inquirer/prompts": "8.7.5",
 				"@oclif/core": "4.14.0",
-				"@sanity/client": "8.17.0",
+				"@sanity/client": {
+					"version": "8.17.0",
+					"with": {
+						"jsdom": "31.0.1",
+					},
+				},
 				"boxen": "8.0.1",
 				"empathic": "2.1.0",
-				"get-it": "9.7.0",
+				"get-it": {
+					"version": "9.7.0",
+					"with": {
+						"jsdom": "31.0.1",
+						"vitest": {
+							"version": "5.1.1",
+							"with": {
+								"@vitest/coverage-istanbul": "5.1.1",
+								"jsdom": "31.0.1",
+							},
+						},
+					},
+				},
 				"get-tsconfig": "4.14.3",
 				"import-meta-resolve": "4.2.0",
 				"jiti": "2.7.0",
@@ -10032,7 +10050,7 @@ snapshots:
 					"below": true,
 				},
 				"jsdom": {
-					"version": "29.1.1",
+					"version": "31.0.1",
 					"below": true,
 				},
 				"vitest": {
@@ -10175,7 +10193,7 @@ snapshots:
 					"below": true,
 				},
 				"jsdom": {
-					"version": "29.1.1",
+					"version": "31.0.1",
 					"below": true,
 				},
 				"vitest": {
@@ -10552,7 +10570,7 @@ snapshots:
 					"below": true,
 				},
 				"jsdom": {
-					"version": "29.1.1",
+					"version": "31.0.1",
 					"below": true,
 				},
 				"vitest": {
@@ -10870,7 +10888,7 @@ snapshots:
 					"below": true,
 				},
 				"jsdom": {
-					"version": "29.1.1",
+					"version": "31.0.1",
 					"below": true,
 				},
 				"oxc-transform-react": {
@@ -11435,10 +11453,6 @@ snapshots:
 					"version": "11.1.18",
 					"below": true,
 				},
-				"jsdom": {
-					"version": "29.1.1",
-					"below": true,
-				},
 				"react": {
 					"version": "19.3.1",
 					"below": true,
@@ -11475,6 +11489,10 @@ snapshots:
 			"snapshots": [
 				{
 					"peerDependencies": {
+						"jsdom": {
+							"version": "29.1.1",
+							"below": true,
+						},
 						"xstate": {
 							"version": "5.33.2",
 							"below": true,
@@ -11483,6 +11501,10 @@ snapshots:
 				},
 				{
 					"peerDependencies": {
+						"jsdom": {
+							"version": "31.0.1",
+							"below": true,
+						},
 						"xstate": {
 							"version": "5.33.4",
 							"below": true,
@@ -11716,7 +11738,7 @@ snapshots:
 					"below": true,
 				},
 				"jsdom": {
-					"version": "29.1.1",
+					"version": "31.0.1",
 					"below": true,
 				},
 				"vitest": {
@@ -12334,7 +12356,7 @@ snapshots:
 					"below": true,
 				},
 				"jsdom": {
-					"version": "29.1.1",
+					"version": "31.0.1",
 					"below": true,
 				},
 				"oxc-transform-react": {
@@ -12410,7 +12432,7 @@ snapshots:
 					"below": true,
 				},
 				"jsdom": {
-					"version": "29.1.1",
+					"version": "31.0.1",
 					"below": true,
 				},
 				"react": {
@@ -12451,7 +12473,7 @@ snapshots:
 					"below": true,
 				},
 				"jsdom": {
-					"version": "29.1.1",
+					"version": "31.0.1",
 					"below": true,
 				},
 				"react": {
@@ -14176,7 +14198,6 @@ snapshots:
 							"below": true,
 						},
 					},
-					"optional": true,
 				},
 			],
 		},
@@ -23323,7 +23344,6 @@ snapshots:
 							"version": "31.0.1",
 						},
 					},
-					"optional": true,
 				},
 			],
 		},

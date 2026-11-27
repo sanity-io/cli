@@ -65,7 +65,7 @@ catalog:
   # Utilities
   get-it: ^9.7.0
   obug: ^3.0.0
-  jsdom: ^29.1.1
+  jsdom: ^31.0.1
   zod: ^4.6.7
   'get-tsconfig': ^4.14.3
   'import-meta-resolve': ^4.2.0
