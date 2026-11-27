@@ -15,7 +15,6 @@ import {deriveConfigs} from '../dev/deriveConfigs.js'
 import {
   dashboardPath,
   type DevServerManifest,
-  findServerConflict,
   localAppIdentity,
   registerDevServer,
 } from '../dev/registry.js'
@@ -74,21 +73,11 @@ export async function startWorkbenchPreview(
     workDir,
   } = options
 
-  // Resolved before any server starts, so a bad icon path, a project that isn't set
-  // up for the Dashboard, or one it already serves fails with nothing to tear down.
+  // Resolved before any server starts, so a bad icon path or a project that isn't set
+  // up for the Dashboard fails with nothing to tear down.
   const {id, workbenchApp} = await resolvePreviewTarget(cliConfig, outDir)
   const applicationId = workbenchApp ? cliConfig.deployment?.appId : undefined
   const organizationId = cliConfig.app?.organizationId
-  const conflict = findServerConflict({
-    applicationId,
-    id,
-    organizationId,
-    slug: workbenchApp?.slug,
-  })
-
-  if (conflict) {
-    throw new Error(`${conflict}. Stop that server first.`)
-  }
 
   const app = isWorkbenchApp(cliConfig.app) ? cliConfig.app : undefined
   const appIcon = isApp ? app?.icon : undefined

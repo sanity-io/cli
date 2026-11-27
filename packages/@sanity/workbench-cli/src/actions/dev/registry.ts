@@ -332,48 +332,6 @@ export function registerDevServer(
 }
 
 /**
- * Why a server can't join its organization's Dashboard: a registered server
- * already uses its bus id, or stands in for the same application.
- */
-export function findServerConflict({
-  applicationId,
-  id,
-  organizationId,
-  slug,
-}: Pick<DevServerManifest, 'applicationId' | 'id' | 'organizationId' | 'slug'>):
-  | string
-  | undefined {
-  const server = getRegisteredServers().find(
-    (server) =>
-      server.organizationId === organizationId &&
-      (server.id === id || (applicationId && server.applicationId === applicationId)),
-  )
-
-  if (!id || !server) {
-    return undefined
-  }
-
-  // A preview registers under its build id, so name both sides by slug.
-  const name = serverDisplayName(slug, id)
-  const serverName = serverDisplayName(server.slug, server.id)
-  const served =
-    serverName === name
-      ? `${name} is already served`
-      : `${name} is the same application as ${serverName}, served`
-
-  return `${served} by the dev server in ${server.workDir} on port ${server.port}, so the Dashboard can't tell them apart`
-}
-
-function serverDisplayName(slug: string | undefined, id: string | undefined): string {
-  // Configs register as `config:<appType>` and have no slug.
-  if (!slug && id?.startsWith('config:')) {
-    return `The ${id.slice('config:'.length)} configuration`
-  }
-
-  return `"${slug ?? id}"`
-}
-
-/**
  * Read all manifest files from the registry, prune stale entries (dead PIDs),
  * and return the live ones.
  */
