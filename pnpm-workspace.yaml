@@ -33,7 +33,7 @@ catalog:
   '@sanity/validation': ^6.25.0
   '@sanity/client': ^8.17.0
   '@sanity/codegen': ^8.3.4
-  '@sanity/sdk': ^3.16.0
+  '@sanity/sdk': ^3.17.0
   '@sanity/telemetry': ^1.1.0
 
   # React

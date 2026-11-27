@@ -228,8 +228,8 @@ snapshots:
 					"version": "6.25.0",
 				},
 				"@sanity/sdk": {
-					"specifier": "^3.16.0",
-					"version": "3.16.0",
+					"specifier": "^3.17.0",
+					"version": "3.17.0",
 				},
 				"@sanity/telemetry": {
 					"specifier": "^1.1.0",
@@ -1002,6 +1002,10 @@ snapshots:
 				"@sanity/migrate": {
 					"specifier": "^8.0.5",
 					"version": "8.0.5",
+					"with": {
+						"jsdom": "29.1.1",
+						"xstate": "5.33.4",
+					},
 				},
 				"@sanity/runtime-cli": {
 					"specifier": "^17.23.0",
@@ -1266,8 +1270,8 @@ snapshots:
 				"@sanity/cli-test": "workspace:*",
 				"@sanity/pkg-utils": "catalog:",
 				"@sanity/ui": {
-					"specifier": "^4.4.12",
-					"version": "4.4.12",
+					"specifier": "^4.4.14",
+					"version": "4.4.14",
 				},
 				"@swc/cli": "catalog:",
 				"@swc/core": "catalog:",
@@ -1464,7 +1468,6 @@ snapshots:
 				"@sanity/sdk": {
 					"specifier": "catalog:",
 					"with": {
-						"jsdom": "29.1.1",
 						"xstate": "5.33.4",
 					},
 				},
@@ -9237,7 +9240,7 @@ snapshots:
 			"dependencies": {
 				"@sanity/client": "8.17.0",
 				"@sanity/icons": "5.2.2",
-				"@sanity/ui": "4.4.12",
+				"@sanity/ui": "4.4.14",
 				"ui5": "@sanity/ui@5.0.0-alpha.11",
 			},
 		},
@@ -9270,7 +9273,7 @@ snapshots:
 			"dependencies": {
 				"@sanity/client": "8.17.0",
 				"@sanity/icons": "5.4.0",
-				"@sanity/ui": "4.4.12",
+				"@sanity/ui": "4.4.14",
 				"react-rx": "7.1.0",
 				"rxjs": "7.8.2",
 				"ui5": "@sanity/ui@5.0.0-alpha.27",
@@ -9462,12 +9465,16 @@ snapshots:
 					"version": "6.0.3",
 					"below": true,
 				},
+				"use-sync-external-store": {
+					"version": "1.7.0",
+					"below": true,
+				},
 				"vitest": {
 					"version": "5.1.1",
 					"below": true,
 				},
 				"xstate": {
-					"version": "5.33.2",
+					"version": "5.33.4",
 					"below": true,
 				},
 				"yaml": {
@@ -9501,21 +9508,6 @@ snapshots:
 				"vite": "8.3.8",
 				"zod": "4.6.7",
 			},
-			"unboundPeerDependencies": [
-				"@babel/plugin-transform-runtime",
-				"@vitejs/devtools",
-				"bufferutil",
-				"canvas",
-				"less",
-				"sass",
-				"sass-embedded",
-				"stylus",
-				"sugarss",
-				"terser",
-				"use-sync-external-store",
-				"utf-8-validate",
-				"vue-tsc",
-			],
 		},
 
 		"@sanity/cli-core@3.16.0": {
@@ -9698,7 +9690,7 @@ snapshots:
 				"@lezer/highlight": "1.2.3",
 				"@sanity/icons": "5.2.1",
 				"@sanity/lezer-groq": "1.0.4",
-				"@sanity/ui": "4.4.12",
+				"@sanity/ui": "4.4.14",
 				"@uiw/codemirror-themes": "4.25.11",
 				"@uiw/react-codemirror": "4.25.11",
 			},
@@ -10705,12 +10697,16 @@ snapshots:
 					"version": "6.0.3",
 					"below": true,
 				},
+				"use-sync-external-store": {
+					"version": "1.7.0",
+					"below": true,
+				},
 				"vitest": {
 					"version": "5.1.1",
 					"below": true,
 				},
 				"xstate": {
-					"version": "5.33.2",
+					"version": "5.33.4",
 					"below": true,
 				},
 				"yaml": {
@@ -10749,24 +10745,6 @@ snapshots:
 				"ws": "8.23.0",
 				"xdg-basedir": "5.1.0",
 			},
-			"unboundPeerDependencies": [
-				"@babel/plugin-transform-runtime",
-				"@vitejs/devtools",
-				"bare-abort-controller",
-				"bare-buffer",
-				"bufferutil",
-				"canvas",
-				"less",
-				"react-native-b4a",
-				"sass",
-				"sass-embedded",
-				"stylus",
-				"sugarss",
-				"terser",
-				"use-sync-external-store",
-				"utf-8-validate",
-				"vue-tsc",
-			],
 		},
 
 		"@sanity/schema-descriptor-utils@1.4.0": {
@@ -11121,8 +11099,16 @@ snapshots:
 					"version": "19.3.1",
 					"below": true,
 				},
+				"use-sync-external-store": {
+					"version": "1.7.0",
+					"below": true,
+				},
 				"vitest": {
 					"version": "5.1.1",
+					"below": true,
+				},
+				"xstate": {
+					"version": "5.33.4",
 					"below": true,
 				},
 			},
@@ -11153,43 +11139,12 @@ snapshots:
 							"version": "29.1.1",
 							"below": true,
 						},
-						"use-sync-external-store": {
-							"version": "1.7.0",
-							"below": true,
-						},
-						"xstate": {
-							"version": "5.33.4",
-							"below": true,
-						},
 					},
-				},
-				{
-					"peerDependencies": {
-						"jsdom": {
-							"version": "29.1.1",
-							"below": true,
-						},
-						"xstate": {
-							"version": "5.33.2",
-							"below": true,
-						},
-					},
-					"unboundPeerDependencies": [
-						"use-sync-external-store",
-					],
 				},
 				{
 					"peerDependencies": {
 						"jsdom": {
 							"version": "31.0.1",
-							"below": true,
-						},
-						"use-sync-external-store": {
-							"version": "1.7.0",
-							"below": true,
-						},
-						"xstate": {
-							"version": "5.33.4",
 							"below": true,
 						},
 					},
@@ -11224,6 +11179,10 @@ snapshots:
 					"version": "5.1.1",
 					"below": true,
 				},
+				"xstate": {
+					"version": "5.33.4",
+					"below": true,
+				},
 			},
 			"dependencies": {
 				"@sanity/bifur-client": "2.0.2",
@@ -11252,22 +11211,6 @@ snapshots:
 							"version": "29.1.1",
 							"below": true,
 						},
-						"xstate": {
-							"version": "5.33.2",
-							"below": true,
-						},
-					},
-				},
-				{
-					"peerDependencies": {
-						"jsdom": {
-							"version": "29.1.1",
-							"below": true,
-						},
-						"xstate": {
-							"version": "5.33.4",
-							"below": true,
-						},
 					},
 				},
 				{
@@ -11276,6 +11219,74 @@ snapshots:
 							"version": "31.0.1",
 							"below": true,
 						},
+					},
+				},
+			],
+		},
+
+		"@sanity/sdk@3.17.0": {
+			"integrity": "sha512-fEEZ5yON7zSStTRhApQLwfkJlF1XeHQJhKJMNvX/oWQgQrphfK3Yl4tTQMZaZnBAg18Gl2rMyD2KkIMIkE30Zg==",
+			"peerDependencies": {
+				"@types/react": {
+					"version": "19.3.0",
+					"below": true,
+				},
+				"@vitest/coverage-istanbul": {
+					"version": "5.1.1",
+					"below": true,
+				},
+				"immer": {
+					"version": "11.1.18",
+					"below": true,
+				},
+				"jsdom": {
+					"version": "29.1.1",
+					"below": true,
+				},
+				"react": {
+					"version": "19.3.1",
+					"below": true,
+				},
+				"use-sync-external-store": {
+					"version": "1.7.0",
+					"below": true,
+				},
+				"vitest": {
+					"version": "5.1.1",
+					"below": true,
+				},
+			},
+			"dependencies": {
+				"@sanity/bifur-client": "2.0.2",
+				"@sanity/client": "8.17.0",
+				"@sanity/comlink": "4.0.3",
+				"@sanity/diff-match-patch": "3.2.1",
+				"@sanity/diff-patch": "7.0.0",
+				"@sanity/id-utils": "1.1.0",
+				"@sanity/image-url": "2.2.0",
+				"@sanity/json-match": "1.0.5",
+				"@sanity/message-protocol": "0.24.0",
+				"@sanity/mutate": "0.18.4",
+				"@sanity/telemetry": "1.1.0",
+				"@sanity/types": "6.25.0",
+				"@sentry/browser": "11.16.0",
+				"groq": "6.25.0",
+				"groq-js": "2.0.3",
+				"reselect": "5.3.0",
+				"rxjs": "7.8.2",
+				"zustand": "5.1.0",
+			},
+			"snapshots": [
+				{
+					"peerDependencies": {
+						"xstate": {
+							"version": "5.33.2",
+							"below": true,
+						},
+					},
+				},
+				{
+					"peerDependencies": {
 						"xstate": {
 							"version": "5.33.4",
 							"below": true,
@@ -11610,8 +11621,8 @@ snapshots:
 			},
 		},
 
-		"@sanity/ui@4.4.12": {
-			"integrity": "sha512-6vUZBrg1gK3e2FIZ/6cSjJusKsoyAWdDGD8KT5b/ckFMi9rYHBrYKuO8yIeUTSOcClvyI+q4RzY+Bz+rIRmqyQ==",
+		"@sanity/ui@4.4.14": {
+			"integrity": "sha512-FWPcRFG8+vPNoqskQWj93PZiIAC5xN3yTu1cYEvVVJjJEebq2lC4WFprwG1+8bm4ZkEVeTFOkrgk3tuiouYnPg==",
 			"engines": {"node": ">=22.12"},
 			"peerDependencies": {
 				"react": {
@@ -11990,7 +12001,7 @@ snapshots:
 				"@sanity/lezer-groq": "1.0.4",
 				"@sanity/schema": "6.25.0",
 				"@sanity/telemetry": "1.1.0",
-				"@sanity/ui": "4.4.12",
+				"@sanity/ui": "4.4.14",
 				"@sanity/uuid": "3.0.3",
 				"@uiw/react-codemirror": "4.25.12",
 				"@xstate/react": "6.1.0",
@@ -12146,12 +12157,16 @@ snapshots:
 					"version": "6.0.3",
 					"below": true,
 				},
+				"use-sync-external-store": {
+					"version": "1.7.0",
+					"below": true,
+				},
 				"vitest": {
 					"version": "5.1.1",
 					"below": true,
 				},
 				"xstate": {
-					"version": "5.33.2",
+					"version": "5.33.4",
 					"below": true,
 				},
 				"yaml": {
@@ -12163,7 +12178,7 @@ snapshots:
 				"@module-federation/runtime": "2.9.3",
 				"@module-federation/vite": "1.24.0",
 				"@sanity/cli-core": "3.16.0",
-				"@sanity/sdk": "3.15.0",
+				"@sanity/sdk": "3.17.0",
 				"@sanity/types": "6.25.0",
 				"@vitejs/plugin-react": "6.3.0",
 				"form-data": "4.0.6",
@@ -12174,20 +12189,6 @@ snapshots:
 				"vite": "8.3.8",
 				"zod": "4.6.7",
 			},
-			"unboundPeerDependencies": [
-				"@vitejs/devtools",
-				"bufferutil",
-				"canvas",
-				"less",
-				"sass",
-				"sass-embedded",
-				"stylus",
-				"sugarss",
-				"terser",
-				"use-sync-external-store",
-				"utf-8-validate",
-				"vue-tsc",
-			],
 		},
 
 		"@sanity/worker-channels@2.0.0": {
@@ -21234,11 +21235,11 @@ snapshots:
 				"@sanity/preview-url-secret": "4.1.5",
 				"@sanity/prism-groq": "1.1.2",
 				"@sanity/schema": "6.17.0",
-				"@sanity/sdk": "3.16.0",
+				"@sanity/sdk": "3.17.0",
 				"@sanity/sdk-react": "3.9.1",
 				"@sanity/telemetry": "1.1.0",
 				"@sanity/types": "6.17.0",
-				"@sanity/ui": "4.4.12",
+				"@sanity/ui": "4.4.14",
 				"@sanity/util": "6.17.0",
 				"@sanity/uuid": "3.0.3",
 				"@sanity/validation": "6.17.0",
@@ -21394,7 +21395,7 @@ snapshots:
 				"@sanity/sdk-react": "3.16.0",
 				"@sanity/telemetry": "1.1.0",
 				"@sanity/types": "6.25.0",
-				"@sanity/ui": "4.4.12",
+				"@sanity/ui": "4.4.14",
 				"@sanity/util": "6.25.0",
 				"@sanity/uuid": "3.0.3",
 				"@sanity/validation": "6.25.0",

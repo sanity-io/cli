@@ -93,7 +93,7 @@
     "@repo/tsconfig": "workspace:*",
     "@sanity/cli-test": "workspace:*",
     "@sanity/pkg-utils": "catalog:",
-    "@sanity/ui": "^4.4.12",
+    "@sanity/ui": "^4.4.14",
     "@swc/cli": "catalog:",
     "@swc/core": "catalog:",
     "@types/jsdom": "catalog:",
