@@ -1,6 +1,6 @@
 {
   "name": "@sanity/cli-setup",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Shared Blueprint workspace setup for the Sanity CLIs",
   "license": "MIT",
   "repository": {

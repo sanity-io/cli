@@ -1,5 +1,36 @@
 # Change Log
 
+## 8.36.0
+
+[Compare changes](https://github.com/sanity-io/cli/compare/cli-v8.35.0...cli-v8.36.0)
+
+_2026-11-27_
+
+### Features
+
+- **workbench-cli:** define and develop dashboard configurations ([#2261](https://github.com/sanity-io/cli/pull/2261)) ([2109715](https://github.com/sanity-io/cli/commit/2109715b8b9dc9059a0a0886beb5f8c2654605d3))
+- **cli:** build and preview dashboard configurations ([#2262](https://github.com/sanity-io/cli/pull/2262)) ([60dafb5](https://github.com/sanity-io/cli/commit/60dafb5b385c3f804ef197701a4879514448985b))
+- **cli:** deploy and undeploy dashboard configurations ([#2263](https://github.com/sanity-io/cli/pull/2263)) ([23207ff](https://github.com/sanity-io/cli/commit/23207ff32fd6277ebad5f13706439dc64d245c4b))
+- **cli:** summarize media library config deploys like apps ([#2284](https://github.com/sanity-io/cli/pull/2284)) ([563974b](https://github.com/sanity-io/cli/commit/563974bc42a7ed19c7751c99812a501b2e2ed6b6))
+- **cli-build:** let installed sanity raise react and styled-components minimums ([#2297](https://github.com/sanity-io/cli/pull/2297)) ([8ef0d95](https://github.com/sanity-io/cli/commit/8ef0d95de31faf38552a4e0c3fc99dafeaed35f2))
+- **workbench-cli:** make title optional in defineApplication ([#2287](https://github.com/sanity-io/cli/pull/2287)) ([4356d8e](https://github.com/sanity-io/cli/commit/4356d8e77da6ce4962ffe2243e756fd8be34980e))
+- **cli-core:** load studio schema and manifest helpers through sanity/cli getStudioCliTooling ([#2313](https://github.com/sanity-io/cli/pull/2313)) ([613ec7b](https://github.com/sanity-io/cli/commit/613ec7b3b8e705ab2ab01b6f4b7166248bb205f3))
+
+### Bug Fixes
+
+- **deps:** update sanity-tooling ([#2293](https://github.com/sanity-io/cli/pull/2293)) ([75b6d98](https://github.com/sanity-io/cli/commit/75b6d987da919228a7a0913d60e0daee3f3c8fc0))
+- **deps:** update dependency tar-stream to ^3.3.0 ([#2305](https://github.com/sanity-io/cli/pull/2305)) ([083e4d9](https://github.com/sanity-io/cli/commit/083e4d9bcf2963e1bca430e16060b44c739e40f5))
+- **build:** preconnect to the project API host in the studio document ([#2299](https://github.com/sanity-io/cli/pull/2299)) ([c39ea2c](https://github.com/sanity-io/cli/commit/c39ea2cb0904078ee79347d6316843c4d11f707c))
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/workbench-cli bumped to 2.21.0
+    - @sanity/cli-build bumped to 7.6.0
+    - @sanity/cli-core bumped to 3.17.0
+    - @sanity/cli-setup bumped to 0.1.1
+
 ## 8.35.0
 
 [Compare changes](https://github.com/sanity-io/cli/compare/cli-v8.34.0...cli-v8.35.0)
