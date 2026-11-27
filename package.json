@@ -67,6 +67,7 @@
     "@vitest/coverage-istanbul": "catalog:",
     "execa": "catalog:",
     "husky": "^9.1.7",
+    "jsdom": "catalog:",
     "knip": "^6.27.0",
     "lint-staged": "^16.4.0",
     "oxfmt": "catalog:",
