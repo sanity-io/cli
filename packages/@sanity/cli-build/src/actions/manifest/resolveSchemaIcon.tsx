@@ -1,5 +1,5 @@
 import {
-  resolveLocalPackage,
+  loadStudioCliTooling,
   resolveLocalPackageFrom,
   resolveLocalPackagePath,
 } from '@sanity/cli-core'
@@ -58,7 +58,7 @@ async function normalizeIcon(
   if (isValidElementType(Icon)) return <Icon />
   if (isValidElement(Icon)) return Icon
 
-  const {createDefaultIcon} = await resolveLocalPackage<typeof import('sanity')>('sanity', workDir)
+  const {createDefaultIcon} = await loadStudioCliTooling(workDir)
 
   return createDefaultIcon(title, subtitle)
 }

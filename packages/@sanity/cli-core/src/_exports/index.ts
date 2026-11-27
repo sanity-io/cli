@@ -71,6 +71,7 @@ export {importModule} from '../util/importModule.js'
 export {isCi} from '../util/isCi.js'
 export {isInteractive} from '../util/isInteractive.js'
 export {isStaging} from '../util/isStaging.js'
+export {loadStudioCliTooling, type StudioCliTooling} from '../util/loadStudioCliTooling.js'
 export {normalizePath} from '../util/normalizePath.js'
 export {promisifyWorker} from '../util/promisifyWorker.js'
 export {

@@ -5,7 +5,7 @@ import {
   doImport,
   getGlobalCliClient,
   getLocalPackageVersion,
-  resolveLocalPackage,
+  loadStudioCliTooling,
   subdebug,
 } from '@sanity/cli-core'
 import {type DescriptorRequester, prepareSchemaUpload} from '@sanity/schema/_internal'
@@ -55,7 +55,7 @@ export async function uploadSchemaToLexicon(
 
     const [bundleVersion, {generateStudioManifest}] = await Promise.all([
       getLocalPackageVersion('sanity', workDir),
-      resolveLocalPackage<typeof import('sanity')>('sanity', workDir),
+      loadStudioCliTooling(workDir),
     ])
 
     if (!bundleVersion) {

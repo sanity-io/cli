@@ -1,4 +1,4 @@
-import {resolveLocalPackage} from '@sanity/cli-core/package-manager'
+import {loadStudioCliTooling} from '@sanity/cli-core/package-manager'
 import {type SchemaValidationProblemGroup} from '@sanity/types'
 
 /**
@@ -8,11 +8,7 @@ export async function extractValidationFromSchemaError(
   error: unknown,
   workDir: string,
 ): Promise<SchemaValidationProblemGroup[] | undefined> {
-  const {SchemaError} = await resolveLocalPackage<typeof import('sanity')>('sanity', workDir)
+  const {getSchemaValidation} = await loadStudioCliTooling(workDir)
 
-  if (error instanceof SchemaError) {
-    return error.schema._validation
-  }
-
-  return undefined
+  return getSchemaValidation(error)
 }

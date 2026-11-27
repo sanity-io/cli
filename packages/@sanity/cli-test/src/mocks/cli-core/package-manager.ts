@@ -11,6 +11,8 @@ export const getRunningPackageManager: Mock = vi.fn()
 /** @internal */
 export const getYarnMajorVersion: Mock = vi.fn()
 /** @internal */
+export const loadStudioCliTooling: Mock = vi.fn()
+/** @internal */
 export const readPackageJson: Mock = vi.fn()
 /** @internal */
 export const resolveLocalPackage: Mock = vi.fn()

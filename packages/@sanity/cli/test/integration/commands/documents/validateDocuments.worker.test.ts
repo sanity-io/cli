@@ -1,10 +1,11 @@
 import {Readable} from 'node:stream'
 
+import {type loadStudioCliTooling} from '@sanity/cli-core'
 import {createClient} from '@sanity/client'
 import {type Rule, type ValidationContext} from '@sanity/types'
 import {type ValidationLocaleSource} from '@sanity/validation'
 import {of} from 'rxjs'
-import {createSchema, createWorkspaceFromConfig} from 'sanity'
+import {createWorkspaceFromConfig} from 'sanity'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
 const mocks = vi.hoisted(() => ({
@@ -100,7 +101,11 @@ vi.mock('@sanity/worker-channels', () => ({
 }))
 
 describe('document validation worker', () => {
-  beforeEach(() => {
+  beforeEach(async () => {
+    const actualCliCore = await vi.importActual<{
+      loadStudioCliTooling: typeof loadStudioCliTooling
+    }>('@sanity/cli-core')
+    const {compileSchema} = await actualCliCore.loadStudioCliTooling(import.meta.dirname)
     vi.resetModules()
     documents = baseDocuments
     mocks.customValidation.mockResolvedValue(true)
@@ -114,7 +119,7 @@ describe('document validation worker', () => {
         dataset: 'production',
         name: 'default',
         projectId: 'test-project',
-        schema: createSchema({
+        schema: compileSchema({
           name: 'default',
           types: [
             {fields: [{name: 'name', type: 'string'}], name: 'author', type: 'document'},

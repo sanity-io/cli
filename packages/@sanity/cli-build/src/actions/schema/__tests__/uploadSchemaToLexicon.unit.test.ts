@@ -1,4 +1,4 @@
-import {getGlobalCliClient, resolveLocalPackage} from '@sanity/cli-core'
+import {getGlobalCliClient, loadStudioCliTooling} from '@sanity/cli-core'
 import {prepareSchemaUpload} from '@sanity/schema/_internal'
 import {type Workspace} from 'sanity'
 import {afterEach, describe, expect, test, vi} from 'vitest'
@@ -20,7 +20,7 @@ vi.mock('@sanity/cli-core', async (importOriginal) => {
       request: mockRequest,
     }),
     getLocalPackageVersion: mockGetLocalPackageVersion,
-    resolveLocalPackage: vi.fn(),
+    loadStudioCliTooling: vi.fn(),
   }
 })
 
@@ -34,7 +34,7 @@ vi.mock('../../manifest/iconResolver.js', () => ({
 }))
 
 const mockGetGlobalCliClient = vi.mocked(getGlobalCliClient)
-const mockResolveLocalPackage = vi.mocked(resolveLocalPackage)
+const mockLoadStudioCliTooling = vi.mocked(loadStudioCliTooling)
 
 function createWorkspace(overrides: Record<string, unknown> = {}) {
   return {
@@ -65,9 +65,9 @@ describe('uploadSchemaToLexicon', () => {
   test('uploads single workspace schema via global client with temporary claim', async () => {
     const workspace = createWorkspace()
     mockGetLocalPackageVersion.mockResolvedValue('3.0.0')
-    mockResolveLocalPackage.mockResolvedValue({
+    mockLoadStudioCliTooling.mockResolvedValue({
       generateStudioManifest: mockGenerateStudioManifest,
-    })
+    } as never)
     mockPrepareSchemaUpload.mockResolvedValue({descriptorId: 'descriptor-123'})
     mockResolveIcon.mockResolvedValue('<svg />')
     mockGenerateStudioManifest.mockImplementation(
@@ -124,9 +124,9 @@ describe('uploadSchemaToLexicon', () => {
 
   test('requester strips leading version prefix and forwards options to global client', async () => {
     mockGetLocalPackageVersion.mockResolvedValue('3.0.0')
-    mockResolveLocalPackage.mockResolvedValue({
+    mockLoadStudioCliTooling.mockResolvedValue({
       generateStudioManifest: mockGenerateStudioManifest,
-    })
+    } as never)
     mockRequest.mockResolvedValue({ok: true})
     mockPrepareSchemaUpload.mockImplementation(async (_schema, options) => {
       const controller = new AbortController()
@@ -180,9 +180,9 @@ describe('uploadSchemaToLexicon', () => {
 
   test('multiple workspaces share global client and scope contextKey per workspace', async () => {
     mockGetLocalPackageVersion.mockResolvedValue('3.0.0')
-    mockResolveLocalPackage.mockResolvedValue({
+    mockLoadStudioCliTooling.mockResolvedValue({
       generateStudioManifest: mockGenerateStudioManifest,
-    })
+    } as never)
     mockPrepareSchemaUpload
       .mockResolvedValueOnce({descriptorId: 'descriptor-1'})
       .mockResolvedValueOnce({descriptorId: 'descriptor-2'})
@@ -237,9 +237,9 @@ describe('uploadSchemaToLexicon', () => {
 
   test('empty descriptorId throws', async () => {
     mockGetLocalPackageVersion.mockResolvedValue('3.0.0')
-    mockResolveLocalPackage.mockResolvedValue({
+    mockLoadStudioCliTooling.mockResolvedValue({
       generateStudioManifest: mockGenerateStudioManifest,
-    })
+    } as never)
     mockPrepareSchemaUpload.mockResolvedValue({descriptorId: ''})
 
     await expect(
@@ -252,9 +252,9 @@ describe('uploadSchemaToLexicon', () => {
 
   test('upload throws Error', async () => {
     mockGetLocalPackageVersion.mockResolvedValue('3.0.0')
-    mockResolveLocalPackage.mockResolvedValue({
+    mockLoadStudioCliTooling.mockResolvedValue({
       generateStudioManifest: mockGenerateStudioManifest,
-    })
+    } as never)
     mockPrepareSchemaUpload.mockRejectedValue(new Error('Network error'))
 
     await expect(
@@ -267,9 +267,9 @@ describe('uploadSchemaToLexicon', () => {
 
   test('upload throws non-Error value', async () => {
     mockGetLocalPackageVersion.mockResolvedValue('3.0.0')
-    mockResolveLocalPackage.mockResolvedValue({
+    mockLoadStudioCliTooling.mockResolvedValue({
       generateStudioManifest: mockGenerateStudioManifest,
-    })
+    } as never)
     mockPrepareSchemaUpload.mockRejectedValue('boom')
 
     await expect(
@@ -293,9 +293,9 @@ describe('uploadSchemaToLexicon', () => {
 
   test('no sanity version throws', async () => {
     mockGetLocalPackageVersion.mockResolvedValue(null)
-    mockResolveLocalPackage.mockResolvedValue({
+    mockLoadStudioCliTooling.mockResolvedValue({
       generateStudioManifest: mockGenerateStudioManifest,
-    })
+    } as never)
 
     await expect(
       uploadSchemaToLexicon({
@@ -307,9 +307,9 @@ describe('uploadSchemaToLexicon', () => {
 
   test('empty workspaces in manifest returns null', async () => {
     mockGetLocalPackageVersion.mockResolvedValue('3.0.0')
-    mockResolveLocalPackage.mockResolvedValue({
+    mockLoadStudioCliTooling.mockResolvedValue({
       generateStudioManifest: mockGenerateStudioManifest,
-    } as unknown)
+    } as never)
     mockPrepareSchemaUpload.mockResolvedValue({descriptorId: 'descriptor-123'})
     mockGenerateStudioManifest.mockResolvedValue({
       buildId: '"123"',
@@ -328,9 +328,9 @@ describe('uploadSchemaToLexicon', () => {
 
   test('verbose output includes workspace details', async () => {
     mockGetLocalPackageVersion.mockResolvedValue('3.0.0')
-    mockResolveLocalPackage.mockResolvedValue({
+    mockLoadStudioCliTooling.mockResolvedValue({
       generateStudioManifest: mockGenerateStudioManifest,
-    })
+    } as never)
     mockPrepareSchemaUpload.mockResolvedValue({descriptorId: 'descriptor-123'})
     mockGenerateStudioManifest.mockResolvedValue({
       buildId: '"123"',
@@ -367,9 +367,9 @@ describe('uploadSchemaToLexicon', () => {
 
   test('verbose with null manifest outputs no workspaces message', async () => {
     mockGetLocalPackageVersion.mockResolvedValue('3.0.0')
-    mockResolveLocalPackage.mockResolvedValue({
+    mockLoadStudioCliTooling.mockResolvedValue({
       generateStudioManifest: mockGenerateStudioManifest,
-    })
+    } as never)
     mockPrepareSchemaUpload.mockResolvedValue({descriptorId: 'descriptor-123'})
     mockGenerateStudioManifest.mockResolvedValue({
       buildId: '"123"',
@@ -398,9 +398,9 @@ describe('uploadSchemaToLexicon', () => {
     test('calls start then done on success', async () => {
       const listeners = createListeners()
       mockGetLocalPackageVersion.mockResolvedValue('3.0.0')
-      mockResolveLocalPackage.mockResolvedValue({
+      mockLoadStudioCliTooling.mockResolvedValue({
         generateStudioManifest: mockGenerateStudioManifest,
-      })
+      } as never)
       mockPrepareSchemaUpload.mockResolvedValue({descriptorId: 'descriptor-123'})
       mockGenerateStudioManifest.mockImplementation(async () => {
         // The manifest is generated after start and before done
@@ -441,9 +441,9 @@ describe('uploadSchemaToLexicon', () => {
     test('calls fail with the thrown error when the schema upload fails', async () => {
       const listeners = createListeners()
       mockGetLocalPackageVersion.mockResolvedValue('3.0.0')
-      mockResolveLocalPackage.mockResolvedValue({
+      mockLoadStudioCliTooling.mockResolvedValue({
         generateStudioManifest: mockGenerateStudioManifest,
-      })
+      } as never)
       mockPrepareSchemaUpload.mockRejectedValue(new Error('Network error'))
 
       const error = await uploadSchemaToLexicon({
@@ -463,9 +463,9 @@ describe('uploadSchemaToLexicon', () => {
       const listeners = createListeners()
       const failure = new Error('Manifest generation failed')
       mockGetLocalPackageVersion.mockResolvedValue('3.0.0')
-      mockResolveLocalPackage.mockResolvedValue({
+      mockLoadStudioCliTooling.mockResolvedValue({
         generateStudioManifest: mockGenerateStudioManifest,
-      })
+      } as never)
       mockPrepareSchemaUpload.mockResolvedValue({descriptorId: 'descriptor-123'})
       mockGenerateStudioManifest.mockRejectedValue(failure)
 

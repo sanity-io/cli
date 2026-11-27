@@ -2,6 +2,7 @@ import {isMainThread, type MessagePort} from 'node:worker_threads'
 
 import {findStudioConfigPath, getCliConfig} from '@sanity/cli-core/config'
 import {subdebug} from '@sanity/cli-core/debug'
+import {type StudioCliTooling} from '@sanity/cli-core/package-manager'
 import {studioWorkerTask} from '@sanity/cli-core/tasks'
 import {type CliConfig} from '@sanity/cli-core/types'
 
@@ -71,6 +72,7 @@ export interface ExtractWorkerData {
 
 export interface ExtractWorkerDeps {
   getStudioWorkspaces: (configPath: string) => Promise<unknown[]>
+  loadStudioCliTooling: (workDir: string) => Promise<Pick<StudioCliTooling, 'compileSchema'>>
   resolveLocalPackage: <T>(name: string, workDir: string) => Promise<T>
 }
 
@@ -110,13 +112,13 @@ export async function extractGraphQLAPIsWorker(
   // Resolve which GraphQL APIs to deploy from workspace + CLI config
   const resolvedApis = resolveGraphQLApis({cliConfig, workspaces})
 
-  // Get createSchema from sanity (0ms — already cached by ViteNodeRunner)
-  const {createSchema, RELEASE_DOCUMENT_TYPE: releaseDocumentType} = await deps.resolveLocalPackage<
-    typeof import('sanity') & {RELEASE_DOCUMENT_TYPE?: string}
-  >('sanity', workDir)
+  const [{compileSchema}, {RELEASE_DOCUMENT_TYPE: releaseDocumentType}] = await Promise.all([
+    deps.loadStudioCliTooling(workDir),
+    deps.resolveLocalPackage<{RELEASE_DOCUMENT_TYPE?: string}>('sanity', workDir),
+  ])
 
   // Build default schema to identify built-in types that should be filtered out
-  const defaultSchema = createSchema({name: 'default', types: []})
+  const defaultSchema = compileSchema({name: 'default', types: []})
   const defaultTypes = defaultSchema.getTypeNames()
 
   // For each API: create compiled schema, extract GraphQL spec, catch SchemaError
@@ -145,7 +147,7 @@ export async function extractGraphQLAPIsWorker(
         excludedTypes.add('sanity.releaseMetadata')
       }
 
-      const schema = createSchema({
+      const schema = compileSchema({
         name: 'default',
         types: api.schemaTypes.filter((type) => !excludedTypes.has(type.name)),
       })

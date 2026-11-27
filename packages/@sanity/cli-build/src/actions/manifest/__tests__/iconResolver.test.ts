@@ -3,6 +3,7 @@ import {afterEach, describe, expect, test, vi} from 'vitest'
 
 import {resolveIcon} from '../iconResolver.js'
 
+const mockLoadStudioCliTooling = vi.hoisted(() => vi.fn())
 const mockResolveLocalPackage = vi.hoisted(() => vi.fn())
 const mockResolveLocalPackageFrom = vi.hoisted(() => vi.fn())
 const mockResolveLocalPackagePath = vi.hoisted(() => vi.fn())
@@ -11,6 +12,7 @@ vi.mock('@sanity/cli-core', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@sanity/cli-core')>()
   return {
     ...actual,
+    loadStudioCliTooling: mockLoadStudioCliTooling,
     resolveLocalPackage: mockResolveLocalPackage,
     resolveLocalPackageFrom: mockResolveLocalPackageFrom,
     resolveLocalPackagePath: mockResolveLocalPackagePath,
@@ -61,13 +63,12 @@ function setupMocks(mockRenderToReadableStream: ReturnType<typeof vi.fn>) {
     }
   })
 
+  mockLoadStudioCliTooling.mockResolvedValue({createDefaultIcon})
+
   mockResolveLocalPackage.mockImplementation(async (pkg: string) => {
     switch (pkg) {
       case 'react-dom/server': {
         return {renderToReadableStream: mockRenderToReadableStream}
-      }
-      case 'sanity': {
-        return {createDefaultIcon}
       }
       default: {
         throw new Error(`Unexpected resolveLocalPackage call: ${pkg}`)

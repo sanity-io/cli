@@ -1,6 +1,6 @@
 import {isMainThread, parentPort, workerData} from 'node:worker_threads'
 
-import {getStudioWorkspaces, resolveLocalPackage} from '@sanity/cli-core'
+import {getStudioWorkspaces, loadStudioCliTooling, resolveLocalPackage} from '@sanity/cli-core'
 
 import {extractGraphQLAPIsWorker, type ExtractWorkerData} from './extractGraphQLAPIs.js'
 
@@ -10,5 +10,6 @@ if (isMainThread || !parentPort) {
 
 await extractGraphQLAPIsWorker(parentPort, workerData as ExtractWorkerData, {
   getStudioWorkspaces,
+  loadStudioCliTooling,
   resolveLocalPackage,
 })
