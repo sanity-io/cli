@@ -1,0 +1,60 @@
+name: Purge E2E Resources
+
+on:
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Only list what would be deleted; delete nothing'
+        type: boolean
+        required: true
+        default: true
+      older_than_hours:
+        description: 'Only purge resources created at least this many hours ago (minimum 1)'
+        type: number
+        required: true
+        default: 24
+      purge:
+        description: 'Which resources to purge'
+        type: choice
+        required: true
+        default: both
+        options:
+          - both
+          - projects
+          - datasets
+
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  purge:
+    name: Purge e2e projects and datasets
+    # Only run the script from `main`, so a modified copy on another branch can't use the e2e token.
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+          sparse-checkout: .github/scripts
+
+      - name: Setup Node.js
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
+        with:
+          node-version: 24
+
+      - name: Purge e2e resources
+        env:
+          PURGE_DRY_RUN: ${{ inputs.dry_run }}
+          PURGE_OLDER_THAN_HOURS: ${{ inputs.older_than_hours }}
+          PURGE_SCOPE: ${{ inputs.purge }}
+          SANITY_E2E_DATASET: ${{ secrets.SANITY_E2E_DATASET }}
+          SANITY_E2E_ORGANIZATION_ID: ${{ secrets.SANITY_E2E_ORGANIZATION_ID }}
+          SANITY_E2E_PROJECT_ID: ${{ secrets.SANITY_E2E_PROJECT_ID }}
+          SANITY_E2E_TOKEN: ${{ secrets.SANITY_E2E_TOKEN }}
+        run: node .github/scripts/purge-e2e-resources.ts
