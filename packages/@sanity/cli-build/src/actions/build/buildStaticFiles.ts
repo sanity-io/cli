@@ -30,6 +30,8 @@ interface StaticBuildOptions {
   cwd: string
   outputDir: string
 
+  /** API origin to add `preconnect` hints for in the emitted `index.html`. */
+  apiPreconnectOrigin?: string
   appTitle?: string
   autoUpdates?: AutoUpdatesBuildConfig
   /** Whether to load a custom `_document.js`/`_document.tsx` component. Defaults to `true`. */
@@ -60,6 +62,7 @@ export async function buildStaticFiles(
   options: StaticBuildOptions,
 ): Promise<{chunks: ChunkStats[]}> {
   const {
+    apiPreconnectOrigin,
     appTitle,
     autoUpdates,
     basePath,
@@ -115,6 +118,7 @@ export async function buildStaticFiles(
 
     buildDebug('Resolving vite config (federation)')
     let viteConfig = await getViteConfig({
+      apiPreconnectOrigin,
       autoUpdates,
       basePath,
       cwd,
@@ -190,6 +194,7 @@ export async function buildStaticFiles(
 
   buildDebug('Resolving vite config')
   let viteConfig = await getViteConfig({
+    apiPreconnectOrigin,
     autoUpdates,
     basePath,
     cwd,

@@ -70,6 +70,7 @@ async function emitIndexHtml(bridge?: boolean, isApp?: boolean): Promise<string>
 }
 
 async function renderBundle(options: {
+  apiPreconnectOrigin?: string
   bridge?: boolean
   bundle: Bundle
   cssCodeSplit?: boolean
@@ -77,6 +78,7 @@ async function renderBundle(options: {
   isApp?: boolean
 }): Promise<{css: string[]; html: string}> {
   const plugin = sanityBuildEntries({
+    apiPreconnectOrigin: options.apiPreconnectOrigin,
     basePath: '/',
     bridge: options.bridge,
     cwd: '/project',
@@ -170,6 +172,16 @@ describe('sanityBuildEntries index.html', () => {
     const html = await emitIndexHtml(undefined, true)
     expect(mockGetLocalPackageVersion).not.toHaveBeenCalled()
     expect(html).not.toContain('__SANITY_AUTH_HASH_PARAMS__')
+  })
+
+  test('forwards the API preconnect origin to the document renderer', async () => {
+    await renderBundle({
+      apiPreconnectOrigin: 'https://abc123.api.sanity.io',
+      bundle: {'static/sanity-abc.js': entryChunk()},
+    })
+    expect(vi.mocked(renderDocument).mock.calls.at(-1)?.[0]).toMatchObject({
+      apiPreconnectOrigin: 'https://abc123.api.sanity.io',
+    })
   })
 
   test.each([undefined, true, false])(

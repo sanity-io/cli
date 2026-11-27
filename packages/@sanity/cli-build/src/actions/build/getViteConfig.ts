@@ -64,6 +64,12 @@ interface ViteOptions {
   additionalPlugins?: Plugin[]
 
   /**
+   * API origin to add `preconnect` hints for in the emitted `index.html`
+   * (production builds only).
+   */
+  apiPreconnectOrigin?: string
+
+  /**
    * Auto-updates configuration (production builds only). When set, vendor
    * packages are emitted as hashed ESM chunks by this build and the import map
    * in `index.html` is derived from the build output.
@@ -139,6 +145,7 @@ interface ViteOptions {
 export async function getViteConfig(options: ViteOptions): Promise<InlineConfig> {
   const {
     additionalPlugins,
+    apiPreconnectOrigin,
     autoUpdates,
     basePath: rawBasePath = '/',
     cwd,
@@ -244,6 +251,7 @@ export async function getViteConfig(options: ViteOptions): Promise<InlineConfig>
             }),
             {
               ...sanityBuildEntries({
+                apiPreconnectOrigin,
                 autoUpdates,
                 basePath,
                 bridge: false,
@@ -263,7 +271,14 @@ export async function getViteConfig(options: ViteOptions): Promise<InlineConfig>
               staticUrlPath: staticPath,
             }),
             sanityRuntimeRewritePlugin(),
-            sanityBuildEntries({autoUpdates, basePath, cwd, documentComponent, isApp}),
+            sanityBuildEntries({
+              apiPreconnectOrigin,
+              autoUpdates,
+              basePath,
+              cwd,
+              documentComponent,
+              isApp,
+            }),
           ]),
       // Caller-provided plugins (e.g. typegen in dev) aren't client-specific,
       // so they apply to federation builds too.

@@ -210,6 +210,25 @@ describe('buildStaticFiles', () => {
     })
   })
 
+  describe('API preconnect origin', () => {
+    test.each([false, true])(
+      'forwards it to the vite config (isWorkbenchApp: %s)',
+      async (isWorkbenchApp) => {
+        await buildStaticFiles({
+          apiPreconnectOrigin: 'https://abc123.api.sanity.io',
+          basePath: '/',
+          cwd,
+          isWorkbenchApp,
+          outputDir,
+        })
+
+        expect(mockGetViteConfig).toHaveBeenCalledWith(
+          expect.objectContaining({apiPreconnectOrigin: 'https://abc123.api.sanity.io'}),
+        )
+      },
+    )
+  })
+
   describe('isWorkbenchapp=false', () => {
     test.each([false, true])('builds normally (isApp: %s)', async (isApp) => {
       const basePath = '/' // this is OS-agnostic, even on windows :shrug:

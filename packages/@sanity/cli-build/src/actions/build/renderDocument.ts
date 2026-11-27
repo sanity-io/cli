@@ -18,6 +18,8 @@ interface DocumentProps {
 interface RenderDocumentOptions {
   studioRootPath: string
 
+  /** API origin to add `preconnect` hints for. */
+  apiPreconnectOrigin?: string
   autoUpdatesCssUrls?: string[]
   /**
    * Whether to load a custom `_document.js`/`_document.tsx` component from the

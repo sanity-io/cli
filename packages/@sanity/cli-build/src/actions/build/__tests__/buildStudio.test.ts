@@ -65,6 +65,7 @@ const mockGetStudioEnvironmentVariables = vi.hoisted(() => vi.fn().mockReturnVal
 const mockedIsInteractive = vi.hoisted(() => vi.fn())
 const mockedBuildStaticFiles = vi.hoisted(() => vi.fn())
 const mockGetLocalPackageVersion = vi.hoisted(() => vi.fn())
+const mockGetApiPreconnectOrigin = vi.hoisted(() => vi.fn())
 
 vi.mock(import('../buildStaticFiles.js'), () => ({
   buildStaticFiles: mockedBuildStaticFiles,
@@ -76,6 +77,10 @@ vi.mock(import('../checkRequiredDependencies.js'), () => ({
 
 vi.mock(import('../checkStudioDependencyVersions.js'), () => ({
   checkStudioDependencyVersions: vi.fn().mockResolvedValue(undefined),
+}))
+
+vi.mock(import('../getApiPreconnectOrigin.js'), () => ({
+  getApiPreconnectOrigin: mockGetApiPreconnectOrigin,
 }))
 
 vi.mock(import('../getAutoUpdatesImportMap.js'), () => ({
@@ -123,10 +128,46 @@ describe('#buildStudio', () => {
   beforeEach(() => {
     mockedBuildStaticFiles.mockResolvedValue({chunks: []})
     mockedIsInteractive.mockReturnValue(true)
+    mockGetApiPreconnectOrigin.mockReturnValue(undefined)
   })
 
   afterEach(() => {
     vi.clearAllMocks()
+  })
+
+  describe('API preconnect origin', () => {
+    const api = {projectId: 'abc123'}
+
+    test('is derived from the CLI config api section for studios', async () => {
+      mockGetApiPreconnectOrigin.mockReturnValue('https://abc123.api.sanity.io')
+
+      await buildStudio(buildOptions({api, output: createMockOutput(), unattendedMode: true}))
+
+      expect(mockGetApiPreconnectOrigin).toHaveBeenCalledWith(api)
+      expect(mockedBuildStaticFiles).toHaveBeenCalledWith(
+        expect.objectContaining({apiPreconnectOrigin: 'https://abc123.api.sanity.io'}),
+      )
+    })
+
+    test('is left out when the CLI config has no usable project ID', async () => {
+      await buildStudio(buildOptions({output: createMockOutput(), unattendedMode: true}))
+
+      expect(mockedBuildStaticFiles).toHaveBeenCalledWith(
+        expect.objectContaining({apiPreconnectOrigin: undefined}),
+      )
+    })
+
+    test('is never derived for apps', async () => {
+      mockGetApiPreconnectOrigin.mockReturnValue('https://abc123.api.sanity.io')
+
+      await buildStudio(
+        buildOptions({api, isApp: true, output: createMockOutput(), unattendedMode: true}),
+      )
+
+      expect(mockedBuildStaticFiles).toHaveBeenCalledWith(
+        expect.objectContaining({apiPreconnectOrigin: undefined}),
+      )
+    })
   })
 
   test('should handle build errors gracefully', async () => {
