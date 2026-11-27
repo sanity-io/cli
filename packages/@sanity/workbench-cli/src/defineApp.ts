@@ -1,7 +1,12 @@
 import {z} from 'zod/mini'
 
 import {APP_SLUG_PATTERN} from './appSlug.js'
-import {DockSchema, InterfaceDeclarationSchema, WebWorkerDeclarationSchema} from './contract.js'
+import {
+  DockSchema,
+  InterfaceDeclarationSchema,
+  WebWorkerDeclarationSchema,
+  type WorkbenchConfigValue,
+} from './contract.js'
 
 /**
  * Dashboard visibility values. Mirrors `APP_VISIBILITIES` in `@sanity/cli-core`
@@ -180,15 +185,7 @@ export function defineApplication(input: DefineAppInput): DefineAppResult {
  * One custom field a media library exposes. `src` default-exports a `defineField(...)` schema type.
  * @public
  */
-export interface MediaLibraryField {
-  /** Unique within the media library. */
-  name: string
-  src: string
-  title: string
-
-  /** Readable outside the owning organization. */
-  public?: boolean
-}
+export type MediaLibraryField = MediaLibraryConfig['fields'][number]
 
 /**
  * Sanity-owned singleton, so authors don't name or title the app — only `organizationId` is required.
@@ -216,12 +213,13 @@ const WORKBENCH_CONFIG: unique symbol = Symbol.for('sanity.workbench.defineConfi
  * discriminate it via {@link isWorkbenchConfig}.
  * @public
  */
-export interface WorkbenchConfig {
-  appType: 'media-library'
-  fields: MediaLibraryField[]
+export type WorkbenchConfig = WorkbenchConfigValue & {
   organizationId: string
   readonly [WORKBENCH_CONFIG]: true
 }
+
+/** @public */
+export type MediaLibraryConfig = Extract<WorkbenchConfig, {appType: 'media-library'}>
 
 /**
  * Whether `app` is a branded `unstable_defineMediaLibrary(...)` config — a
@@ -240,10 +238,10 @@ export function isWorkbenchConfig(app: unknown): app is WorkbenchConfig {
  * the installation's config.
  * @public
  */
-export function unstable_defineMediaLibrary(input: DefineMediaLibraryInput): WorkbenchConfig {
+export function unstable_defineMediaLibrary(input: DefineMediaLibraryInput): MediaLibraryConfig {
   return Object.defineProperty(
     {appType: 'media-library', fields: input.fields ?? [], organizationId: input.organizationId},
     WORKBENCH_CONFIG,
     {configurable: false, enumerable: false, value: true, writable: false},
-  ) as WorkbenchConfig
+  ) as MediaLibraryConfig
 }

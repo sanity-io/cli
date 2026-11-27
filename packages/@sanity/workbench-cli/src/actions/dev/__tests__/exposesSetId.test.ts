@@ -5,7 +5,9 @@ import {createExposesTracker, exposesSetId, trackExposesSet} from '../exposesSet
 import {type DevServerManifest} from '../registry.js'
 import {panel, worker} from './devTestHelpers.js'
 
-const mlConfig = (fields: DevServerConfig['fields']): DevServerConfig => ({
+const mlConfig = (
+  fields: {name: string; public?: boolean; src: string; title: string}[],
+): DevServerConfig => ({
   appType: 'media-library',
   fields,
   id: 'cfg-hash',

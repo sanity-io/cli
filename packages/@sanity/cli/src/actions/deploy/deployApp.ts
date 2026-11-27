@@ -111,7 +111,7 @@ async function runAppDeployment(
 
   // A config with no fields would overwrite the org's live config with an empty
   // snapshot, so block it here — same "nothing to deploy" gate an app gets.
-  if (config && config.fields.length === 0) {
+  if (config?.appType === 'media-library' && config.fields.length === 0) {
     reporter.report({
       exitCode: exitCodes.USAGE_ERROR,
       message: 'Nothing to deploy: the media library config declares no fields.',
@@ -289,7 +289,7 @@ async function runAppDeployment(
     // `ConfigSchema` is a union built to grow, and a future config type must
     // not inherit the media-library aspect sync — and its deletions — by
     // default.
-    if (configAppType === 'media-library' && organizationId && config && installationId) {
+    if (config?.appType === 'media-library' && organizationId && installationId) {
       // runStep so an unexpected throw (network, API) becomes a fail check:
       // a real run exits, a dry run records it and keeps reporting.
       const planned = await runStep(reporter, {

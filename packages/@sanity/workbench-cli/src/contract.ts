@@ -299,8 +299,17 @@ const MediaLibraryConfigSchema = z.object({
 export const ConfigSchema = z.discriminatedUnion('appType', [MediaLibraryConfigSchema])
 
 /**
- * The `{appType, fields}` config value the build expands into a federation
+ * The config value, keyed by `appType`, the build expands into a federation
  * remote and the deploy summarizes.
  * @internal
  */
 export type WorkbenchConfigValue = z.output<typeof ConfigSchema>
+
+const CONFIG_CONTRACT_VERSIONS: Record<WorkbenchConfigValue['appType'], number> = {
+  'media-library': MEDIA_LIBRARY_CONFIG_CONTRACT_VERSION,
+}
+
+/** @internal */
+export function configContractVersion(appType: WorkbenchConfigValue['appType']): string {
+  return String(CONFIG_CONTRACT_VERSIONS[appType])
+}

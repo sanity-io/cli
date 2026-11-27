@@ -5,7 +5,7 @@ import {
   type UndeployTargetResolution,
 } from '@sanity/cli-core/undeploy'
 
-import {type ResolvedMediaLibraryConfig} from '../../resolveWorkbenchConfig.js'
+import {type WorkbenchConfig} from '../../defineApp.js'
 import {
   deleteApplication,
   getApplication,
@@ -41,7 +41,7 @@ export type WorkbenchUndeployTarget =
  */
 export function createWorkbenchUndeployAdapter(options: {
   appId: string | undefined
-  config?: ResolvedMediaLibraryConfig
+  config?: WorkbenchConfig
   organizationId: string | undefined
   type: 'coreApp' | 'studio'
   workbench?: DeployableWorkbenchApp
@@ -118,7 +118,7 @@ async function resolveConfigTarget({
   config,
   organizationId,
 }: {
-  config: ResolvedMediaLibraryConfig
+  config: WorkbenchConfig
   organizationId: string | undefined
 }): Promise<{
   installationId?: string

@@ -2,6 +2,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 
 import {type WorkbenchExposes} from '../../../resolveWorkbenchApp.js'
+import {deriveConfigEntries} from '../../dev/deriveConfigs.js'
 import {isMediaLibraryConfigApp} from '../configs/configApp.js'
 import {
   hasMediaLibraryIslandRuntime,
@@ -72,7 +73,7 @@ export function workbenchOptimizeDeps(options: {
   const interfaceSources = [
     ...(exposes?.views ?? []).map((view) => view.src),
     ...(exposes?.webWorkers ?? []).map((webWorker) => webWorker.src),
-    ...(exposes?.config?.fields ?? []).map((field) => field.src),
+    ...(exposes?.config ? deriveConfigEntries(exposes.config) : []).map((entry) => entry.src),
   ].map((src) => path.resolve(cwd, src))
 
   const entries = [...appSources, ...interfaceSources].map((absPath) => {

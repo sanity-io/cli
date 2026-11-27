@@ -103,7 +103,7 @@ export class MediaPullAspectsCommand extends SanityCommand<typeof MediaPullAspec
     }
 
     const config = resolveWorkbenchConfig(cliConfig)
-    if (!config) {
+    if (config?.appType !== 'media-library') {
       this.error(NOT_A_CONFIG_APP, {exit: exitCodes.RUNTIME_ERROR})
     }
 

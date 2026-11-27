@@ -1,6 +1,7 @@
 import {type CliConfig} from '@sanity/cli-core'
 import {describe, expect, test} from 'vitest'
 
+import {type WorkbenchConfigValue} from '../../../contract.js'
 import {unstable_defineMediaLibrary} from '../../../defineApp.js'
 import {deriveInterfaces} from '../../../deriveInterfaces.js'
 import {deriveConfigEntries, deriveConfigs} from '../deriveConfigs.js'
@@ -486,7 +487,7 @@ describe('deriveConfigs', () => {
         appType: 'media-library',
         fields: [
           {name: 'description', public: true, src: './src/description.ts', title: 'Description'},
-          {name: 'language', public: undefined, src: './src/language.ts', title: 'Language'},
+          {name: 'language', src: './src/language.ts', title: 'Language'},
         ],
         id: expect.any(String),
         moduleName: 'media-library',
@@ -523,8 +524,6 @@ describe('deriveConfigEntries', () => {
           {name: 'description', public: true, src: './src/description.ts', title: 'Description'},
           {name: 'language', src: './src/language.ts', title: 'Language'},
         ],
-        id: 'cfg-hash',
-        version: '1',
       }),
     ).toStrictEqual([
       {name: 'description', src: './src/description.ts'},
@@ -533,14 +532,12 @@ describe('deriveConfigEntries', () => {
   })
 
   test('an empty field set yields no entries', () => {
-    expect(
-      deriveConfigEntries({appType: 'media-library', fields: [], id: 'cfg-hash', version: '1'}),
-    ).toStrictEqual([])
+    expect(deriveConfigEntries({appType: 'media-library', fields: []})).toStrictEqual([])
   })
 
   test('throws on an app type it cannot handle', () => {
     expect(() =>
-      deriveConfigEntries({appType: 'core-app', fields: [], id: 'cfg-hash', version: '1'}),
-    ).toThrow(/unknown config appType: core-app/i)
+      deriveConfigEntries({appType: 'core-app', fields: []} as unknown as WorkbenchConfigValue),
+    ).toThrow(/unknown app type: core-app/)
   })
 })

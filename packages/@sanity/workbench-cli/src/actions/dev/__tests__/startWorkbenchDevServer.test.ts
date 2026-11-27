@@ -572,7 +572,7 @@ describe('startWorkbenchDevServer', () => {
       await startWorkbenchDevServer(createDevOptions({cliConfig: federationConfig}))
 
       const config = {
-        appType: 'media-library',
+        appType: 'media-library' as const,
         fields: [
           {name: 'description', public: true, src: './src/description.ts', title: 'Description'},
         ],

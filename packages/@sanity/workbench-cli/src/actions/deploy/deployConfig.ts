@@ -5,6 +5,7 @@ import {createGzip} from 'node:zlib'
 import {type Output, subdebug} from '@sanity/cli-core'
 import {c as createTar} from 'tar'
 
+import {type WorkbenchConfigValue} from '../../contract.js'
 import {getWorkbenchUrl} from '../../services/applications.js'
 import {createConfig, resolveSingletonInstallationId} from '../../services/installations.js'
 import {summarizeGroup} from './summarizeInterfaces.js'
@@ -35,16 +36,16 @@ export async function resolveInstallationId(options: {
  * one of potentially many shapes.
  * @internal
  */
-export function summarizeConfig(config: {
-  appType: string
-  fields: {name: string; src: string; title: string}[]
-}): string {
-  switch (config.appType) {
+export function summarizeConfig(config: WorkbenchConfigValue): string {
+  const {appType} = config
+
+  switch (appType) {
     case 'media-library': {
       return summarizeGroup('Media library fields', config.fields)
     }
     default: {
-      throw new Error(`Cannot create config for unknown app type: ${config.appType}`)
+      appType satisfies never
+      throw new Error(`Cannot summarize unknown app type: ${appType as string}`)
     }
   }
 }

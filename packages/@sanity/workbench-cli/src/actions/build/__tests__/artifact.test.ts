@@ -1,5 +1,6 @@
 import {describe, expect, test} from 'vitest'
 
+import {type WorkbenchConfigValue} from '../../../contract.js'
 import {artifactExposes, type GeneratedArtifact, workbenchArtifacts} from '../artifact.js'
 
 describe('artifactExposes', () => {
@@ -41,5 +42,13 @@ describe('workbenchArtifacts', () => {
 
   test('returns nothing when the app exposes nothing', () => {
     expect(workbenchArtifacts({})).toEqual([])
+  })
+
+  test('throws on a config without a known appType', () => {
+    expect(() =>
+      workbenchArtifacts({
+        config: {appType: 'canvas', src: './src/canvas.ts'} as unknown as WorkbenchConfigValue,
+      }),
+    ).toThrow(/unknown app type: canvas/)
   })
 })

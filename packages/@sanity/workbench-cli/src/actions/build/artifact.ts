@@ -1,3 +1,4 @@
+import {type WorkbenchConfigValue} from '../../contract.js'
 import {type WorkbenchExposes} from '../../resolveWorkbenchApp.js'
 import {
   type MediaLibraryConfigArtifactOptions,
@@ -73,6 +74,23 @@ export function workbenchArtifacts(
   return [
     ...viewArtifacts(exposes.views ?? []),
     ...webWorkerArtifacts(exposes.webWorkers ?? []),
-    ...mediaLibraryConfigArtifacts(exposes.config, configOptions),
+    ...(exposes.config ? configArtifacts(exposes.config, configOptions) : []),
   ]
+}
+
+function configArtifacts(
+  config: WorkbenchConfigValue,
+  options: MediaLibraryConfigArtifactOptions,
+): GeneratedArtifact[] {
+  const {appType} = config
+
+  switch (appType) {
+    case 'media-library': {
+      return mediaLibraryConfigArtifacts(config, options)
+    }
+    default: {
+      appType satisfies never
+      throw new Error(`Cannot build artifacts for unknown app type: ${appType as string}`)
+    }
+  }
 }

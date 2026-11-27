@@ -41,7 +41,7 @@ export function getDevServerConfig({
   const reactStrictMode = resolveReactStrictMode(cliConfig)
   // `views`/`webWorkers` are declared via `defineApplication`, so read them off
   // the branded app result rather than the legacy `app` config type. A config is
-  // not an app — it resolves separately and expands only its `fields`.
+  // not an app — it resolves separately and expands into its config module.
   const app = cliConfig?.app
   const workbenchConfig = resolveWorkbenchConfig(cliConfig)
 
@@ -69,7 +69,7 @@ export function getDevServerConfig({
     exposes: isWorkbenchApp(app)
       ? {views: app.views, webWorkers: app.webWorkers}
       : workbenchConfig
-        ? {config: {appType: workbenchConfig.appType, fields: workbenchConfig.fields}}
+        ? {config: workbenchConfig}
         : undefined,
     // `devAction` passes an explicit port when a running workbench claimed the
     // configured one; otherwise the shared resolution stands.

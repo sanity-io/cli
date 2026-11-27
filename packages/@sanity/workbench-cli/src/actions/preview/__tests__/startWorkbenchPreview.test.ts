@@ -7,6 +7,7 @@ import {afterEach, beforeEach, describe, expect, onTestFinished, test, vi} from 
 
 import {buildAppId} from '../../../appId.js'
 import {definePanelView} from '../../../contract.js'
+import {unstable_defineMediaLibrary} from '../../../defineApp.js'
 import {resolveWorkbenchApp} from '../../../resolveWorkbenchApp.js'
 import {
   createMockOutput,
@@ -150,6 +151,20 @@ describe('startWorkbenchPreview', () => {
         slug: 'test-app',
         type: 'coreApp',
         visibility: 'default',
+      })
+    })
+
+    test('registers a media library config build under its app type', async () => {
+      await run({
+        cliConfig: workbenchCliConfig({
+          app: unstable_defineMediaLibrary({organizationId: 'org-1'}),
+        }),
+      })
+
+      expect(readManifest()).toMatchObject({
+        configs: [{appType: 'media-library', fields: [], moduleName: 'media-library'}],
+        id: 'config:media-library',
+        organizationId: 'org-1',
       })
     })
 

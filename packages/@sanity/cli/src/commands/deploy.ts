@@ -140,12 +140,13 @@ export class DeployCommand extends SanityCommand<typeof DeployCommand> {
     const projectRoot = await this.getProjectRoot()
 
     const isApp = determineIsApp(cliConfig)
+    const config = resolveWorkbenchConfig(cliConfig)
 
     // `--media-library-id` only steers the aspect-document sync of a Media
     // Library config deploy (see deployApp); studio and app deploys never read
     // it. Warned rather than silently dropped (same courtesy init gives
     // --dashboard on the media template).
-    if (flags['media-library-id'] && !resolveWorkbenchConfig(cliConfig)) {
+    if (flags['media-library-id'] && config?.appType !== 'media-library') {
       this.output.warn(
         '--media-library-id is ignored — it only applies when deploying a Media Library config',
       )
@@ -162,7 +163,7 @@ export class DeployCommand extends SanityCommand<typeof DeployCommand> {
           '--create cannot be used with a configured app ID. Omit --create to deploy to that app, or remove deployment.appId and app.id to create a new one.',
         )
       }
-      if (getWorkbench(cliConfig) || resolveWorkbenchConfig(cliConfig)) {
+      if (getWorkbench(cliConfig) || config) {
         return this.output.error(
           '--create is not supported for this app configuration. Omit --create and run sanity deploy.',
         )
