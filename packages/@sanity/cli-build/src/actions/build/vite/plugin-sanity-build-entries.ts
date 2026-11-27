@@ -47,6 +47,8 @@ const entryChunkId = '.sanity/runtime/app.js'
 const CSS_BUNDLE_NAME = 'style.css'
 
 export function sanityBuildEntries(options: {
+  /** API origin to add `preconnect` hints for. */
+  apiPreconnectOrigin?: string
   autoUpdates?: AutoUpdatesBuildConfig
   basePath: string
   /**
@@ -59,7 +61,15 @@ export function sanityBuildEntries(options: {
   documentComponent?: boolean
   isApp?: boolean
 }): Plugin {
-  const {autoUpdates, basePath, bridge = true, cwd, documentComponent, isApp} = options
+  const {
+    apiPreconnectOrigin,
+    autoUpdates,
+    basePath,
+    bridge = true,
+    cwd,
+    documentComponent,
+    isApp,
+  } = options
   // Vite's default. `configResolved` replaces this with the resolved value,
   // including a userland `vite` config that sets `build.cssCodeSplit: false`.
   let cssCodeSplit = true
@@ -103,6 +113,7 @@ export function sanityBuildEntries(options: {
         : undefined
 
       const html = await renderDocument({
+        apiPreconnectOrigin,
         autoUpdatesCssUrls: autoUpdates?.cssUrls,
         documentComponent,
         importMap,

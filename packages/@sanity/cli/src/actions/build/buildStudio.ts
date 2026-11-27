@@ -41,6 +41,7 @@ export async function buildStudio(
   let buildSpinner: ReturnType<typeof spinner> | undefined
 
   return internalBuildStudio({
+    api: cliConfig.api,
     appId,
     autoUpdatesEnabled: options.autoUpdatesEnabled,
     checkAppId: () => {

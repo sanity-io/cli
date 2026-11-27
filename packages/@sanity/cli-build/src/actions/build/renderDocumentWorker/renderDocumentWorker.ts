@@ -9,6 +9,8 @@ import {type DocumentProps} from './types.js'
 export interface RenderDocumentWorkerOptions {
   studioRootPath: string
 
+  /** API origin to add `preconnect` hints for. */
+  apiPreconnectOrigin?: string
   autoUpdatesCssUrls?: string[]
   /** Whether to load a custom `_document.js`/`_document.tsx` component. Defaults to `true`. */
   documentComponent?: boolean
@@ -30,7 +32,15 @@ export async function renderDocumentWorker(
   parent: MessagePort,
   options: RenderDocumentWorkerOptions,
 ) {
-  const {autoUpdatesCssUrls, documentComponent, importMap, isApp, props, studioRootPath} = options
+  const {
+    apiPreconnectOrigin,
+    autoUpdatesCssUrls,
+    documentComponent,
+    importMap,
+    isApp,
+    props,
+    studioRootPath,
+  } = options
 
   if (typeof studioRootPath !== 'string') {
     parent.postMessage({
@@ -56,6 +66,7 @@ export async function renderDocumentWorker(
     isApp,
     autoUpdatesCssUrls,
     documentComponent,
+    apiPreconnectOrigin,
   )
 
   parent.postMessage({

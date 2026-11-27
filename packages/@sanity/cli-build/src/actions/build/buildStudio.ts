@@ -21,6 +21,7 @@ import {buildStaticFiles} from './buildStaticFiles.js'
 import {checkRequiredDependencies} from './checkRequiredDependencies.js'
 import {checkStudioDependencyVersions} from './checkStudioDependencyVersions.js'
 import {type BuildEventListener, type MessageFunc} from './eventListener.js'
+import {getApiPreconnectOrigin} from './getApiPreconnectOrigin.js'
 import {getAutoUpdatesCssUrls, getAutoUpdatesImportMap} from './getAutoUpdatesImportMap.js'
 import {getStudioEnvironmentVariables} from './getEnvironmentVariables.js'
 import {handlePrereleaseVersions} from './handlePrereleaseVersions.js'
@@ -68,6 +69,11 @@ export interface BuildOptions {
   vite: UserViteConfig | undefined
   workDir: string
 
+  /**
+   * The `api` section of the CLI config. Its project ID (and `apiHost`, when set)
+   * determine the API origin hinted with `preconnect` in the emitted `index.html`.
+   */
+  api?: {apiHost?: unknown; projectId?: unknown}
   /** Whether to load a custom `_document.js`/`_document.tsx` component. Defaults to `true`. */
   documentComponent?: boolean
   exposes?: WorkbenchExposes
@@ -94,6 +100,7 @@ export async function buildStudio(
 
   const timer = getTimer()
   const {
+    api,
     appId,
     determineBasePath,
     eventListener,
@@ -261,6 +268,7 @@ export async function buildStudio(
     timer.start('bundleStudio')
 
     const bundle = await buildStaticFiles({
+      apiPreconnectOrigin: isApp ? undefined : getApiPreconnectOrigin(api),
       autoUpdates,
       basePath,
       cwd: workDir,

@@ -3,6 +3,7 @@ import {type MessagePort} from 'node:worker_threads'
 import {resolveLocalPackage} from '@sanity/cli-core/package-manager'
 
 import {buildDebug} from '../buildDebug.js'
+import {addApiPreconnectLinksToHtml} from './addApiPreconnectLinksToHtml.js'
 import {addTimestampedImportMapScriptToHtml} from './addTimestampImportMapScriptToHtml.js'
 import {getDocumentComponent} from './getDocumentComponent.js'
 import {type DocumentProps} from './types.js'
@@ -44,6 +45,7 @@ export async function getDocumentHtml(
   isApp?: boolean,
   autoUpdatesCssUrls?: string[],
   documentComponent?: boolean,
+  apiPreconnectOrigin?: string,
 ): Promise<string> {
   const Document = await getDocumentComponent(parent, studioRootPath, isApp, documentComponent)
   const {renderToStaticMarkup} = await resolveLocalPackage<typeof import('react-dom/server')>(
@@ -69,7 +71,10 @@ export async function getDocumentHtml(
 
   buildDebug('Rendering document component using React')
   const result = addTimestampedImportMapScriptToHtml(
-    renderToStaticMarkup(<Document {...defaultProps} {...props} css={css} />),
+    addApiPreconnectLinksToHtml(
+      renderToStaticMarkup(<Document {...defaultProps} {...props} css={css} />),
+      apiPreconnectOrigin,
+    ),
     importMap,
     autoUpdatesCssUrls,
   )
