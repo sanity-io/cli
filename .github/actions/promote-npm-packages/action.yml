@@ -1,0 +1,95 @@
+name: 'Promote npm packages'
+description: 'Waits for published versions to clear npm scanning, then moves the latest dist-tag onto them'
+
+inputs:
+  specs:
+    description: 'Newline-separated name@version specs to promote'
+    required: true
+  holding-tag:
+    description: 'Dist-tag the versions were published under, removed once they are promoted'
+    required: true
+  npm-token:
+    description: >-
+      npm token with publish rights. OIDC cannot be used here: trusted publishing only
+      covers `npm publish`, not `npm dist-tag` (https://github.com/npm/cli/issues/8547).
+    required: true
+  timeout-minutes:
+    description: 'How long to wait for every version to become installable'
+    default: '20'
+
+runs:
+  using: composite
+  steps:
+    - name: Wait for packages to be installable
+      # npm holds newly published versions for malware scanning (usually 5-15
+      # minutes, sometimes longer) before they resolve on the registry. Poll
+      # until the whole set resolves, so `latest` is only moved onto versions
+      # that can actually be installed.
+      # https://github.blog/changelog/2026-07-28-npm-publish-time-malware-scanning-and-dual-use-metadata/
+      shell: bash
+      env:
+        SPECS: ${{ inputs.specs }}
+        TIMEOUT_MINUTES: ${{ inputs.timeout-minutes }}
+      run: |
+        mapfile -t pending < <(grep -v '^[[:space:]]*$' <<<"$SPECS")
+
+        if [ "${#pending[@]}" -eq 0 ]; then
+          echo "Error: no package specs were given"
+          exit 1
+        fi
+
+        echo "Waiting for ${#pending[@]} package(s) to resolve on the registry: ${pending[*]}"
+
+        deadline=$((SECONDS + TIMEOUT_MINUTES * 60))
+        while true; do
+          still_pending=()
+          for spec in "${pending[@]}"; do
+            if resolved=$(npm view "$spec" version --prefer-online 2>/dev/null) && [ -n "$resolved" ]; then
+              echo "✅ $spec is installable"
+            else
+              still_pending+=("$spec")
+            fi
+          done
+          pending=("${still_pending[@]}")
+
+          if [ "${#pending[@]}" -eq 0 ]; then
+            echo "✅ All packages are installable"
+            break
+          fi
+
+          if [ "$SECONDS" -ge "$deadline" ]; then
+            echo "Error: timed out waiting for these packages to become installable:"
+            printf ' - %s\n' "${pending[@]}"
+            exit 1
+          fi
+
+          echo "⏳ Still waiting on ${#pending[@]} package(s): ${pending[*]} (retrying in 15s)"
+          sleep 15
+        done
+
+    - name: Move the latest tag
+      shell: bash
+      env:
+        SPECS: ${{ inputs.specs }}
+        HOLDING_TAG: ${{ inputs.holding-tag }}
+        NODE_AUTH_TOKEN: ${{ inputs.npm-token }}
+      run: |
+        # Single-quoted so the token is resolved from the environment at run
+        # time rather than written to disk
+        echo '//registry.npmjs.org/:_authToken=${NODE_AUTH_TOKEN}' >> .npmrc
+
+        mapfile -t specs < <(grep -v '^[[:space:]]*$' <<<"$SPECS")
+
+        for spec in "${specs[@]}"; do
+          echo "Tagging $spec as latest"
+          npm dist-tag add "$spec" latest
+        done
+
+        # Drop the holding tag now that latest points at these versions
+        for spec in "${specs[@]}"; do
+          name="${spec%@*}"
+          npm dist-tag rm "$name" "$HOLDING_TAG" ||
+            echo "Warning: could not remove the '$HOLDING_TAG' tag from $name"
+        done
+
+        echo "✅ Promoted ${#specs[@]} package(s) to latest"
