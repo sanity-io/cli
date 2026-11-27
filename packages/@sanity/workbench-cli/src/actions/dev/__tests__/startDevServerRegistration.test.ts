@@ -230,7 +230,9 @@ describe('startDevServerRegistration', () => {
     })
 
     expect(output.error).toHaveBeenCalledWith(
-      expect.stringContaining('"config:dashboard" is already served'),
+      expect.stringContaining(
+        'The dashboard configuration is already served by the dev server in /tmp/other on port 3334',
+      ),
       {exit: false},
     )
     expect(fsMock.files.has(manifestPath())).toBe(false)
