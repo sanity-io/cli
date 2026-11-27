@@ -863,7 +863,7 @@ describe('#deploy studio (external)', () => {
 
   describe('defineApplication', () => {
     beforeEach(() => {
-      mockApi({uri: '/organizations/org-1'}).reply(200, {name: 'Acme'})
+      mockApi({apiVersion: 'v2026-11-27', uri: '/organizations/org-1'}).reply(200, {name: 'Acme'})
       mockApi({uri: '/users/me'}).reply(200, {name: 'Sam'})
     })
 

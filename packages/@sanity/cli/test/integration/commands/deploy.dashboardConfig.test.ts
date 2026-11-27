@@ -65,7 +65,7 @@ describe.skipIf(platform() === 'win32')(
   () => {
     beforeEach(() => {
       vi.stubEnv('MFE_VITE_NO_TEST_ENV_CHECK', 'true')
-      mockApi({uri: `/organizations/${organizationId}`})
+      mockApi({apiVersion: 'v2026-11-27', uri: `/organizations/${organizationId}`})
         .optionally()
         .reply(200, {name: 'Acme'})
         .persist()
@@ -153,6 +153,23 @@ describe.skipIf(platform() === 'win32')(
         "Looking up the organization's Dashboard failed: User is missing required grant sanity.sdk.applications.read",
       )
       expect(`${stdout}${stderr}`).not.toContain('Building')
+    })
+
+    test("links the organization's host slug with --dry-run --json", async () => {
+      // Replaces the shared lookups, which answer without a host slug.
+      cleanAll()
+      mockApi({apiVersion: 'v2026-11-27', uri: `/organizations/${organizationId}`}).reply(200, {
+        name: 'Acme',
+        slug: 'acme',
+      })
+      mockApi({uri: '/users/me'}).optionally().reply(200, {name: 'Sam'})
+      await dashboardProject()
+      mockDashboards([])
+
+      const {error, stdout} = await deploy(['--dry-run', '--json'])
+
+      if (error) throw error
+      expect(JSON.parse(stdout).url).toBe('https://acme.sanity.run')
     })
 
     test('reports the plan with --dry-run --json and writes nothing', async () => {

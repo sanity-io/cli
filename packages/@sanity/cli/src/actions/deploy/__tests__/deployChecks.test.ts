@@ -503,6 +503,22 @@ describe('checkStudioTarget (workbench backend)', () => {
     expect(check?.target?.url).toBe('https://org-1.sanity.run/studios/my-studio')
   })
 
+  test("an existing studio links the organization's host slug", async () => {
+    mockGetApplication.mockResolvedValue(toApplication({slug: 'my-studio', type: 'studio'}))
+    const reporter = createCollectingReporter<DeployCheck>()
+
+    await checkStudioTarget(reporter, {
+      appId: 'app-1',
+      hostSlug: 'acme',
+      isWorkbenchApp: true,
+      slug: 'my-studio',
+    })
+
+    expect(reporter.results[0]?.message).toBe(
+      'Deploys to existing studio https://acme.sanity.run/studios/my-studio',
+    )
+  })
+
   test('no appId → pass check naming the slug the studio would be created at', async () => {
     const reporter = createCollectingReporter<DeployCheck>()
 

@@ -355,6 +355,7 @@ export async function checkAppTarget(
     | {
         appId: string | undefined
         hasAppView: boolean
+        hostSlug?: string | null
         isWorkbenchApp: true
         organizationId?: string
         slug?: string
@@ -363,12 +364,18 @@ export async function checkAppTarget(
 ): Promise<DeployCheck | null> {
   const {title} = options
   if (options.isWorkbenchApp) {
-    const {appId, hasAppView, organizationId, slug} = options
+    const {appId, hasAppView, hostSlug, organizationId, slug} = options
     return runStep(reporter, {
       debug: deployDebug,
       name: 'target',
       work: async () => {
-        const resolution = await resolveWorkbenchApp({appId, hasAppView, organizationId, slug})
+        const resolution = await resolveWorkbenchApp({
+          appId,
+          hasAppView,
+          hostSlug,
+          organizationId,
+          slug,
+        })
         const check = describeAppTarget(resolution, {title})
         reporter.report(check)
         return check
@@ -485,19 +492,20 @@ export async function checkStudioTarget(
   options:
     | {
         appId: string | undefined
+        hostSlug?: string | null
+        isWorkbenchApp: true
+        organizationId?: string
+        slug: string
+        title?: string
+      }
+    | {
+        appId: string | undefined
         isExternal: boolean
         isWorkbenchApp?: false
         projectId: string | undefined
         studioHost: string | undefined
         title: string | undefined
         urlFlag: string | undefined
-      }
-    | {
-        appId: string | undefined
-        isWorkbenchApp: true
-        organizationId?: string
-        slug: string
-        title?: string
       },
 ): Promise<DeployCheck | null> {
   const {title} = options

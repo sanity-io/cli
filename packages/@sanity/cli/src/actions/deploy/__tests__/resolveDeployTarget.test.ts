@@ -247,6 +247,26 @@ describe('resolveWorkbenchApp', () => {
     expect(result.type === 'slug-taken' && result.existing.url).toBe('https://org-1.sanity.run')
   })
 
+  test.each([
+    {expected: 'https://acme.sanity.run/applications/agent', hasAppView: true},
+    {expected: 'https://acme.sanity.run', hasAppView: false},
+  ])(
+    "links the organization's host slug (hasAppView: $hasAppView)",
+    async ({expected, hasAppView}) => {
+      mockGetApplication.mockResolvedValue(app)
+
+      const result = await resolveWorkbenchApp({
+        appId: 'app-1',
+        hasAppView,
+        hostSlug: 'acme',
+        organizationId: 'org-1',
+        slug: 'agent',
+      })
+
+      expect(result.type === 'found' && result.application.url).toBe(expected)
+    },
+  )
+
   test('no appId and no org → would-create without listing', async () => {
     const result = await resolveWorkbenchApp({appId: undefined, slug: 'agent'})
 

@@ -67,13 +67,29 @@ const configAdapter = () =>
     type: 'coreApp',
   })
 
-function stubInstallations(configs: unknown[]) {
+const brettApp = {
+  id: 'wb-app-1',
+  organizationId: 'org-1',
+  slug: 'my-app-x1',
+  title: 'My App',
+  type: 'coreApp',
+}
+
+// Anything unstubbed rejects, so an unstubbed organization lookup falls back to the org ID host.
+function stubRequests(responses: Record<string, unknown>) {
   mockRequest.mockImplementation(async ({url}: {url: string}) => {
-    if (url === '/installations') {
-      return installationsResponse([anInstallation({id: 'inst-1', name: 'media-library'})])
-    }
-    if (url === '/installations/inst-1/configs') return {data: configs}
+    if (url in responses) return responses[url]
     throw new Error(`unexpected request to ${url}`)
+  })
+}
+
+function stubInstallations(configs: unknown[], responses: Record<string, unknown> = {}) {
+  stubRequests({
+    '/installations': installationsResponse([
+      anInstallation({id: 'inst-1', name: 'media-library'}),
+    ]),
+    '/installations/inst-1/configs': {data: configs},
+    ...responses,
   })
 }
 
@@ -100,13 +116,7 @@ describe('createWorkbenchUndeployAdapter — application', () => {
   })
 
   test('found → target with the Brett application, its interfaces, and workbench URL', async () => {
-    mockRequest.mockResolvedValue({
-      id: 'wb-app-1',
-      organizationId: 'org-1',
-      slug: 'my-app-x1',
-      title: 'My App',
-      type: 'coreApp',
-    })
+    stubRequests({'/applications/wb-app-1': brettApp})
 
     const resolution = await appAdapter().resolveTarget()
 
@@ -126,12 +136,14 @@ describe('createWorkbenchUndeployAdapter — application', () => {
   })
 
   test('a studio target points at its workbench studio URL', async () => {
-    mockRequest.mockResolvedValue({
-      id: 'wb-studio-1',
-      organizationId: 'org-1',
-      slug: 'my-studio',
-      title: 'My Studio',
-      type: 'studio',
+    stubRequests({
+      '/applications/wb-studio-1': {
+        id: 'wb-studio-1',
+        organizationId: 'org-1',
+        slug: 'my-studio',
+        title: 'My Studio',
+        type: 'studio',
+      },
     })
 
     const resolution = await createWorkbenchUndeployAdapter({
@@ -146,14 +158,47 @@ describe('createWorkbenchUndeployAdapter — application', () => {
     )
   })
 
-  test('undeploy deletes the Brett application', async () => {
-    mockRequest.mockResolvedValue({
-      id: 'wb-app-1',
-      organizationId: 'org-1',
-      slug: 'my-app-x1',
-      title: 'My App',
-      type: 'coreApp',
+  test("points at the organization's host slug when it has one", async () => {
+    stubRequests({
+      '/applications/wb-app-1': brettApp,
+      '/organizations/org-1': {name: 'Acme', slug: 'acme'},
     })
+
+    const resolution = await appAdapter().resolveTarget()
+
+    expect(resolution.type === 'found' && resolution.target.url).toBe(
+      'https://acme.sanity.run/applications/my-app-x1',
+    )
+  })
+
+  test('points at the org ID host when the organization has no host slug', async () => {
+    stubRequests({
+      '/applications/wb-app-1': brettApp,
+      '/organizations/org-1': {name: 'Acme', slug: null},
+    })
+
+    const resolution = await appAdapter().resolveTarget()
+
+    expect(resolution.type === 'found' && resolution.target.url).toBe(
+      'https://org-1.sanity.run/applications/my-app-x1',
+    )
+  })
+
+  test('points at the org ID host when the organization lookup fails', async () => {
+    mockRequest.mockImplementation(async ({url}: {url: string}) => {
+      if (url === '/applications/wb-app-1') return brettApp
+      throw Object.assign(new Error('Service unavailable'), {statusCode: 503})
+    })
+
+    await expect(appAdapter().resolveTarget()).resolves.toMatchObject({
+      target: {url: 'https://org-1.sanity.run/applications/my-app-x1'},
+      type: 'found',
+    })
+    expect(mockRequest).toHaveBeenCalledWith(expect.objectContaining({url: '/organizations/org-1'}))
+  })
+
+  test('undeploy deletes the Brett application', async () => {
+    stubRequests({'/applications/wb-app-1': brettApp})
     const instance = appAdapter()
     const resolution = await instance.resolveTarget()
     if (resolution.type !== 'found') throw new Error('expected found')
@@ -166,13 +211,7 @@ describe('createWorkbenchUndeployAdapter — application', () => {
   })
 
   test('an already-deleted application counts as undeployed', async () => {
-    mockRequest.mockResolvedValue({
-      id: 'wb-app-1',
-      organizationId: 'org-1',
-      slug: 'my-app-x1',
-      title: 'My App',
-      type: 'coreApp',
-    })
+    stubRequests({'/applications/wb-app-1': brettApp})
     const instance = appAdapter()
     const resolution = await instance.resolveTarget()
     if (resolution.type !== 'found') throw new Error('expected found')
@@ -182,13 +221,7 @@ describe('createWorkbenchUndeployAdapter — application', () => {
   })
 
   test('the summary carries the interface lines the report renders', async () => {
-    mockRequest.mockResolvedValue({
-      id: 'wb-app-1',
-      organizationId: 'org-1',
-      slug: 'my-app-x1',
-      title: 'My App',
-      type: 'coreApp',
-    })
+    stubRequests({'/applications/wb-app-1': brettApp})
 
     const resolution = await appAdapter().resolveTarget()
 
@@ -225,6 +258,16 @@ describe('createWorkbenchUndeployAdapter — config-only singleton', () => {
       title: 'Media Library configuration',
       url: 'https://org-1.sanity.run',
     })
+  })
+
+  test("points at the organization's host slug when it has one", async () => {
+    stubInstallations([{id: 'cfg-1', isActive: true}], {
+      '/organizations/org-1': {name: 'Acme', slug: 'acme'},
+    })
+
+    const resolution = await configAdapter().resolveTarget()
+
+    expect(resolution.type === 'found' && resolution.target.url).toBe('https://acme.sanity.run')
   })
 
   test('local workbench internals stay off the target', async () => {

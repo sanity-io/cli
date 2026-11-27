@@ -184,16 +184,20 @@ export async function resolveAppDeployTarget(options: {
 export async function resolveWorkbenchApp({
   appId,
   hasAppView = true,
+  hostSlug,
   organizationId,
   slug,
 }: {
   appId: string | undefined
   hasAppView?: boolean
+  hostSlug?: string | null
   organizationId?: string
   slug?: string
 }): Promise<AppDeployTargetResolution> {
   const getUrl = (application: Application) =>
-    hasAppView ? getApplicationUrl(application) : getWorkbenchUrl(application.organizationId)
+    hasAppView
+      ? getApplicationUrl(application, hostSlug)
+      : getWorkbenchUrl(application.organizationId, hostSlug)
 
   if (appId) return resolveAppById(appId, getUrl)
 
@@ -218,6 +222,7 @@ export async function resolveWorkbenchApp({
  */
 export async function resolveWorkbenchStudio(options: {
   appId: string | undefined
+  hostSlug?: string | null
   organizationId?: string
   slug: string
 }): Promise<StudioDeployTargetResolution> {

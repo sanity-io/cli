@@ -354,6 +354,20 @@ describe('getWorkbenchUrl / getApplicationUrl', () => {
     )
   })
 
+  test("uses the organization's host slug in place of its id", () => {
+    expect(getWorkbenchUrl('org-1', 'acme')).toBe('https://acme.sanity.run')
+    expect(getApplicationUrl({...app, type: 'studio'}, 'acme')).toBe(
+      'https://acme.sanity.run/studios/my-app',
+    )
+  })
+
+  test('uses the organization id when it has no host slug', () => {
+    expect(getWorkbenchUrl('org-1', null)).toBe('https://org-1.sanity.run')
+    expect(getApplicationUrl({...app, type: 'coreApp'}, null)).toBe(
+      'https://org-1.sanity.run/applications/my-app',
+    )
+  })
+
   test('falls back to the id for an application without a slug', () => {
     expect(getApplicationUrl({...app, slug: null, type: 'coreApp'})).toBe(
       'https://org-1.sanity.run/applications/app-1',
