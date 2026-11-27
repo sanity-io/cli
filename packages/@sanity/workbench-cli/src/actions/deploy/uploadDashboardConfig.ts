@@ -10,7 +10,7 @@ import {
   createDashboardConfig,
   type Dashboard,
   deleteDashboard,
-} from '../../services/dashboards.js'
+} from '../../services/dashboard-configs.js'
 
 const debug = subdebug('deploy')
 

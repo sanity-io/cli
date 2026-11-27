@@ -31,4 +31,4 @@ export {
   getWorkbenchUrl,
   listApplications,
 } from '../services/applications.js'
-export {getOrganizationDashboard} from '../services/dashboards.js'
+export {getOrganizationDashboard} from '../services/dashboard-configs.js'

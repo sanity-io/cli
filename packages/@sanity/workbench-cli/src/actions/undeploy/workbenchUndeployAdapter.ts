@@ -16,7 +16,7 @@ import {
   getApplicationUrl,
   getWorkbenchUrl,
 } from '../../services/applications.js'
-import {deleteDashboard, getOrganizationDashboard} from '../../services/dashboards.js'
+import {deleteDashboard, getOrganizationDashboard} from '../../services/dashboard-configs.js'
 import {type ConfigSnapshot, deleteConfig, listConfigs} from '../../services/installations.js'
 import {resolveInstallationId, summarizeConfig} from '../deploy/deployConfig.js'
 import {type DeployableWorkbenchApp} from '../deploy/getWorkbench.js'
