@@ -8,6 +8,7 @@ import {
   resolveWorkbenchApp,
   resolveWorkbenchStudio,
 } from '../resolveDeployTarget.js'
+import {toApplication} from './fixtures/applications.js'
 
 vi.mock(import('@sanity/workbench-cli/deploy'), async (importOriginal) => ({
   ...(await importOriginal()),
@@ -184,13 +185,13 @@ describe('resolveAppDeployTarget', () => {
 })
 
 describe('resolveWorkbenchApp', () => {
-  const app = {
+  const app = toApplication({
     id: 'app-1',
     organizationId: 'org-1',
     slug: 'agent',
     title: 'Agent',
     type: 'coreApp' as const,
-  }
+  })
 
   test('a configured appId is looked up by id, no org listing', async () => {
     mockGetApplication.mockResolvedValue(app)
@@ -228,14 +229,7 @@ describe('resolveWorkbenchApp', () => {
 
     expect(result).toEqual({
       appHost: 'agent',
-      existing: {
-        id: 'app-1',
-        organizationId: 'org-1',
-        slug: 'agent',
-        title: 'Agent',
-        type: 'coreApp',
-        url: 'https://org-1.sanity.run/applications/agent',
-      },
+      existing: {...app, url: 'https://org-1.sanity.run/applications/agent'},
       type: 'slug-taken',
     })
   })
@@ -284,13 +278,15 @@ describe('resolveWorkbenchStudio', () => {
   })
 
   test('every other verdict passes through unchanged', async () => {
-    mockGetApplication.mockResolvedValue({
-      id: 'studio-1',
-      organizationId: 'org-1',
-      slug: 'my-studio',
-      title: 'My Studio',
-      type: 'studio',
-    })
+    mockGetApplication.mockResolvedValue(
+      toApplication({
+        id: 'studio-1',
+        organizationId: 'org-1',
+        slug: 'my-studio',
+        title: 'My Studio',
+        type: 'studio',
+      }),
+    )
 
     const result = await resolveWorkbenchStudio({appId: 'studio-1', slug: 'my-studio'})
 

@@ -4,6 +4,7 @@ import {type Gzip} from 'node:zlib'
 import {type AppVisibility, getGlobalCliClient} from '@sanity/cli-core'
 import {type ImageFile} from '@sanity/cli-core/images'
 import {isStaging} from '@sanity/cli-core/util'
+import {type ApplicationBase} from '@sanity/sdk'
 import FormData from 'form-data'
 
 import {type TileInterfaceMetadata, type ViewPlacementMetadata} from '../contract.js'
@@ -11,16 +12,7 @@ import {APP_WORKBENCH_API_VERSION} from './apiVersion.js'
 
 export type ApplicationType = 'coreApp' | 'studio'
 
-export interface Application {
-  id: string
-  organizationId: string
-  slug: string | null
-  title: string
-  type: ApplicationType
-
-  /** Set when the customer serves the build; such an application never receives a tarball. */
-  externalUrl?: string
-}
+export type Application = ApplicationBase
 
 interface BrettInterfaceBase {
   moduleId: string

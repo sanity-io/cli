@@ -21,6 +21,7 @@ import {createMockOutput, workbenchApp} from '../../dev/__tests__/testHelpers.js
 import {deployStudio} from '../deployStudio.js'
 import {deployStudioSchemasAndManifests} from '../deployStudioSchemasAndManifests.js'
 import {type DeployAppOptions, type DeployFlags} from '../types.js'
+import {toApplication} from './fixtures/applications.js'
 
 vi.mock(import('@sanity/blueprints/resolve'), async () => ({
   findBlueprintFile: vi.fn(),
@@ -106,13 +107,13 @@ beforeEach(() => {
   mockBuildStudio.mockResolvedValue({mfManifest: {id: 'my-studio'}})
   vi.mocked(readBuiltManifest).mockResolvedValue({id: 'my-studio'})
   mockCreateStudio.mockResolvedValue({
-    application: {
+    application: toApplication({
       id: 'studio-1',
       organizationId: 'org-1',
       slug: 'my-studio',
       title: 'My Studio',
       type: 'studio',
-    },
+    }),
     rollback: vi.fn(),
   })
   vi.mocked(deployStudioSchemasAndManifests).mockResolvedValue({
@@ -211,13 +212,15 @@ describe('deployStudio (federated studio)', () => {
   })
 
   test('a redeploy targets `deployment.appId` and reports the resolved record', async () => {
-    mockGetApplication.mockResolvedValue({
-      id: 'studio-9',
-      organizationId: 'org-1',
-      slug: 'old-slug',
-      title: 'My Studio',
-      type: 'studio',
-    })
+    mockGetApplication.mockResolvedValue(
+      toApplication({
+        id: 'studio-9',
+        organizationId: 'org-1',
+        slug: 'old-slug',
+        title: 'My Studio',
+        type: 'studio',
+      }),
+    )
     const options = deployOptions({cliConfig: {deployment: {appId: 'studio-9'}}})
 
     await deployStudio(options)
@@ -269,13 +272,13 @@ describe('deployStudio (federated studio)', () => {
       throw new Error('exit')
     })
     mockListApplications.mockResolvedValue([
-      {
+      toApplication({
         id: 'existing-1',
         organizationId: 'org-1',
         slug: 'my-studio',
         title: 'Holder',
         type: 'coreApp',
-      },
+      }),
     ])
 
     await expect(deployStudio(options)).rejects.toThrow('exit')
@@ -286,13 +289,15 @@ describe('deployStudio (federated studio)', () => {
   })
 
   test('without `deployment.appId`, redeploys the studio picked from the selector', async () => {
-    mockGetApplication.mockResolvedValue({
-      id: 'studio-9',
-      organizationId: 'org-1',
-      slug: 'my-studio',
-      title: 'Holder',
-      type: 'studio',
-    })
+    mockGetApplication.mockResolvedValue(
+      toApplication({
+        id: 'studio-9',
+        organizationId: 'org-1',
+        slug: 'my-studio',
+        title: 'Holder',
+        type: 'studio',
+      }),
+    )
     mockSelectWorkbenchAppId.mockResolvedValue('studio-9')
 
     await deployStudio(deployOptions())
@@ -456,14 +461,16 @@ describe('deployStudio --external (federated studio)', () => {
   })
 
   test('a redeploy of an external studio ships its manifest without --external', async () => {
-    mockGetApplication.mockResolvedValue({
-      externalUrl: 'https://studio.example.com',
-      id: 'studio-9',
-      organizationId: 'org-1',
-      slug: 'my-studio',
-      title: 'My Studio',
-      type: 'studio',
-    })
+    mockGetApplication.mockResolvedValue(
+      toApplication({
+        externalUrl: 'https://studio.example.com',
+        id: 'studio-9',
+        organizationId: 'org-1',
+        slug: 'my-studio',
+        title: 'My Studio',
+        type: 'studio',
+      }),
+    )
     const options = deployOptions({
       cliConfig: {deployment: {appId: 'studio-9'}},
       flags: {build: false, json: false},
@@ -481,14 +488,16 @@ describe('deployStudio --external (federated studio)', () => {
   })
 
   test('a picked external studio redeploys without --url', async () => {
-    mockGetApplication.mockResolvedValue({
-      externalUrl: 'https://studio.example.com',
-      id: 'studio-9',
-      organizationId: 'org-1',
-      slug: 'my-studio',
-      title: 'My Studio',
-      type: 'studio',
-    })
+    mockGetApplication.mockResolvedValue(
+      toApplication({
+        externalUrl: 'https://studio.example.com',
+        id: 'studio-9',
+        organizationId: 'org-1',
+        slug: 'my-studio',
+        title: 'My Studio',
+        type: 'studio',
+      }),
+    )
     mockSelectWorkbenchAppId.mockResolvedValue('studio-9')
 
     await deployStudio(deployOptions({flags: {...externalFlags, url: undefined}}))

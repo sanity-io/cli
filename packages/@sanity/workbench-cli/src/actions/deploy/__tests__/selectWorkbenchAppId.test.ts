@@ -1,8 +1,9 @@
 import {select} from '@sanity/cli-core/ux'
 import {beforeEach, describe, expect, test, vi} from 'vitest'
 
-import {type Application, listApplications} from '../../../services/applications.js'
+import {listApplications} from '../../../services/applications.js'
 import {selectWorkbenchAppId} from '../selectWorkbenchAppId.js'
+import {toApplication} from './fixtures/applications.js'
 
 vi.mock('@sanity/cli-core/ux', () => ({select: vi.fn(), Separator: class {}}))
 vi.mock(import('../../../services/applications.js'), async (importOriginal) => ({
@@ -13,13 +14,7 @@ vi.mock(import('../../../services/applications.js'), async (importOriginal) => (
 const mockSelect = vi.mocked(select)
 const mockListApplications = vi.mocked(listApplications)
 
-const app: Application = {
-  id: 'app-1',
-  organizationId: 'org-1',
-  slug: 'my-app',
-  title: 'My App',
-  type: 'coreApp',
-}
+const app = toApplication({slug: 'my-app'})
 const interactive = {
   appId: undefined,
   flags: {build: true, yes: false},
@@ -31,7 +26,7 @@ beforeEach(() => {
   vi.clearAllMocks()
   mockListApplications.mockResolvedValue([
     app,
-    {id: 'studio-1', organizationId: 'org-1', slug: 'a-studio', title: 'A Studio', type: 'studio'},
+    toApplication({id: 'studio-1', slug: 'a-studio', title: 'A Studio', type: 'studio'}),
   ])
 })
 
