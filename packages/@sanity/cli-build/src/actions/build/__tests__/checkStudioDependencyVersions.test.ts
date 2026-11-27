@@ -1,6 +1,9 @@
+import path from 'node:path'
+
 import {exitCodes} from '@sanity/cli-core/ExitCodes'
 import {type Output} from '@sanity/cli-core/types'
 import {
+  getLocalPackageDir,
   getLocalPackageVersion,
   readPackageJson,
 } from '@sanity/cli-test/mocks/cli-core/package-manager'
@@ -17,6 +20,12 @@ vi.mock(
   () => import('@sanity/cli-test/mocks/cli-core/package-manager'),
 )
 
+const PUBLISHED_SANITY_PEERS = {
+  react: '^19.2.2',
+  'react-dom': '^19.2.2',
+  'styled-components': '^6.1.15',
+}
+
 /**
  * Helper to set up the project package.json mock and local package version mocks.
  * Only needs the project package.json (one call) and getLocalPackageVersion per package.
@@ -25,13 +34,27 @@ function setupMocks(opts: {
   dependencies?: Record<string, string>
   devDependencies?: Record<string, string>
   localVersions?: Record<string, string | null>
+  sanityPeerDependencies?: Record<string, string>
 }) {
-  readPackageJson.mockResolvedValue({
+  const sanityPeerDependencies =
+    'sanityPeerDependencies' in opts ? opts.sanityPeerDependencies : PUBLISHED_SANITY_PEERS
+
+  const projectManifest = {
     dependencies: opts.dependencies ?? {},
     devDependencies: opts.devDependencies ?? {},
     name: 'test-project',
     version: '1.0.0',
-  })
+  }
+
+  const sanityDir = path.join('/test/work/dir', 'node_modules', 'sanity')
+  getLocalPackageDir.mockReturnValue(sanityDir)
+  readPackageJson.mockImplementation((filePath: string) =>
+    Promise.resolve(
+      filePath === path.join(sanityDir, 'package.json')
+        ? {name: 'sanity', peerDependencies: sanityPeerDependencies, version: '7.0.0'}
+        : projectManifest,
+    ),
+  )
 
   if (opts.localVersions) {
     getLocalPackageVersion.mockImplementation((name: string) => {
@@ -128,6 +151,18 @@ describe('checkStudioDependencyVersions', () => {
       )
     })
 
+    test('should accept react and react-dom 19.2.2 by default', async () => {
+      setupMocks({
+        dependencies: {react: '^19.2.2', 'react-dom': '^19.2.2'},
+        localVersions: {react: '19.2.2', 'react-dom': '19.2.2'},
+      })
+
+      await checkStudioDependencyVersions(workDir, mockOutput)
+
+      expect(mockOutput.warn).not.toHaveBeenCalled()
+      expect(mockOutput.error).not.toHaveBeenCalled()
+    })
+
     test('should handle React 18 as unsupported', async () => {
       setupMocks({
         dependencies: {react: '^18.0.0'},
@@ -152,6 +187,7 @@ describe('checkStudioDependencyVersions', () => {
       setupMocks({
         dependencies: {react: '^17.0.0'},
         localVersions: {react: '17.0.2'},
+        sanityPeerDependencies: undefined,
       })
 
       // Use injectable packages parameter to test the deprecated code path
@@ -227,7 +263,7 @@ describe('checkStudioDependencyVersions', () => {
         localVersions: {
           react: '16.14.0',
           'react-dom': '20.0.0',
-          'styled-components': '6.1.0',
+          'styled-components': '6.1.15',
         },
       })
 
@@ -243,6 +279,209 @@ describe('checkStudioDependencyVersions', () => {
         expect.stringContaining('react (installed: 16.14.0, want: ^19.2.2)'),
         {exit: exitCodes.RUNTIME_ERROR},
       )
+    })
+  })
+
+  describe('sanity peer dependency requirements', () => {
+    const sanityPeerDependencies = {react: '^19.3.1', 'react-dom': '^19.3.1'}
+
+    test.each(['18.2.0', '19.0.0', '19.2.2', '19.3.0'])(
+      'should treat react and react-dom %s as unsupported when sanity requires ^19.3.1',
+      async (version) => {
+        setupMocks({
+          dependencies: {react: `^${version}`, 'react-dom': `^${version}`},
+          localVersions: {react: version, 'react-dom': version},
+          sanityPeerDependencies,
+        })
+
+        await checkStudioDependencyVersions(workDir, mockOutput)
+
+        expect(mockOutput.error).toHaveBeenCalledWith(
+          expect.stringContaining(
+            'The following package versions are no longer supported and needs to be upgraded:',
+          ),
+          {exit: exitCodes.RUNTIME_ERROR},
+        )
+        expect(mockOutput.error).toHaveBeenCalledWith(
+          expect.stringContaining(`react (installed: ${version}, want: ^19.3.1)`),
+          {exit: exitCodes.RUNTIME_ERROR},
+        )
+        expect(mockOutput.error).toHaveBeenCalledWith(
+          expect.stringContaining(`react-dom (installed: ${version}, want: ^19.3.1)`),
+          {exit: exitCodes.RUNTIME_ERROR},
+        )
+        expect(mockOutput.error).toHaveBeenCalledWith(
+          expect.stringContaining('npm install "react@^19.3.1"'),
+          {exit: exitCodes.RUNTIME_ERROR},
+        )
+      },
+    )
+
+    test('should accept react and react-dom 19.3.1 when sanity requires ^19.3.1', async () => {
+      setupMocks({
+        dependencies: {react: '^19.3.1', 'react-dom': '^19.3.1'},
+        localVersions: {react: '19.3.1', 'react-dom': '19.3.1'},
+        sanityPeerDependencies,
+      })
+
+      await checkStudioDependencyVersions(workDir, mockOutput)
+
+      expect(mockOutput.warn).not.toHaveBeenCalled()
+      expect(mockOutput.error).not.toHaveBeenCalled()
+    })
+
+    test('should ignore a sanity peer range that is not stricter than the default', async () => {
+      setupMocks({
+        dependencies: {react: '^19.2.2', 'react-dom': '^19.2.2'},
+        localVersions: {react: '19.2.2', 'react-dom': '19.2.2'},
+        sanityPeerDependencies: {react: '^18 || ^19', 'react-dom': '^18 || ^19'},
+      })
+
+      await checkStudioDependencyVersions(workDir, mockOutput)
+
+      expect(mockOutput.warn).not.toHaveBeenCalled()
+      expect(mockOutput.error).not.toHaveBeenCalled()
+    })
+
+    test('should ignore an invalid sanity peer range', async () => {
+      setupMocks({
+        dependencies: {react: '^19.2.2'},
+        localVersions: {react: '19.2.2'},
+        sanityPeerDependencies: {react: 'not a range'},
+      })
+
+      await checkStudioDependencyVersions(workDir, mockOutput)
+
+      expect(mockOutput.warn).not.toHaveBeenCalled()
+      expect(mockOutput.error).not.toHaveBeenCalled()
+    })
+
+    test('should use the default range when sanity cannot be resolved', async () => {
+      setupMocks({
+        dependencies: {react: '^19.2.2'},
+        localVersions: {react: '19.2.2'},
+        sanityPeerDependencies,
+      })
+      getLocalPackageDir.mockImplementation(() => {
+        throw new Error('Cannot find module')
+      })
+
+      await checkStudioDependencyVersions(workDir, mockOutput)
+
+      expect(mockOutput.warn).not.toHaveBeenCalled()
+      expect(mockOutput.error).not.toHaveBeenCalled()
+    })
+
+    test.each(['6.1.0', '6.6.0'])(
+      'should treat styled-components %s as unsupported when sanity requires ^6.7.0',
+      async (version) => {
+        setupMocks({
+          dependencies: {'styled-components': `^${version}`},
+          localVersions: {'styled-components': version},
+          sanityPeerDependencies: {'styled-components': '^6.7.0'},
+        })
+
+        await checkStudioDependencyVersions(workDir, mockOutput)
+
+        expect(mockOutput.error).toHaveBeenCalledWith(
+          expect.stringContaining(
+            'The following package versions are no longer supported and needs to be upgraded:',
+          ),
+          {exit: exitCodes.RUNTIME_ERROR},
+        )
+        expect(mockOutput.error).toHaveBeenCalledWith(
+          expect.stringContaining(`styled-components (installed: ${version}, want: ^6.7.0)`),
+          {exit: exitCodes.RUNTIME_ERROR},
+        )
+      },
+    )
+
+    test('should accept styled-components 6.7.0 when sanity requires ^6.7.0', async () => {
+      setupMocks({
+        dependencies: {'styled-components': '^6.7.0'},
+        localVersions: {'styled-components': '6.7.0'},
+        sanityPeerDependencies: {'styled-components': '^6.7.0'},
+      })
+
+      await checkStudioDependencyVersions(workDir, mockOutput)
+
+      expect(mockOutput.warn).not.toHaveBeenCalled()
+      expect(mockOutput.error).not.toHaveBeenCalled()
+    })
+
+    test('should treat styled-components 6.1.14 as unsupported by default', async () => {
+      setupMocks({
+        dependencies: {'styled-components': '^6.1.14'},
+        localVersions: {'styled-components': '6.1.14'},
+      })
+
+      await checkStudioDependencyVersions(workDir, mockOutput)
+
+      expect(mockOutput.error).toHaveBeenCalledWith(
+        expect.stringContaining('styled-components (installed: 6.1.14, want: ^6.1.15)'),
+        {exit: exitCodes.RUNTIME_ERROR},
+      )
+    })
+
+    test('should accept styled-components 6.1.15 by default', async () => {
+      setupMocks({
+        dependencies: {'styled-components': '^6.1.15'},
+        localVersions: {'styled-components': '6.1.15'},
+      })
+
+      await checkStudioDependencyVersions(workDir, mockOutput)
+
+      expect(mockOutput.warn).not.toHaveBeenCalled()
+      expect(mockOutput.error).not.toHaveBeenCalled()
+    })
+
+    test('should warn about react and react-dom 20.0.0 when sanity requires ^19.3.1', async () => {
+      setupMocks({
+        dependencies: {react: '^20.0.0', 'react-dom': '^20.0.0'},
+        localVersions: {react: '20.0.0', 'react-dom': '20.0.0'},
+        sanityPeerDependencies,
+      })
+
+      await checkStudioDependencyVersions(workDir, mockOutput)
+
+      expect(mockOutput.error).not.toHaveBeenCalled()
+      expect(mockOutput.warn).toHaveBeenCalledWith(
+        expect.stringContaining(
+          'The following package versions have not yet been marked as supported:',
+        ),
+      )
+      expect(mockOutput.warn).toHaveBeenCalledWith(
+        expect.stringContaining('react (installed: 20.0.0, want: ^19.3.1)'),
+      )
+      expect(mockOutput.warn).toHaveBeenCalledWith(
+        expect.stringContaining('react-dom (installed: 20.0.0, want: ^19.3.1)'),
+      )
+    })
+
+    test('should only apply sanity peer ranges to react, react-dom and styled-components', async () => {
+      setupMocks({
+        dependencies: {'@sanity/ui': '^3.0.0'},
+        localVersions: {'@sanity/ui': '3.0.0'},
+        sanityPeerDependencies: {'@sanity/ui': '^4'},
+      })
+
+      await checkStudioDependencyVersions(workDir, mockOutput)
+
+      expect(mockOutput.warn).not.toHaveBeenCalled()
+      expect(mockOutput.error).not.toHaveBeenCalled()
+    })
+
+    test('should use the default range when sanity declares no peer dependencies', async () => {
+      setupMocks({
+        dependencies: {react: '^19.2.2'},
+        localVersions: {react: '19.2.2'},
+        sanityPeerDependencies: undefined,
+      })
+
+      await checkStudioDependencyVersions(workDir, mockOutput)
+
+      expect(mockOutput.warn).not.toHaveBeenCalled()
+      expect(mockOutput.error).not.toHaveBeenCalled()
     })
   })
 
@@ -486,8 +725,8 @@ describe('checkStudioDependencyVersions', () => {
 
     test('should handle styled-components package correctly', async () => {
       setupMocks({
-        dependencies: {'styled-components': '^6.0.0'},
-        localVersions: {'styled-components': '6.1.0'},
+        dependencies: {'styled-components': '^6.1.15'},
+        localVersions: {'styled-components': '6.1.15'},
       })
 
       await checkStudioDependencyVersions(workDir, mockOutput)
