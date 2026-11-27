@@ -143,7 +143,8 @@ function coerceValue(
  *
  * Array elements accumulate the way they do in gh: consecutive fields keep
  * filling the current (last) element - `a[][k]=1 a[][j]=2` builds one object
- * with both keys - until a key repeats, which starts the next element.
+ * with both keys, as does `a[][k][x]=1 a[][k][y]=2` - until a field would
+ * overwrite something already set there, which starts the next element.
  */
 function setField(target: FieldContainer, key: string, value: FieldValue | undefined): void {
   const match = KEY_RE.exec(key)
@@ -162,14 +163,14 @@ function setField(target: FieldContainer, key: string, value: FieldValue | undef
   let container = target
   let subkey = ''
   let inArray = false
-  for (const segment of path) {
+  for (const [index, segment] of path.entries()) {
     if (segment === '') {
       inArray = true
       continue
     }
     if (subkey !== '') {
       container = inArray
-        ? descendIntoArray(container, subkey, segment, key)
+        ? descendIntoArray(container, subkey, path.slice(index), key)
         : descendIntoObject(container, subkey, key)
       inArray = false
     }
@@ -220,13 +221,14 @@ function descendIntoObject(
 /**
  * Descend into the array at `container[segment]`, returning the object
  * element the field at hand should land in: the current (last) element while
- * `nextKey` is new to it or accumulating a nested array, or a freshly
- * appended element once `nextKey` repeats (gh api semantics).
+ * `remaining` still addresses a free spot inside it, or a freshly appended
+ * element once that spot is taken (gh api semantics). `remaining` is the rest
+ * of the field's path, relative to the element.
  */
 function descendIntoArray(
   container: FieldContainer,
   segment: string,
-  nextKey: string,
+  remaining: string[],
   key: string,
 ): FieldContainer {
   const existing = Object.hasOwn(container, segment) ? container[segment] : undefined
@@ -243,7 +245,7 @@ function descendIntoArray(
     typeof last === 'object' &&
     last !== null &&
     !Array.isArray(last) &&
-    (!Object.hasOwn(last, nextKey) || Array.isArray(last[nextKey]))
+    !addressesTakenSlot(last, remaining)
   ) {
     return last
   }
@@ -251,4 +253,27 @@ function descendIntoArray(
   const next: FieldContainer = Object.create(null)
   values.push(next)
   return next
+}
+
+/**
+ * Does `path`, walked from `element`, land on a spot that is already taken -
+ * a leaf it would overwrite, or a value whose shape it cannot fit into? A
+ * missing key opens a fresh branch and a nested array accumulates elements of
+ * its own, so neither overwrites anything: the field keeps filling `element`.
+ * Only when the spot is taken does the field belong in the next element.
+ */
+function addressesTakenSlot(element: FieldContainer, path: string[]): boolean {
+  let current = element
+  for (const [index, segment] of path.entries()) {
+    // Only reachable once an earlier segment descended into a plain object, so
+    // this array append cannot fit - the field starts the next element.
+    if (segment === '') return true
+    if (!Object.hasOwn(current, segment)) return false
+    const value = current[segment]
+    if (Array.isArray(value)) return false
+    if (index === path.length - 1) return true
+    if (typeof value !== 'object' || value === null) return true
+    current = value
+  }
+  return false
 }
