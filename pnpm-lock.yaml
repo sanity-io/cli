@@ -908,8 +908,8 @@ snapshots:
 				},
 				"oxlint": "catalog:",
 				"oxlint-plugin-eslint": {
-					"specifier": "^1.94.0",
-					"version": "1.94.0",
+					"specifier": "^1.95.0",
+					"version": "1.95.0",
 				},
 			},
 		},
@@ -19866,8 +19866,8 @@ snapshots:
 			},
 		},
 
-		"oxlint-plugin-eslint@1.94.0": {
-			"integrity": "sha512-H7wS6QlHsNO0MwmQAcpjcArx9ruaM5pnRn2LKeXVcYmLV6vj/sebxNLKfSCsvIlYGzk/mBCQTk3ujOp2yn9i0g==",
+		"oxlint-plugin-eslint@1.95.0": {
+			"integrity": "sha512-UR+CY/0LZYgDZljXZb4m+E79hsL/751jlY0pPLu4Vujnf26vSvVqmpSKDJpgaSmTf+kAyj4UZYkGsH7/8UkRXA==",
 			"engines": {"node": "^20.19.0 || >=22.12.0"},
 		},
 
