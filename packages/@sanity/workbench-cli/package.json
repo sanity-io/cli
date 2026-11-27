@@ -77,7 +77,7 @@
     "lint": "oxlint -c oxlint.config.ts"
   },
   "dependencies": {
-    "@module-federation/runtime": "2.9.3",
+    "@module-federation/runtime": "2.9.4",
     "@module-federation/vite": "1.24.0",
     "@sanity/cli-core": "workspace:^",
     "@sanity/sdk": "catalog:",

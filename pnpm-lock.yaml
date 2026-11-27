@@ -1462,7 +1462,7 @@ snapshots:
 		"packages/@sanity/workbench-cli": {
 			"name": "@sanity/workbench-cli",
 			"dependencies": {
-				"@module-federation/runtime": "2.9.3",
+				"@module-federation/runtime": "2.9.4",
 				"@module-federation/vite": "1.24.0",
 				"@sanity/cli-core": "workspace:^",
 				"@sanity/sdk": {
@@ -6305,6 +6305,10 @@ snapshots:
 			"integrity": "sha512-sXWo6XHOFKC1Dcu9DcSA1okZjtIz2y3uM+NJrAoSpeZ9QSPXielkMWT5PtG7MqGE3OQ+/HDawiLK53IOi3NHcQ==",
 		},
 
+		"@module-federation/error-codes@2.9.4": {
+			"integrity": "sha512-4JjaxBlQisDfkCTnMC4BaHphJRnlIYeobBNCgYSQY8xSnh1Y6rFFBHX7gyObDTJk66IrAB765G7xA9VYCcLB/g==",
+		},
+
 		"@module-federation/managers@2.9.3": {
 			"integrity": "sha512-C9yyp/edzCYs7+yvvQv2cBRd9A5/n9RPkGhn6KMBbchMuKWyn5qbC6pbl70TAkFh3wHRqcyUCIHrMf+Fek0u4A==",
 			"dependencies": {
@@ -6320,6 +6324,14 @@ snapshots:
 			},
 		},
 
+		"@module-federation/runtime-core@2.9.4": {
+			"integrity": "sha512-i2uEHkJGliwRmjb5ZOzWkA9xzTPwYjPMReqO0ZnIkpp0JuHaE4nDme9vacMnU2P4qRC2xzhGD0/Tb7uGUsUMtg==",
+			"dependencies": {
+				"@module-federation/error-codes": "2.9.4",
+				"@module-federation/sdk": "2.9.4",
+			},
+		},
+
 		"@module-federation/runtime@2.9.3": {
 			"integrity": "sha512-VCJV1VzKk+jvt+1CcTrslbl3LAKScHFpPxKSviafpMIqeHDWIDEY7ZEbVVJl/GuUjA36R7j0QhOPEjihPcz9/A==",
 			"dependencies": {
@@ -6329,8 +6341,21 @@ snapshots:
 			},
 		},
 
+		"@module-federation/runtime@2.9.4": {
+			"integrity": "sha512-iU5CqFNkmNVZHprp/glbaSn46q4/6PhSlMefrrzCBPMpoTd/pul+d+JbzQVHRtLv4w44SoGS+kFe3x9JF1BGog==",
+			"dependencies": {
+				"@module-federation/error-codes": "2.9.4",
+				"@module-federation/runtime-core": "2.9.4",
+				"@module-federation/sdk": "2.9.4",
+			},
+		},
+
 		"@module-federation/sdk@2.9.3": {
 			"integrity": "sha512-cT5ko/JDzGrKe8N+MFPgwb07G8fzmpnZbKZjGjXvT9phagQpiOfV6WQZhu1j+HtO152Frv1vjv/1Hhg2wMUL8g==",
+		},
+
+		"@module-federation/sdk@2.9.4": {
+			"integrity": "sha512-o7VGOEXtM3ITWrYtFOiaB3y/ssFv6mLs5TBx6QEgwXVzm3URgVgqh1KR1husFa94GTheP4Ei8hq4/B6xMQpT8g==",
 		},
 
 		"@module-federation/third-party-dts-extractor@2.9.3": {
@@ -11068,7 +11093,7 @@ snapshots:
 				},
 			},
 			"dependencies": {
-				"@module-federation/runtime": "2.9.3",
+				"@module-federation/runtime": "2.9.4",
 				"@sanity/client": "8.17.0",
 				"@sanity/message-protocol": "0.24.0",
 				"@sanity/sdk": "3.16.0",
@@ -11134,7 +11159,7 @@ snapshots:
 				},
 			},
 			"dependencies": {
-				"@module-federation/runtime": "2.9.3",
+				"@module-federation/runtime": "2.9.4",
 				"@sanity/client": "8.17.0",
 				"@sanity/message-protocol": "0.24.0",
 				"@sanity/sdk": "3.9.1",
