@@ -1451,7 +1451,7 @@ snapshots:
 			"name": "@sanity/workbench-cli",
 			"dependencies": {
 				"@module-federation/runtime": "2.9.4",
-				"@module-federation/vite": "1.24.0",
+				"@module-federation/vite": "1.25.0",
 				"@sanity/cli-core": "workspace:^",
 				"@sanity/sdk": {
 					"specifier": "catalog:",
@@ -6375,6 +6375,26 @@ snapshots:
 
 		"@module-federation/vite@1.24.0": {
 			"integrity": "sha512-59h1pQARXDbNAHLhxLXJ6mJlRCqEIni04ZOlHJuJGlrlaMfTPt7ahwdhejXe/rb59f4nJptcJ5MK9ZakzadP1w==",
+			"engines": {"node": "^20.19.0 || >=22.12.0"},
+			"peerDependencies": {
+				"typescript": {
+					"version": "6.0.3",
+					"below": true,
+				},
+				"vite": {
+					"specifier": "^5.1.0 || ^6.0.0 || ^7.0.0 || ^8.0.0",
+					"version": "8.4.0",
+				},
+			},
+			"dependencies": {
+				"@module-federation/dts-plugin": "2.9.3",
+				"@module-federation/runtime": "2.9.3",
+				"@module-federation/sdk": "2.9.3",
+			},
+		},
+
+		"@module-federation/vite@1.25.0": {
+			"integrity": "sha512-7qiCTLpBBU5jM/lkfVh8x5WJyXVwLF8JuXXil2BOw85LPztDm9JqJxfFva6E01FMqf02jZ2XXRg17MhTx8GsEQ==",
 			"engines": {"node": "^20.19.0 || >=22.12.0"},
 			"peerDependencies": {
 				"typescript": {
