@@ -19,6 +19,9 @@ export function deriveConfigEntries(config: WorkbenchConfigValue): {name: string
   const {appType} = config
 
   switch (appType) {
+    case 'dashboard': {
+      return [{name: 'dashboard', src: config.src}]
+    }
     case 'media-library': {
       return config.fields.map((field) => ({name: field.name, src: field.src}))
     }

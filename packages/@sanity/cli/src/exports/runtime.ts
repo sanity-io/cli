@@ -33,4 +33,8 @@ export type {
   WebWorkerProps,
   WebWorkerType,
 } from '@sanity/workbench-cli'
-export {unstable_defineService, unstable_defineView} from '@sanity/workbench-cli'
+export {
+  defineDashboardConfig,
+  unstable_defineService,
+  unstable_defineView,
+} from '@sanity/workbench-cli'

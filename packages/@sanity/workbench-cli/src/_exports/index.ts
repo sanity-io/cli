@@ -23,16 +23,20 @@ export {
   defineWebWorker,
   defineWindowView,
 } from '../contract.js'
+export {defineDashboardConfig} from '../dashboardConfig.js'
 export {
   defineApplication,
+  defineDashboard,
   isWorkbenchApp,
   isWorkbenchConfig,
   resolveAppTitle,
   unstable_defineMediaLibrary,
 } from '../defineApp.js'
 export type {
+  DashboardConfig,
   DefineAppInput,
   DefineAppResult,
+  DefineDashboardInput,
   DefineMediaLibraryInput,
   MediaLibraryConfig,
   MediaLibraryField,

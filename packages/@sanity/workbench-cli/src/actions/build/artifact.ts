@@ -4,6 +4,7 @@ import {
   type MediaLibraryConfigArtifactOptions,
   mediaLibraryConfigArtifacts,
 } from './configs/artifact.js'
+import {dashboardConfigArtifacts} from './dashboardConfig/artifact.js'
 import {viewArtifacts} from './views/artifact.js'
 import {webWorkerArtifacts} from './webWorkers/artifact.js'
 
@@ -16,6 +17,8 @@ interface ArtifactContext {
   /** Import specifier for an app `src` file, relative to this artifact. */
   resolveImport: (src: string) => string
 
+  /** Under `sanity dev`, config modules import user code after their hot handler registers. */
+  dev?: boolean
   isolateStyles?: boolean
 }
 
@@ -85,6 +88,9 @@ function configArtifacts(
   const {appType} = config
 
   switch (appType) {
+    case 'dashboard': {
+      return dashboardConfigArtifacts(config)
+    }
     case 'media-library': {
       return mediaLibraryConfigArtifacts(config, options)
     }

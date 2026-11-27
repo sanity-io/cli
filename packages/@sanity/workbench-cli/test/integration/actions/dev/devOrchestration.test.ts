@@ -30,7 +30,7 @@ import {
   startWorkbenchDevServer,
   startWorkbenchRemoteCoordinator,
 } from '../../../../src/actions/dev/startWorkbenchDevServer.js'
-import {unstable_defineMediaLibrary} from '../../../../src/defineApp.js'
+import {defineDashboard, unstable_defineMediaLibrary} from '../../../../src/defineApp.js'
 
 // A fresh in-memory `node:fs` for this file (see fsMock.ts): the real
 // `registerDevServer`/`getRegisteredServers` read/write path runs with no disk
@@ -211,6 +211,33 @@ describe('dev orchestration chain', () => {
           config: {fields: [{name: 'notes', src: './src/notes.ts', title: 'Notes'}]},
           id: expect.any(String),
           moduleName: 'media-library',
+          remoteURL: 'http://localhost:3334',
+          version: '1',
+        },
+      ],
+    })
+
+    await registration.close()
+    await coordinator.close()
+  })
+
+  test('given a dashboard configuration, the workbench receives it in the configs channel', async () => {
+    const registration = await register({
+      cliConfig: {
+        app: defineDashboard({organizationId: 'org-1', src: './src/dashboard.ts'}),
+      } as never,
+    })
+
+    const {coordinator, payload} = workbenchReceives()
+
+    expect(payload).toStrictEqual({
+      applications: [],
+      configs: [
+        {
+          appType: 'dashboard',
+          config: {src: './src/dashboard.ts'},
+          id: expect.any(String),
+          moduleName: 'dashboard',
           remoteURL: 'http://localhost:3334',
           version: '1',
         },

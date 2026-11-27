@@ -40,6 +40,21 @@ describe('workbenchArtifacts', () => {
     ])
   })
 
+  test.each<[string, WorkbenchConfigValue]>([
+    [
+      'media library config',
+      {appType: 'media-library', fields: [{name: 'alt', src: './src/alt.ts', title: 'Alt'}]},
+    ],
+    ['dashboard configuration', {appType: 'dashboard', src: './src/dashboard.ts'}],
+  ])('a %s imports its source statically in a production build', (_label, config) => {
+    const [artifact] = workbenchArtifacts({config})
+
+    const source = artifact.source({resolveImport: (src) => src})
+
+    expect(source).toMatch(/^import \w+ from "\.\/src\//m)
+    expect(source).not.toContain('import(')
+  })
+
   test('returns nothing when the app exposes nothing', () => {
     expect(workbenchArtifacts({})).toEqual([])
   })

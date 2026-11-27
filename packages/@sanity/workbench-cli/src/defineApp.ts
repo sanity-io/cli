@@ -221,8 +221,14 @@ export type WorkbenchConfig = WorkbenchConfigValue & {
 /** @public */
 export type MediaLibraryConfig = Extract<WorkbenchConfig, {appType: 'media-library'}>
 
+/** @public */
+export type DashboardConfig = Extract<WorkbenchConfig, {appType: 'dashboard'}>
+
+/** @public */
+export type DefineDashboardInput = Omit<DashboardConfig, 'appType' | typeof WORKBENCH_CONFIG>
+
 /**
- * Whether `app` is a branded `unstable_defineMediaLibrary(...)` config — a
+ * Whether `app` is a branded `unstable_defineMediaLibrary(...)` or `defineDashboard(...)` config — a
  * config-carrier rather than an app. Configs live in `cliConfig.app` alongside
  * apps but resolve through `resolveWorkbenchConfig`, not `resolveWorkbenchApp`.
  * @public
@@ -244,4 +250,16 @@ export function unstable_defineMediaLibrary(input: DefineMediaLibraryInput): Med
     WORKBENCH_CONFIG,
     {configurable: false, enumerable: false, value: true, writable: false},
   ) as MediaLibraryConfig
+}
+
+export function defineDashboard(input: DefineDashboardInput): DashboardConfig {
+  return Object.defineProperty(
+    {
+      appType: 'dashboard',
+      organizationId: input.organizationId,
+      src: input.src,
+    },
+    WORKBENCH_CONFIG,
+    {configurable: false, enumerable: false, value: true, writable: false},
+  ) as DashboardConfig
 }

@@ -2,7 +2,7 @@ import {type CliConfig} from '@sanity/cli-core'
 import {describe, expect, test} from 'vitest'
 
 import {type WorkbenchConfigValue} from '../../../contract.js'
-import {unstable_defineMediaLibrary} from '../../../defineApp.js'
+import {defineDashboard, unstable_defineMediaLibrary} from '../../../defineApp.js'
 import {deriveInterfaces} from '../../../deriveInterfaces.js'
 import {deriveConfigEntries, deriveConfigs} from '../deriveConfigs.js'
 import {workbenchApp} from './devTestHelpers.js'
@@ -449,7 +449,24 @@ const cfg = (app: unknown) => ({app}) as CliConfig
 const mediaLibrary = (fields: {name: string; public?: boolean; src: string; title: string}[]) =>
   cfg(unstable_defineMediaLibrary({fields, organizationId: 'org-1'}))
 
+const dashboard = (src: string) =>
+  ({app: defineDashboard({organizationId: 'org-1', src})}) as CliConfig
+
 describe('deriveConfigs', () => {
+  test('derives a dashboard configuration entry keyed on a content hash of its src', async () => {
+    const [entry] = await deriveConfigs(dashboard('./src/dashboard.ts'))
+
+    expect(entry).toStrictEqual({
+      appType: 'dashboard',
+      id: expect.stringMatching(/^[0-9a-f]{64}$/),
+      moduleName: 'dashboard',
+      src: './src/dashboard.ts',
+      version: '1',
+    })
+    expect((await deriveConfigs(dashboard('./src/dashboard.ts')))[0]?.id).toBe(entry?.id)
+    expect((await deriveConfigs(dashboard('./src/custom.ts')))[0]?.id).not.toBe(entry?.id)
+  })
+
   test('returns [] for a non-branded app', async () => {
     await expect(deriveConfigs(cfg({title: 'Plain'}))).resolves.toStrictEqual([])
     await expect(deriveConfigs(undefined)).resolves.toStrictEqual([])
@@ -516,6 +533,12 @@ describe('deriveConfigs', () => {
 })
 
 describe('deriveConfigEntries', () => {
+  test('derives a dashboard configuration entry from its src', () => {
+    expect(deriveConfigEntries({appType: 'dashboard', src: './src/dashboard.ts'})).toStrictEqual([
+      {name: 'dashboard', src: './src/dashboard.ts'},
+    ])
+  })
+
   test('projects each field to its name + src, dropping render-only metadata', () => {
     expect(
       deriveConfigEntries({

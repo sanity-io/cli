@@ -42,7 +42,8 @@ export function mediaLibraryConfigArtifacts(
     {
       expose: `./${CONFIGS_DIR_NAME}/${INSTALLATION_CONFIG_TYPE}`,
       path: `${CONFIGS_DIR_NAME}/${INSTALLATION_CONFIG_TYPE}.js`,
-      source: ({resolveImport}) => mediaLibraryConfigSource({config, resolveImport}),
+      source: ({dev = false, resolveImport}) =>
+        mediaLibraryConfigSource({config, dev, resolveImport}),
     },
     ...(options.islandRuntime
       ? [
@@ -63,33 +64,35 @@ export function mediaLibraryConfigArtifacts(
  */
 function mediaLibraryConfigSource(input: {
   config: MediaLibraryConfigArtifact
+  dev: boolean
   resolveImport: (src: string) => string
 }): string {
-  const {config, resolveImport} = input
-  const imports = config.fields
-    .map((field, index) => `import field_${index} from ${JSON.stringify(resolveImport(field.src))}`)
-    .join('\n')
+  const {config, dev, resolveImport} = input
+  const specifiers = config.fields.map((field) => JSON.stringify(resolveImport(field.src)))
+  const imports = dev
+    ? `const fieldModules = await Promise.all([\n${specifiers.map((specifier) => `  import(${specifier}),`).join('\n')}\n])`
+    : specifiers.map((specifier, index) => `import field_${index} from ${specifier}`).join('\n')
   const entries = config.fields
     .map(
       (field, index) =>
         `    {name: ${JSON.stringify(field.name)}, title: ${JSON.stringify(field.title)}, ` +
-        `public: ${JSON.stringify(Boolean(field.public))}, config: field_${index}},`,
+        `public: ${JSON.stringify(Boolean(field.public))}, config: ${dev ? `fieldModules[${index}].default` : `field_${index}`}},`,
     )
     .join('\n')
   return `\
 // This file is auto-generated on 'sanity build' / 'sanity dev'
 // Modifications to this file are automatically discarded
-${imports}
-
 export const type = ${JSON.stringify(INSTALLATION_CONFIG_TYPE)}
 export const version = ${MEDIA_LIBRARY_CONFIG_CONTRACT_VERSION}
+
+${HOT_CONFIG_LISTENERS}
+${imports}
 export const config = {
   fields: [
 ${entries}
   ],
 }
-
-${HOT_CONFIG_LISTENERS}`
+`
 }
 
 /**

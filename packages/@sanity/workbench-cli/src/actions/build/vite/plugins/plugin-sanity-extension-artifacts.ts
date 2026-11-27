@@ -20,10 +20,12 @@ function relativeImport(fromFile: string, toFile: string): string {
 
 function writeArtifacts({
   artifacts,
+  dev,
   isolateStyles,
   root,
 }: {
   artifacts: readonly GeneratedArtifact[]
+  dev: boolean
   isolateStyles: boolean
   root: string
 }): void {
@@ -33,6 +35,7 @@ function writeArtifacts({
     fs.writeFileSync(
       artifactPath,
       artifact.source({
+        dev,
         isolateStyles,
         resolveImport: (src) => relativeImport(artifactPath, path.resolve(root, src)),
       }),
@@ -59,6 +62,7 @@ export function sanityExtensionArtifacts(options: {
     configResolved(config) {
       writeArtifacts({
         artifacts: options.artifacts,
+        dev: config.command === 'serve',
         isolateStyles: getFederationApi(config.plugins)?.isolateStyles ?? false,
         root: config.root,
       })
