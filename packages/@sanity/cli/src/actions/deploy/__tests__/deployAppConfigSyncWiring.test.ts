@@ -28,10 +28,12 @@ vi.mock('@sanity/cli-core/ux', async () => import('@sanity/cli-test/mocks/cli-co
 const mockDeployConfig = vi.hoisted(() => vi.fn())
 const mockResolveInstallationId = vi.hoisted(() => vi.fn())
 const mockResolveWorkbenchConfig = vi.hoisted(() => vi.fn())
-vi.mock('@sanity/workbench-cli/deploy', () => ({
+vi.mock('@sanity/workbench-cli/deploy', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@sanity/workbench-cli/deploy')>()),
   createCoreApp: vi.fn(),
   deployConfig: mockDeployConfig,
   deployWorkbenchApp: vi.fn(),
+  fetchDeploySummaryDetails: vi.fn(async () => ({organizationName: 'Acme', userName: 'Sam'})),
   getApplicationUrl: vi.fn(),
   getWorkbench: vi.fn(() => null),
   resolveInstallationId: mockResolveInstallationId,
@@ -130,6 +132,18 @@ describe('deployApp aspect-sync wiring (media-library config)', () => {
     expect(mockApplyAspectSync.mock.invocationCallOrder[0]).toBeGreaterThan(
       mockDeployConfig.mock.invocationCallOrder[0],
     )
+  })
+
+  test('prints "Updated Media Library configuration." after a real deploy', async () => {
+    const output = mockOutput()
+
+    await deployApp(deployOptions({}, output))
+
+    const logged = vi.mocked(output.log).mock.calls.join('\n')
+    expect(logged).toContain('Media Library configuration deployed in')
+    expect(logged).toContain('Organization  Acme')
+    expect(logged).toContain('https://org-1.sanity.run')
+    expect(logged).toContain('Updated Media Library configuration.')
   })
 
   test('a config of another appType deploys without the media-library aspect sync', async () => {

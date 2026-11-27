@@ -1,6 +1,5 @@
 import {Readable} from 'node:stream'
 
-import {type Output} from '@sanity/cli-core'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
 import {type WorkbenchConfigValue} from '../../../contract.js'
@@ -18,8 +17,6 @@ vi.mock('@sanity/cli-core', async (importOriginal) => ({
 // The tarball content is irrelevant here — stub a readable so no build output
 // has to exist on disk.
 vi.mock('tar', () => ({c: () => Readable.from(['remote'])}))
-
-const output = {error: vi.fn(), log: vi.fn(), warn: vi.fn()} as unknown as Output
 
 /** Answer the installations list with `data`, and the config POST with a record. */
 function stubBrett(data: unknown[]) {
@@ -82,8 +79,6 @@ describe('deployConfig', () => {
     await deployConfig({
       appType: 'media-library',
       installationId: 'inst_ml',
-      organizationId: 'org-1',
-      output,
       sourceDir: '/tmp/build/app',
       version: '3.99.0',
     })
@@ -94,21 +89,6 @@ describe('deployConfig', () => {
     const post = mockRequest.mock.calls.find(([arg]) => arg.method === 'POST')?.[0]
     expect(post.url).toBe('/installations/inst_ml/configs')
     expect(post.headers['content-type']).toMatch(/multipart\/form-data/)
-  })
-
-  test('reports the workbench URL on success', async () => {
-    stubBrett([])
-
-    await deployConfig({
-      appType: 'media-library',
-      installationId: 'inst_ml',
-      organizationId: 'org-1',
-      output,
-      sourceDir: '/tmp/build/app',
-      version: '3.99.0',
-    })
-
-    expect(vi.mocked(output.log).mock.calls.join('\n')).toContain('https://org-1.sanity.run')
   })
 })
 

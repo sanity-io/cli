@@ -46,7 +46,7 @@ function target(overrides: Partial<UndeployApplicationTarget> = {}): UndeployApp
 }
 
 function configTarget(overrides: Partial<UndeployConfigTarget> = {}): UndeployConfigTarget {
-  return {...target(), deletes: 'config', id: null, ...overrides}
+  return {...target(), deletes: 'config', id: null, organizationId: 'org-1', ...overrides}
 }
 
 function adapter(overrides: Partial<UndeployAdapter> = {}): UndeployAdapter {

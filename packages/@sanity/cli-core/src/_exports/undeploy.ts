@@ -15,9 +15,7 @@ export interface UndeployApplicationTarget extends UndeployTargetDetails {
 export interface UndeployConfigTarget extends UndeployTargetDetails {
   deletes: 'config'
   id: null
-
-  /** Set when the undeploy ends with the organization summary. */
-  organizationId?: string
+  organizationId: string
 }
 
 interface UndeployTargetDetails {

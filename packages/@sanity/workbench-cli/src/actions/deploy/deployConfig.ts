@@ -1,12 +1,10 @@
 import {basename, dirname} from 'node:path'
-import {styleText} from 'node:util'
 import {createGzip} from 'node:zlib'
 
-import {type Output, subdebug} from '@sanity/cli-core'
+import {subdebug} from '@sanity/cli-core'
 import {c as createTar} from 'tar'
 
 import {type WorkbenchConfigValue} from '../../contract.js'
-import {getWorkbenchUrl} from '../../services/applications.js'
 import {createConfig, resolveSingletonInstallationId} from '../../services/installations.js'
 import {summarizeGroup} from './summarizeInterfaces.js'
 
@@ -62,16 +60,12 @@ export function summarizeConfig(config: WorkbenchConfigValue): string {
 export async function deployConfig(options: {
   appType: string
   installationId: string
-  organizationId: string
-  output: Output
   sourceDir: string
   version: string
 }): Promise<void> {
-  const {appType, installationId, organizationId, output, sourceDir, version} = options
+  const {appType, installationId, sourceDir, version} = options
   const tarball = createTar({cwd: dirname(sourceDir)}, [basename(sourceDir)]).pipe(createGzip())
   await createConfig(installationId, {tarball, version})
 
   debug('Deployed config for app type: %s', appType)
-  const url = getWorkbenchUrl(organizationId)
-  output.log(`\n🚀 ${styleText('bold', 'Success!')} Config deployed to ${styleText('cyan', url)}`)
 }
