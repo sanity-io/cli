@@ -136,7 +136,7 @@
   },
   "dependencies": {
     "@inquirer/core": "^12.1.1",
-    "@inquirer/prompts": "^8.7.5",
+    "@inquirer/prompts": "^8.8.1",
     "@oclif/core": "catalog:",
     "@sanity/client": "catalog:",
     "boxen": "^8.0.1",
