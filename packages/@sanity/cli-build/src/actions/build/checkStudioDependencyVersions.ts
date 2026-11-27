@@ -1,9 +1,23 @@
 import path from 'node:path'
 
 import {exitCodes} from '@sanity/cli-core/ExitCodes'
-import {getLocalPackageVersion, readPackageJson} from '@sanity/cli-core/package-manager'
+import {
+  getLocalPackageDir,
+  getLocalPackageVersion,
+  readPackageJson,
+} from '@sanity/cli-core/package-manager'
 import {type Output} from '@sanity/cli-core/types'
-import {coerce, gtr, ltr, rcompare, satisfies, type SemVer} from 'semver'
+import {
+  coerce,
+  gt,
+  gtr,
+  ltr,
+  minVersion,
+  rcompare,
+  satisfies,
+  type SemVer,
+  validRange,
+} from 'semver'
 
 interface PackageInfo {
   deprecatedBelow: string | null
@@ -26,19 +40,66 @@ interface TrackedPackage {
 const DEFAULT_PACKAGES: TrackedPackage[] = [
   {deprecatedBelow: null, name: 'react', supported: ['^19.2.2']},
   {deprecatedBelow: null, name: 'react-dom', supported: ['^19.2.2']},
-  {deprecatedBelow: null, name: 'styled-components', supported: ['^6']},
+  {deprecatedBelow: null, name: 'styled-components', supported: ['^6.1.15']},
   {deprecatedBelow: '^3', name: '@sanity/ui', supported: ['^2', '^3', '^4']},
 ]
+
+/**
+ * Packages for which the installed `sanity` package may raise the required range through its
+ * `peerDependencies`, letting a newer Studio major demand a newer minimum without a CLI release.
+ */
+const PEER_REQUIREMENT_PACKAGES = new Set(['react', 'react-dom', 'styled-components'])
+
+/**
+ * Raises the supported range of tracked packages to the range declared in the installed `sanity`
+ * package's `peerDependencies`, but only when that range has a higher minimum than the default.
+ * Peer ranges that are missing, invalid or not stricter leave the defaults untouched.
+ */
+async function applySanityPeerRequirements(
+  workDir: string,
+  packages: TrackedPackage[],
+): Promise<TrackedPackage[]> {
+  let peerDependencies: Record<string, string> | undefined
+  try {
+    const sanityManifest = await readPackageJson(
+      path.join(getLocalPackageDir('sanity', workDir), 'package.json'),
+      {skipSchemaValidation: true},
+    )
+    peerDependencies = sanityManifest?.peerDependencies
+  } catch {
+    return packages
+  }
+
+  if (!peerDependencies) {
+    return packages
+  }
+
+  return packages.map((pkg) => {
+    const peerRange = PEER_REQUIREMENT_PACKAGES.has(pkg.name) ? peerDependencies[pkg.name] : null
+    if (!peerRange || !validRange(peerRange)) {
+      return pkg
+    }
+
+    const defaultMinimum = minVersion(pkg.supported.join(' || '))
+    const peerMinimum = minVersion(peerRange)
+    if (!defaultMinimum || !peerMinimum || !gt(peerMinimum, defaultMinimum)) {
+      return pkg
+    }
+
+    return {...pkg, supported: [peerRange]}
+  })
+}
 
 export async function checkStudioDependencyVersions(
   workDir: string,
   output: Output,
-  {packages = DEFAULT_PACKAGES}: {packages?: TrackedPackage[]} = {},
+  {packages: basePackages = DEFAULT_PACKAGES}: {packages?: TrackedPackage[]} = {},
 ): Promise<void> {
   const manifest = await readPackageJson(path.join(workDir, 'package.json'), {
     skipSchemaValidation: true,
   })
   const dependencies = {...manifest?.dependencies, ...manifest?.devDependencies}
+  const packages = await applySanityPeerRequirements(workDir, basePackages)
 
   const packageInfo = packages.map(async (pkg): Promise<false | PackageInfo> => {
     const dependency = dependencies[pkg.name]
