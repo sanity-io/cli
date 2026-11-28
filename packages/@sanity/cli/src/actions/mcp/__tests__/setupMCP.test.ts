@@ -6,6 +6,7 @@ import {type Editor} from '../types.js'
 const mockDetectAvailableEditors = vi.hoisted(() => vi.fn())
 const mockPromptForMCPSetup = vi.hoisted(() => vi.fn())
 const mockWriteMCPConfig = vi.hoisted(() => vi.fn())
+const mockProtectLegacyMCPConfig = vi.hoisted(() => vi.fn())
 const mockReadSkillState = vi.hoisted(() => vi.fn())
 
 vi.mock('../detectAvailableEditors.js', () => ({
@@ -18,6 +19,10 @@ vi.mock('../promptForMCPSetup.js', () => ({
 
 vi.mock('../../../services/mcp.js', () => ({
   MCP_SERVER_URL: 'https://mcp.sanity.io',
+}))
+
+vi.mock('../protectLegacyMCPConfig.js', () => ({
+  protectLegacyMCPConfig: mockProtectLegacyMCPConfig,
 }))
 
 vi.mock('../writeMCPConfig.js', () => ({
@@ -46,6 +51,7 @@ function editor(overrides: Partial<Editor> & Pick<Editor, 'name'>): Editor {
 
 function defaultMocks() {
   mockWriteMCPConfig.mockResolvedValue(undefined)
+  mockProtectLegacyMCPConfig.mockResolvedValue(false)
   mockReadSkillState.mockResolvedValue({installedAgentDisplayNames: new Set()})
 }
 
@@ -446,5 +452,57 @@ describe('setupMCP', () => {
     const result = await setupMCP({mode: 'auto', output: mockOutput, skillsMode: 'auto'})
 
     expect(result.skillsToInstall).toEqual(['github-copilot'])
+  })
+  test('restricts retained tokens without replacing their authentication config', async () => {
+    defaultMocks()
+    mockProtectLegacyMCPConfig.mockResolvedValue(true)
+    const legacy = editor({configured: true, hasLegacyToken: true, name: 'Gemini CLI'})
+    mockDetectAvailableEditors.mockResolvedValue([legacy])
+    const result = await setupMCP({mode: 'auto', output: mockOutput})
+    expect(mockProtectLegacyMCPConfig).toHaveBeenCalledWith(legacy)
+    expect(mockWriteMCPConfig).not.toHaveBeenCalled()
+    expect(result.skipped).toBe(false)
+    expect(mockOutput.log).toHaveBeenCalledWith(expect.stringContaining('Restricted access'))
+  })
+  test('reports a protection error even when there are no OAuth configs to write', async () => {
+    defaultMocks()
+    mockProtectLegacyMCPConfig.mockRejectedValueOnce(new Error('access denied'))
+    mockDetectAvailableEditors.mockResolvedValue([
+      editor({configured: true, hasLegacyToken: true, name: 'Zed'}),
+    ])
+    const result = await setupMCP({mode: 'auto', output: mockOutput})
+    expect(result.error?.message).toBe('access denied')
+    expect(mockOutput.warn).toHaveBeenCalledWith(
+      expect.stringContaining('Could not restrict access'),
+    )
+  })
+  test('reports non-Error protection failures and still configures independent editors', async () => {
+    defaultMocks()
+    mockProtectLegacyMCPConfig.mockRejectedValueOnce('access denied')
+    mockDetectAvailableEditors.mockResolvedValue([
+      editor({configured: true, hasLegacyToken: true, name: 'Gemini CLI'}),
+      editor({name: 'Cursor'}),
+    ])
+    const result = await setupMCP({mode: 'auto', output: mockOutput})
+    expect(result.error?.message).toBe('access denied')
+    expect(result.configuredEditors).toEqual(['Cursor'])
+  })
+  test('does not touch MCP permissions when only skills are requested', async () => {
+    defaultMocks()
+    mockDetectAvailableEditors.mockResolvedValue([
+      editor({configured: true, hasLegacyToken: true, name: 'Gemini CLI'}),
+    ])
+    await setupMCP({mode: 'skip', output: mockOutput, skillsMode: 'auto'})
+    expect(mockProtectLegacyMCPConfig).not.toHaveBeenCalled()
+  })
+  test('does not harden or replace a token after the user cancels the prompt', async () => {
+    defaultMocks()
+    mockDetectAvailableEditors.mockResolvedValue([
+      editor({configured: true, hasLegacyToken: true, name: 'Gemini CLI'}),
+    ])
+    mockPromptForMCPSetup.mockResolvedValue(null)
+    await setupMCP({mode: 'prompt', output: mockOutput})
+    expect(mockProtectLegacyMCPConfig).not.toHaveBeenCalled()
+    expect(mockWriteMCPConfig).not.toHaveBeenCalled()
   })
 })

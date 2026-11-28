@@ -6,6 +6,7 @@ import {getSkillCandidates} from '../skills/skillCandidates.js'
 import {detectAvailableEditors} from './detectAvailableEditors.js'
 import {type EditorName, getSkillsCliAgent} from './editorConfigs.js'
 import {type EditorAction, type EditorChoice, promptForMCPSetup} from './promptForMCPSetup.js'
+import {protectLegacyMCPConfig} from './protectLegacyMCPConfig.js'
 import {type Editor} from './types.js'
 import {writeMCPConfig} from './writeMCPConfig.js'
 
@@ -212,8 +213,26 @@ export async function setupMCP(options: MCPSetupOptions): Promise<MCPSetupResult
   const classified = classifyEditors(editors, skillCandidateNames, replaceTokens)
   const actionable = applyMasking(classified, mcpMode, skillsMode)
 
-  const keptTokenEditors =
-    mcpMode === 'auto' ? editors.filter((e) => e.hasLegacyToken).map((e) => e.name) : []
+  let mcpError: Error | undefined
+  const keptTokenConfigs = mcpMode === 'auto' ? editors.filter((e) => e.hasLegacyToken) : []
+  const keptTokenEditors = keptTokenConfigs.map((e) => e.name)
+  const restrictedTokenEditors: EditorName[] = []
+  for (const editor of keptTokenConfigs) {
+    try {
+      if (await protectLegacyMCPConfig(editor)) restrictedTokenEditors.push(editor.name)
+    } catch (error) {
+      const err = error instanceof Error ? error : new Error(String(error))
+      output.warn(
+        `Could not restrict access to the saved-token MCP config for ${editor.name}: ${err.message}`,
+      )
+      mcpError = err
+    }
+  }
+  if (restrictedTokenEditors.length > 0) {
+    output.log(
+      `${logSymbols.info} Restricted access to saved-token MCP configs for ${restrictedTokenEditors.join(', ')}.`,
+    )
+  }
   if (keptTokenEditors.length > 0) {
     output.log(
       `${logSymbols.info} Kept the existing Sanity MCP config with a saved token for ${keptTokenEditors.join(', ')}. To switch to OAuth, run \`sanity mcp configure\` in a terminal.`,
@@ -237,7 +256,8 @@ export async function setupMCP(options: MCPSetupOptions): Promise<MCPSetupResult
       configuredEditors: [],
       detectedEditors,
       skillsToInstall: [],
-      skipped: true,
+      skipped: restrictedTokenEditors.length === 0,
+      ...(mcpError ? {error: mcpError} : {}),
     }
   }
 
@@ -270,7 +290,6 @@ export async function setupMCP(options: MCPSetupOptions): Promise<MCPSetupResult
   )
 
   const configuredEditors: EditorName[] = []
-  let mcpError: Error | undefined
 
   for (const choice of mcpSelected) {
     try {
