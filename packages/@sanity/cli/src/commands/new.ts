@@ -235,7 +235,7 @@ export class NewCommand extends SanityCommand<typeof NewCommand> {
     }
 
     if (!json) {
-      renderNewCommandSplash(output.log)
+      await renderNewCommandSplash(output.log)
       flow.intro('Setting up your Sanity project.')
       flow.gap()
 

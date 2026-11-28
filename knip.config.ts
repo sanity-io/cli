@@ -70,6 +70,8 @@ const baseConfig = {
         'src/**/*.worker.ts',
         'package.config.ts',
       ],
+      // librsvg CLI, used by scripts/generate-logo-image.ts to rasterize the logo
+      ignoreBinaries: ['rsvg-convert'],
       oclif: {
         config: ['oclif.config.js'],
       },
