@@ -1,5 +1,6 @@
-import {type ConsentInformation, getCliToken, isCi} from '@sanity/cli-core'
+import {type ConsentInformation, getCliToken} from '@sanity/cli-core'
 import {getCliExecutionContext} from '@sanity/cli-core/executionContext'
+import {getLocalTelemetryDenial} from '@sanity/cli-setup/telemetry'
 
 import {
   fetchTelemetryConsent,
@@ -7,7 +8,6 @@ import {
   VALID_API_STATUSES,
   type ValidApiConsentStatus,
 } from '../../services/telemetry.js'
-import {isTrueish} from './isTrueish.js'
 import {telemetryDebug} from './telemetryDebug.js'
 
 function parseApiConsentStatus(value: unknown): ValidApiConsentStatus {
@@ -19,14 +19,14 @@ function parseApiConsentStatus(value: unknown): ValidApiConsentStatus {
 
 export async function resolveConsent(): Promise<ConsentInformation> {
   telemetryDebug('Resolving consent…')
-  const hasCliExecutionContext = Boolean(getCliExecutionContext())
+  const localDenial = getCliExecutionContext() ? undefined : getLocalTelemetryDenial()
 
-  if (!hasCliExecutionContext && isCi()) {
+  if (localDenial === 'ci') {
     telemetryDebug('CI environment detected, treating telemetry consent as denied')
     return {status: 'denied'}
   }
 
-  if (!hasCliExecutionContext && isTrueish(process.env.DO_NOT_TRACK)) {
+  if (localDenial === 'localOverride') {
     telemetryDebug('DO_NOT_TRACK is set, consent is denied')
     return {
       reason: 'localOverride',

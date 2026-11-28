@@ -25,6 +25,8 @@
   "files": [
     "index.js",
     "bootstrapBlueprint.js",
+    "reportBlueprintSetup.js",
+    "sendBlueprintSetup.worker.js",
     "runInit.js",
     "dist/studio-cli-version.json"
   ],
@@ -38,7 +40,8 @@
   "dependencies": {
     "@sanity/blueprints": "^0.35.0",
     "@sanity/cli-setup": "workspace:*",
-    "@sanity/client": "catalog:"
+    "@sanity/client": "catalog:",
+    "@sanity/telemetry": "catalog:"
   },
   "devDependencies": {
     "@sanity/cli": "workspace:*",
@@ -49,7 +52,8 @@
   "bundleDependencies": [
     "@sanity/blueprints",
     "@sanity/cli-setup",
-    "@sanity/client"
+    "@sanity/client",
+    "@sanity/telemetry"
   ],
   "engines": {
     "node": ">=22.12"

@@ -1,5 +1,6 @@
 import {getUserConfig} from '@sanity/cli-core'
 import {runWithCliExecutionContext} from '@sanity/cli-core/executionContext'
+import {TELEMETRY_API_VERSION} from '@sanity/cli-setup/telemetry'
 import {mockApi} from '@sanity/cli-test'
 import {createMockFetch} from 'get-it/mock'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
@@ -7,7 +8,6 @@ import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 import {
   fetchTelemetryConsent,
   getTelemetryConsentCacheKey,
-  TELEMETRY_API_VERSION,
   TELEMETRY_CONSENT_CONFIG_KEY,
 } from '../telemetry.js'
 

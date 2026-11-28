@@ -6,21 +6,24 @@ import {fileURLToPath} from 'node:url'
 
 const cliManifest = join('node_modules', '@sanity', 'cli', 'package.json')
 
-export async function runInit(args) {
+export async function runInit(args, onTokenDigest) {
   const pin = await readFile(new URL('dist/studio-cli-version.json', import.meta.url), 'utf8')
   const {version} = JSON.parse(pin)
   const local = await resolveLocalCli(version)
   const manifestPath = local ?? (await installCli(version))
   const {bin} = JSON.parse(await readFile(manifestPath, 'utf8'))
-  return waitForExit(
-    spawn(
-      process.execPath,
-      [join(dirname(manifestPath), bin.sanity), 'init', ...args, '--from-create'],
-      {
-        stdio: 'inherit',
-      },
-    ),
+  const child = spawn(
+    process.execPath,
+    [join(dirname(manifestPath), bin.sanity), 'init', ...args, '--from-create'],
+    {stdio: onTokenDigest ? ['inherit', 'inherit', 'inherit', 'ipc'] : 'inherit'},
   )
+  if (onTokenDigest) {
+    child.on('message', (message) => {
+      const digest = message?.blueprintTokenDigest
+      if (digest === null || typeof digest === 'string') onTokenDigest(digest)
+    })
+  }
+  return waitForExit(child)
 }
 
 async function resolveLocalCli(version) {
@@ -47,7 +50,7 @@ async function installCli(version) {
   const staging = await mkdtemp(join(cache, '.install-'))
   try {
     await writeFile(join(staging, 'package.json'), '{"private":true}')
-    const result = await waitForExit(
+    const {code} = await waitForExit(
       spawn(
         'npm',
         [
@@ -68,7 +71,7 @@ async function installCli(version) {
         },
       ),
     )
-    if (result !== 0) {
+    if (code !== 0) {
       throw new Error(
         `Could not install @sanity/cli@${version}. Check the npm error above and try again.`,
       )
@@ -88,7 +91,7 @@ async function installCli(version) {
 function waitForExit(child) {
   return new Promise((resolve, reject) => {
     child.once('error', reject)
-    child.once('close', (code) => resolve(code ?? 1))
+    child.once('close', (code, signal) => resolve({code, signal}))
   })
 }
 
